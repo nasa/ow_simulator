@@ -20,7 +20,7 @@
             <name>ow/cubemap_sphere</name>
           </script>
         </material>
-        <plugin name="prerender" filename="libprerender_plugin.so" />
+        <plugin name="irradiance_map" filename="libirradiance_map_plugin.so" />
       </visual>
     </link>
   </model>

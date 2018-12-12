@@ -1,4 +1,4 @@
-Resource Prospector Gazebo plugins
+OceanWATERS Gazebo plugins
 ==================================
 near_far_clip_plugin
 -------------------

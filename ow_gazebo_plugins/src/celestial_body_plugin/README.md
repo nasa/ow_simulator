@@ -1,4 +1,4 @@
-Resource Prospector Gazebo plugins
+OceanWATERS Gazebo plugins
 ==================================
 celestial_body_plugin
 -------------------
