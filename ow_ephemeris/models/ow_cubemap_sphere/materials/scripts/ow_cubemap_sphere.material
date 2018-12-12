@@ -1,0 +1,57 @@
+vertex_program ow_cubemap_sphere_vert glsl
+{
+  source ow_cubemap_sphere.vert
+
+  default_params
+  {
+    param_named_auto worldMatrix world_matrix
+    param_named_auto worldViewMatrix worldview_matrix
+    param_named_auto worldViewProjMatrix worldviewproj_matrix
+    param_named_auto inverseViewMatrix inverse_view_matrix
+    param_named_auto inverseTransposeWorldMatrix inverse_transpose_world_matrix
+    param_named_auto inverseTransposeWorldViewMatrix inverse_transpose_worldview_matrix
+  }
+}
+
+fragment_program ow_cubemap_sphere_frag glsl
+{
+  source ow_cubemap_sphere.frag
+}
+
+material ow/cubemap_sphere
+{
+  technique
+  {
+    pass
+    {
+      vertex_program_ref ow_cubemap_sphere_vert {
+      }
+      
+      fragment_program_ref ow_cubemap_sphere_frag {
+        param_named cubemap int 0
+
+        //## tunable parameters 
+        //#####################################################
+
+        // linear multiplier on output color to emulate exposure time
+        param_named exposureMultiplier float 2.0
+
+        // add gamma to closer match the (film) images from Apollo
+        // according to Film and Camera Response Database, much film has gamma less than 0.6
+        // Kodac Ektachrome (Apollo16) gamma ~ 0.4
+        param_named gammaCorrection float 0.4
+      }
+
+      ambient  0 0 0
+      diffuse  1 1 1
+      emissive 0 0 0
+      texture_unit cubemap
+      {
+        texture cubemap.jpg cubic 10
+        tex_address_mode clamp
+        filtering trilinear linear
+      }
+    }
+  }
+}
+

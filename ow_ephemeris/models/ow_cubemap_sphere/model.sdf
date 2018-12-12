@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<sdf version='1.6'>
+
+  <model name="ow_cubemap_sphere">
+    <pose>0 0 3  0 0 0</pose>
+    <static>1</static>
+    <link name='sphere'>
+      <gravity>0</gravity>
+      <visual name="visual">
+        <cast_shadows>true</cast_shadows>
+        <geometry>
+          <sphere>
+            <radius>1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://ow_cubemap_sphere/materials/scripts</uri>
+            <uri>model://ow_cubemap_sphere/materials/textures</uri>
+            <name>ow/cubemap_sphere</name>
+          </script>
+        </material>
+        <plugin name="prerender" filename="libprerender_plugin.so" />
+      </visual>
+    </link>
+  </model>
+
+</sdf>

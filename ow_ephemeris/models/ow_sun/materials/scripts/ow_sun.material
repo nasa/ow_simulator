@@ -1,0 +1,13 @@
+material ow/sun
+{
+  technique
+  {
+    pass
+    {
+      ambient  1 1 1
+      diffuse  1 1 1
+      emissive 1 1 1
+    }
+  }
+}
+

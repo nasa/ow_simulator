@@ -1,0 +1,54 @@
+vertex_program ow_jupiter_vert glsl
+{
+  source ow_jupiter.vert
+
+  default_params
+  {
+    param_named_auto worldViewProjMatrix worldviewproj_matrix
+    param_named_auto inverseTransposeWorldViewMatrix inverse_transpose_worldview_matrix
+    param_named_auto inverseTransposeViewMatrix inverse_transpose_view_matrix
+
+    param_named_auto sunPosition light_position 0
+  }
+}
+
+fragment_program ow_jupiter_frag glsl
+{
+  source ow_jupiter.frag
+}
+
+material ow/jupiter
+{
+  technique
+  {
+    pass
+    {
+      vertex_program_ref ow_jupiter_vert {
+      }
+      
+      fragment_program_ref ow_jupiter_frag {
+        param_named diffuseMap int 0
+
+        //## tunable parameters 
+        //#####################################################
+
+        // linear multiplier on output color to emulate exposure time
+        param_named exposureMultiplier float 2.0
+
+        // add gamma to closer match the (film) images from Apollo
+        // according to Film and Camera Response Database, much film has gamma less than 0.6
+        // Kodac Ektachrome (Apollo16) gamma ~ 0.4
+        param_named gammaCorrection float 0.4
+      }
+
+      ambient  0 0 0
+      diffuse  1 1 1
+      emissive 0 0 0
+      texture_unit
+      {
+        texture jupiter.png
+      }
+    }
+  }
+}
+
