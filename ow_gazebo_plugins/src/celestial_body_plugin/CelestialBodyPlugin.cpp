@@ -74,8 +74,8 @@ void CelestialBodyPlugin::OnUpdate()
   }
 
   geometry_msgs::Vector3& v = sXform.transform.translation;
-  math::Vector3 pos(v.x, v.y, v.z);
-  const double distance = pos.GetLength();
+  ignition::math::Vector3d pos(v.x, v.y, v.z);
+  const double distance = pos.Length();
   pos.Normalize();
   pos *= m_renderDistance;
 
@@ -86,15 +86,15 @@ void CelestialBodyPlugin::OnUpdate()
     // direction set to (1, 0, 0) in the .sdf file.
     const double azimuth = atan2(-pos[1], -pos[0]);
     const double zenith = atan2(pos[2], sqrt(pos[0] * pos[0] + pos[1] * pos[1]));
-    m_model->SetWorldPose(math::Pose(pos[0], pos[1], pos[2], 0, zenith, azimuth));
+    m_model->SetWorldPose(ignition::math::Pose3d(pos[0], pos[1], pos[2], 0, zenith, azimuth));
   }
   else
   {
     // Otherwise, set the rotation as expected, so any texture map on the body
     // will be properly oriented.
     geometry_msgs::Quaternion& rot = sXform.transform.rotation;
-    math::Quaternion quat(rot.w, rot.x, rot.y, rot.z);
-    m_model->SetWorldPose(math::Pose(pos, quat));
+    ignition::math::Quaterniond quat(rot.w, rot.x, rot.y, rot.z);
+    m_model->SetWorldPose(ignition::math::Pose3d(pos, quat));
   }
 
   const double scale = m_radius * m_renderDistance / distance;

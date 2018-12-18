@@ -14,13 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(gazebo REQUIRED)
 find_package(OGRE REQUIRED)
 
-if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
-  find_package(Qt5Widgets REQUIRED)
+#if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
+  find_package(Qt5 REQUIRED COMPONENTS Widgets)
   set( RPGSIM_USE_QT5 TRUE )
-else()
-  find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
-  include(${QT_USE_FILE})
-endif()
+#else()
+#  find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
+#  include(${QT_USE_FILE})
+#endif()
 
 
 ## System dependencies are found with CMake's conventions
