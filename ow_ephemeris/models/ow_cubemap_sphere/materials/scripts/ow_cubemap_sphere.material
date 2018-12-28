@@ -49,7 +49,7 @@ material ow/cubemap_sphere
       {
         texture cubemap.jpg cubic 10
         tex_address_mode clamp
-        filtering trilinear linear
+        filtering trilinear
       }
     }
   }

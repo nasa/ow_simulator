@@ -31,6 +31,8 @@ IrradianceMapPlugin::IrradianceMapPlugin() :
     ros::init(argc, argv, "gazebo_client",
       ros::init_options::NoSigintHandler);
   }
+
+  m_timer.Start();
 }
 
 IrradianceMapPlugin::~IrradianceMapPlugin()
@@ -46,9 +48,9 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
   string name = visual->GetMaterialName();
   try
   {
-    m_material = Ogre::MaterialManager::getSingleton().getByName(name);
+    m_material = MaterialManager::getSingleton().getByName(name);
   }
-  catch(Ogre::Exception &e)
+  catch(Exception &e)
   {
     gzwarn << "Unable to get Material \"" << name << "\". Object will retain its original cubemap.\n";
     return;
@@ -69,16 +71,18 @@ bool IrradianceMapPlugin::initialize()
     return false;
   }
 
-  m_texture = Ogre::TextureManager::getSingleton().createManual(
-        "CubeMap", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-        Ogre::TEX_TYPE_CUBE_MAP, 256, 256, 0, 0, Ogre::PF_FLOAT32_RGB,
-        Ogre::TU_DYNAMIC | Ogre::TU_RENDERTARGET);
+  const int size = 1024;
+  const int numMipMaps = log2(size);
+  m_texture = TextureManager::getSingleton().createManual(
+        "SourceEnvironmentCubemap", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+        TEX_TYPE_CUBE_MAP, size, size, 0/*numMipMaps*/, PF_FLOAT32_RGB,
+        TU_DYNAMIC_WRITE_ONLY | TU_RENDERTARGET | TU_AUTOMIPMAP);
 
   for (int i = 0; i < 6; i++)
   {
-    Ogre::SceneManager* scene_manager = scene->GetManager();
-    m_cameras[i] = scene_manager->createCamera("CameraCubeMap" + Ogre::StringConverter::toString(i));  // Who cleans up this camera?
-    m_cameras[i]->setFOVy(Ogre::Radian(Ogre::Math::PI / 2));
+    SceneManager* scene_manager = scene->GetManager();
+    m_cameras[i] = scene_manager->createCamera("CameraCubeMap" + StringConverter::toString(i));  // Who cleans up this camera?
+    m_cameras[i]->setFOVy(Radian(Math::PI / 2));
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.1);
     m_cameras[i]->setFarClipDistance(200000);
@@ -98,33 +102,35 @@ bool IrradianceMapPlugin::initialize()
     switch(i)
     {
     case 0: // right
-      m_cameras[i]->yaw( Ogre::Radian( -Ogre::Math::PI / 2) );
-      m_cameras[i]->roll( Ogre::Radian( -Ogre::Math::PI / 2) );
+      m_cameras[i]->yaw( Radian( -Math::PI / 2) );
+      m_cameras[i]->roll( Radian( -Math::PI / 2) );
       break;
     case 1: // left
-      m_cameras[i]->yaw( Ogre::Radian( Ogre::Math::PI / 2) );
-      m_cameras[i]->roll( Ogre::Radian( Ogre::Math::PI / 2) );
+      m_cameras[i]->yaw( Radian( Math::PI / 2) );
+      m_cameras[i]->roll( Radian( Math::PI / 2) );
       break;
     case 2: // up
-      m_cameras[i]->pitch( Ogre::Radian( Ogre::Math::PI ) );
+      m_cameras[i]->pitch( Radian( Math::PI ) );
       break;
     case 3: // down
       break;
     case 4: // front
-      m_cameras[i]->pitch( Ogre::Radian( Ogre::Math::PI / 2 ) );
+      m_cameras[i]->pitch( Radian( Math::PI / 2 ) );
       break;
     case 5: // back
-      m_cameras[i]->pitch( Ogre::Radian( -Ogre::Math::PI / 2 ) );
-      m_cameras[i]->roll( Ogre::Radian( Ogre::Math::PI ) );
+      m_cameras[i]->pitch( Radian( -Math::PI / 2 ) );
+      m_cameras[i]->roll( Radian( Math::PI ) );
       break;
     }
 
-    Ogre::RenderTarget* renderTarget = m_texture->getBuffer(i)->getRenderTarget();
+    RenderTarget* renderTarget = m_texture->getBuffer(i)->getRenderTarget();
     m_viewports[i] = renderTarget->addViewport(m_cameras[i]);
     m_viewports[i]->setOverlaysEnabled(false);
     m_viewports[i]->setClearEveryFrame(true);
-    m_viewports[i]->setBackgroundColour(Ogre::ColourValue::Black);
+    m_viewports[i]->setBackgroundColour(ColourValue::Black);
   }
+
+  m_cubemap_filter.reset(new CubemapFilter(1024, 64));
 
   gzlog << "IrradianceMapPlugin::initialize: complete." << endl;
 
@@ -133,10 +139,18 @@ bool IrradianceMapPlugin::initialize()
 
 void IrradianceMapPlugin::onUpdate()
 {
+  // Only continue if a second has elapsed
+  if (m_timer.GetElapsed().Double() < 2.0)
+  {
+    return;
+  }
+  m_timer.Reset();
+  m_timer.Start();
+
   // Cannot do this in constructor or Load function because Heightmap is not yet available.
   if (!initialize())
   {
-     return;
+    return;
   }
 
   if (m_material.isNull())
@@ -149,7 +163,16 @@ void IrradianceMapPlugin::onUpdate()
     m_cameras[i]->_renderScene(m_viewports[i], false);
   }
 
+  // Ogre 1.9 does not appear to generate mipmaps for dynamic textures. And
+  // trying to generate mipmaps here appears to generate them from the original
+  // texture, not the one we just rendered.
+  //GLTexture* gltex = static_cast<GLTexture*>(m_texture.getPointer());
+  //glGenerateMipmapEXT(gltex->getGLTextureTarget());
+
+  m_cubemap_filter->render();
+
   TextureUnitState* tus = m_material->getTechnique(0)->getPass(0)->getTextureUnitState("cubemap");
-  tus->setTexture(m_texture);
+  //tus->setTexture(m_texture);
+  tus->setTexture(m_cubemap_filter->getTexture());
 }
 

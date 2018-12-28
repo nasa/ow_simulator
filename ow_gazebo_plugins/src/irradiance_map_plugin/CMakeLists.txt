@@ -4,6 +4,7 @@ set (HEADERS
 
 set (SOURCES
   IrradianceMapPlugin.cpp
+  CubemapFilter.cpp
 )
 
 include_directories(
