@@ -12,7 +12,9 @@ using namespace std;
 using namespace Ogre;
 
 
-CubemapFilter::CubemapFilter(const int full_res, const int irradiance_res)
+CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubemap_name, const int irradiance_res) :
+  m_unique_index(unique_index),
+  m_source_cubemap_name(source_cubemap_name)
 {
   //////////////////////////////////////////////////////////////////////////////
   // Create a simple scene of a cube with our dynamically rendered cubemap applied.
@@ -20,16 +22,16 @@ CubemapFilter::CubemapFilter(const int full_res, const int irradiance_res)
   // new filtered cubemap.
   //////////////////////////////////////////////////////////////////////////////
 
-  const String vp_name("make_irradiance_map_vert");
-  const String fp_name("make_irradiance_map_frag");
+  const String vp_name("make_irradiance_map_vert" + StringConverter::toString(m_unique_index));
+  const String fp_name("make_irradiance_map_frag" + StringConverter::toString(m_unique_index));
   makeVertexProgram(vp_name);
   makeFragmentProgram(fp_name);
 
   // Create a simple material using
+  String source_material_name("SourceEnvironmentMaterial" + StringConverter::toString(m_unique_index));
   MaterialPtr material = MaterialManager::getSingleton().create(
-    "SourceEnvironmentMaterial",
-    ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-  material->getTechnique(0)->getPass(0)->createTextureUnitState("SourceEnvironmentCubemap");
+    source_material_name, ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+  material->getTechnique(0)->getPass(0)->createTextureUnitState(m_source_cubemap_name);
   material->getTechnique(0)->getPass(0)->setVertexProgram(vp_name);
   material->getTechnique(0)->getPass(0)->setFragmentProgram(fp_name);
 
@@ -39,12 +41,12 @@ CubemapFilter::CubemapFilter(const int full_res, const int irradiance_res)
   GLRenderSystem* gl_render_system = dynamic_cast<GLRenderSystem*>(Root::getSingletonPtr()->getRenderSystem());
   if (gl_render_system != NULL)
   {
-    m_GLSupport = gl_render_system->getGLSupportRef();
+    m_GL_support = gl_render_system->getGLSupportRef();
   }
 
   // Make a cube with inside surfaces visible
   ManualObject* cube = scene_manager->createManualObject("cube");
-  cube->begin("SourceEnvironmentMaterial", RenderOperation::OT_TRIANGLE_LIST);
+  cube->begin(source_material_name, RenderOperation::OT_TRIANGLE_LIST);
   cube->position(-1, -1, -1);
   cube->position(1, -1, -1);
   cube->position(-1, 1, -1);
@@ -73,16 +75,18 @@ CubemapFilter::CubemapFilter(const int full_res, const int irradiance_res)
   // Now setup the cameras for rendering the filtered cubemap
   //////////////////////////////////////////////////////////////////////////////
 
+  String irradiance_cubemap_name("IrradianceEnvironmentCubemap" + StringConverter::toString(m_unique_index));
   const int size = 256;
   const int numMipMaps = log2(size);
   m_texture = TextureManager::getSingleton().createManual(
-        "IrradianceEnvironmentCubemap", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+        irradiance_cubemap_name, ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
         TEX_TYPE_CUBE_MAP, size, size, 0/*numMipMaps*/, PF_FLOAT32_RGB,
         TU_DYNAMIC_WRITE_ONLY | TU_RENDERTARGET | TU_AUTOMIPMAP);
 
   for (int i = 0; i < 6; i++)
   {
-    m_cameras[i] = scene_manager->createCamera("CubemapFilterCamera" + StringConverter::toString(i));  // Who cleans up this camera?
+    m_cameras[i] = scene_manager->createCamera("CubemapFilterCamera"
+      + StringConverter::toString(m_unique_index) + "_" + StringConverter::toString(i));  // Who cleans up this camera?
     m_cameras[i]->setFOVy(Radian(Math::PI / 2));
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.01);
@@ -119,7 +123,7 @@ CubemapFilter::CubemapFilter(const int full_res, const int irradiance_res)
 
 void CubemapFilter::render()
 {
-  if (m_GLSupport && m_GLSupport->checkExtension("GL_ARB_seamless_cube_map"))
+  if (m_GL_support && m_GL_support->checkExtension("GL_ARB_seamless_cube_map"))
   {
     // Enable seamless cube maps
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -160,9 +164,16 @@ void CubemapFilter::makeFragmentProgram(const String& name)
 {
   // Generate sample directions on a hemisphere
   std::vector<Vector3> v;
-  makeRegularHemisphereSamples(0.166, v);  // yields 200 samples
-  //makePoissonHemisphereSamples(0.15, v);
-  //cout << v.size() << endl;
+  const double min_theta = 0.2;
+  makeRegularHemisphereSamples(min_theta, v);
+  //makePoissonHemisphereSamples(min_theta, v);
+
+  // Convert sample area coverage to mipmap level
+  TexturePtr source_tex = TextureManager::getSingleton().getByName(m_source_cubemap_name);
+  int num_samples_around_circumference = int(M_PI * 2.0 / min_theta);
+  // number of samples across one cubemap face
+  double num_cube_samples = double(num_samples_around_circumference) / 4.0;
+  double mipmap_level = max(log2(source_tex->getWidth() / num_cube_samples), 0.0);
 
   String code(
     "#version 130\n"
@@ -189,13 +200,13 @@ void CubemapFilter::makeFragmentProgram(const String& name)
   for (size_t i = 0; i < v.size(); i ++)
   {
     ss << "  color += textureLod(cubemap, rotVec(dir, vec3(" << v[i][0] << ", "
-       << v[i][1] << ", " << v[i][2] << ")), 0.0).rgb * " << v[i][2] << ";\n";
+       << v[i][1] << ", " << v[i][2] << ")), " << mipmap_level << ").rgb * " << v[i][2] << ";\n";
     divisor += v[i][2];
   }
   ss << "  outputCol = vec4(color / " << divisor << ", 1);\n";
 
   // draw sampling points for debugging
-/*
+  /*
   for (size_t i = 0; i < v.size(); i ++)
   {
     ss << "  outputCol.g += max(pow(dot(vec3(" << v[i][0] << ", " << v[i][1] << ", " << v[i][2] << "), dir), 10000.0), 0.0);\n";

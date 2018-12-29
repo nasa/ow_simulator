@@ -10,6 +10,7 @@
 #include <gazebo/rendering/Heightmap.hh>
 #include <gazebo/common/Image.hh>
 #include <OGRE/OgreSceneManager.h>
+#include <OGRE/RenderSystems/GL/OgreGLTexture.h>
 
 
 using namespace std;
@@ -18,9 +19,16 @@ using namespace Ogre;
 
 GZ_REGISTER_VISUAL_PLUGIN(IrradianceMapPlugin)
 
+int IrradianceMapPlugin::m_index_counter = 0;
+
 IrradianceMapPlugin::IrradianceMapPlugin() :
   VisualPlugin()
 {
+  // Initialize glGenerateMipmap function address
+  glewInit();
+
+  m_unique_index = m_index_counter ++;
+
   m_texture.setNull();
 
   // Initialize ros, if it has not already been initialized.
@@ -71,11 +79,12 @@ bool IrradianceMapPlugin::initialize()
     return false;
   }
 
-  const int size = 1024;
+  String source_cubemap_name("SourceEnvironmentCubemap" + StringConverter::toString(m_unique_index));
+  const int size = 512;
   const int numMipMaps = log2(size);
   m_texture = TextureManager::getSingleton().createManual(
-        "SourceEnvironmentCubemap", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-        TEX_TYPE_CUBE_MAP, size, size, 0/*numMipMaps*/, PF_FLOAT32_RGB,
+        source_cubemap_name, ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+        TEX_TYPE_CUBE_MAP, size, size, numMipMaps, PF_FLOAT32_RGB,
         TU_DYNAMIC_WRITE_ONLY | TU_RENDERTARGET | TU_AUTOMIPMAP);
 
   for (int i = 0; i < 6; i++)
@@ -130,7 +139,7 @@ bool IrradianceMapPlugin::initialize()
     m_viewports[i]->setBackgroundColour(ColourValue::Black);
   }
 
-  m_cubemap_filter.reset(new CubemapFilter(1024, 64));
+  m_cubemap_filter.reset(new CubemapFilter(m_unique_index, source_cubemap_name, 64));
 
   gzlog << "IrradianceMapPlugin::initialize: complete." << endl;
 
@@ -163,11 +172,12 @@ void IrradianceMapPlugin::onUpdate()
     m_cameras[i]->_renderScene(m_viewports[i], false);
   }
 
-  // Ogre 1.9 does not appear to generate mipmaps for dynamic textures. And
-  // trying to generate mipmaps here appears to generate them from the original
-  // texture, not the one we just rendered.
-  //GLTexture* gltex = static_cast<GLTexture*>(m_texture.getPointer());
-  //glGenerateMipmapEXT(gltex->getGLTextureTarget());
+  // Ogre 1.9 does not appear to generate mipmaps for dynamic textures. It uses
+  // GL_GENERATE_MIPMAP to do it automatically, but that was deprecated. So we
+  // make the call to generate them here.
+  GLTexture* gltex = static_cast<GLTexture*>(m_texture.getPointer());
+  glBindTexture(gltex->getGLTextureTarget(), gltex->getGLID());
+  glGenerateMipmap(gltex->getGLTextureTarget());
 
   m_cubemap_filter->render();
 

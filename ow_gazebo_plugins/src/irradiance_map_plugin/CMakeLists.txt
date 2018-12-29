@@ -7,6 +7,8 @@ set (SOURCES
   CubemapFilter.cpp
 )
 
+find_package(GLEW REQUIRED)
+
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${OGRE_Paging_INCLUDE_DIR}
@@ -20,5 +22,5 @@ add_library(irradiance_map_plugin SHARED
   ${SOURCES}
 )
 
-target_link_libraries(irradiance_map_plugin ${GAZEBO_libraries} ${roscpp_LIBRARIES})
+target_link_libraries(irradiance_map_plugin ${GAZEBO_libraries} ${roscpp_LIBRARIES} ${GLEW_LIBRARIES})
 set_target_properties(irradiance_map_plugin PROPERTIES COMPILE_FLAGS "${GAZEBO_CXX_FLAGS}")

@@ -16,7 +16,7 @@ public:
    * @param irradiance_res Resolution to use for ideal Lambertian irradiance.
    * Must be be a power of two smaller than full_res, such as 64.
    */
-  CubemapFilter(const int full_res, const int irradiance_res);
+  CubemapFilter(const int unique_index, const Ogre::String& source_cubemap_name, const int irradiance_res);
   ~CubemapFilter();
 
   void render();
@@ -41,7 +41,12 @@ private:
    */
   void makePoissonHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& v);
 
-  Ogre::GLSupport* m_GLSupport;
+  Ogre::GLSupport* m_GL_support;
+
+  // A unique index to use in "global" Ogre resources, such as texture, shader, and camera names
+  int m_unique_index;
+
+  Ogre::String m_source_cubemap_name;
 
   Ogre::TexturePtr m_texture;
 

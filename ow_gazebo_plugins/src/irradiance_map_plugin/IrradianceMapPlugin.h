@@ -29,6 +29,11 @@ public:
   void onUpdate();
 
 private:
+  static int m_index_counter;
+
+  // A unique index to use in "global" Ogre resources, such as texture names
+  int m_unique_index;
+
   common::Timer m_timer;
 
   // Connection to the update event
