@@ -12,7 +12,7 @@ using namespace std;
 using namespace Ogre;
 
 
-CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubemap_name, const int irradiance_res) :
+CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubemap_name) :
   m_unique_index(unique_index),
   m_source_cubemap_name(source_cubemap_name)
 {
@@ -76,7 +76,7 @@ CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubema
   //////////////////////////////////////////////////////////////////////////////
 
   String irradiance_cubemap_name("IrradianceEnvironmentCubemap" + StringConverter::toString(m_unique_index));
-  const int size = 256;
+  const int size = 32;
   const int numMipMaps = log2(size);
   m_texture = TextureManager::getSingleton().createManual(
         irradiance_cubemap_name, ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
@@ -164,16 +164,18 @@ void CubemapFilter::makeFragmentProgram(const String& name)
 {
   // Generate sample directions on a hemisphere
   std::vector<Vector3> v;
-  const double min_theta = 0.2;
+  // theta = 0.08 between samples yields ~1000 samples. This works reasonably well with
+  // texture size = 32, removing most clustering even in low-magnitude irradiance maps.
+  const double min_theta = 0.08;
   makeRegularHemisphereSamples(min_theta, v);
-  //makePoissonHemisphereSamples(min_theta, v);
+  //makePoissonHemisphereSamples(min_theta, v);  // Splotchy at low-magnitudes
 
   // Convert sample area coverage to mipmap level
   TexturePtr source_tex = TextureManager::getSingleton().getByName(m_source_cubemap_name);
   int num_samples_around_circumference = int(M_PI * 2.0 / min_theta);
   // number of samples across one cubemap face
   double num_cube_samples = double(num_samples_around_circumference) / 4.0;
-  double mipmap_level = max(log2(source_tex->getWidth() / num_cube_samples), 0.0);
+  double mipmap_level = max(log2(source_tex->getWidth() / num_cube_samples) + 1.0, 0.0);
 
   String code(
     "#version 130\n"

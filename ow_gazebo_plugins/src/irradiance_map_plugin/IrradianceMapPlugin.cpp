@@ -136,7 +136,7 @@ bool IrradianceMapPlugin::initialize()
     m_viewports[i]->setBackgroundColour(ColourValue::Black);
   }
 
-  m_cubemap_filter.reset(new CubemapFilter(m_unique_index, source_cubemap_name, 64));
+  m_cubemap_filter.reset(new CubemapFilter(m_unique_index, source_cubemap_name));
 
   gzlog << "IrradianceMapPlugin::initialize: complete." << endl;
 

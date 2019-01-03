@@ -11,12 +11,11 @@ public:
   /**
    * @brief Constructor
    *
+   * @param unique_index A unique index to use in global Ogre resource names.
    * @param full_res Full resolution of input texture you will pass to filter().
    * Must be a power of two, such as 1024.
-   * @param irradiance_res Resolution to use for ideal Lambertian irradiance.
-   * Must be be a power of two smaller than full_res, such as 64.
    */
-  CubemapFilter(const int unique_index, const Ogre::String& source_cubemap_name, const int irradiance_res);
+  CubemapFilter(const int unique_index, const Ogre::String& source_cubemap_name);
   ~CubemapFilter();
 
   void render();
