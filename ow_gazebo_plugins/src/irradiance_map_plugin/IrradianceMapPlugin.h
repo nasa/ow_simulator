@@ -41,6 +41,8 @@ private:
   // Connection to the update event
   event::ConnectionPtr mUpdateConnection;
 
+  math::Pose m_pose;
+
   Ogre::TexturePtr m_texture;
 
   // Cameras and viewports for capturing the scene

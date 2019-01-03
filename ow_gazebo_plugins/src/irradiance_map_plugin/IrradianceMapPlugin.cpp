@@ -58,6 +58,8 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
   // Listen to the update event. This event is broadcast every sim iteration.
   this->mUpdateConnection = event::Events::ConnectPreRender(
     boost::bind(&IrradianceMapPlugin::onUpdate, this));
+
+  m_pose = visual->GetWorldPose();
 }
 
 bool IrradianceMapPlugin::initialize()
@@ -90,7 +92,7 @@ bool IrradianceMapPlugin::initialize()
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.1);
     m_cameras[i]->setFarClipDistance(200000);
-    m_cameras[i]->setPosition(0, 0, 3);
+    m_cameras[i]->setPosition(m_pose.pos[0], m_pose.pos[1], m_pose.pos[2]);
 
     // OpenGL cubemaps are arranged using RenderMan's left-handed coordinate
     // system resulting in the entire map being mirrored when rendered looking
