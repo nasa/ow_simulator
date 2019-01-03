@@ -45,7 +45,7 @@ material ow/cubemap_sphere
       ambient  0 0 0
       diffuse  1 1 1
       emissive 0 0 0
-      texture_unit cubemap
+      texture_unit ow_irradiance_environment_map
       {
         texture cubemap.jpg cubic 10
         tex_address_mode clamp

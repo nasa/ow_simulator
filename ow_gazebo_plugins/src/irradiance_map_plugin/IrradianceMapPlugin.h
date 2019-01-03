@@ -36,6 +36,8 @@ private:
 
   common::Timer m_timer;
 
+  Ogre::String m_texture_unit_name;
+
   // Connection to the update event
   event::ConnectionPtr mUpdateConnection;
 
@@ -44,9 +46,6 @@ private:
   // Cameras and viewports for capturing the scene
   Ogre::Camera* m_cameras[6];
   Ogre::Viewport* m_viewports[6];
-
-  // The visual's material. But we want to apply the irradiance map to many scene materials. How to do this?
-  Ogre::MaterialPtr m_material;
 
   std::unique_ptr<CubemapFilter> m_cubemap_filter;
 };

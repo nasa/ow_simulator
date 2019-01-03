@@ -49,20 +49,15 @@ IrradianceMapPlugin::~IrradianceMapPlugin()
 
 void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr element)
 {
+  if (!element->HasElement("texture_unit")) {
+    gzerr << "IrradianceMapPlugin: you must specify a texture_unit_state element." << endl;
+    return;
+  }
+  m_texture_unit_name = element->Get<string>("texture_unit");
+
   // Listen to the update event. This event is broadcast every sim iteration.
   this->mUpdateConnection = event::Events::ConnectPreRender(
     boost::bind(&IrradianceMapPlugin::onUpdate, this));
-
-  string name = visual->GetMaterialName();
-  try
-  {
-    m_material = MaterialManager::getSingleton().getByName(name);
-  }
-  catch(Exception &e)
-  {
-    gzwarn << "Unable to get Material \"" << name << "\". Object will retain its original cubemap.\n";
-    return;
-  }
 }
 
 bool IrradianceMapPlugin::initialize()
@@ -162,11 +157,6 @@ void IrradianceMapPlugin::onUpdate()
     return;
   }
 
-  if (m_material.isNull())
-  {
-    return;
-  }
-
   for (int i = 0; i < 6; i++)
   {
     m_cameras[i]->_renderScene(m_viewports[i], false);
@@ -174,15 +164,44 @@ void IrradianceMapPlugin::onUpdate()
 
   // Ogre 1.9 does not appear to generate mipmaps for dynamic textures. It uses
   // GL_GENERATE_MIPMAP to do it automatically, but that was deprecated. So we
-  // make the call to generate them here.
+  // make the appropriate call to generate them here.
   GLTexture* gltex = static_cast<GLTexture*>(m_texture.getPointer());
   glBindTexture(gltex->getGLTextureTarget(), gltex->getGLID());
   glGenerateMipmap(gltex->getGLTextureTarget());
 
+  // Filter source texture to create irradiance map
   m_cubemap_filter->render();
 
-  TextureUnitState* tus = m_material->getTechnique(0)->getPass(0)->getTextureUnitState("cubemap");
-  //tus->setTexture(m_texture);
-  tus->setTexture(m_cubemap_filter->getTexture());
+  // Assign our dynamic texture wherever it is required
+  // Ogre materials are all created before the a visual plugin constructor is
+  // called. So a named texture created in the plugin cannot be referenced by
+  // any Ogre material. The solution here is to search for TextureUnitStates
+  // with the right name and assign our dynamic texture.
+  // I also tried using a world and model plugins, but their prerender callbacks
+  // are never called. A system plugin is probably the wrong choice because it
+  // is applied to gzclient and not gzserver and we want to do off-screen
+  // rendering with gzserver.
+  ResourceManager::ResourceMapIterator res_it = MaterialManager::getSingleton().getResourceIterator();
+  while (res_it.hasMoreElements())
+  {
+    ResourcePtr resource = res_it.getNext();
+    MaterialPtr material = resource.staticCast<Material>();
+    Material::TechniqueIterator tech_it = material->getTechniqueIterator();
+    while (tech_it.hasMoreElements())
+    {
+      Technique* technique = tech_it.getNext();
+      Technique::PassIterator pass_it = technique->getPassIterator();
+      while (pass_it.hasMoreElements())
+      {
+        Pass* pass = pass_it.getNext();
+        TextureUnitState* tus = pass->getTextureUnitState(m_texture_unit_name);
+        if (tus != 0)
+        {
+          //tus->setTexture(m_texture);  // source texture
+          tus->setTexture(m_cubemap_filter->getTexture());  // irradiance map
+        }
+      }
+    }
+  }
 }
 
