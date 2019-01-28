@@ -121,6 +121,10 @@ CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubema
   }
 }
 
+CubemapFilter::~CubemapFilter()
+{
+}
+
 void CubemapFilter::render()
 {
   if (m_GL_support && m_GL_support->checkExtension("GL_ARB_seamless_cube_map"))

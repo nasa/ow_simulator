@@ -86,7 +86,7 @@ bool IrradianceMapPlugin::initialize()
 
   for (int i = 0; i < 6; i++)
   {
-    SceneManager* scene_manager = scene->GetManager();
+    SceneManager* scene_manager = scene->OgreSceneManager();
     m_cameras[i] = scene_manager->createCamera("CameraCubeMap" + StringConverter::toString(i));  // Who cleans up this camera?
     m_cameras[i]->setFOVy(Radian(Math::PI / 2));
     m_cameras[i]->setAspectRatio(1);
