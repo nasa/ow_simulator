@@ -1,3 +1,9 @@
+// __BEGIN_LICENSE__
+// Copyright (c) 2018-2019, United States Government as represented by the
+// Administrator of the National Aeronautics and Space Administration. All
+// rights reserved.
+// __END_LICENSE__
+
 #include "CubemapFilter.h"
 #include <OGRE/OgreRoot.h>
 #include <OGRE/OgreEntity.h>
@@ -85,8 +91,9 @@ CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubema
 
   for (int i = 0; i < 6; i++)
   {
+    // SceneManager destructor is responsible for deleting Cameras
     m_cameras[i] = scene_manager->createCamera("CubemapFilterCamera"
-      + StringConverter::toString(m_unique_index) + "_" + StringConverter::toString(i));  // Who cleans up this camera?
+      + StringConverter::toString(m_unique_index) + "_" + StringConverter::toString(i));
     m_cameras[i]->setFOVy(Radian(Math::PI / 2));
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.01);
@@ -115,6 +122,7 @@ CubemapFilter::CubemapFilter(const int unique_index, const String& source_cubema
     }
 
     RenderTarget* renderTarget = m_texture->getBuffer(i)->getRenderTarget();
+    // RenderTarget destructor is responsible for deleting Viewports
     m_viewports[i] = renderTarget->addViewport(m_cameras[i]);
     m_viewports[i]->setOverlaysEnabled(false);
     m_viewports[i]->setClearEveryFrame(true);

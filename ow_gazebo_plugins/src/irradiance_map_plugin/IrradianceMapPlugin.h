@@ -1,8 +1,9 @@
-/*******************************************************************************
- * Copyright (c) 2018 United States Government as represented by the 
- * Administrator of the National Aeronautics and Space Administration. 
- * All rights reserved.
- ******************************************************************************/
+// __BEGIN_LICENSE__
+// Copyright (c) 2018-2019, United States Government as represented by the
+// Administrator of the National Aeronautics and Space Administration. All
+// rights reserved.
+// __END_LICENSE__
+
 #ifndef IRRADIANCE_MAP_PLUGIN_H
 #define IRRADIANCE_MAP_PLUGIN_H
 
@@ -16,6 +17,15 @@
 
 namespace gazebo {
 
+/**
+ * @brief The IrradianceMapPlugin class
+ * This is a visual plugin for Gazebo that generates an irradiance environment
+ * cubemap from the point-of-view of its Visual. You would most likely attach it
+ * to a placeholder Visual that is scaled down to zero or otherwise invisible.
+ * The final irradiance environment cubemap can be used in any material in your
+ * scene. This class renders the environment to a cubemap but lets another class
+ * filter that cubemap to produce the final irradiance environment cubemap.
+ */
 class IrradianceMapPlugin : public VisualPlugin
 {
 public:

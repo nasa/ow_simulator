@@ -1,8 +1,9 @@
-/*******************************************************************************
- * Copyright (c) 2018 United States Government as represented by the 
- * Administrator of the National Aeronautics and Space Administration. 
- * All rights reserved.
- ******************************************************************************/
+// __BEGIN_LICENSE__
+// Copyright (c) 2018-2019, United States Government as represented by the
+// Administrator of the National Aeronautics and Space Administration. All
+// rights reserved.
+// __END_LICENSE__
+
 #include "IrradianceMapPlugin.h"
 
 #include <gazebo/rendering/RenderingIface.hh>
@@ -86,8 +87,9 @@ bool IrradianceMapPlugin::initialize()
 
   for (int i = 0; i < 6; i++)
   {
+    // SceneManager destructor is responsible for deleting Cameras
     SceneManager* scene_manager = scene->OgreSceneManager();
-    m_cameras[i] = scene_manager->createCamera("CameraCubeMap" + StringConverter::toString(i));  // Who cleans up this camera?
+    m_cameras[i] = scene_manager->createCamera("CameraCubeMap" + StringConverter::toString(i));
     m_cameras[i]->setFOVy(Radian(Math::PI / 2));
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.1);
@@ -130,6 +132,7 @@ bool IrradianceMapPlugin::initialize()
     }
 
     RenderTarget* renderTarget = m_texture->getBuffer(i)->getRenderTarget();
+    // RenderTarget destructor is responsible for deleting Viewports
     m_viewports[i] = renderTarget->addViewport(m_cameras[i]);
     m_viewports[i]->setOverlaysEnabled(false);
     m_viewports[i]->setClearEveryFrame(true);
@@ -174,12 +177,12 @@ void IrradianceMapPlugin::onUpdate()
   // Filter source texture to create irradiance map
   m_cubemap_filter->render();
 
-  // Assign our dynamic texture wherever it is required
-  // Ogre materials are all created before the a visual plugin constructor is
-  // called. So a named texture created in the plugin cannot be referenced by
+  // Assign our dynamic texture wherever it is required.
+  // Ogre materials are all created before a visual plugin constructor is
+  // called, so a named texture created in such a plugin cannot be referenced by
   // any Ogre material. The solution here is to search for TextureUnitStates
   // with the right name and assign our dynamic texture.
-  // I also tried using a world and model plugins, but their prerender callbacks
+  // I also tried using world and model plugins, but their prerender callbacks
   // are never called. A system plugin is probably the wrong choice because it
   // is applied to gzclient and not gzserver and we want to do off-screen
   // rendering with gzserver.
