@@ -49,7 +49,7 @@ private:
   Ogre::String m_texture_unit_name;
 
   // Connection to the update event
-  event::ConnectionPtr mUpdateConnection;
+  event::ConnectionPtr m_update_connection;
 
   math::Pose m_pose;
 

@@ -53,9 +53,9 @@ private:
    * @brief Generate sample positions along regularly spaced latitude lines
    *
    * @param min_theta Minimum angle between samples.
-   * @param v Storage for sample points on surface of hemisphere.
+   * @param out_p Storage for sample points on surface of hemisphere.
    */
-  void makeRegularHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& v);
+  void makeRegularHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& out_p);
 
   /**
    * @brief Poisson-disc sample position generation adapted to a hemisphere
@@ -65,9 +65,9 @@ private:
    * theta angle instead of a distance.
    *
    * @param min_theta Minimum angle between samples.
-   * @param v Storage for sample points on surface of hemisphere.
+   * @param out_p Storage for sample points on surface of hemisphere.
    */
-  void makePoissonHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& v);
+  void makePoissonHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& out_p);
 
   Ogre::GLSupport* m_GL_support;
 

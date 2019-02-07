@@ -214,16 +214,18 @@ void CubemapFilter::makeFragmentProgram(const String& name)
   for (size_t i = 0; i < v.size(); i ++)
   {
     ss << "  color += textureLod(cubemap, rotVec(dir, vec3(" << v[i][0] << ", "
-       << v[i][1] << ", " << v[i][2] << ")), " << mipmap_level << ").rgb * " << v[i][2] << ";\n";
+       << v[i][1] << ", " << v[i][2] << ")), " << mipmap_level << ").rgb * "
+       << v[i][2] << ";\n";
     divisor += v[i][2];
   }
   ss << "  outputCol = vec4(color / " << divisor << ", 1);\n";
 
   // draw sampling points for debugging
   /*
-  for (size_t i = 0; i < v.size(); i ++)
+  for (size_t i = 0; i < out_p.size(); i ++)
   {
-    ss << "  outputCol.g += max(pow(dot(vec3(" << v[i][0] << ", " << v[i][1] << ", " << v[i][2] << "), dir), 10000.0), 0.0);\n";
+    ss << "  outputCol.g += max(pow(dot(vec3(" << out_p[i][0] << ", " << out_p[i][1]
+       << ", " << out_p[i][2] << "), dir), 10000.0), 0.0);\n";
   }
   */
 
@@ -238,10 +240,10 @@ void CubemapFilter::makeFragmentProgram(const String& name)
   //params->setNamedConstant("cubemap", 0);
 }
 
-void CubemapFilter::makeRegularHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& v)
+void CubemapFilter::makeRegularHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& out_p)
 {
   // Want one point at the apex of the hemisphere
-  v.push_back(Vector3(0, 0, 1));
+  out_p.push_back(Vector3(0, 0, 1));
 
   // For even hemisphere coverage, samples should be at latitudes >= min_theta
   // apart, and the lowest latitude should be >= min_theta * 0.5 from equator.
@@ -271,29 +273,29 @@ void CubemapFilter::makeRegularHemisphereSamples(const double min_theta, std::ve
     double lon = start_lon;
     for (int j = 0; j < num_lon; j ++)
     {
-      v.push_back(Vector3(cos(lon) * sin_lat, sin(lon) * sin_lat, cos_lat));
+      out_p.push_back(Vector3(cos(lon) * sin_lat, sin(lon) * sin_lat, cos_lat));
       lon += lon_step;
     }
   }
 }
 
-void CubemapFilter::makePoissonHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& v)
+void CubemapFilter::makePoissonHemisphereSamples(const double min_theta, std::vector<Ogre::Vector3>& out_p)
 {
   const double cos_min_theta = cos(min_theta);
 
   std::vector<Ogre::Vector3> active_points;
 
   // Want one point at the apex of the hemisphere
-  v.push_back(Vector3(0, 0, 1));
+  out_p.push_back(Vector3(0, 0, 1));
 
   int new_points_added = 1;
   while (new_points_added)
   {
     // New points added in the previous loop become active points that generate new points
     active_points.clear();
-    for (size_t i = v.size() - new_points_added; i < v.size(); i ++)
+    for (size_t i = out_p.size() - new_points_added; i < out_p.size(); i ++)
     {
-      active_points.push_back(v[i]);
+      active_points.push_back(out_p[i]);
     }
 
     new_points_added = 0;
@@ -321,9 +323,9 @@ void CubemapFilter::makePoissonHemisphereSamples(const double min_theta, std::ve
         }
         bool keep = true;
         // This part could be optimized by somehow searching through fewer points
-        for (int j = v.size() - 1; j >= 0; j --)
+        for (int j = out_p.size() - 1; j >= 0; j --)
         {
-          if (vec.dotProduct(v[j]) > cos_min_theta)
+          if (vec.dotProduct(out_p[j]) > cos_min_theta)
           {
             keep = false;
             break;
@@ -332,7 +334,7 @@ void CubemapFilter::makePoissonHemisphereSamples(const double min_theta, std::ve
 
         if (keep)
         {
-          v.push_back(vec);
+          out_p.push_back(vec);
           new_points_added ++;
         }
       }

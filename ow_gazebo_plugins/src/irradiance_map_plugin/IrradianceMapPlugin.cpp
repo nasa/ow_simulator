@@ -57,7 +57,7 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
   m_texture_unit_name = element->Get<string>("texture_unit");
 
   // Listen to the update event. This event is broadcast every sim iteration.
-  this->mUpdateConnection = event::Events::ConnectPreRender(
+  this->m_update_connection = event::Events::ConnectPreRender(
     boost::bind(&IrradianceMapPlugin::onUpdate, this));
 
   m_pose = visual->GetWorldPose();
