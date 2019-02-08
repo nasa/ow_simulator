@@ -1,0 +1,15 @@
+<launch>
+
+  <!-- Load lander urdf -->
+  <param name="robot_description" command="cat '$(find ow_lander)/urdf/lander.urdf'"/>
+
+  <!-- Convert joint states from Gazebo to tf-tree for rviz -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+    <param name="publish_frequency" value="30"/>
+  </node>
+
+  <!-- Spawn lander in gazebo -->
+  <node name="lander_model" pkg="gazebo_ros" type="spawn_model"
+    args="-urdf -param robot_description -model lander" output="screen" />
+
+</launch>
