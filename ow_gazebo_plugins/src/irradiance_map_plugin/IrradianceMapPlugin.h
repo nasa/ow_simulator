@@ -32,9 +32,7 @@ public:
   IrradianceMapPlugin();
   ~IrradianceMapPlugin();
 
-  virtual void Load(rendering::VisualPtr visual, sdf::ElementPtr element);
-
-  bool initialize();
+  virtual void Load(rendering::VisualPtr visual, sdf::ElementPtr element) override;
 
   void onUpdate();
 
@@ -50,8 +48,6 @@ private:
 
   // Connection to the update event
   event::ConnectionPtr m_update_connection;
-
-  math::Pose m_pose;
 
   Ogre::TexturePtr m_texture;
 

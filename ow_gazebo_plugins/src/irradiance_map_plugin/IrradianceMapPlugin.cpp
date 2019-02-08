@@ -60,21 +60,10 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
   this->m_update_connection = event::Events::ConnectPreRender(
     boost::bind(&IrradianceMapPlugin::onUpdate, this));
 
-  m_pose = visual->GetWorldPose();
-}
-
-bool IrradianceMapPlugin::initialize()
-{
-  if (!m_texture.isNull())
-  {
-    // Texture has already been created
-    return true;
-  }
-
   rendering::ScenePtr scene = rendering::get_scene();
   if (!scene) {
     gzerr << "IrradianceMapPlugin::initialize: scene pointer is NULL" << endl;
-    return false;
+    return;
   }
 
   String source_cubemap_name("SourceEnvironmentCubemap" + StringConverter::toString(m_unique_index));
@@ -85,6 +74,7 @@ bool IrradianceMapPlugin::initialize()
         TEX_TYPE_CUBE_MAP, size, size, numMipMaps, PF_FLOAT32_RGB,
         TU_DYNAMIC_WRITE_ONLY | TU_RENDERTARGET | TU_AUTOMIPMAP);
 
+  math::Pose pose = visual->GetWorldPose();
   for (int i = 0; i < 6; i++)
   {
     // SceneManager destructor is responsible for deleting Cameras
@@ -94,7 +84,7 @@ bool IrradianceMapPlugin::initialize()
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.1);
     m_cameras[i]->setFarClipDistance(200000);
-    m_cameras[i]->setPosition(m_pose.pos[0], m_pose.pos[1], m_pose.pos[2]);
+    m_cameras[i]->setPosition(pose.pos[0], pose.pos[1], pose.pos[2]);
 
     // OpenGL cubemaps are arranged using RenderMan's left-handed coordinate
     // system resulting in the entire map being mirrored when rendered looking
@@ -142,8 +132,6 @@ bool IrradianceMapPlugin::initialize()
   m_cubemap_filter.reset(new CubemapFilter(m_unique_index, source_cubemap_name));
 
   gzlog << "IrradianceMapPlugin::initialize: complete." << endl;
-
-  return true;
 }
 
 void IrradianceMapPlugin::onUpdate()
@@ -156,8 +144,8 @@ void IrradianceMapPlugin::onUpdate()
   m_timer.Reset();
   m_timer.Start();
 
-  // Cannot do this in constructor or Load function because Heightmap is not yet available.
-  if (!initialize())
+  // Bail out if plugin is not initialized
+  if (m_texture.isNull())
   {
     return;
   }
