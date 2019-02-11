@@ -60,9 +60,12 @@ private:
   /**
    * @brief Poisson-disc sample position generation adapted to a hemisphere
    *
-   * Poisson-disc sampling produces points that are tightly-packed, but no closer to each other
-   * than a specified minimum distance. This is adapted to a unit hemisphere by using a minimum
-   * theta angle instead of a distance.
+   * Poisson-disc sampling produces points that are tightly-packed, but no closer
+   * to each other than a specified minimum distance. This is adapted to a unit
+   * hemisphere by using a minimum theta angle instead of a distance.
+   * Final irradiance maps produced with this method are more splotchy than ones
+   * produced with makeRegularHemisphereSamples(), so it is not in use and has
+   * not been optimized.
    *
    * @param min_theta Minimum angle between samples.
    * @param out_p Storage for sample points on surface of hemisphere.
