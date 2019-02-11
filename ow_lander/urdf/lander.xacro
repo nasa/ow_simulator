@@ -1,5 +1,12 @@
-<robot
-  name="lander">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
+  <xacro:include filename="$(find ow_lander)/urdf/stereo_mast-triggered.xacro" />
+  <xacro:stereo_mast stereo_mast_parent_link="base_link" 
+                     mast_height="1.2"
+                     hfov="70"
+                     img_w="2048" img_h="2048"
+                     update_rate="1"
+                     off_x="-0.2" off_y="0.2" off_z="0.5" />
+
   <link
     name="base_link">
     <inertial>

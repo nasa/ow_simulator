@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Load lander urdf -->
-  <param name="robot_description" command="cat '$(find ow_lander)/urdf/lander.urdf'"/>
+  <param name="robot_description" command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'"/>
 
   <!-- Convert joint states from Gazebo to tf-tree for rviz -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
