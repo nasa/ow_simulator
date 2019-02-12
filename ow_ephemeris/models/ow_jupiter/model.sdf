@@ -8,7 +8,7 @@
     <link name='ellipsoid'>
       <gravity>0</gravity>
       <visual name="visual">
-        <cast_shadows>false</cast_shadows>
+        <cast_shadows>true</cast_shadows>
         <geometry>
           <sphere>
             <radius>1</radius>
