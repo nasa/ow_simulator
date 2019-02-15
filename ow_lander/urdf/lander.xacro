@@ -1,0 +1,604 @@
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
+  <xacro:include filename="$(find ow_lander)/urdf/stereo_mast-triggered.xacro" />
+  <xacro:stereo_mast stereo_mast_parent_link="base_link" 
+                     mast_height="1.2"
+                     hfov="70"
+                     img_w="2048" img_h="2048"
+                     update_rate="1"
+                     off_x="-0.2" off_y="0.2" off_z="0.5" />
+
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.174891183141199 0.105186140838806 0.499102801889294"
+        rpy="0 0 0" />
+      <mass
+        value="921.409320871089" />
+      <inertia
+        ixx="33.2402321826437"
+        ixy="0.60557675951993"
+        ixz="-0.0951190939564292"
+        iyy="33.9643287034463"
+        iyz="0.0499080883396483"
+        izz="63.3487609623066" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/lander_body.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/lander_body.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="link_shoulder">
+    <inertial>
+      <origin
+        xyz="0.0560579395709874 0.141768391065364 0.00404480198837498"
+        rpy="0 0 0" />
+      <mass
+        value="6.82139097144578" />
+      <inertia
+        ixx="0.00893744641566868"
+        ixy="0.00781896786597782"
+        ixz="-0.00236278992626154"
+        iyy="0.0275545990944527"
+        iyz="0.000600617787047249"
+        izz="0.0360781788843499" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_shoulder.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_shoulder.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_shoulder_yaw"
+    type="continuous">
+    <origin
+      xyz="0.504875558700385 -0.329105217556347 0.325000000000001"
+      rpy="1.5707963267949 2.74973548348948E-17 0.46573620389147" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_shoulder" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <transmission name="shoulder_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_shoulder_yaw">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shoulder_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="link_proximal">
+    <inertial>
+      <origin
+        xyz="-0.0492100785879154 0.13596231010573 -0.00264198593257192"
+        rpy="0 0 0" />
+      <mass
+        value="4.19334465872563" />
+      <inertia
+        ixx="0.0984810896192592"
+        ixy="0.0219047703464202"
+        ixz="-0.000425647279922649"
+        iyy="0.0113852386512403"
+        iyz="0.00191279732232413"
+        izz="0.109791995726008" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_proximal.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_proximal.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_shoulder_pitch"
+    type="continuous">
+    <origin
+      xyz="0.160000000000006 0.119999999999994 0.0549999999999998"
+      rpy="-3.07263964126294 1.57079630572147 -3.07263964126294" />
+    <parent
+      link="link_shoulder" />
+    <child
+      link="link_proximal" />
+    <axis
+      xyz="-1 0 0" />
+  </joint>
+  <transmission name="shoulder_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_shoulder_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shoulder_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="link_distal">
+    <inertial>
+      <origin
+        xyz="-0.0270676297110266 1.19266541087626E-09 0.215098268051955"
+        rpy="0 0 0" />
+      <mass
+        value="7.67831405851241" />
+      <inertia
+        ixx="0.448007770505405"
+        ixy="3.27562144075699E-11"
+        ixz="0.0217064684901283"
+        iyy="0.456482852663482"
+        iyz="-7.1993979908723E-08"
+        izz="0.00847508215811156" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_distal.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_distal.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_proximal_pitch"
+    type="continuous">
+    <origin
+      xyz="0 0.52989996780278 -0.0102968015714265"
+      rpy="-2.4583426132036 -5.55111512312578E-17 -3.14159265358979" />
+    <parent
+      link="link_proximal" />
+    <child
+      link="link_distal" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <transmission name="proximal_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_proximal_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="proximal_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="link_wrist">
+    <inertial>
+      <origin
+        xyz="0.0598274983548339 -0.00683833441329951 -0.0773548039852737"
+        rpy="0 0 0" />
+      <mass
+        value="4.03473451988803" />
+      <inertia
+        ixx="0.0233350554047849"
+        ixy="0.000832485639475045"
+        ixz="0.00924084473050794"
+        iyy="0.0271779846566029"
+        iyz="-0.00229121026195695"
+        izz="0.00433425186366915" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_wrist.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_wrist.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_distal_pitch"
+    type="continuous">
+    <origin
+      xyz="0.00500000000000056 0 0.586000000000023"
+      rpy="2.56643026615587 3.77475828372553E-15 1.94289029309402E-15" />
+    <parent
+      link="link_distal" />
+    <child
+      link="link_wrist" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <transmission name="distal_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_distal_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="distal_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="link_hand">
+    <inertial>
+      <origin
+        xyz="0.0559835529936636 0.00390822003474067 0.00225571287946436"
+        rpy="0 0 0" />
+      <mass
+        value="3.29341647546119" />
+      <inertia
+        ixx="0.000109355149428239"
+        ixy="-0.000992165341035474"
+        ixz="-0.000572649471646507"
+        iyy="0.0168063828016295"
+        iyz="-4.73448318734377E-05"
+        izz="0.0168610857840526" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_hand.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/link_hand.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wrist_yaw"
+    type="continuous">
+    <origin
+      xyz="0.0899999999999999 -0.0549999999998739 -0.162999999999922"
+      rpy="0.248206795067281 -2.27248775352962E-15 -1.5707963267949" />
+    <parent
+      link="link_wrist" />
+    <child
+      link="link_hand" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <transmission name="wrist_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_wrist_yaw">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wrist_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="ee_scoop">
+    <inertial>
+      <origin
+        xyz="-0.045328379765103 0.000904857629523192 -0.000953809607952549"
+        rpy="0 0 0" />
+      <mass
+        value="0.191928708332058" />
+      <inertia
+        ixx="0.000210835811046482"
+        ixy="3.52685415920896E-05"
+        ixz="-1.47037151730351E-05"
+        iyy="0.000167404759271315"
+        iyz="7.5252100662615E-05"
+        izz="0.00031505343178764" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/ee_scoop.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/ee_scoop.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_scoop_roll"
+    type="continuous">
+    <origin
+      xyz="0.144999999999659 -0.129903810567612 -0.0749999999997883"
+      rpy="3.06398447183486 -0.523598775598299 1.5707963267949" />
+    <parent
+      link="link_hand" />
+    <child
+      link="ee_scoop" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <transmission name="scoop_roll_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_scoop_roll">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="scoop_roll_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="ee_rasps">
+    <inertial>
+      <origin
+        xyz="-0.0396046436167999 5.0597152036147E-05 -9.48547633605745E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.611443633085363" />
+      <inertia
+        ixx="0.000210835811046482"
+        ixy="3.52685415920896E-05"
+        ixz="-1.47037151730351E-05"
+        iyy="0.000167404759271315"
+        iyz="7.5252100662615E-05"
+        izz="0.00031505343178764" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/ee_rasps.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.776470588235294 0.756862745098039 0.737254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/ee_rasps.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_rasps_roll"
+    type="continuous">
+    <origin
+      xyz="0.144675204172091 0 0.148800000000212"
+      rpy="1.54414527281543 1.5707963267949 0" />
+    <parent
+      link="link_hand" />
+    <child
+      link="ee_rasps" />
+    <axis
+      xyz="-1 0 0" />
+  </joint>
+  <transmission name="rasps_roll_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_rasps_roll">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="rasps_roll_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <link
+    name="antenna_arm">
+    <inertial>
+      <origin
+        xyz="-0.0229678126754235 -1.94289029309402E-16 1.11022302462516E-16"
+        rpy="0 0 0" />
+      <mass
+        value="0.939669875432376" />
+      <inertia
+        ixx="0.01"
+        ixy="-2.6401631214636E-18"
+        ixz="1.02938334166052E-18"
+        iyy="0.00117207134038222"
+        iyz="2.31874958704716E-33"
+        izz="0.00117207134038222" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/antenna_arm.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/antenna_arm.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_antenna_pan"
+    type="continuous">
+    <origin
+      xyz="0.232639447943562 0.515887385961576 0.972"
+      rpy="1.5707963267949 1.5707963267949 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="antenna_arm" />
+    <axis
+      xyz="-1 0 0" />
+  </joint>
+  <link
+    name="antenna_panel">
+    <inertial>
+      <origin
+        xyz="0.464100409790638 0.122666143163037 -0.0894057800416915"
+        rpy="0 0 0" />
+      <mass
+        value="16.0257507120422" />
+      <inertia
+        ixx="0.0140050584574044"
+        ixy="-0.0298927602332499"
+        ixz="0.0491250927124288"
+        iyy="0.261804157350979"
+        iyz="0.00584229359244508"
+        izz="0.254909203187956" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/antenna_panel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ow_lander/meshes/antenna_panel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_antenna_tilt"
+    type="continuous">
+    <origin
+      xyz="-0.12605070280898 -0.0570909851205665 0.0331152444949944"
+      rpy="-2.61901890379663 -0.0592882539038171 -3.03907977308166" />
+    <parent
+      link="antenna_arm" />
+    <child
+      link="antenna_panel" />
+    <axis
+      xyz="0.118094635160747 -0.993002344985272 0" />
+  </joint>
+
+  <gazebo>
+    <!--plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin-->
+
+    <!-- Publish joint states so rviz can visualize them. -->
+    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+      <jointName>joint_shoulder_yaw, joint_shoulder_pitch, joint_proximal_pitch,
+       joint_distal_pitch, joint_wrist_yaw, joint_scoop_roll, joint_rasps_roll,
+       joint_antenna_pan, joint_antenna_tilt</jointName>
+      <updateRate>10</updateRate>
+    </plugin>
+  </gazebo>
+</robot>

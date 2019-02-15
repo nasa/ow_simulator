@@ -1,0 +1,350 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_test_mast">
+
+  <xacro:property name="mast_mass" value="0.1" /> 
+  <xacro:property name="mast_width" value="0.05" /> 
+
+  <xacro:property name="pan_h" value="0.05" /> 
+  <xacro:property name="pan_h_2" value="0.025" /> 
+  <xacro:property name="pan_mass" value="0.1" /> 
+
+  <xacro:property name="tilt_h" value="0.05" /> 
+  <xacro:property name="tilt_w" value="0.08" /> 
+  <xacro:property name="tilt_mass" value="0.1" /> 
+
+  <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
+  <xacro:property name="Camera01UpdateRate" value="5" />
+  <xacro:property name="camera_baseline"    value="0.40" />
+  <xacro:property name="camera_head_mass"   value="0.10" />
+  
+  <xacro:property name="deg_to_rad"         value="0.0174533" />
+  
+  <!--xacro:include filename="$(find krex2_description)/urdf/nav_lights.xacro" /-->
+
+  <xacro:macro name="stereo_mast" params="stereo_mast_parent_link mast_height hfov img_w img_h update_rate off_x off_y off_z">
+
+  <link name="${Camera01Name}_mast_link">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 ${mast_height/2}"/>
+      <geometry>
+        <box size="${mast_width} ${mast_width} ${mast_height}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 ${mast_height/2}"/>
+      <geometry>
+        <box size="${mast_width} ${mast_width} ${mast_height}"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 ${mast_height/2}"/>
+      <mass value="${mast_mass}"/>
+      <!-- inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/ -->
+      <inertia
+          ixx="${mast_mass / 12.0 * (mast_width*mast_width + mast_height*mast_height)}" ixy="0.0" ixz="0.0"
+          iyy="${mast_mass / 12.0 * (mast_height*mast_height + mast_width*mast_width)}" iyz="0.0"
+          izz="${mast_mass / 12.0 * (mast_width*mast_width + mast_width*mast_width)}"/>
+    </inertial>
+  </link>
+  <gazebo reference="${Camera01Name}_mast_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <joint name="${Camera01Name}_mast_joint" type="fixed">
+    <parent link="${stereo_mast_parent_link}"/>
+    <child link="${Camera01Name}_mast_link"/>
+    <origin xyz="${off_x} ${off_y} ${off_z}" rpy="0 0 0" />
+  </joint>
+  
+  <link name="${Camera01Name}_pan_link">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 ${pan_h_2}"/>
+      <geometry>
+        <box size="0.1 0.1 ${pan_h}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 ${pan_h_2}"/>
+      <geometry>
+        <box size="0.1 0.1 ${pan_h}"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 ${pan_h_2}"/>
+      <mass value="${pan_mass}"/>
+      <!-- inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/ -->
+      <inertia
+          ixx="${pan_mass / 12.0 * (0.1*0.1 + pan_h*pan_h)}" ixy="0.0" ixz="0.0"
+          iyy="${pan_mass / 12.0 * (pan_h*pan_h + 0.1*0.1)}" iyz="0.0"
+          izz="${pan_mass / 12.0 * (0.1*0.1 + 0.1*0.1)}"/>
+    </inertial>
+  </link>
+  <gazebo reference="${Camera01Name}_pan_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <joint name="${Camera01Name}_pan_joint" type="revolute">
+    <parent link="${Camera01Name}_mast_link"/>
+    <child link="${Camera01Name}_pan_link"/>
+    <origin xyz="0 0 ${mast_height}" rpy="0 0 0" />
+    <axis xyz="0 0 1"/>
+    <limit lower="${-1.0 * pi}" upper="${1.0 * pi}" effort="-1" velocity="-1"/>
+  </joint>
+  <transmission name="pan_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${Camera01Name}_pan_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="pan_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <link name="${Camera01Name}_tilt_link">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 ${tilt_h/2}"/>
+      <geometry>
+        <box size="${tilt_w} ${tilt_w} ${tilt_h}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 ${tilt_h/2}"/>
+      <geometry>
+        <box size="${tilt_w} ${tilt_w} ${tilt_h}"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 ${tilt_h/2}"/>
+      <mass value="${tilt_mass}"/>
+      <!-- inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/ -->
+      <!-- see https://github.com/ros-simulation/gazebo_ros_demos/blob/master/rrbot_description/urdf/rrbot.xacro for box formula -->
+      <!-- https://en.wikipedia.org/wiki/List_of_moments_of_inertia -->
+      <!-- inertia
+          ixx="${mass / 12.0 * (depth*depth + height*height)}" ixy="0.0" ixz="0.0"
+          iyy="${mass / 12.0 * (height*height + width*width)}" iyz="0.0"
+          izz="${mass / 12.0 * (depth*depth + width*width)}"/ -->
+     <inertia
+          ixx="${tilt_mass / 12.0 * (tilt_w*tilt_w + tilt_h*tilt_h)}" ixy="0.0" ixz="0.0"
+          iyy="${tilt_mass / 12.0 * (tilt_h*tilt_h + tilt_w*tilt_w)}" iyz="0.0"
+          izz="${tilt_mass / 12.0 * (tilt_w*tilt_w + tilt_w*tilt_w)}"/>
+    </inertial>
+  </link>
+  
+  <!-- ==== nav_lights on fixed joint ================================= -->
+  <!-- NOTE: preserveFixedJoint tag REQUIRED for URDF to SDF conversion -->
+  <!--xacro:nav_lights />
+  <joint name="nav_lights_joint" type="fixed">
+    <parent link="${Camera01Name}_tilt_link"/>
+    <child link="nav_lights_link"/>
+    <origin xyz="0.0 0.0 0.3" rpy="0.0 0.0 0.0" />
+    <axis xyz="0 1 0"/>
+  </joint>
+  <gazebo reference='nav_lights_joint'>
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo-->
+
+  
+  <joint name="${Camera01Name}_tilt_joint" type="revolute">
+    <parent link="${Camera01Name}_pan_link"/>
+    <child link="${Camera01Name}_tilt_link"/>
+    <origin xyz="0 0 ${pan_h}" rpy="0 0.2 0" />
+    <axis xyz="0 1 0"/>
+    <!-- setting limits to -1 should make them unbounded in Gazebo and force use of ros_control limits -->
+    <limit lower="-0.9" upper="1.0" effort="-1" velocity="-1"/>
+  </joint>
+  <transmission name="tilt_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${Camera01Name}_tilt_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="tilt_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <link name="${Camera01Name}_head_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+      <visual>
+        <origin xyz="0 0 0"  rpy="0 0 0"/>
+        <geometry>
+          <box size="0.025 ${camera_baseline} 0.025"/>
+        </geometry>
+        <material name="Gold"/>
+      </visual>
+    <visual>
+      <origin xyz="0 ${camera_baseline/2} 0"  rpy="0 0 0"/>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="Gold"/>
+    </visual>
+    <visual>
+      <origin xyz="0 -${camera_baseline/2} 0"  rpy="0 0 0"/>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="Gold"/>
+    </visual>
+    <inertial>
+      <mass value="${camera_head_mass}" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" / -->
+      <inertia
+          ixx="${camera_head_mass / 12.0 * (camera_baseline*camera_baseline + 0.1*0.1)}" ixy="0.0" ixz="0.0"
+          iyy="${camera_head_mass / 12.0 * (0.1*0.1 + 0.1*0.1)}" iyz="0.0"
+          izz="${camera_head_mass / 12.0 * (camera_baseline*camera_baseline + 0.1*0.1)}"/>
+   </inertial>
+  </link>
+  
+  <!-- example for stereo setup is here: -->
+  <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/multisense_sl_description/urdf/multisense_sl.urdf?at=default#cl-200 -->
+  <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/drcsim_gazebo/launch/atlas_bringup.launch?at=default#cl-38 -->
+  
+  <gazebo reference="${Camera01Name}Left_link"/>
+  <link name="${Camera01Name}Left_link"/>
+  <link name="${Camera01Name}Left_optical_frame"/>
+  <joint name="leftCamera_joint" type="fixed">
+    <origin xyz="0.0 ${camera_baseline/2} 0.0" rpy="0 0 0"/>
+    <parent link="${Camera01Name}_head_link"/>
+    <child link="${Camera01Name}Left_link"/>
+  </joint>
+  <joint name="leftCamera_optical_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2.0} 0 -${pi/2.0}"/>
+    <parent link="${Camera01Name}Left_link"/>
+    <child link="${Camera01Name}Left_optical_frame"/>
+  </joint>
+
+  <gazebo reference="${Camera01Name}Right_link"/>
+  <link name="${Camera01Name}Right_link"/>
+  <link name="${Camera01Name}Right_optical_frame"/>
+  <joint name="rightCamera_joint" type="fixed">
+    <origin xyz="0.0 -${camera_baseline/2} 0.0" rpy="0 0 0"/>
+    <parent link="${Camera01Name}_head_link"/>
+    <child link="${Camera01Name}Right_link"/>
+  </joint>
+  <joint name="rightCamera_optical_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2.0} 0 -${pi/2.0}"/>
+    <parent link="${Camera01Name}Right_link"/>
+    <child link="${Camera01Name}Right_optical_frame"/>
+  </joint>
+
+  
+  <gazebo reference="${Camera01Name}Left_link">
+    <material>Gazebo/Red</material>
+    <sensor type="multicamera" name="${Camera01Name}">
+      <update_rate>${update_rate}</update_rate>
+      <always_on>0</always_on>
+      <camera name="left">
+        <horizontal_fov>${hfov*deg_to_rad}</horizontal_fov>
+        <image>
+          <width>${img_w}</width>
+          <height>${img_h}</height>
+          <format>L16</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>200000</far>
+        </clip>
+      </camera>
+
+      <camera name="right">
+        <pose>0 -${camera_baseline} 0 0 0 0</pose>
+         <horizontal_fov>${hfov*deg_to_rad}</horizontal_fov>
+        <image>
+          <width>${img_w}</width>
+          <height>${img_h}</height>
+          <format>L16</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>200000</far>
+        </clip>
+      </camera>
+
+      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
+      <plugin name="stereo_camera_controller" filename="libgazebo_ros_triggered_multicamera.so">
+        <cameraName>${Camera01Name}</cameraName>
+        <alwaysOn>true</alwaysOn>
+        <triggerTopicName>image_trigger</triggerTopicName>
+        <updateRate>0</updateRate>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>${Camera01Name}Left_optical_frame</frameName>
+        <hackBaseline>${camera_baseline}</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+      <plugin name="noise" filename="libcamera_noise_plugin.so" />
+    </sensor>
+  </gazebo>  
+  
+  <!-- "Center Camera" for "video" -->
+  <gazebo reference="${Camera01Name}Center_link"/>
+  <link name="${Camera01Name}Center_link"/>
+  <link name="${Camera01Name}Center_optical_frame"/>
+  <joint name="CenterCamera_joint" type="fixed">
+    <origin xyz="0.025 0.0 0.0" rpy="0 0 0"/>
+    <parent link="${Camera01Name}_head_link"/>
+    <child link="${Camera01Name}Center_link"/>
+  </joint>
+  <joint name="CenterCamera_optical_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2.0} 0 -${pi/2.0}"/>
+    <parent link="${Camera01Name}Center_link"/>
+    <child link="${Camera01Name}Center_optical_frame"/>
+  </joint>
+  
+  <gazebo reference="${Camera01Name}Center_link">
+    <material>Gazebo/Blue</material>
+    <sensor type="camera" name="${Camera01Name}Video">
+      <update_rate>30.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>${hfov*deg_to_rad}</horizontal_fov>
+        <image>
+          <!--width>1280</width>
+          <height>720</height -->
+          <width>${img_w/2}</width>
+          <height>${img_h/2}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>200000</far>
+        </clip>
+      </camera>
+      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>${Camera01Name}Video</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>CenterCamera_optical_joint</frameName>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+      <plugin name="noise" filename="libcamera_noise_plugin.so" />
+    </sensor>
+  </gazebo>  
+  
+  <!-- Camera Joint -->
+  <joint name="${Camera01Name}_camera_joint" type="fixed">
+    <axis xyz="0 1 0" />
+    <origin xyz="0.005 0 ${tilt_h}" rpy="0 0 0"/>
+    <parent link="${Camera01Name}_tilt_link"/>
+    <child link="${Camera01Name}_head_link"/>
+  </joint>
+
+  </xacro:macro>
+</robot>
