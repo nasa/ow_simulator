@@ -20,5 +20,9 @@ add_library(near_far_clip_plugin SHARED
   ${SOURCES}
 )
 
-target_link_libraries(near_far_clip_plugin ${GAZEBO_libraries} ${roscpp_LIBRARIES} Qt5::Widgets)
+target_link_libraries(near_far_clip_plugin
+  ${GAZEBO_libraries}
+  ${roscpp_LIBRARIES}
+  ${QT_QTCORE_LIBRARY}
+)
 set_target_properties(near_far_clip_plugin PROPERTIES COMPILE_FLAGS "${GAZEBO_CXX_FLAGS}")
