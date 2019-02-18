@@ -9,13 +9,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf2
   tf2_ros
-  qt_gui_cpp
 )
 
 find_package(gazebo REQUIRED)
 find_package(OGRE REQUIRED)
 
-if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
+if("${GAZEBO_MAJOR_VERSION} " STREQUAL "7")
   message(STATUS "FOUND QT 5")
   find_package(Qt5Widgets REQUIRED)
   find_package(Qt5Xml REQUIRED)
