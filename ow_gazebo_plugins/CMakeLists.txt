@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(gazebo REQUIRED)
 find_package(OGRE REQUIRED)
 
-if("${GAZEBO_MAJOR_VERSION} " STREQUAL "7")
+if("${GAZEBO_MAJOR_VERSION}" STREQUAL "9")
   message(STATUS "FOUND QT 5")
   find_package(Qt5Widgets REQUIRED)
   find_package(Qt5Xml REQUIRED)
