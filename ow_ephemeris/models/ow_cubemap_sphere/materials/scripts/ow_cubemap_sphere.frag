@@ -22,15 +22,15 @@ void main()
   // resulting in the entire map being mirrored when rendered looking out from
   // the center, so we also negate y to correct our cube texture lookups.
   vec3 wsNormal_gazebo2ogre_and_mirrored = vec3(wsNormalNormalized.x, wsNormalNormalized.z, wsNormalNormalized.y);
-  // Using textureLod() to "blur" texture as a substitute for a real irradiance environment map.
-  vec3 diffuseColor = textureLod(cubemap, wsNormal_gazebo2ogre_and_mirrored, 5.0).rgb;
+  // Can also use textureLod() to "blur" texture as a cheap substitute for a real irradiance environment map.
+  vec3 diffuseColor = textureLod(cubemap, wsNormal_gazebo2ogre_and_mirrored).rgb;
 
-  vec3 reflectvec = reflect(-normalize(wsVecToEye), wsNormalNormalized);
-  vec3 reflectvec_gazebo2ogre_and_mirrored = vec3(reflectvec.x, reflectvec.z, reflectvec.y);
-  vec3 specularColor = texture(cubemap, reflectvec_gazebo2ogre_and_mirrored).rgb;
+  //vec3 reflectvec = reflect(-normalize(wsVecToEye), wsNormalNormalized);
+  //vec3 reflectvec_gazebo2ogre_and_mirrored = vec3(reflectvec.x, reflectvec.z, reflectvec.y);
+  //vec3 specularColor = texture(cubemap, reflectvec_gazebo2ogre_and_mirrored).rgb;
 
-  float fresnel = 1.0 - dot(vsVecToEye, vsNormalNormalized);
-  vec3 color = mix(diffuseColor, specularColor, fresnel);
+  //float fresnel = 1.0 - dot(vsVecToEye, vsNormalNormalized);
+  //vec3 color = mix(diffuseColor, specularColor, fresnel);
 
-  outputCol = vec4(color, 1.0);  
+  outputCol = vec4(diffuseColor, 1.0);  
 }
