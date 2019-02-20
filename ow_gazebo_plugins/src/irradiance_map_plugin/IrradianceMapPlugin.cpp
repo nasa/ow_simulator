@@ -74,7 +74,7 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
         TEX_TYPE_CUBE_MAP, size, size, numMipMaps, PF_FLOAT32_RGB,
         TU_DYNAMIC_WRITE_ONLY | TU_RENDERTARGET | TU_AUTOMIPMAP);
 
-  math::Pose pose = visual->GetWorldPose();
+  ignition::math::Pose3d pose = visual->WorldPose();
   for (int i = 0; i < 6; i++)
   {
     // SceneManager destructor is responsible for deleting Cameras
@@ -84,7 +84,7 @@ void IrradianceMapPlugin::Load(rendering::VisualPtr visual, sdf::ElementPtr elem
     m_cameras[i]->setAspectRatio(1);
     m_cameras[i]->setNearClipDistance(0.1);
     m_cameras[i]->setFarClipDistance(200000);
-    m_cameras[i]->setPosition(pose.pos[0], pose.pos[1], pose.pos[2]);
+    m_cameras[i]->setPosition(pose.Pos()[0], pose.Pos()[1], pose.Pos()[2]);
 
     // OpenGL cubemaps are arranged using RenderMan's left-handed coordinate
     // system resulting in the entire map being mirrored when rendered looking
