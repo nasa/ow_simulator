@@ -23,7 +23,7 @@ void main()
   // the center, so we also negate y to correct our cube texture lookups.
   vec3 wsNormal_gazebo2ogre_and_mirrored = vec3(wsNormalNormalized.x, wsNormalNormalized.z, wsNormalNormalized.y);
   // Can also use textureLod() to "blur" texture as a cheap substitute for a real irradiance environment map.
-  vec3 diffuseColor = textureLod(cubemap, wsNormal_gazebo2ogre_and_mirrored).rgb;
+  vec3 diffuseColor = texture(cubemap, wsNormal_gazebo2ogre_and_mirrored).rgb;
 
   //vec3 reflectvec = reflect(-normalize(wsVecToEye), wsNormalNormalized);
   //vec3 reflectvec_gazebo2ogre_and_mirrored = vec3(reflectvec.x, reflectvec.z, reflectvec.y);
