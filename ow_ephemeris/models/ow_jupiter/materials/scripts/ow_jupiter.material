@@ -33,12 +33,10 @@ material ow/jupiter
         //#####################################################
 
         // linear multiplier on output color to emulate exposure time
-        param_named exposureMultiplier float 2.0
+        param_named exposureMultiplier float 1.0
 
-        // add gamma to closer match the (film) images from Apollo
-        // according to Film and Camera Response Database, much film has gamma less than 0.6
-        // Kodac Ektachrome (Apollo16) gamma ~ 0.4
-        param_named gammaCorrection float 0.4
+        // add gamma curve to make images easier for the human eye to view
+        param_named gammaCorrection float 1.0
       }
 
       ambient  0 0 0
