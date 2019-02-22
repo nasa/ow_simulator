@@ -14,10 +14,16 @@ out vec4 outputCol;
 
 void main()
 {
-  vec3 color = texture2D(diffuseMap, uv).rgb;
+  // albedo
+  // Jupiter's Bond albedo = 0.503 according to https://www.nature.com/articles/s41467-018-06107-2
+  // Our texture already has an average value of 0.51372549 (by converting to
+  // grayscale and scaling to 1 pixel in Gimp).
+  // We'll modulate our texture by 0.503 / 0.51372549 = 0.9791, so the planet
+  // will shine with the correct brightness relative to incoming sunlight.
 
-  float light = clamp(dot(normalize(vsNormal), vsVecToSun) + 0.05, 0.0, 1.0);
-  //light = pow(light, 0.5);
+  vec3 color = texture2D(diffuseMap, uv).rgb * 0.9791;
+
+  float light = max(dot(normalize(vsNormal), vsVecToSun), 0.0);
 
   vec3 exposedClr = color * light * exposureMultiplier;
   vec3 gammaClr = pow(exposedClr, vec3(gammaCorrection));
