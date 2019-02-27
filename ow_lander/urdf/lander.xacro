@@ -99,7 +99,17 @@
       link="l_shou" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="shou_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_shou_yaw">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shou_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_prox">
     <inertial>
@@ -152,7 +162,17 @@
       link="l_prox" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="shou_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_shou_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shou_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_dist">
     <inertial>
@@ -205,7 +225,17 @@
       link="l_dist" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="prox_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_prox_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="prox_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_wrist">
     <inertial>
@@ -258,7 +288,17 @@
       link="l_wrist" />
     <axis
       xyz="0 0 1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="dist_pitch_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_dist_pitch">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="dist_pitch_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_hand">
     <inertial>
@@ -311,7 +351,17 @@
       link="l_hand" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="hand_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_hand_yaw">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="hand_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_scoop">
     <inertial>
@@ -364,7 +414,17 @@
       link="l_scoop" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="scoop_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_scoop_yaw">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="scoop_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_ant_foot">
     <inertial>
@@ -417,7 +477,17 @@
       link="l_ant_foot" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="ant_pan_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_ant_pan">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="ant_pan_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
   <link
     name="l_ant_panel">
     <inertial>
@@ -470,18 +540,28 @@
       link="l_ant_panel" />
     <axis
       xyz="0 0 -1" />
+    <dynamics damping="50" />
   </joint>
+  <transmission name="ant_tilt_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_ant_tilt">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="ant_tilt_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
 
   <gazebo>
-    <!--plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
       <robotNamespace>/</robotNamespace>
-    </plugin-->
+    </plugin>
 
     <!-- Publish joint states so rviz can visualize them. -->
-    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+    <!--plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
       <jointName>j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch,
        j_hand_yaw, j_scoop_yaw, j_ant_pan, j_ant_tilt</jointName>
       <updateRate>10</updateRate>
-    </plugin>
+    </plugin-->
   </gazebo>
 </robot>
