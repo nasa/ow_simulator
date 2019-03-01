@@ -1,11 +1,8 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
-  <xacro:include filename="$(find ow_lander)/urdf/stereo_mast-triggered.xacro" />
-  <xacro:stereo_mast stereo_mast_parent_link="base_link" 
-                     mast_height="1.2"
-                     hfov="70"
-                     img_w="2048" img_h="2048"
-                     update_rate="1"
-                     off_x="-0.2" off_y="0.2" off_z="0.5" />
+  <xacro:include filename="$(find ow_lander)/urdf/stereo_camera_triggered.xacro" />
+  <xacro:stereo_mast stereo_camera_parent_link="l_ant_panel"
+                     hfov="70" img_w="1024" img_h="1024" update_rate="1"
+                     off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
 
   <link
     name="base_link">
