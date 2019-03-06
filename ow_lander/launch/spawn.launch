@@ -1,5 +1,13 @@
 <launch>
 
+  <!-- Initial pose arguments -->
+  <arg name="init_x" default="0" />
+  <arg name="init_y" default="0" />
+  <arg name="init_z" default="0" />
+  <arg name="init_R" default="0" />
+  <arg name="init_P" default="0" />
+  <arg name="init_Y" default="0" />
+
   <!-- Load lander urdf -->
   <param name="robot_description" command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'"/>
 
@@ -20,7 +28,9 @@
   </node>
 
   <!-- Spawn lander in gazebo -->
-  <node name="lander_model" pkg="gazebo_ros" type="spawn_model"
-    args="-urdf -param robot_description -model lander" output="screen" />
+  <node name="lander_model" pkg="gazebo_ros" type="spawn_model" output="screen"
+    args="-urdf -param robot_description -model lander
+    -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
+    -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)" />
 
 </launch>
