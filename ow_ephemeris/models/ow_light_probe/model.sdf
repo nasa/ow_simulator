@@ -11,7 +11,7 @@
         <geometry>
           <empty/>
         </geometry>
-        <plugin name="irradiance_map" filename="libirradiance_map_plugin.so">
+        <plugin name="IrradianceMap" filename="libIRGIrradianceMapPlugin.so">
           <texture_unit>ow_irradiance_environment_map</texture_unit>
         </plugin>
       </visual>
