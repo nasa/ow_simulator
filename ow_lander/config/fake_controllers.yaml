@@ -1,0 +1,20 @@
+controller_list:
+  - name: fake_arm_controller
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+      - j_scoop_yaw
+  - name: fake_antenna_controller
+    joints:
+      - j_ant_pan
+      - j_ant_tilt
+  - name: fake_limbs_controller
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw

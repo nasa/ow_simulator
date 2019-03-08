@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="move_group_python_interface" pkg="lander_config" type="move_group_python_interface.py" respawn="false" output="screen">
+  </node>
+
+</launch>

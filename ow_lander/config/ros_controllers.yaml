@@ -1,0 +1,44 @@
+# MoveIt-specific simulation settings
+moveit_sim_hw_interface:
+  joint_model_group: controllers_initial_group_
+  joint_model_group_pose: controllers_initial_pose_
+# Settings for ros_control control loop
+generic_hw_control_loop:
+  loop_hz: 300
+  cycle_time_error_threshold: 0.01
+# Settings for ros_control hardware interface
+hardware_interface:
+  joints:
+    - j_ant_pan
+    - j_ant_tilt
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+    - j_scoop_yaw
+  sim_control_mode: 1  # 0: position, 1: velocity
+# Publish all joint states
+# Creates the /joint_states topic necessary in ROS
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+controller_list:
+  - name: antenna_controller
+    action_ns: follow_joint_trajectory
+    default: True
+    type: FollowJointTrajectory
+    joints:
+      - j_ant_pan
+      - j_ant_tilt
+  - name: arm_controller
+    action_ns: follow_joint_trajectory
+    default: True
+    type: FollowJointTrajectory
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+      - j_scoop_yaw
