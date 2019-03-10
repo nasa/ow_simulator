@@ -37,8 +37,10 @@
 ##
 
 import sys
+import subprocess, os, signal
 import copy
 import rospy
+import time
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
@@ -192,15 +194,36 @@ class MoveGroupPythonInteface(object):
     # For testing:
     current_joints = move_group.get_current_joint_values()
     return all_close(joint_goal, current_joints, 0.01)
-    
+
+
+def terminate_process_and_children(p):
+    ps_command = subprocess.Popen("ps -o pid --ppid %d --noheaders" % p.pid, shell=True, stdout=subprocess.PIPE)
+    ps_output = ps_command.stdout.read()
+    retcode = ps_command.wait()
+    assert retcode == 0, "ps command returned %d" % retcode
+    for pid_str in ps_output.split("\n")[:-1]:
+            os.kill(int(pid_str), signal.SIGINT)
+    p.terminate()
+
+
 def main():
   try:
- 
-    if len(sys.argv) != 4 :
-      print "Input error. Usage: <x_trench> <y_trench> <depth_trench>"
-      sys.exit()
+    
+    # Wait for rviz
+    time.sleep(8)
+
     interface = MoveGroupPythonInteface()
-    interface.dig_trench(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]))
+    trench_x = rospy.get_param('/move_group_python_interface/trench_x')
+    trench_y = rospy.get_param('/move_group_python_interface/trench_y')
+    trench_d = rospy.get_param('/move_group_python_interface/trench_d')
+    #interface.dig_trench(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]))
+    
+    # Start rosbag recording
+
+    command = 'rosbag record -O moveit_out_.bag /joint_states'
+    p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
+    interface.dig_trench(trench_x,trench_y,trench_d)
+    terminate_process_and_children(p)
 
   except rospy.ROSInterruptException:
     return
@@ -209,4 +232,6 @@ def main():
 
 if __name__ == '__main__':
   main()
+
+
 
