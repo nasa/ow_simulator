@@ -37,15 +37,18 @@
 ##
 
 import sys
+import rosbag
 import subprocess, os, signal
 import copy
 import rospy
 import time
+import datetime
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 import math
 from std_msgs.msg import String
+from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
 
 ## GLOBAL VARS ##
@@ -206,6 +209,10 @@ def terminate_process_and_children(p):
     p.terminate()
 
 
+def callback(data):
+  print("got new data!")
+    
+
 def main():
   try:
     
@@ -219,11 +226,21 @@ def main():
     #interface.dig_trench(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]))
     
     # Start rosbag recording
-
-    command = 'rosbag record -O moveit_out_.bag /joint_states'
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    location = "../oceanwaters_ws/src/ow_simulator/ow_lander/data/trajectory_"
+    bagname = location + currentDT
+    command = "rosbag record -O " + bagname + " /joint_states"    
     p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
     interface.dig_trench(trench_x,trench_y,trench_d)
-    terminate_process_and_children(p)
+    time.sleep(4)
+    os.system("killall -s SIGINT record")  
+    time.sleep(2)
+
+    print "Parsing rosbag"
+    trajname = bagname + ".csv" 
+    command = "rostopic echo -p -b " + bagname + ".bag /joint_states > " + trajname
+    print command
+    os.system(command)
 
   except rospy.ROSInterruptException:
     return
