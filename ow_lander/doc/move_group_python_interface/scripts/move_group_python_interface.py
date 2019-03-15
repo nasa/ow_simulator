@@ -42,6 +42,7 @@ import subprocess, os, signal
 import copy
 import rospy
 import time
+import csv
 import datetime
 import moveit_commander
 import moveit_msgs.msg
@@ -198,20 +199,50 @@ class MoveGroupPythonInteface(object):
     current_joints = move_group.get_current_joint_values()
     return all_close(joint_goal, current_joints, 0.01)
 
+def csv_to_yamls(filename):
+  rows = [] 
+  out1 = open(filename[:-4] + "_j1.yaml","w")
+  out2 = open(filename[:-4] + "_j2.yaml","w") 
+  out3 = open(filename[:-4] + "_j3.yaml","w")
+  out4 = open(filename[:-4] + "_j4.yaml","w") 
+  out5 = open(filename[:-4] + "_j5.yaml","w")
+  out6 = open(filename[:-4] + "_j6.yaml","w") 
+  # reading csv file 
+  with open(filename, 'r') as csvfile: 
+    # creating a csv reader object 
+    csvreader = csv.reader(csvfile) 
+  
+    # extracting each data row one by one 
+    for row in csvreader: 
+      rows.append(row) 
+  
+  for row in rows[:]: 
+    out1.write("---\n")
+    out1.write("%14s\n"%row[12])
+    out2.write("---\n")
+    out2.write("%14s\n"%row[13])
+    out3.write("---\n")
+    out3.write("%14s\n"%row[14])
+    out4.write("---\n")
+    out4.write("%14s\n"%row[15])
+    out5.write("---\n")
+    out5.write("%14s\n"%row[16])
+    out6.write("---\n")
+    out6.write("%14s\n"%row[17])
 
-def terminate_process_and_children(p):
-    ps_command = subprocess.Popen("ps -o pid --ppid %d --noheaders" % p.pid, shell=True, stdout=subprocess.PIPE)
-    ps_output = ps_command.stdout.read()
-    retcode = ps_command.wait()
-    assert retcode == 0, "ps command returned %d" % retcode
-    for pid_str in ps_output.split("\n")[:-1]:
-            os.kill(int(pid_str), signal.SIGINT)
-    p.terminate()
+  out1.write("...")
+  out2.write("...")
+  out1.close()
+  out2.close()
+  out3.write("...")
+  out4.write("...")
+  out3.close()
+  out4.close()
+  out5.write("...")
+  out5.close()
+  out6.write("...")
+  out6.close()
 
-
-def callback(data):
-  print("got new data!")
-    
 
 def main():
   try:
@@ -236,11 +267,15 @@ def main():
     os.system("killall -s SIGINT record")  
     time.sleep(2)
 
-    print "Parsing rosbag"
+    # rosbag to csv
     trajname = bagname + ".csv" 
     command = "rostopic echo -p -b " + bagname + ".bag /joint_states > " + trajname
     print command
     os.system(command)
+    time.sleep(1)
+
+    # csv to yaml
+    csv_to_yamls(trajname) 
 
   except rospy.ROSInterruptException:
     return
