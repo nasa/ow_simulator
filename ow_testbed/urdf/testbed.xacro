@@ -1,0 +1,302 @@
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="testbaed">
+
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0.119878661403397 3.46555115975021E-06 0.48955232465652" rpy="0 0 0" />
+            <mass value="131.806173772654" />
+            <inertia ixx="28.0333265100969" ixy="0.000489960184546945" ixz="-6.49281649832701" iyy="41.1386181988454" iyz="0.000510432524822389" izz="41.5681888436952" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/base_link.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+            </material>
+        </visual>
+        <!--collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/base_link.STL" />
+            </geometry>
+        </collision-->
+        <collision>
+          <origin xyz="0 0 0.37551" rpy="0 0 0" />
+          <geometry>
+            <box size="2 1.76312 0.75102" />
+          </geometry>
+        </collision>
+    </link>
+    <link name="l_shou">
+        <inertial>
+            <origin xyz="2.34506906116039E-08 -3.13157608178294E-08 0.104881710136302" rpy="0 0 0" />
+            <mass value="17.3731548084309" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_shou.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_shou.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_shou_yaw" type="continuous">
+        <origin xyz="1.04634979302565 0 0.97102000726812" rpy="0 -1.5707963267949 3.14159265358979" />
+        <parent link="base_link" />
+        <child link="l_shou" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <link name="l_shou_dist">
+        <inertial>
+            <origin xyz="0.0504694679981688 -2.92654023170691E-06 -1.00401414493412E-06" rpy="0 0 0" />
+            <mass value="0.617321787344016" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_shou_dist.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_shou_dist.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_shou_pitch" type="continuous">
+        <origin xyz="0 0 0.186" rpy="1.5707963267949 -1.57079630572147 3.14159265358979" />
+        <parent link="l_shou" />
+        <child link="l_shou_dist" />
+        <axis xyz="0 0 1" />
+    </joint>
+    <link name="l_prox">
+        <inertial>
+            <origin xyz="-0.0130869020509818 9.06166263248132E-06 0.448714680092974" rpy="0 0 0" />
+            <mass value="1.38872642088632" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_prox.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_prox.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_shou_roll" type="continuous">
+        <origin xyz="0 0 0" rpy="1.5707963267949 -1.0097419586829E-28 1.57079632679499" />
+        <parent link="l_shou_dist" />
+        <child link="l_prox" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <link name="l_dist">
+        <inertial>
+            <origin xyz="0.0430628041136141 0.150037474309121 -0.000129430533258534" rpy="0 0 0" />
+            <mass value="4.17263230065155" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_dist.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_dist.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_prox_pitch" type="continuous">
+        <origin xyz="-0.0449999999999998 0 0.55" rpy="1.5707963267949 0 3.39021858132632E-16" />
+        <parent link="l_prox" />
+        <child link="l_dist" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <link name="l_wrist">
+        <inertial>
+            <origin xyz="2.1143283124303E-08 2.98249802632711E-09 0.291061568909844" rpy="0 0 0" />
+            <mass value="0.14900528332237" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_wrist.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.47843137254902 0.454901960784314 0.345098039215686 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_wrist.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_dist_yaw" type="continuous">
+        <origin xyz="0.0449999999999997 0 0" rpy="-1.5707963267949 -5.04870979341448E-29 -1.22835978651024E-16" />
+        <parent link="l_dist" />
+        <child link="l_wrist" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <link name="l_hand">
+        <inertial>
+            <origin xyz="1.16874735445194E-08 0.0242368078735318 -0.0139665096874777" rpy="0 0 0" />
+            <mass value="0.506690382292381" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_hand.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_hand.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_dist_pitch" type="continuous">
+        <origin xyz="0 0 0.29951" rpy="1.5708 -2.5244E-29 2.8253E-15" />
+        <parent link="l_wrist" />
+        <child link="l_hand" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <link name="l_scoop">
+        <inertial>
+            <origin xyz="-2.22044604925031E-16 0.00625100000000078 0.0568373404475064" rpy="0 0 0" />
+            <mass value="0.0991011928366119" />
+            <inertia ixx="0.00984416556485027" ixy="-0.000889810187771659" ixz="1.11403026517765E-06" iyy="0.01" iyz="1.23247422151711E-05" izz="0.00992457984746285" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_scoop.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.831372549019608 0.847058823529412 0.858823529411765 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ow_testbed/meshes/l_scoop.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="j_hand_yaw" type="continuous">
+        <origin xyz="0 0 0" rpy="-1.5708 -6.6872E-15 -1.49E-16" />
+        <parent link="l_hand" />
+        <child link="l_scoop" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    <transmission name="shou_yaw_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_shou_yaw">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="shou_yaw_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="shou_pitch_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_shou_pitch">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="shou_pitch_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="shou_roll_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_shou_roll">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="shou_roll_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="prox_pitch_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_prox_pitch">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="prox_pitch_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="dist_yaw_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_dist_yaw">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="dist_yaw_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="dist_pitch_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_dist_pitch">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="dist_pitch_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="hand_yaw_transmission">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="j_hand_yaw">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="hand_yaw_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
+</robot>

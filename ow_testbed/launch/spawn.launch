@@ -1,0 +1,36 @@
+<launch>
+
+  <!-- Initial pose arguments -->
+  <arg name="init_x" default="0" />
+  <arg name="init_y" default="0" />
+  <arg name="init_z" default="0" />
+  <arg name="init_R" default="0" />
+  <arg name="init_P" default="0" />
+  <arg name="init_Y" default="0" />
+
+  <!-- Load testbed urdf -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find ow_testbed)/urdf/testbed.xacro'"/>
+
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find ow_testbed)/config/testbed_control.yaml" command="load" />
+
+  <!-- load the controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner"
+    respawn="false" output="screen" ns="/" args="joint_state_controller
+    shou_yaw_position_controller shou_pitch_position_controller
+    shou_roll_position_controller prox_pitch_position_controller
+    dist_yaw_position_controller dist_pitch_position_controller
+    hand_yaw_position_controller" />
+
+  <!-- Convert joint states from Gazebo to tf-tree for rviz -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+    <param name="publish_frequency" value="30" />
+  </node>
+
+  <!-- Spawn testbed in gazebo -->
+  <node name="testbed_model" pkg="gazebo_ros" type="spawn_model" output="screen"
+    args="-urdf -param robot_description -model testbed
+    -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
+    -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)" />
+
+</launch>
