@@ -5,6 +5,6 @@
 
   <arg name="pipeline" default="ompl" />
 
-  <include file="$(find lander_config)/launch/$(arg pipeline)_planning_pipeline.launch.xml" />
+  <include file="$(find ow_lander)/launch/$(arg pipeline)_planning_pipeline.launch.xml" />
 
 </launch>

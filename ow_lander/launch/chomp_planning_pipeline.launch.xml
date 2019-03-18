@@ -6,5 +6,5 @@
    <param name="planning_plugin" value="$(arg planning_plugin)" />
    <param name="start_state_max_bounds_error" value="$(arg start_state_max_bounds_error)" />
 
-   <rosparam command="load" file="$(find lander_config)/config/chomp_planning.yaml" />
+   <rosparam command="load" file="$(find ow_lander)/config/chomp_planning.yaml" />
 </launch>

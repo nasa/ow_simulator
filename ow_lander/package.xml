@@ -70,8 +70,10 @@
   <run_depend>xacro</run_depend>
   <!-- This package is referenced in the warehouse launch files, but does not build out of the box at the moment. Commented the dependency until this works. -->
   <!-- <run_depend>warehouse_ros_mongo</run_depend> -->
+
+  <!-- 
   <build_depend>lander_urdf_v9</build_depend>
-  <run_depend>lander_urdf_v9</run_depend>
+  <run_depend>lander_urdf_v9</run_depend>  -->
 
   <export>
     <architecture_independent />

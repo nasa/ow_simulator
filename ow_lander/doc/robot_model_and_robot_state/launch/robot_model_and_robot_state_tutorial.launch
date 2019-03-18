@@ -1,13 +1,13 @@
 <launch>
-  <include file="$(find lander_config)/launch/planning_context.launch">
+  <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
   </include>
 
   <node name="robot_model_and_robot_state_tutorial"
-        pkg="lander_config"
+        pkg="ow_lander"
         type="robot_model_and_robot_state_tutorial"
         respawn="false" output="screen">
     <rosparam command="load"
-              file="$(find lander_config)/config/kinematics.yaml"/>
+              file="$(find ow_lander)/config/kinematics.yaml"/>
   </node>
 </launch>
