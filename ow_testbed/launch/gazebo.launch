@@ -1,0 +1,9 @@
+<launch>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" />
+
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
+    args="-file $(find ow_testbed)/urdf/testbed.xacro -urdf -model testbed"
+    output="screen" />
+
+</launch>
