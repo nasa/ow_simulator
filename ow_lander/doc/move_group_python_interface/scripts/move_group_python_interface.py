@@ -216,7 +216,7 @@ def csv_to_yamls(filename):
     for row in csvreader: 
       rows.append(row) 
   
-  for row in rows[:]: 
+  for row in rows[1:]: 
     out1.write("---\n")
     out1.write("%14s\n"%row[12])
     out2.write("---\n")
