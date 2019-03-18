@@ -277,6 +277,10 @@ def main():
     # csv to yaml
     csv_to_yamls(trajname) 
 
+    time.sleep(1)
+
+    os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+
   except rospy.ROSInterruptException:
     return
   except KeyboardInterrupt:
