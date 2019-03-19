@@ -185,7 +185,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.2" />
+    <limit effort="1000.0" velocity="0.2" lower="-0.05" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>

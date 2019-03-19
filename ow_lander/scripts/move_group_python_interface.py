@@ -258,7 +258,7 @@ def main():
     
     # Start rosbag recording
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    location = "../oceanwaters_ws/src/ow_simulator/ow_lander/data/trajectory_"
+    location = "trajectory_"
     bagname = location + currentDT
     command = "rosbag record -O " + bagname + " /joint_states"    
     p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
@@ -276,6 +276,12 @@ def main():
 
     # csv to yaml
     csv_to_yamls(trajname) 
+
+    # Cleanup bag and csv
+    command = "rm " + bagname + ".bag"
+    os.system(command)
+    command = "rm " + trajname
+    os.system(command)
 
     time.sleep(1)
 

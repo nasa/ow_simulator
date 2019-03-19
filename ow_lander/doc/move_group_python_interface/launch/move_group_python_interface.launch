@@ -1,6 +1,0 @@
-<launch>
-
-  <node name="move_group_python_interface" pkg="ow_lander" type="move_group_python_interface.py" respawn="false" output="screen">
-  </node>
-
-</launch>

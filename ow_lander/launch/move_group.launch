@@ -46,13 +46,8 @@
   <!-- Trajectory Execution Functionality -->
   <include ns="move_group" file="$(find ow_lander)/launch/trajectory_execution.launch.xml" if="$(arg allow_trajectory_execution)">
     <arg name="moveit_manage_controllers" value="true" />
-    <arg name="moveit_controller_manager" value="lander_urdf_v9" unless="$(arg fake_execution)"/>
+    <arg name="moveit_controller_manager" value="lander" unless="$(arg fake_execution)"/>
     <arg name="moveit_controller_manager" value="fake" if="$(arg fake_execution)"/>
-  </include>
-
-  <!-- Sensors Functionality -->
-  <include ns="move_group" file="$(find ow_lander)/launch/sensor_manager.launch.xml" if="$(arg allow_trajectory_execution)">
-    <arg name="moveit_sensor_manager" value="lander_urdf_v9" />
   </include>
 
   <!-- Start the actual move_group node/action server -->
