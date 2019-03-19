@@ -1,12 +1,6 @@
 #!/bin/bash
 
-#if [ "$#" -ne 1 ]; then
-#    echo "Illegal number of parameters. Sends last trajectory to gazebo. Usage: send_moveit_trajectory.bash <trajectory_folder>"
-#    exit 1
-#fi
-
 var=$(ls -r ~/.ros/*.yaml)
-echo $(echo $var | cut -d ' ' -f 1)
 
 rate=5
 

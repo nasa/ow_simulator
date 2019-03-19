@@ -4,6 +4,7 @@
                      hfov="70" img_w="1024" img_h="1024" update_rate="1"
                      off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
 
+  
   <link
     name="base_link">
     <inertial>
@@ -121,7 +122,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.2" />
+    <limit effort="1000.0" velocity="0.2"/>
   </joint>
   <transmission name="shou_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -174,7 +175,7 @@
   </link>
   <joint
     name="j_shou_pitch"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.16 0 0"
       rpy="1.5708 -2.4652E-32 0" />
@@ -185,7 +186,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.2" lower="-0.05" upper="2.2"/>
+    <limit effort="1000.0" velocity="0.2" lower="0.05" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -267,7 +268,7 @@
         xyz="0.0815501188839358 0.00258480207251011 -0.0286945140138527"
         rpy="0 0 0" />
       <mass
-        value="4.24254588886639" />
+        value="1.24254588886639" />
       <inertia
         ixx="0.00600454075116932"
         ixy="-0.000821319339321742"
@@ -331,7 +332,7 @@
         xyz="-0.00481701429042641 -3.3345796601747E-07 0.076155053161125"
         rpy="0 0 0" />
       <mass
-        value="3.08554586923443" />
+        value="1.08554586923443" />
       <inertia
         ixx="0.00868815536634117"
         ixy="-7.25951344207531E-09"

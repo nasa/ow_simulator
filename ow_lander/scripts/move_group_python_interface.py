@@ -63,7 +63,7 @@ J_SHOU_YAW = 0
 X_SHOU = 0.79
 Y_SHOU = 0.175
 HAND_Y_OFFSET = 0.0249979319838 
-GROUND_POSITION = 0.2
+GROUND_POSITION = -0.175
 SCOOP_OFFSET = 0.2
 
 X_DELIV = 0.2
@@ -181,7 +181,7 @@ class MoveGroupPythonInteface(object):
 
     # Go to deliver position
     joint_goal = move_group.get_current_joint_values()
-    joint_goal[J_PROX_PITCH]= math.pi/2
+    joint_goal[J_PROX_PITCH]= math.pi/2 - 0.1
     joint_goal[J_SCOOP_YAW]= math.pi - 0.05
     move_group.go(joint_goal, wait=True)
     move_group.stop()
@@ -201,12 +201,12 @@ class MoveGroupPythonInteface(object):
 
 def csv_to_yamls(filename):
   rows = [] 
-  out1 = open(filename[:-4] + "_j1.yaml","w")
-  out2 = open(filename[:-4] + "_j2.yaml","w") 
-  out3 = open(filename[:-4] + "_j3.yaml","w")
-  out4 = open(filename[:-4] + "_j4.yaml","w") 
-  out5 = open(filename[:-4] + "_j5.yaml","w")
-  out6 = open(filename[:-4] + "_j6.yaml","w") 
+  out = []
+  nb_links = 6
+
+  for x in range(nb_links):
+    out.append(open(filename[:-4] + "_j" + str(x+1) + ".yaml","w"))
+
   # reading csv file 
   with open(filename, 'r') as csvfile: 
     # creating a csv reader object 
@@ -217,44 +217,20 @@ def csv_to_yamls(filename):
       rows.append(row) 
   
   for row in rows[1:]: 
-    out1.write("---\n")
-    out1.write("%14s\n"%row[12])
-    out2.write("---\n")
-    out2.write("%14s\n"%row[13])
-    out3.write("---\n")
-    out3.write("%14s\n"%row[14])
-    out4.write("---\n")
-    out4.write("%14s\n"%row[15])
-    out5.write("---\n")
-    out5.write("%14s\n"%row[16])
-    out6.write("---\n")
-    out6.write("%14s\n"%row[17])
+    for x in range(nb_links):
+      out[x].write("---\n")
+      out[x].write("%14s\n"%row[12+x])
 
-  out1.write("...")
-  out2.write("...")
-  out1.close()
-  out2.close()
-  out3.write("...")
-  out4.write("...")
-  out3.close()
-  out4.close()
-  out5.write("...")
-  out5.close()
-  out6.write("...")
-  out6.close()
-
+  for x in range(nb_links):
+    out[x].write("...")
+    out[x].close()
 
 def main():
   try:
-    
-    # Wait for rviz
-    time.sleep(8)
-
     interface = MoveGroupPythonInteface()
     trench_x = rospy.get_param('/move_group_python_interface/trench_x')
     trench_y = rospy.get_param('/move_group_python_interface/trench_y')
     trench_d = rospy.get_param('/move_group_python_interface/trench_d')
-    #interface.dig_trench(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]))
     
     # Start rosbag recording
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -263,9 +239,11 @@ def main():
     command = "rosbag record -O " + bagname + " /joint_states"    
     p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
     interface.dig_trench(trench_x,trench_y,trench_d)
-    time.sleep(4)
+    time.sleep(1)
+
+    # Stop rosbag recording (TODO: clean process)
     os.system("killall -s SIGINT record")  
-    time.sleep(2)
+    time.sleep(1)
 
     # rosbag to csv
     trajname = bagname + ".csv" 
@@ -283,8 +261,8 @@ def main():
     command = "rm " + trajname
     os.system(command)
 
+    # Kill rosmaster and exit
     time.sleep(1)
-
     os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
 
   except rospy.ROSInterruptException:

@@ -37,6 +37,8 @@ joint_limits:
     max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
+    max_position: 2.2
+    min_position: 0.05
   j_shou_yaw:
     has_velocity_limits: false
     max_velocity: 0

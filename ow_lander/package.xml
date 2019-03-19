@@ -21,6 +21,22 @@
   <run_depend>controller_manager</run_depend>
   <run_depend>joint_state_controller</run_depend>
   <run_depend>effort_controllers</run_depend>
+
+  <run_depend>moveit_core</run_depend>
+  <run_depend>moveit_commander</run_depend>
+  <run_depend>moveit_fake_controller_manager</run_depend>
+  <run_depend>moveit_ros_planning_interface</run_depend>
+  <run_depend>moveit_visual_tools</run_depend>
+  <run_depend>rosbag</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>tf2_eigen</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
+  <run_depend>moveit_ros_move_group</run_depend>
+  <run_depend>moveit_kinematics</run_depend>
+  <run_depend>moveit_planners_ompl</run_depend>
+  <run_depend>moveit_ros_visualization</run_depend>
+  <run_depend>joint_state_publisher</run_depend>
+  <run_depend>robot_state_publisher</run_depend>
   <run_depend>xacro</run_depend>
 
   <export>
