@@ -63,7 +63,7 @@
       <collision>
         <surface>
           <contact>
-            <collide_bitmask>0x0001</collide_bitmask>
+            <collide_bitmask>0x0002</collide_bitmask>
           </contact>
         </surface>
       </collision>
