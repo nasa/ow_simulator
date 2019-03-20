@@ -7,9 +7,12 @@
   <arg name="init_R" default="0" />
   <arg name="init_P" default="0" />
   <arg name="init_Y" default="0" />
+  <arg name="freeze_base_link" default="false" />
 
   <!-- Load lander urdf -->
-  <param name="robot_description" command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'"/>
+  <param name="robot_description"
+    command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'
+    freeze_base_link:=$(arg freeze_base_link)"/>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
   <rosparam file="$(find ow_lander)/config/lander_control.yaml" command="load" />

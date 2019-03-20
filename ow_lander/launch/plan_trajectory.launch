@@ -5,7 +5,7 @@
   <arg name="use_gui" default="false" />
   <arg name="trench_x" default="1.5" />
   <arg name="trench_y" default="0" />
-  <arg name="trench_d" default="0.1" />
+  <arg name="trench_d" default="0.02" />
 
   <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>

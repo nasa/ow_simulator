@@ -18,7 +18,15 @@
   <node pkg="ow_ephemeris" type="ephemeris_node" name="ephemeris_node" output="log" />
 
   <!-- == add lander model to scene ==================== -->
-  <include file="$(find ow_lander)/launch/spawn.launch" />
+  <include file="$(find ow_lander)/launch/spawn.launch" >
+    <arg name="init_x" value="0"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="-7.291"/>
+    <arg name="init_R" value="-0.105"/>
+    <arg name="init_P" value="0.008"/>
+    <arg name="init_Y" value="0"/>
+    <arg name="freeze_base_link" value="true"/>
+  </include>
 
   <!-- == add lander to tf-tree for rviz ==================== -->
   <node name="site_to_base_link" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 site base_link 10" />
