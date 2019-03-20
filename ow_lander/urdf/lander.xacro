@@ -175,7 +175,7 @@
   </link>
   <joint
     name="j_shou_pitch"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.16 0 0"
       rpy="1.5708 -2.4652E-32 0" />
