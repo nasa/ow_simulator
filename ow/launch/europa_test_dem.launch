@@ -21,7 +21,11 @@
   <include file="$(find ow_lander)/launch/spawn.launch" >
     <arg name="init_x" value="20"/>
     <arg name="init_y" value="-15"/>
-    <arg name="init_z" value="3"/>
+    <arg name="init_z" value="2.25"/>
+    <arg name="init_R" value="0.191"/>
+    <arg name="init_P" value="0.097"/>
+    <arg name="init_Y" value="0.035"/>
+    <arg name="freeze_base_link" value="true"/>
   </include>
 
   <!-- == add lander to tf-tree for rviz ==================== -->

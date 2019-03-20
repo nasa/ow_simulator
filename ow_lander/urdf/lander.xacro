@@ -4,8 +4,18 @@
                      hfov="70" img_w="1024" img_h="1024" update_rate="1"
                      off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
 
-  <link
-    name="base_link">
+  <xacro:arg name="freeze_base_link" default="false"/>
+
+  <xacro:if value="$(arg freeze_base_link)">
+    <!-- Rigidly fix robot to world: http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld -->
+    <link name="world"/>
+    <joint name="fixed" type="fixed">
+      <parent link="world"/>
+      <child link="base_link"/>
+    </joint>
+  </xacro:if>
+
+  <link name="base_link">
     <inertial>
       <origin
         xyz="0.002242 0.0014227 0.3241"
@@ -35,30 +45,6 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="1.064 1.064 -0.05" rpy="0 0 0" />
-      <geometry>
-        <sphere radius="0.125" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin xyz="-1.064 1.064 -0.05" rpy="0 0 0" />
-      <geometry>
-        <sphere radius="0.125" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin xyz="1.064 -1.064 -0.05" rpy="0 0 0" />
-      <geometry>
-        <sphere radius="0.125" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin xyz="-1.064 -1.064 -0.05" rpy="0 0 0" />
-      <geometry>
-        <sphere radius="0.125" />
-      </geometry>
-    </collision>
-    <!--collision>
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
@@ -66,10 +52,24 @@
         <mesh
           filename="package://ow_lander/meshes/base_link.STL" />
       </geometry>
-    </collision-->
+    </collision>
   </link>
-  <link
-    name="l_shou">
+  <gazebo reference="base_link">
+    <selfCollide>1</selfCollide>
+    <!-- If freezing the lander in place, turn off collisions with the terrain
+         because these collisions cause strange physics side effects. For this
+         to work, the terrain must use a different collide_bitmask. -->
+    <xacro:if value="$(arg freeze_base_link)">
+      <collision>
+        <surface>
+          <contact>
+            <collide_bitmask>0x0001</collide_bitmask>
+          </contact>
+        </surface>
+      </collision>
+    </xacro:if>
+  </gazebo>
+  <link name="l_shou">
     <inertial>
       <origin
         xyz="0.0591309542444923 0.00156004002922039 -0.0211248119973624"
@@ -108,6 +108,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_shou">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_shou_yaw"
     type="continuous">
@@ -132,8 +135,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_prox">
+  <link name="l_prox">
     <inertial>
       <origin
         xyz="0.162254123421932 -1.66533453693773E-16 -0.104457937721983"
@@ -172,6 +174,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_prox">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_shou_pitch"
     type="continuous">
@@ -196,8 +201,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_dist">
+  <link name="l_dist">
     <inertial>
       <origin
         xyz="0.221081948151538 -5.55111512312578E-16 -0.0307957719833337"
@@ -236,6 +240,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_dist">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_prox_pitch"
     type="continuous">
@@ -260,8 +267,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_wrist">
+  <link name="l_wrist">
     <inertial>
       <origin
         xyz="0.0815501188839358 0.00258480207251011 -0.0286945140138527"
@@ -300,6 +306,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_wrist">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_dist_pitch"
     type="continuous">
@@ -324,8 +333,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_hand">
+  <link name="l_hand">
     <inertial>
       <origin
         xyz="-0.00481701429042641 -3.3345796601747E-07 0.076155053161125"
@@ -364,6 +372,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_hand">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_hand_yaw"
     type="continuous">
@@ -388,8 +399,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_scoop">
+  <link name="l_scoop">
     <inertial>
       <origin
         xyz="0.00131473194901655 -1.3855583347322E-13 0.0453283797652499"
@@ -428,6 +438,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_scoop">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_scoop_yaw"
     type="continuous">
@@ -452,8 +465,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_ant_foot">
+  <link name="l_ant_foot">
     <inertial>
       <origin
         xyz="-2.24681384608516E-13 8.58202398035246E-14 -0.144967812675424"
@@ -492,6 +504,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_ant_foot">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_ant_pan"
     type="continuous">
@@ -516,8 +531,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link
-    name="l_ant_panel">
+  <link name="l_ant_panel">
     <inertial>
       <origin
         xyz="0.471831233065397 0.106375900601898 -0.000999999214864045"
@@ -556,6 +570,9 @@
       </geometry>
     </collision>
   </link>
+  <gazebo reference="l_ant_panel">
+    <selfCollide>1</selfCollide>
+  </gazebo>
   <joint
     name="j_ant_tilt"
     type="continuous">
