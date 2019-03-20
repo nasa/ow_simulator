@@ -440,6 +440,15 @@
   </link>
   <gazebo reference="l_scoop">
     <selfCollide>1</selfCollide>
+    <!-- Turn off collisions with the terrain so scoop can go underground. For
+         this to work, the terrain must use a different collide_bitmask. -->
+    <collision>
+      <surface>
+        <contact>
+          <collide_bitmask>0x0002</collide_bitmask>
+        </contact>
+      </surface>
+    </collision>
   </gazebo>
   <joint
     name="j_scoop_yaw"
