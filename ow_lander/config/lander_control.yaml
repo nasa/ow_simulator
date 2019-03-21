@@ -11,15 +11,15 @@ shou_yaw_position_controller:
 shou_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_shou_pitch
-  pid: {p: 150.0, i: 0.04, d: 15.0}
+  pid: {p: 500.0, i: 0.2, d: 15.0}
 prox_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_prox_pitch
-  pid: {p: 150.0, i: 0.04, d: 15.0}
+  pid: {p: 500.0, i: 0.2, d: 15.0}
 dist_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_dist_pitch
-  pid: {p: 100.0, i: 0.01, d: 10.0}
+  pid: {p: 200.0, i: 0.06, d: 10.0}
 hand_yaw_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_hand_yaw

@@ -34,6 +34,7 @@
   <node name="lander_model" pkg="gazebo_ros" type="spawn_model" output="screen"
     args="-urdf -param robot_description -model lander
     -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
-    -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)" />
+    -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)
+    -J j_shou_pitch 1.8 -J j_prox_pitch -1.9" />
 
 </launch>

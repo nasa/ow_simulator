@@ -64,7 +64,7 @@ X_SHOU = 0.79
 Y_SHOU = 0.175
 HAND_Y_OFFSET = 0.0249979319838 
 GROUND_POSITION = -0.175
-SCOOP_OFFSET = 0.2
+SCOOP_OFFSET = 0.215
 
 X_DELIV = 0.2
 Y_DELIV = 0.2
@@ -136,7 +136,7 @@ class MoveGroupPythonInteface(object):
     # Move to pre trench position, align shoulder yaw
     joint_goal = move_group.get_current_joint_values()
     joint_goal[J_DIST_PITCH] = 0
-    joint_goal[J_HAND_YAW] = math.pi/2
+    joint_goal[J_HAND_YAW] = math.pi/2.5
     joint_goal[J_PROX_PITCH] = -math.pi/2
     joint_goal[J_SHOU_PITCH] = math.pi/2
     joint_goal[J_SHOU_YAW] = alpha + beta
@@ -164,7 +164,7 @@ class MoveGroupPythonInteface(object):
 
     # Rotate hand yaw to dig out
     joint_goal = move_group.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = -math.pi/2
+    joint_goal[J_HAND_YAW] = -math.pi/2.5
     move_group.go(joint_goal, wait=True)
     move_group.stop()
 
