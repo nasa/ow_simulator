@@ -5,7 +5,7 @@
   <arg name="use_gui" default="false" />
   <arg name="trench_x" default="1.5" />
   <arg name="trench_y" default="0" />
-  <arg name="trench_d" default="0.03" />
+  <arg name="trench_d" default="0.02" />
 
   <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
@@ -33,7 +33,7 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <node pkg="ow_lander" name="move_group_python_interface" type="move_group_python_interface.py" output="screen"> 
+  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
     <param name="trench_x" value="$(arg trench_x)"/>
     <param name="trench_y" value="$(arg trench_y)"/>
     <param name="trench_d" value="$(arg trench_d)"/>

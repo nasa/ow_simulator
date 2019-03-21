@@ -35,6 +35,12 @@
     args="-urdf -param robot_description -model lander
     -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
     -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)
-    -J j_shou_pitch 1.8 -J j_prox_pitch -1.9" />
+    -J j_dist_pitch 3.1416
+    -J j_prox_pitch -2.75
+    -J j_shou_pitch 1.5708
+    -J j_shou_yaw -1.5" />
+
+  <node pkg="ow_lander" name="initial_command_feeder" type="initial_command_feeder.py" output="screen"> 
+  </node>
 
 </launch>

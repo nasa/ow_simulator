@@ -1,40 +1,10 @@
 #!/usr/bin/env python
 
-# Software License Agreement (BSD License)
-#
-# Copyright (c) 2013, SRI International
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above
-#    copyright notice, this list of conditions and the following
-#    disclaimer in the documentation and/or other materials provided
-#    with the distribution.
-#  * Neither the name of SRI International nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# Author: Acorn Pooley, Mike Lautman
-# Mods: Antoine Tardy
-##
+# __BEGIN_LICENSE__
+# Copyright (c) 2018-2019, United States Government as represented by the
+# Administrator of the National Aeronautics and Space Administration. All
+# rights reserved.
+# __END_LICENSE__
 
 import sys
 import rosbag
@@ -71,26 +41,11 @@ Y_DELIV = 0.2
 Z_DELIV = 1.2
 SHOU_YAW_DELIV = 0.4439
 
-def all_close(goal, actual, tolerance):
-  all_equal = True
-  if type(goal) is list:
-    for index in range(len(goal)):
-      if abs(actual[index] - goal[index]) > tolerance:
-        return False
-
-  elif type(goal) is geometry_msgs.msg.PoseStamped:
-    return all_close(goal.pose, actual.pose, tolerance)
-
-  elif type(goal) is geometry_msgs.msg.Pose:
-    return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
-
-  return True
-
 class MoveGroupPythonInteface(object):
   def __init__(self):
     super(MoveGroupPythonInteface, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('move_group_python_interface', anonymous=True)
+    rospy.init_node('path_planning_commander', anonymous=True)
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
 
@@ -106,10 +61,6 @@ class MoveGroupPythonInteface(object):
     eef_link = move_group.get_end_effector_link()
     group_names = robot.get_group_names()
 
-    print "============ Printing robot state"
-    print robot.get_current_state()
-    print ""
-
     # Misc variables
     self.box_name = ''
     self.robot = robot
@@ -120,6 +71,19 @@ class MoveGroupPythonInteface(object):
     self.planning_frame = planning_frame
     self.eef_link = eef_link
     self.group_names = group_names
+
+  def go_home(self):
+    # Move to home position
+    move_group = self.move_group
+    joint_goal = move_group.get_current_joint_values()
+    joint_goal[J_DIST_PITCH] = 3.1416
+    joint_goal[J_HAND_YAW] = 0
+    joint_goal[J_PROX_PITCH] = -2.75
+    joint_goal[J_SHOU_PITCH] = 1.5708
+    joint_goal[J_SHOU_YAW] = -1.5
+    joint_goal[J_SCOOP_YAW] = 0
+    move_group.go(joint_goal, wait=True)
+    move_group.stop()
 
   def dig_trench(self, x_tr, y_tr, depth):
     move_group = self.move_group
@@ -136,7 +100,7 @@ class MoveGroupPythonInteface(object):
     # Move to pre trench position, align shoulder yaw
     joint_goal = move_group.get_current_joint_values()
     joint_goal[J_DIST_PITCH] = 0
-    joint_goal[J_HAND_YAW] = math.pi/2.5
+    joint_goal[J_HAND_YAW] = math.pi/2.2
     joint_goal[J_PROX_PITCH] = -math.pi/2
     joint_goal[J_SHOU_PITCH] = math.pi/2
     joint_goal[J_SHOU_YAW] = alpha + beta
@@ -164,7 +128,7 @@ class MoveGroupPythonInteface(object):
 
     # Rotate hand yaw to dig out
     joint_goal = move_group.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = -math.pi/2.5
+    joint_goal[J_HAND_YAW] = -math.pi/2.2
     move_group.go(joint_goal, wait=True)
     move_group.stop()
 
@@ -195,10 +159,6 @@ class MoveGroupPythonInteface(object):
     move_group.go(joint_goal, wait=True)
     move_group.stop()
 
-    # For testing:
-    current_joints = move_group.get_current_joint_values()
-    return all_close(joint_goal, current_joints, 0.01)
-
 def csv_to_yamls(filename):
   rows = [] 
   out = []
@@ -228,9 +188,12 @@ def csv_to_yamls(filename):
 def main():
   try:
     interface = MoveGroupPythonInteface()
-    trench_x = rospy.get_param('/move_group_python_interface/trench_x')
-    trench_y = rospy.get_param('/move_group_python_interface/trench_y')
-    trench_d = rospy.get_param('/move_group_python_interface/trench_d')
+    trench_x = rospy.get_param('/path_planning_commander/trench_x')
+    trench_y = rospy.get_param('/path_planning_commander/trench_y')
+    trench_d = rospy.get_param('/path_planning_commander/trench_d')
+
+    # Home robot
+    interface.go_home()
     
     # Start rosbag recording
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")

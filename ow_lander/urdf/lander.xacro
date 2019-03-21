@@ -124,7 +124,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" lower="-1.5" upper="1.5"/>
+    <limit effort="1000.0" velocity="0.4" lower="-1.8" upper="1.8"/>
   </joint>
   <transmission name="shou_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
