@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   
-  <arg name="world_name" default="$(find ow_europa)/worlds/europa.world"/>
+  <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
 
   <!-- == launch gazebo with the chosen world ==================== -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
