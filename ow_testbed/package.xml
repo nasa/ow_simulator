@@ -1,4 +1,5 @@
-<package>
+<?xml version="1.0"?>
+<package format="2">
   <name>ow_testbed</name>
   <version>1.0.0</version>
   <description>
@@ -14,13 +15,13 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roslaunch</build_depend>
 
-  <run_depend>gazebo</run_depend>
-  <run_depend>joint_state_publisher</run_depend>
-  <run_depend>robot_state_publisher</run_depend>
-  <run_depend>rviz</run_depend>
-  <run_depend>controller_manager</run_depend>
-  <run_depend>joint_state_controller</run_depend>
-  <run_depend>effort_controllers</run_depend>
+  <exec_depend>gazebo</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_state_controller</exec_depend>
+  <exec_depend>effort_controllers</exec_depend>
 
   <export>
     <architecture_independent />

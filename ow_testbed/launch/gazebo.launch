@@ -2,8 +2,12 @@
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch" />
 
+  <!-- Load urdf -->
+  <param name="robot_description"
+    command="$(find xacro)/xacro '$(find ow_testbed)/urdf/testbed.xacro'"/>
+
   <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
-    args="-file $(find ow_testbed)/urdf/testbed.xacro -urdf -model testbed"
+    args="-param robot_description -urdf -model testbed"
     output="screen" />
 
 </launch>
