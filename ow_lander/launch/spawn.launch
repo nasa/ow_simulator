@@ -30,7 +30,11 @@
     <param name="publish_frequency" value="30"/>
   </node>
 
-  <!-- Spawn lander in gazebo -->
+  <!-- Spawn lander in gazebo with the arm in a stowed pose -->
+  <!-- -J (initial joint position) must affect joints *and* controllers. But these
+       positions will only be used to initialize controllers if Gazebo is started
+       paused and then we start it here with the -unpause flag.
+       https://answers.ros.org/question/216420/initial-joint-angles -->
   <node name="lander_model" pkg="gazebo_ros" type="spawn_model" output="screen"
     args="-urdf -param robot_description -model lander
     -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
@@ -38,9 +42,7 @@
     -J j_dist_pitch 3.1416
     -J j_prox_pitch -2.75
     -J j_shou_pitch 1.5708
-    -J j_shou_yaw -1.5" />
-
-  <node pkg="ow_lander" name="initial_command_feeder" type="initial_command_feeder.py" output="screen"> 
-  </node>
+    -J j_shou_yaw -1.5
+    -unpause" />
 
 </launch>
