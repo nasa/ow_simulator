@@ -49,47 +49,31 @@ class MoveGroupPythonInteface(object):
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
 
-    group_name = "arm"
-    group_limbs = "limbs"
-    move_group = moveit_commander.MoveGroupCommander(group_name)
-    move_limbs = moveit_commander.MoveGroupCommander(group_limbs)
+    move_arm = moveit_commander.MoveGroupCommander("arm")
+    move_limbs = moveit_commander.MoveGroupCommander("limbs")
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
 
-    planning_frame = move_group.get_planning_frame()
-    eef_link = move_group.get_end_effector_link()
-    group_names = robot.get_group_names()
-
-    # Misc variables
-    self.box_name = ''
-    self.robot = robot
-    self.scene = scene
-    self.move_group = move_group
+    self.move_arm = move_arm
     self.move_limbs = move_limbs
-    self.display_trajectory_publisher = display_trajectory_publisher
-    self.planning_frame = planning_frame
-    self.eef_link = eef_link
-    self.group_names = group_names
 
   def go_home(self):
     # Move to home position
-    move_group = self.move_group
-    joint_goal = move_group.get_current_joint_values()
+    move_arm = self.move_arm
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_DIST_PITCH] = 3.1416
     joint_goal[J_HAND_YAW] = 0
     joint_goal[J_PROX_PITCH] = -2.75
     joint_goal[J_SHOU_PITCH] = 1.5708
     joint_goal[J_SHOU_YAW] = -1.5
     joint_goal[J_SCOOP_YAW] = 0
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
   def dig_trench(self, x_tr, y_tr, depth):
-    move_group = self.move_group
+    move_arm = self.move_arm
     move_limbs = self.move_limbs
-
-    # Add tests on depth and x y reach
 
     # Compute shoulder yaw angle to trench
     alpha = math.atan2(y_tr-Y_SHOU, x_tr-X_SHOU)
@@ -98,15 +82,20 @@ class MoveGroupPythonInteface(object):
     beta = math.asin (l/h)
 
     # Move to pre trench position, align shoulder yaw
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_DIST_PITCH] = 0
     joint_goal[J_HAND_YAW] = math.pi/2.2
     joint_goal[J_PROX_PITCH] = -math.pi/2
     joint_goal[J_SHOU_PITCH] = math.pi/2
     joint_goal[J_SHOU_YAW] = alpha + beta
+    
+    # If out of joint range, abort (TODO: parse limit from urdf)
+    if (joint_goal[J_SHOU_YAW]<-1.8) or (joint_goal[J_SHOU_YAW]>1.8): 
+      return False
+    
     joint_goal[J_SCOOP_YAW] = 0
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
     # Once aligned to trench goal, place hand above trench middle point
     goal_pose = move_limbs.get_current_pose().pose
@@ -114,52 +103,60 @@ class MoveGroupPythonInteface(object):
     goal_pose.position.y = y_tr
     goal_pose.position.z = GROUND_POSITION + SCOOP_OFFSET - depth
     move_limbs.set_pose_target(goal_pose)
+    plan = move_limbs.plan()
+
+    if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+      return False
+
     plan = move_limbs.go(wait=True)
     move_limbs.stop()
     move_limbs.clear_pose_targets()
 
     # Rotate hand yaw to dig in
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_HAND_YAW] = 0
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
     # Insert here for linear trenching
 
     # Rotate hand yaw to dig out
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_HAND_YAW] = -math.pi/2.2
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
     # Go back to safe position and align yaw to deliver
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_DIST_PITCH] = 0
     joint_goal[J_HAND_YAW] = -math.pi/2
     joint_goal[J_PROX_PITCH] = -math.pi/2
     joint_goal[J_SHOU_PITCH] = math.pi/2
     joint_goal[J_SHOU_YAW] = SHOU_YAW_DELIV
     joint_goal[J_SCOOP_YAW]= 0
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
     # Go to deliver position
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_PROX_PITCH]= math.pi/2 - 0.1
     joint_goal[J_SCOOP_YAW]= math.pi - 0.05
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
     # Deliver (high amplitude)
-    joint_goal = move_group.get_current_joint_values()
+    joint_goal = move_arm.get_current_joint_values()
     joint_goal[J_HAND_YAW] = -math.pi
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
     joint_goal[J_HAND_YAW] = math.pi/2
-    move_group.go(joint_goal, wait=True)
-    move_group.stop()
+    move_arm.go(joint_goal, wait=True)
+    move_arm.stop()
 
-def csv_to_yamls(filename):
+    return True
+
+# Converts csv trajectory file to 6 yaml joint trajectories
+def csv_to_yamls(filename): 
   rows = [] 
   out = []
   nb_links = 6
@@ -185,12 +182,31 @@ def csv_to_yamls(filename):
     out[x].write("...")
     out[x].close()
 
+# Basic check if input trench arguments are numbers
+def check_arguments(tx, ty, td):
+  try:
+    float(tx)
+    float(ty)
+    float(td)
+    return True
+  except ValueError:
+    return False
+
 def main():
   try:
     interface = MoveGroupPythonInteface()
     trench_x = rospy.get_param('/path_planning_commander/trench_x')
     trench_y = rospy.get_param('/path_planning_commander/trench_y')
     trench_d = rospy.get_param('/path_planning_commander/trench_d')
+
+    if rospy.get_param('/path_planning_commander/delete_prev_traj') == True :
+      os.system("rm ~/.ros/traj*")
+
+
+    if check_arguments(trench_x, trench_y, trench_d) != True:
+      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
+      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+      return
 
     # Home robot
     interface.go_home()
@@ -201,11 +217,23 @@ def main():
     bagname = location + currentDT
     command = "rosbag record -O " + bagname + " /joint_states"    
     p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
-    interface.dig_trench(trench_x,trench_y,trench_d)
-    time.sleep(1)
-
-    # Stop rosbag recording (TODO: clean process)
-    os.system("killall -s SIGINT record")  
+    
+    if (interface.dig_trench(trench_x,trench_y,trench_d) == True) :
+      time.sleep(1)
+      # Stop rosbag recording (TODO: clean process)
+      os.system("killall -s SIGINT record") 
+    
+    else: # Clean empty bag and exit
+      time.sleep(1)
+      # Stop rosbag recording (TODO: clean process)
+      os.system("killall -s SIGINT record") 
+      time.sleep(1)
+      print "[ERROR] No plan found. Exiting path_planning_commander..."
+      command = "rm " + bagname + ".bag"
+      os.system(command)
+      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+      return
+    
     time.sleep(1)
 
     # rosbag to csv

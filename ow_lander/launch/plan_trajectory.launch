@@ -6,6 +6,7 @@
   <arg name="trench_x" default="1.5" />
   <arg name="trench_y" default="0" />
   <arg name="trench_d" default="0.02" />
+  <arg name="delete_prev_traj" default="true" />
 
   <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
@@ -37,6 +38,7 @@
     <param name="trench_x" value="$(arg trench_x)"/>
     <param name="trench_y" value="$(arg trench_y)"/>
     <param name="trench_d" value="$(arg trench_d)"/>
+    <param name="delete_prev_traj" value="$(arg delete_prev_traj)"/>
   </node>
 
 </launch>
