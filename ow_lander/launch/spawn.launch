@@ -31,9 +31,10 @@
   </node>
 
   <!-- Spawn lander in gazebo with the arm in a stowed pose -->
-  <!-- -J (initial joint position) must affect joints *and* controllers. But these
-       positions will only be used to initialize controllers if Gazebo is started
-       paused and then we start it here with the -unpause flag.
+  <!-- -J (initial joint position) must affect joints *and* controllers. Due to
+       an underdeveloped part of ROS, controllers will only be initialized with
+       these positions if Gazebo is started paused and then we start it here
+       with the -unpause flag.
        https://answers.ros.org/question/216420/initial-joint-angles -->
   <node name="lander_model" pkg="gazebo_ros" type="spawn_model" output="screen"
     args="-urdf -param robot_description -model lander
