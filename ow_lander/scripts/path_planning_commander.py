@@ -199,6 +199,7 @@ def main():
     trench_y = rospy.get_param('/path_planning_commander/trench_y')
     trench_d = rospy.get_param('/path_planning_commander/trench_d')
 
+    # If argument is true, delet all traj files in /.ros, to prevent sending wrong traj
     if rospy.get_param('/path_planning_commander/delete_prev_traj') == True :
       os.system("rm ~/.ros/traj*")
 
