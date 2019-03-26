@@ -1,6 +1,6 @@
-vertex_program ow_jupiter_vert glsl
+vertex_program ow_saturn_vert glsl
 {
-  source ow_jupiter.vert
+  source ow_saturn.vert
 
   default_params
   {
@@ -12,21 +12,21 @@ vertex_program ow_jupiter_vert glsl
   }
 }
 
-fragment_program ow_jupiter_frag glsl
+fragment_program ow_saturn_frag glsl
 {
-  source ow_jupiter.frag
+  source ow_saturn.frag
 }
 
-material ow/jupiter
+material ow/saturn
 {
   technique
   {
     pass
     {
-      vertex_program_ref ow_jupiter_vert {
+      vertex_program_ref ow_saturn_vert {
       }
       
-      fragment_program_ref ow_jupiter_frag {
+      fragment_program_ref ow_saturn_frag {
         param_named diffuseMap int 0
 
         //## tunable parameters 
@@ -44,8 +44,8 @@ material ow/jupiter
       emissive 0 0 0
       texture_unit
       {
-        // Texture source: http://www.planetary.org/blogs/guest-blogs/2018/0514-juno-meets-cassini-a-new.html
-        texture jupiter.png
+        // Texture source: https://www.solarsystemscope.com/textures/download/8k_saturn.jpg
+        texture saturn.png
       }
     }
   }
