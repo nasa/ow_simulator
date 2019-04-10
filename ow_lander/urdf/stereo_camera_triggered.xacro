@@ -67,7 +67,7 @@
     <child link="${Camera01Name}Left_link"/>
   </joint>
   <joint name="leftCamera_optical_joint" type="fixed">
-    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2} 0 -${pi/2}"/>
     <parent link="${Camera01Name}Left_link"/>
     <child link="${Camera01Name}Left_optical_frame"/>
   </joint>
@@ -81,7 +81,7 @@
     <child link="${Camera01Name}Right_link"/>
   </joint>
   <joint name="rightCamera_optical_joint" type="fixed">
-    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2} 0 -${pi/2}"/>
     <parent link="${Camera01Name}Right_link"/>
     <child link="${Camera01Name}Right_optical_frame"/>
   </joint>
@@ -148,7 +148,7 @@
     <child link="${Camera01Name}Center_link"/>
   </joint>
   <joint name="CenterCamera_optical_joint" type="fixed">
-    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="-${pi/2} 0 -${pi/2}"/>
     <parent link="${Camera01Name}Center_link"/>
     <child link="${Camera01Name}Center_optical_frame"/>
   </joint>
