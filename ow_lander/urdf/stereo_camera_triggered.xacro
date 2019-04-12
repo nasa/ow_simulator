@@ -134,7 +134,7 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libcamera_noise_plugin.so" />
+      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
     </sensor>
   </gazebo>  
   
@@ -185,7 +185,7 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libcamera_noise_plugin.so" />
+      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
     </sensor>
   </gazebo>
 
