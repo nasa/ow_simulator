@@ -21,6 +21,7 @@ import math
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
+from ow_lander.srv import *
 
 ## GLOBAL VARS ##
 J_SCOOP_YAW = 5
@@ -45,7 +46,6 @@ class MoveGroupPythonInteface(object):
   def __init__(self):
     super(MoveGroupPythonInteface, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('path_planning_commander', anonymous=True)
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
 
@@ -192,15 +192,29 @@ def check_arguments(tx, ty, td):
   except ValueError:
     return False
 
-def main():
+def handle_start_planning(req):
   try:
     interface = MoveGroupPythonInteface()
-    trench_x = rospy.get_param('/path_planning_commander/trench_x')
-    trench_y = rospy.get_param('/path_planning_commander/trench_y')
-    trench_d = rospy.get_param('/path_planning_commander/trench_d')
+    #print "Starting planning session with trench_x=%s, trench_y=%s, trench_d=%s and delete_prev_traj=%s"%(req.trench_x, req.trench_y, req.trench_d, req.delete_prev_traj)
+    #trench_x=req.trench_x
+    #trench_y=req.trench_y
+    #trench_d=req.trench_d
+    #delete_prev_traj=req.delete_prev_traj
+    #Useful?
+
+    # Default trenching values
+    trench_x=1.5
+    trench_y=0
+    trench_d=0.02
+    delete_prev_traj=True
+
+    #trench_x = rospy.get_param('/path_planning_commander/trench_x')
+    #trench_y = rospy.get_param('/path_planning_commander/trench_y')
+    #trench_d = rospy.get_param('/path_planning_commander/trench_d')
 
     # If argument is true, delet all traj files in /.ros, to prevent sending wrong traj
-    if rospy.get_param('/path_planning_commander/delete_prev_traj') == True :
+    #if rospy.get_param('/path_planning_commander/delete_prev_traj') == True :
+    if delete_prev_traj == True :
       os.system("rm ~/.ros/traj*")
 
 
@@ -261,6 +275,18 @@ def main():
     return
   except KeyboardInterrupt:
     return
+
+  print "Called srv hi"
+  return True, "Hi"
+
+def main():
+  rospy.init_node('path_planning_commander', anonymous=True)
+
+  # Setup planner triggering service
+  #start_srv = rospy.Service('start_plannning_session', StartPlanning, handle_start_planning)
+  start_srv = rospy.Service('start_plannning_session', StartPlanning, handle_start_planning)
+
+  rospy.spin()
 
 if __name__ == '__main__':
   main()
