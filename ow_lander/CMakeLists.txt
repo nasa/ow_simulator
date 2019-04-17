@@ -14,6 +14,7 @@ find_package(roslaunch)
 add_service_files(
   FILES
   StartPlanning.srv
+  PublishTrajectory.srv
 )
 
 generate_messages(

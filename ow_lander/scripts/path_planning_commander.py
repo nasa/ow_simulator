@@ -126,32 +126,32 @@ class MoveGroupPythonInteface(object):
     move_arm.go(joint_goal, wait=True)
     move_arm.stop()
 
-    # Go back to safe position and align yaw to deliver
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_DIST_PITCH] = 0
-    joint_goal[J_HAND_YAW] = -math.pi/2
-    joint_goal[J_PROX_PITCH] = -math.pi/2
-    joint_goal[J_SHOU_PITCH] = math.pi/2
-    joint_goal[J_SHOU_YAW] = SHOU_YAW_DELIV
-    joint_goal[J_SCOOP_YAW]= 0
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
+    # # Go back to safe position and align yaw to deliver
+    # joint_goal = move_arm.get_current_joint_values()
+    # joint_goal[J_DIST_PITCH] = 0
+    # joint_goal[J_HAND_YAW] = -math.pi/2
+    # joint_goal[J_PROX_PITCH] = -math.pi/2
+    # joint_goal[J_SHOU_PITCH] = math.pi/2
+    # joint_goal[J_SHOU_YAW] = SHOU_YAW_DELIV
+    # joint_goal[J_SCOOP_YAW]= 0
+    # move_arm.go(joint_goal, wait=True)
+    # move_arm.stop()
 
-    # Go to deliver position
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_PROX_PITCH]= math.pi/2 - 0.1
-    joint_goal[J_SCOOP_YAW]= math.pi - 0.05
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
+    # # Go to deliver position
+    # joint_goal = move_arm.get_current_joint_values()
+    # joint_goal[J_PROX_PITCH]= math.pi/2 - 0.1
+    # joint_goal[J_SCOOP_YAW]= math.pi - 0.05
+    # move_arm.go(joint_goal, wait=True)
+    # move_arm.stop()
 
-    # Deliver (high amplitude)
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = -math.pi
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-    joint_goal[J_HAND_YAW] = math.pi/2
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
+    # # Deliver (high amplitude)
+    # joint_goal = move_arm.get_current_joint_values()
+    # joint_goal[J_HAND_YAW] = -math.pi
+    # move_arm.go(joint_goal, wait=True)
+    # move_arm.stop()
+    # joint_goal[J_HAND_YAW] = math.pi/2
+    # move_arm.go(joint_goal, wait=True)
+    # move_arm.stop()
 
     return True
 
@@ -195,18 +195,21 @@ def check_arguments(tx, ty, td):
 def handle_start_planning(req):
   try:
     interface = MoveGroupPythonInteface()
-    #print "Starting planning session with trench_x=%s, trench_y=%s, trench_d=%s and delete_prev_traj=%s"%(req.trench_x, req.trench_y, req.trench_d, req.delete_prev_traj)
-    #trench_x=req.trench_x
-    #trench_y=req.trench_y
-    #trench_d=req.trench_d
-    #delete_prev_traj=req.delete_prev_traj
-    #Useful?
+    print "Starting planning session with trench_x=%s, trench_y=%s, trench_d=%s and delete_prev_traj=%s"%(req.trench_x, req.trench_y, req.trench_d, req.delete_prev_traj)
+    
+    if req.use_defaults :
+      # Default trenching values
+      trench_x=1.5
+      trench_y=0
+      trench_d=0.02
+      delete_prev_traj=True
+    else :
+      trench_x=req.trench_x
+      trench_y=req.trench_y
+      trench_d=req.trench_d
+      delete_prev_traj=req.delete_prev_traj
 
-    # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
-    delete_prev_traj=True
+    
 
     #trench_x = rospy.get_param('/path_planning_commander/trench_x')
     #trench_y = rospy.get_param('/path_planning_commander/trench_y')
@@ -220,7 +223,7 @@ def handle_start_planning(req):
 
     if check_arguments(trench_x, trench_y, trench_d) != True:
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+      #os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
       return
 
     # Home robot
@@ -246,7 +249,7 @@ def handle_start_planning(req):
       print "[ERROR] No plan found. Exiting path_planning_commander..."
       command = "rm " + bagname + ".bag"
       os.system(command)
-      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+      #os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
       return
     
     time.sleep(1)
@@ -259,24 +262,24 @@ def handle_start_planning(req):
     time.sleep(1)
 
     # csv to yaml
-    csv_to_yamls(trajname) 
+    # csv_to_yamls(trajname) 
 
     # Cleanup bag and csv
     command = "rm " + bagname + ".bag"
     os.system(command)
-    command = "rm " + trajname
-    os.system(command)
+    #command = "rm " + trajname
+    #os.system(command)
 
     # Kill rosmaster and exit
-    time.sleep(1)
-    os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+    # time.sleep(1)
+    # os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
 
   except rospy.ROSInterruptException:
     return
   except KeyboardInterrupt:
     return
 
-  print "Called srv hi"
+  print "Finished planning session succesfully..."
   return True, "Hi"
 
 def main():

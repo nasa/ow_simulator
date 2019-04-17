@@ -3,24 +3,18 @@
   <arg name="db" default="false" />
   <arg name="debug" default="false" />
   <arg name="use_gui" default="false" />
-  <arg name="trench_x" default="1.5" />
-  <arg name="trench_y" default="0" />
-  <arg name="trench_d" default="0.02" />
-  <arg name="delete_prev_traj" default="true" />
 
   <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
   </include>
-  
+ 
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="use_gui" value="$(arg use_gui)"/>
     <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
   </node>
 
-  <!-- Given the published joint states, publish tf for the robot links -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
-  <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find ow_lander)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="true"/>
@@ -28,17 +22,16 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- Run Rviz and load the default config to see the state of the move_group node -->
   <include file="$(find ow_lander)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
+
   <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
-    <param name="trench_x" value="$(arg trench_x)"/>
-    <param name="trench_y" value="$(arg trench_y)"/>
-    <param name="trench_d" value="$(arg trench_d)"/>
-    <param name="delete_prev_traj" value="$(arg delete_prev_traj)"/>
+  </node>
+
+  <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen"> 
   </node>
 
 </launch>
