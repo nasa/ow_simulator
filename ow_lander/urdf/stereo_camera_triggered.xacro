@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_test_mast">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_camera">
 
   <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
   <xacro:property name="Camera01UpdateRate" value="5" />
@@ -8,7 +8,7 @@
 
   <xacro:property name="deg_to_rad"         value="0.0174533" />
 
-  <xacro:macro name="stereo_mast" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y">
+  <xacro:macro name="stereo_camera" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y">
 
   <link name="${Camera01Name}_head_link">
     <collision>
