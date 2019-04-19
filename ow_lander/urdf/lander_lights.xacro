@@ -58,12 +58,10 @@
         <!-- Light is not transformed by the joint above, so we transform it here. -->
         <pose>0 ${y} 0 ${roll} ${pitch} 0</pose>
         <diffuse>1 1 1 1</diffuse>
-        <specular>1 1 1 1</specular>
         <attenuation>
           <range>100</range>
-          <!-- L3 requirements: light lux should be 0.01 to 0.001 of sun lux at 10 meters -->
-          <!-- 5.0 gives us 0.002 of sun illumination at 10 meters -->
-          <quadratic>5.0</quadratic>
+          <!-- 0.5 gives us 0.02 of sun illumination at 10 meters -->
+          <quadratic>0.5</quadratic>
         </attenuation>
         <direction>0 0 -1</direction>
         <spot>
