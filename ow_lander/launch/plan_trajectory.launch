@@ -7,7 +7,7 @@
   <include file="$(find ow_lander)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
   </include>
- 
+
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="use_gui" value="$(arg use_gui)"/>
     <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
@@ -26,7 +26,6 @@
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
-
 
   <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
   </node>

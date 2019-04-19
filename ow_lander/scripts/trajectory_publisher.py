@@ -11,15 +11,22 @@ from std_msgs.msg import Float64
 from ow_lander.srv import *
 import csv
 import time
+import glob
+import os
 
 def talker(req):
     pubs = []
     nb_links = 6
     rows = [] 
+    pub_rate = 10 # Hz
     if req.use_latest :
-        #os.sys(blablablablablablablablab)
+        files = glob.glob('traj*.csv')
+        latest = max(files, key=os.path.getctime)
+        filename = latest
     else :
         filename = req.trajectory_filename
+
+    #TODO: Add file check on trajectory
 
     print "Start publishing trajectory with filename = %s"%(filename)
 
@@ -38,11 +45,12 @@ def talker(req):
     pubs.append(rospy.Publisher('/dist_pitch_position_controller/command', Float64, queue_size=40))
     pubs.append(rospy.Publisher('/hand_yaw_position_controller/command', Float64, queue_size=40))
     pubs.append(rospy.Publisher('/scoop_yaw_position_controller/command', Float64, queue_size=40))
-    rate = rospy.Rate(2) # Hz
+    rate = rospy.Rate(pub_rate) # Hz
 
     for row in rows[1:]: 
         for x in range(nb_links):
             pubs[x].publish(float("%14s\n"%row[12+x]))
+        print "Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
         rate.sleep()
 
     #close(filename)
