@@ -96,7 +96,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>L16</format>
+          <format>R16G16B16</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -110,7 +110,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>L16</format>
+          <format>R16G16B16</format>
         </image>
         <clip>
           <near>0.1</near>
