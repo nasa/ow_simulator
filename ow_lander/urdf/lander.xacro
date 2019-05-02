@@ -104,7 +104,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_shou.STL" />
+          filename="package://ow_lander/meshes/l_shou_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -518,7 +518,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_ant_foot.STL" />
+          filename="package://ow_lander/meshes/l_ant_foot_col.STL" />
       </geometry>
     </collision>
   </link>

@@ -257,7 +257,6 @@ def handle_start_planning(req):
     # rosbag to csv
     trajname = bagname + ".csv" 
     command = "rostopic echo -p -b " + bagname + ".bag /joint_states > " + trajname
-    print command
     os.system(command)
     time.sleep(1)
 

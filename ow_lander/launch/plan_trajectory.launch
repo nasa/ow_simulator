@@ -13,7 +13,9 @@
     <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
   </node>
 
+<!--
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+-->
 
   <include file="$(find ow_lander)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
@@ -22,15 +24,30 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
+
   <include file="$(find ow_lander)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
+
 
   <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
   </node>
 
   <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen"> 
   </node>
+
+<!--
+  <include file="$(find ow)/launch/common.launch" >
+    <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
+    <arg name="init_x" value="0"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="-7.291"/>
+    <arg name="init_R" value="-0.105"/>
+    <arg name="init_P" value="0.008"/>
+    <arg name="init_Y" value="0"/>
+    <arg name="freeze_base_link" value="true"/>
+  </include>
+-->
 
 </launch>
