@@ -118,7 +118,6 @@
         </clip>
       </camera>
 
-      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
       <plugin name="stereo_camera_controller" filename="libgazebo_ros_triggered_multicamera.so">
         <cameraName>${Camera01Name}</cameraName>
         <alwaysOn>true</alwaysOn>
@@ -134,7 +133,11 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
+      <plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/>
+      <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
+        <exposure>1.0</exposure>
+        <gain>1.0</gain>
+      </plugin>
     </sensor>
   </gazebo>  
   
@@ -185,7 +188,6 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
     </sensor>
   </gazebo>
 
