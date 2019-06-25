@@ -1,8 +1,7 @@
 #version 130
 
+uniform vec3 sunIntensity;  // lux (visual spectrum) or watts per square meter (some other spectrum)
 uniform sampler2D diffuseMap;
-uniform float exposureMultiplier;
-uniform float gammaCorrection;
 
 // vectors in view-space
 in vec3 vsNormal;
@@ -23,9 +22,7 @@ void main()
 
   vec3 color = texture2D(diffuseMap, uv).rgb * 0.9791;
 
-  float light = max(dot(normalize(vsNormal), vsVecToSun), 0.0);
+  color *= sunIntensity * max(dot(normalize(vsNormal), vsVecToSun), 0.0);
 
-  vec3 exposedClr = color * light * exposureMultiplier;
-  vec3 gammaClr = pow(exposedClr, vec3(gammaCorrection));
-  outputCol = vec4(gammaClr, 1.0);  
+  outputCol = vec4(color, 1.0);
 }
