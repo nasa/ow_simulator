@@ -59,6 +59,16 @@
     </collision>
   </link>
   <gazebo reference="base_link">
+    <visual>
+      <material>
+        <diffuse>0.792 0.819 0.933 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
          because these collisions cause strange physics side effects. For this
@@ -113,6 +123,16 @@
     </collision>
   </link>
   <gazebo reference="l_shou">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -179,6 +199,16 @@
     </collision>
   </link>
   <gazebo reference="l_prox">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -245,6 +275,16 @@
     </collision>
   </link>
   <gazebo reference="l_dist">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -311,6 +351,16 @@
     </collision>
   </link>
   <gazebo reference="l_wrist">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -377,6 +427,16 @@
     </collision>
   </link>
   <gazebo reference="l_hand">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
          this to work, the terrain must use a different collide_bitmask. -->
@@ -452,6 +512,16 @@
     </collision>
   </link>
   <gazebo reference="l_scoop">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
          this to work, the terrain must use a different collide_bitmask. -->
@@ -527,6 +597,16 @@
     </collision>
   </link>
   <gazebo reference="l_ant_foot">
+    <visual>
+      <material>
+        <diffuse>0.294 0.294 0.294 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -593,6 +673,16 @@
     </collision>
   </link>
   <gazebo reference="l_ant_panel">
+    <visual>
+      <material>
+        <diffuse>0.294 0.294 0.294 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
