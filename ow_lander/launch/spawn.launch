@@ -48,10 +48,9 @@
     -unpause" />
 
   <!-- Convert stereo images to point clouds -->
-  <!-- disparity_range = (stereo_baseline / estimated_nearest_obj_dist) * (img_width / 2) / tan(hfov / 2) -->
+  <!-- disparity_range = (img_width * stereo_baseline) / (estimated_nearest_obj_dist * 2 * tan(hfov / 2)) -->
   <node ns="NavCamStereo" name="stereo_proc" pkg="stereo_image_proc" type="stereo_image_proc" respawn="false" output="log">
-    <param name="disparity_range" type="int" value="432"/>
-    <param name="approximate_sync" type="bool" value="false"/>
+    <param name="disparity_range" type="int" value="672"/>
   </node>
 
 </launch>
