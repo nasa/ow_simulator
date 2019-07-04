@@ -15,6 +15,7 @@ add_service_files(
   FILES
   StartPlanning.srv
   PublishTrajectory.srv
+  MoveGuarded.srv
 )
 
 generate_messages(

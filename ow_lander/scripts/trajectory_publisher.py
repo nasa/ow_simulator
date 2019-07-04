@@ -20,7 +20,7 @@ def talker(req):
     rows = [] 
     pub_rate = 10 # Hz
     if req.use_latest :
-        files = glob.glob('traj*.csv')
+        files = glob.glob('*.csv')
         latest = max(files, key=os.path.getctime)
         filename = latest
     else :
