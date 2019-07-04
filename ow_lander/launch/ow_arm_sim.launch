@@ -1,5 +1,7 @@
+<?xml version="1.0"?>
 <launch>
 
+  <!-- == launch all but Gazebo in planning namespace ======== -->
   <group ns="ns_planning">
     <arg name="db" default="false" />
     <arg name="debug" default="false" />
@@ -14,10 +16,7 @@
       <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
     </node>
 
-  <!--
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
-  -->
-
+    <!-- == movegroup, used to control the arm ========== -->
     <include file="$(find ow_lander)/launch/move_group.launch">
       <arg name="allow_trajectory_execution" value="true"/>
       <arg name="fake_execution" value="true"/>
@@ -25,33 +24,31 @@
       <arg name="debug" value="$(arg debug)"/>
     </include>
 
-
-    <include file="$(find ow_lander)/launch/moveit_rviz.launch">
+    <!-- == launch arm spcific rviz ============== -->
+    <include file="$(find ow_lander)/launch/ow_arm_sim_rviz.launch">
       <arg name="config" value="true"/>
       <arg name="debug" value="$(arg debug)"/>
     </include>
 
-
+    <!-- == launch the path planner node ============== -->
     <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
     </node>
-
+  
+    <!-- == launch the trajectory publishing node ========= -->
     <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen"> 
     </node>
   </group>
 
-
-
-    <include file="$(find ow)/launch/common.launch" >
-      <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
-      <arg name="init_x" value="0"/>
-      <arg name="init_y" value="0"/>
-      <arg name="init_z" value="-7.291"/>
-      <arg name="init_R" value="-0.105"/>
-      <arg name="init_P" value="0.008"/>
-      <arg name="init_Y" value="0"/>
-      <arg name="freeze_base_link" value="true"/>
-    </include>
-
-
-
+  <!-- == launch gazebo with the chosen world without specific rviz = -->
+  <include file="$(find ow)/launch/common.launch" >
+    <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
+    <arg name="init_x" value="0"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="-7.291"/>
+    <arg name="init_R" value="-0.105"/>
+    <arg name="init_P" value="0.008"/>
+    <arg name="init_Y" value="0"/>
+    <arg name="freeze_base_link" value="true"/>
+    <arg name="arm_sim_disable" value="false" />
+  </include>
 </launch>

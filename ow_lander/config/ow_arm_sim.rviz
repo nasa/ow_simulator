@@ -4,13 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /MotionPlanning1
-        - /MotionPlanning1/Scene Geometry1
-        - /MotionPlanning1/Scene Robot1
-        - /MotionPlanning1/Planning Request1
-        - /MotionPlanning1/Planning Metrics1
-        - /MotionPlanning1/Planned Path1
-      Splitter Ratio: 0.7425600290298462
+        - /arm_planned_trajectory1/Scene Robot1
+        - /arm_planned_trajectory1/Planning Request1
+        - /arm_planned_trajectory1/Planning Metrics1
+        - /arm_planned_trajectory1/Planned Path1
+      Splitter Ratio: 0.8389830589294434
     Tree Height: 753
   - Class: rviz/Help
     Name: Help
@@ -66,7 +64,7 @@ Visualization Manager:
           X: 2
           Y: 2
           Z: 2
-      Name: MotionPlanning
+      Name: arm_planned_trajectory
       Planned Path:
         Color Enabled: false
         Interrupt Display: false
@@ -76,6 +74,35 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
+          NavCamStereoCenter_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoCenter_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoLeft_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoLeft_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoRight_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoRight_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereo_head_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           base_link:
             Alpha: 1
             Show Axes: false
@@ -122,7 +149,7 @@ Visualization Manager:
             Show Trail: false
             Value: true
         Loop Animation: false
-        Robot Alpha: 0.5
+        Robot Alpha: 0.05000000074505806
         Robot Color: 150; 50; 150
         Show Robot Collision: false
         Show Robot Visual: false
@@ -166,6 +193,35 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
+          NavCamStereoCenter_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoCenter_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoLeft_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoLeft_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoRight_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereoRight_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          NavCamStereo_head_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           base_link:
             Alpha: 1
             Show Axes: false
@@ -216,6 +272,96 @@ Visualization Manager:
         Show Robot Visual: true
       Value: true
       Velocity_Scaling_Factor: 1
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        NavCamStereoCenter_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereoCenter_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereoLeft_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereoLeft_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereoRight_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereoRight_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        NavCamStereo_head_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ant_foot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ant_panel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_dist:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_hand:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_prox:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_scoop:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_shou:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_wrist:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: lander_telemetry
+      Robot Description: robot_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -239,18 +385,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.103381395339966
-        Y: -0.46158790588378906
+        X: 2.268538236618042
+        Y: -1.3246526718139648
         Z: 2.2351800055275817e-7
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5247969627380371
+      Pitch: 0.3447973430156708
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 5.849939823150635
+      Yaw: 5.6699419021606445
     Saved: ~
 Window Geometry:
   "&Displays":
@@ -260,13 +406,13 @@ Window Geometry:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
-  MotionPlanning:
-    collapsed: false
-  MotionPlanning - Trajectory Slider:
-    collapsed: false
-  QMainWindow State: 000000ff00000000fd00000001000000000000016a00000392fc0200000007fb000000100044006900730070006c006100790073010000004400000392000000f701000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000d001000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005001000003fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e006700000001fa000001dc000001d101000003000002510000039200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000001000000000000016a00000392fc0200000007fb000000100044006900730070006c006100790073010000004400000392000000f701000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000d001000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000002200000022fb0000002c00610072006d005f0070006c0061006e006e00650064005f007400720061006a006500630074006f0072007900000001fa000001dc000001d101000003000002510000039200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
   Width: 956
-  X: 952
+  X: 948
   Y: 0
+  arm_planned_trajectory:
+    collapsed: false
+  arm_planned_trajectory - Slider:
+    collapsed: false
