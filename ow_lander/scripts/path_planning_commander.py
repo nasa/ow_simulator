@@ -233,7 +233,7 @@ def handle_start_planning(req):
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     location = "trajectory_"
     bagname = location + currentDT
-    command = "rosbag record -O " + bagname + " /joint_states"    
+    command = "rosbag record -O " + bagname + " /ns_planning/joint_states"    
     p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
     
     if (interface.dig_trench(trench_x,trench_y,trench_d) == True) :
@@ -256,7 +256,7 @@ def handle_start_planning(req):
 
     # rosbag to csv
     trajname = bagname + ".csv" 
-    command = "rostopic echo -p -b " + bagname + ".bag /joint_states > " + trajname
+    command = "rostopic echo -p -b " + bagname + ".bag /ns_planning/joint_states > " + trajname
     os.system(command)
     time.sleep(1)
 
