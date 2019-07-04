@@ -13,6 +13,10 @@
 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
       <param name="use_gui" value="$(arg use_gui)"/>
+      <param name="zeros/j_dist_pitch" value="3.1416"/>
+      <param name="zeros/j_prox_pitch" value="-2.75"/>
+      <param name="zeros/j_shou_pitch" value="1.5708"/>
+      <param name="zeros/j_shou_yaw" value="-1.5"/>
       <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
     </node>
 
@@ -51,4 +55,5 @@
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_disable" value="false" />
   </include>
+
 </launch>

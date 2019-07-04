@@ -209,8 +209,6 @@ def handle_start_planning(req):
       trench_d=req.trench_d
       delete_prev_traj=req.delete_prev_traj
 
-    
-
     #trench_x = rospy.get_param('/path_planning_commander/trench_x')
     #trench_y = rospy.get_param('/path_planning_commander/trench_y')
     #trench_d = rospy.get_param('/path_planning_commander/trench_d')
@@ -226,8 +224,8 @@ def handle_start_planning(req):
       #os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
       return
 
-    # Home robot
-    interface.go_home()
+    # Home robot, only required if the arm does not spawn in home pos
+    # interface.go_home()
     
     # Start rosbag recording
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
