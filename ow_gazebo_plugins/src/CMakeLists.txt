@@ -1,4 +1,2 @@
 add_subdirectory(celestial_body_plugin)
-add_subdirectory(near_far_clip_plugin)
-add_subdirectory(irradiance_map_plugin)
 

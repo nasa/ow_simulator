@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_lights">
+
+  <xacro:macro name="lander_lights" params="lander_lights_parent_link off_x off_y off_z off_R off_P off_Y" >
+    <link name="lander_lights_link" />
+
+    <joint name="lander_lights_joint" type="fixed">
+      <parent link="${lander_lights_parent_link}"/>
+      <child link="lander_lights_link"/>
+      <origin xyz="${off_x} ${off_y} ${off_z}" rpy="${off_R} ${off_P} ${off_Y}" />
+      <axis xyz="0 1 0"/>
+    </joint>
+    <!-- NOTE: preserveFixedJoint tag required for lights to survive URDF to SDF conversion -->
+    <gazebo reference='lander_lights_joint'>
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
+    <xacro:lander_light_link suffix="0" roll="0" pitch="0" y="-0.33" />
+    <xacro:lander_light_link suffix="1" roll="0" pitch="0" y="0.33" />
+  </xacro:macro>
+
+  <xacro:property name="light_mass" value="0.2" /> 
+
+  <xacro:macro name="lander_light_link" params="suffix roll pitch y">
+    <link name="lander_light${suffix}">
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <geometry>
+          <cylinder length="0.05" radius="0.03" />
+        </geometry>
+      </collision>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <geometry>
+          <cylinder length="0.05" radius="0.03" />
+        </geometry>
+      </visual>
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0.05"/>
+        <mass value="0.01"/>
+        <inertia
+            ixx="${light_mass / 12.0 * (0.1*0.1 + 0.06*0.06)}" ixy="0.0" ixz="0.0"
+            iyy="${light_mass / 12.0 * (0.06*0.06 + 0.1*0.1)}" iyz="0.0"
+            izz="${light_mass / 12.0 * (0.06*0.06 + 0.06*0.06)}"/>
+      </inertial>
+    </link>
+
+    <joint name="lander_light_joint${suffix}" type="fixed">
+      <origin rpy="${roll} ${pitch} 0" xyz="0 ${y} 0"/>
+      <parent link="lander_lights_link"/>
+      <child link="lander_light${suffix}"/>
+    </joint>
+
+    <gazebo reference="lander_light${suffix}">
+      <material>Gazebo/Grey</material>
+
+      <light name="lander_light_light${suffix}" type="spot">
+        <!-- Light is not transformed by the joint above, so we transform it here. -->
+        <pose>0 ${y} 0 ${roll} ${pitch} 0</pose>
+        <diffuse>1 1 1 1</diffuse>
+        <attenuation>
+          <range>100</range>
+          <!-- 0.5 gives us 0.02 of sun illumination at 10 meters -->
+          <quadratic>0.5</quadratic>
+        </attenuation>
+        <direction>0 0 -1</direction>
+        <spot>
+          <!-- Keep inner and outer cone angles the same when projecting a texture -->
+          <inner_angle>1.222</inner_angle>
+          <outer_angle>1.222</outer_angle>
+          <falloff>1.0</falloff>
+        </spot>
+        <cast_shadows>false</cast_shadows>
+      </light>
+    </gazebo>
+  </xacro:macro>
+
+</robot>
+

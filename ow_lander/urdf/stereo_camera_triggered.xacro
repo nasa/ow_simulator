@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_test_mast">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_camera">
 
   <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
   <xacro:property name="Camera01UpdateRate" value="5" />
-  <xacro:property name="camera_baseline"    value="0.40" />
-  <xacro:property name="camera_head_mass"   value="0.10" />
+  <xacro:property name="camera_baseline"    value="0.2" />
+  <xacro:property name="camera_head_mass"   value="0.1" />
 
   <xacro:property name="deg_to_rad"         value="0.0174533" />
 
-  <xacro:macro name="stereo_mast" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y">
+  <xacro:macro name="stereo_camera" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y">
 
   <link name="${Camera01Name}_head_link">
     <collision>
@@ -96,7 +96,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>L16</format>
+          <format>R16G16B16</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -110,7 +110,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>L16</format>
+          <format>R16G16B16</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -118,7 +118,6 @@
         </clip>
       </camera>
 
-      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
       <plugin name="stereo_camera_controller" filename="libgazebo_ros_triggered_multicamera.so">
         <cameraName>${Camera01Name}</cameraName>
         <alwaysOn>true</alwaysOn>
@@ -134,7 +133,11 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libcamera_noise_plugin.so" />
+      <plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/>
+      <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
+        <exposure>1.0</exposure>
+        <gain>1.0</gain>
+      </plugin>
     </sensor>
   </gazebo>  
   
@@ -185,7 +188,6 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libcamera_noise_plugin.so" />
     </sensor>
   </gazebo>
 
