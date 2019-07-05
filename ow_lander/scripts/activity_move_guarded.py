@@ -8,6 +8,9 @@
 
 import constants
 import math
+import datetime
+import time
+import rospy
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -20,7 +23,7 @@ def arg_parsing(req):
     surface_normal_y=0
     surface_normal_z=1
     offset_distance = 0.2
-    overdrive_distance = 0.1
+    overdrive_distance = 0.2
     retract = False
     
 
@@ -99,8 +102,7 @@ def move_guarded(move_arm,move_limbs,args):
 	move_limbs.stop()
 	move_limbs.clear_pose_targets()
 
-
-	# Once aligned to move goal and offset, place scoop tip at surface target offset
+	# Drive scoop tip along norm vector, distance is offset+overdrive
 	goal_pose = move_arm.get_current_pose().pose
 	goal_pose.position.x -= norm_x*(offset+overdrive)
 	goal_pose.position.y -= norm_y*(offset+overdrive)
@@ -112,9 +114,12 @@ def move_guarded(move_arm,move_limbs,args):
 	if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
 		return False
 
+	# Save time at which the publisher needs to monitor the torques fo contact
+	now = rospy.get_rostime()
+	guard_start_time = now.secs*1000000000 + now.nsecs 
 	plan = move_arm.go(wait=True)
 	move_arm.stop()
 	move_arm.clear_pose_targets()
 
-	return True
+	return True, guard_start_time
 

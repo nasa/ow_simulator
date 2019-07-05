@@ -379,7 +379,8 @@
   <gazebo reference="l_hand">
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. -->
+         this to work, the terrain must use a different collide_bitmask.
+
     <collision>
       <surface>
         <contact>
@@ -387,7 +388,9 @@
         </contact>
       </surface>
     </collision>
-  </gazebo>
+    -->
+  </gazebo> 
+
   <joint
     name="j_hand_yaw"
     type="continuous">
@@ -454,7 +457,7 @@
   <gazebo reference="l_scoop">
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. -->
+         this to work, the terrain must use a different collide_bitmask. 
     <collision>
       <surface>
         <contact>
@@ -462,6 +465,7 @@
         </contact>
       </surface>
     </collision>
+    -->
   </gazebo>
   <joint
     name="j_scoop_yaw"

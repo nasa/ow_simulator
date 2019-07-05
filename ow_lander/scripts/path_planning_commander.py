@@ -47,8 +47,8 @@ def handle_move_guarded(req):
     args = activity_move_guarded.arg_parsing(req)
 
     bagname = utils.start_traj_recording(args[1], "move_guarded_traj_")
-    result = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname)
+    result, guard_start_time = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
+    utils.stop_traj_recording(result, bagname, guard_start_time)
 
   except rospy.ROSInterruptException:
     return

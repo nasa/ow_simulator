@@ -24,3 +24,6 @@ X_DELIV = 0.2
 Y_DELIV = 0.2
 Z_DELIV = 1.2
 SHOU_YAW_DELIV = 0.4439
+
+# Waiting time before checking for contact, after the guarded sequence starts
+GUARD_INIT_INTERVAL = 100000000 

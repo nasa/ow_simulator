@@ -36,7 +36,7 @@ def start_traj_recording(delete_prev_traj,prefix):
 	p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
 	return bagname
 
-def stop_traj_recording(result, bagname):
+def stop_traj_recording(result, bagname, guard_start_time=-1):
 	time.sleep(1)
   # Stop rosbag recording (TODO: clean process)
 	os.system("killall -s SIGINT record")
@@ -59,3 +59,8 @@ def stop_traj_recording(result, bagname):
 	# Cleanup bag and csv
 	command = "rm " + bagname + ".bag"
 	os.system(command)
+
+	# Add guard_start_time to end of csv
+	f = open(trajname, 'a')
+	f.write("guard_start_time is ," + str(guard_start_time))
+	f.close()
