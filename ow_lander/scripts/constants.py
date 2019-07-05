@@ -27,3 +27,6 @@ SHOU_YAW_DELIV = 0.4439
 
 # Waiting time before checking for contact, after the guarded sequence starts
 GUARD_INIT_INTERVAL = 100000000 
+
+GUARD_FILTER_AV_WIDTH = 10
+GUARD_MAX_SLOPE_BEFORE_CONTACT = 0.01
