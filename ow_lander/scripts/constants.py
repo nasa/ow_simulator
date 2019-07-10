@@ -25,10 +25,8 @@ Y_DELIV = 0.2
 Z_DELIV = 1.2
 SHOU_YAW_DELIV = 0.4439
 
-# Waiting time before checking for contact, after the guarded sequence starts
-GUARD_INIT_INTERVAL = 100000000 
-
 GUARD_FILTER_AV_WIDTH = 10
-GUARD_MAX_SLOPE_BEFORE_CONTACT = 0.025
+# Multiply the slope on the first 10 ticks of the guarded move by this coeff to obtain threshold 
+GUARD_MAX_SLOPE_BEFORE_CONTACT_COEFF = 5
 TRAJ_PUB_RATE = 10
 NB_ARM_LINKS = 6

@@ -17,7 +17,7 @@ import os
 import constants
 from numpy import mean 
 
-effort_arr = [constants.GUARD_MAX_SLOPE_BEFORE_CONTACT] * constants.GUARD_FILTER_AV_WIDTH # Used to store efforts for filtering
+effort_arr = [0] * constants.GUARD_FILTER_AV_WIDTH # Used to store efforts for filtering
 previous_effort = 0
 array_index = 0
 slope = 0
@@ -35,10 +35,11 @@ def joint_states_cb(data):
   previous_effort = new_effort
 
 # Returns True if a torque spike is detected in j_shou_pitch
-def check_for_contact():
+def check_for_contact(max_slope):
   global slope
-  #print slope
-  if slope > constants.GUARD_MAX_SLOPE_BEFORE_CONTACT:
+  print slope
+  print max_slope
+  if slope > max_slope * constants.GUARD_MAX_SLOPE_BEFORE_CONTACT_COEFF:
     return True
   return False 
 
@@ -63,6 +64,7 @@ def talker(req):
   rows = [] 
   guard_rows = []
   move_guarded_bool = False
+  max_slope = 0
 
   # === READ TRAJ FILE(S) ===============================
   if req.use_latest :
@@ -116,9 +118,11 @@ def talker(req):
     start_guard_delay_acc = 0 
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
-        start_guard_delay_acc += 1
-        if start_guard_delay_acc > constants.GUARD_FILTER_AV_WIDTH:
-          if check_for_contact() == True :
+        if start_guard_delay_acc < constants.GUARD_FILTER_AV_WIDTH:
+          start_guard_delay_acc += 1
+          max_slope = slope
+        else:
+          if check_for_contact(max_slope) == True :
             print "Found ground, stopped motion..."
             return True, "Done publishing move_guarded"
 

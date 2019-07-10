@@ -48,61 +48,61 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
 
-  # # Once aligned to trench goal, place hand above trench middle point
-  # goal_pose = move_limbs.get_current_pose().pose
-  # goal_pose.position.x = x_tr
-  # goal_pose.position.y = y_tr
-  # goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  # move_limbs.set_pose_target(goal_pose)
-  # plan = move_limbs.plan()
+  # Once aligned to trench goal, place hand above trench middle point
+  goal_pose = move_limbs.get_current_pose().pose
+  goal_pose.position.x = x_tr
+  goal_pose.position.y = y_tr
+  goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  move_limbs.set_pose_target(goal_pose)
+  plan = move_limbs.plan()
 
-  # if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-  #   return False
+  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    return False
 
-  # plan = move_limbs.go(wait=True)
-  # move_limbs.stop()
-  # move_limbs.clear_pose_targets()
+  plan = move_limbs.go(wait=True)
+  move_limbs.stop()
+  move_limbs.clear_pose_targets()
 
-  # # Rotate hand yaw to dig in
+  # Rotate hand yaw to dig in
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_HAND_YAW] = 0
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+
+  # Insert here for linear trenching
+
+  # Rotate hand yaw to dig out
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_HAND_YAW] = -math.pi/2.2
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+
+  # # Go back to safe position and align yaw to deliver
   # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_HAND_YAW] = 0
+  # joint_goal[constants.J_DIST_PITCH] = 0
+  # joint_goal[constants.J_HAND_YAW] = -math.pi/2
+  # joint_goal[constants.J_PROX_PITCH] = -math.pi/2
+  # joint_goal[constants.J_SHOU_PITCH] = math.pi/2
+  # joint_goal[constants.J_SHOU_YAW] = constants.SHOU_YAW_DELIV
+  # joint_goal[constants.J_SCOOP_YAW]= 0
   # move_arm.go(joint_goal, wait=True)
   # move_arm.stop()
 
-  # # Insert here for linear trenching
+  # Go to deliver position
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
+  joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
 
-  # # Rotate hand yaw to dig out
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_HAND_YAW] = -math.pi/2.2
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # # Go back to safe position and align yaw to deliver
-  # # joint_goal = move_arm.get_current_joint_values()
-  # # joint_goal[constants.J_DIST_PITCH] = 0
-  # # joint_goal[constants.J_HAND_YAW] = -math.pi/2
-  # # joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  # # joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  # # joint_goal[constants.J_SHOU_YAW] = constants.SHOU_YAW_DELIV
-  # # joint_goal[constants.J_SCOOP_YAW]= 0
-  # # move_arm.go(joint_goal, wait=True)
-  # # move_arm.stop()
-
-  # # Go to deliver position
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
-  # joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # Deliver (high amplitude)
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_HAND_YAW] = -math.pi
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-  # joint_goal[constants.J_HAND_YAW] = math.pi/2
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
+  # Deliver (high amplitude)
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_HAND_YAW] = -math.pi
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+  joint_goal[constants.J_HAND_YAW] = math.pi/2
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
   return True
 
 def go_home(move_arm):
