@@ -88,21 +88,21 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   # move_arm.go(joint_goal, wait=True)
   # move_arm.stop()
 
-  # Go to deliver position
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
-  joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  # # Go to deliver position
+  # joint_goal = move_arm.get_current_joint_values()
+  # joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
+  # joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
+  # move_arm.go(joint_goal, wait=True)
+  # move_arm.stop()
 
-  # Deliver (high amplitude)
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_HAND_YAW] = -math.pi
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
-  joint_goal[constants.J_HAND_YAW] = math.pi/2
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  # # Deliver (high amplitude)
+  # joint_goal = move_arm.get_current_joint_values()
+  # joint_goal[constants.J_HAND_YAW] = -math.pi
+  # move_arm.go(joint_goal, wait=True)
+  # move_arm.stop()
+  # joint_goal[constants.J_HAND_YAW] = math.pi/2
+  # move_arm.go(joint_goal, wait=True)
+  # move_arm.stop()
   return True
 
 def go_home(move_arm):
