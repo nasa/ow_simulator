@@ -15,7 +15,7 @@ def arg_parsing(req):
     trench_x=1.5
     trench_y=0
     trench_d=0.02
-    delete_prev_traj=True
+    delete_prev_traj=False
 
   else :
 		trench_x=req.trench_x

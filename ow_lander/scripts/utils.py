@@ -8,9 +8,8 @@
 
 import constants
 import math
-import subprocess, os, signal
-import datetime
 import time
+import subprocess, os, signal
 from std_msgs.msg import String
 
 # Basic check if input trench arguments are numbers
@@ -23,20 +22,16 @@ def check_arguments(tx, ty, td):
   except ValueError:
     return False
 
-def start_traj_recording(delete_prev_traj,prefix): 	
+def start_traj_recording(delete_prev_traj,bagname): 	
  # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
 	if delete_prev_traj == True :
-	  os.system("rm ~/.ros/" + prefix + "*")
+	  os.system("rm ~/.ros/*.csv")
 
 	# Start rosbag recording
-	currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-	location = prefix
-	bagname = location + currentDT
-	command = "rosbag record -O " + bagname + " /ns_planning/joint_states"    
+	command = "rosbag record -O " + bagname + " /planning/joint_states"    
 	p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
-	return bagname
 
-def stop_traj_recording(result, bagname, guard_start_time=-1):
+def stop_traj_recording(result, bagname):
 	time.sleep(1)
   # Stop rosbag recording (TODO: clean process)
 	os.system("killall -s SIGINT record")
@@ -52,15 +47,10 @@ def stop_traj_recording(result, bagname, guard_start_time=-1):
 
 	# rosbag to csv
 	trajname = bagname + ".csv" 
-	command = "rostopic echo -p -b " + bagname + ".bag /ns_planning/joint_states > " + trajname
+	command = "rostopic echo -p -b " + bagname + ".bag /planning/joint_states > " + trajname
 	os.system(command)
 	time.sleep(1)
 
 	# Cleanup bag and csv
 	command = "rm " + bagname + ".bag"
 	os.system(command)
-
-	# Add guard_start_time to end of csv
-	f = open(trajname, 'a')
-	f.write("guard_start_time is ," + str(guard_start_time))
-	f.close()

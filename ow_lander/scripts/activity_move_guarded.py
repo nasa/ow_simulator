@@ -15,7 +15,7 @@ import rospy
 def arg_parsing(req):
   if req.use_defaults :
     # Default trenching values
-    delete_prev_traj=True
+    delete_prev_traj=False
     target_x=2
     target_y=0
     target_z=0.02
@@ -43,7 +43,8 @@ def arg_parsing(req):
 		surface_normal_y, surface_normal_z, offset_distance, overdrive_distance, 
 		retract]
 
-def move_guarded(move_arm,move_limbs,args):
+# Approach
+def pre_move_guarded(move_arm,move_limbs,args):
 	targ_x = args[2]
 	targ_y = args[3]
 	targ_z = args[4]
@@ -101,6 +102,19 @@ def move_guarded(move_arm,move_limbs,args):
 	plan = move_limbs.go(wait=True)
 	move_limbs.stop()
 	move_limbs.clear_pose_targets()
+	print "Done planning approach of move_guarded"
+	return True
+
+def move_guarded(move_arm,move_limbs,args):
+	targ_x = args[2]
+	targ_y = args[3]
+	targ_z = args[4]
+	norm_x = args[5]
+	norm_y = args[6]
+	norm_z = args[7]
+	offset = args[8]
+	overdrive = args[9]
+	retract = args[10]
 
 	# Drive scoop tip along norm vector, distance is offset+overdrive
 	goal_pose = move_arm.get_current_pose().pose
@@ -114,12 +128,9 @@ def move_guarded(move_arm,move_limbs,args):
 	if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
 		return False
 
-	# Save time at which the publisher needs to monitor the torques fo contact
-	now = rospy.get_rostime()
-	guard_start_time = now.secs*1000000000 + now.nsecs 
 	plan = move_arm.go(wait=True)
 	move_arm.stop()
 	move_arm.clear_pose_targets()
-
-	return True, guard_start_time
+	print "Done planning safe part of move_guarded"
+	return True
 

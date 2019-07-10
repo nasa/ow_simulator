@@ -37,27 +37,51 @@ def joint_states_cb(data):
 # Returns True if a torque spike is detected in j_shou_pitch
 def check_for_contact():
   global slope
+  #print slope
   if slope > constants.GUARD_MAX_SLOPE_BEFORE_CONTACT:
     return True
   return False 
 
+# The talker runs once the publish service is called. It starts a publisher 
+# per joint controller, then reads teh trajectory csvs. 
+# If the traj csv is a move guarded, it reads both parts.
+# When publishing the safe (second) part of a move_guarded, it
+# monitors the torque on /shou_pitch, and cuts off the publishing
+# if constants.GUARD_MAX_SLOPE_BEFORE_CONTACT is reached. The 
+# slope after averaging the last 10 values of /shou_pitch effort
 def talker(req):
   pubs = []
-  nb_links = 6
+  pubs.append(rospy.Publisher('/shou_yaw_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/shou_pitch_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/prox_pitch_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/dist_pitch_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/hand_yaw_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/scoop_yaw_position_controller/command', Float64, queue_size=40))
+  pub_rate = constants.TRAJ_PUB_RATE # Hz
+  rate = rospy.Rate(pub_rate) # Hz
+  nb_links = constants.NB_ARM_LINKS
   rows = [] 
-  pub_rate = 10 # Hz
+  guard_rows = []
+  move_guarded_bool = False
+
+  # === READ TRAJ FILE(S) ===============================
   if req.use_latest :
     files = glob.glob('*.csv')
-    latest = max(files, key=os.path.getctime)
-    filename = latest
+    filename = max(files, key=os.path.getctime)
   else :
     filename = req.trajectory_filename
 
   #TODO: Add file check on trajectory
-
   print "Start publishing trajectory with filename = %s"%(filename)
 
-  # reading csv file 
+  if filename[0] == 'm': # if traj is a move guarded
+    # reading csv file 
+    guard_filename = filename
+    prefix = "pre_"
+    filename = prefix + filename
+    move_guarded_bool = True
+
+  # Reading csv file 
   with open(filename, 'r') as csvfile: 
     # creating a csv reader object 
     csvreader = csv.reader(csvfile) 
@@ -66,45 +90,43 @@ def talker(req):
     for row in csvreader: 
       rows.append(row) 
 
-  # Extract guard_start_time
-  guard_start_time = int(rows[-1][1])
+  # If move_guarded, read the guarded motion traj csv
+  if move_guarded_bool :
+    with open(guard_filename, 'r') as csvfile: 
+      # creating a csv reader object 
+      csvreader = csv.reader(csvfile) 
 
-  pubs.append(rospy.Publisher('/shou_yaw_position_controller/command', Float64, queue_size=40))
-  pubs.append(rospy.Publisher('/shou_pitch_position_controller/command', Float64, queue_size=40))
-  pubs.append(rospy.Publisher('/prox_pitch_position_controller/command', Float64, queue_size=40))
-  pubs.append(rospy.Publisher('/dist_pitch_position_controller/command', Float64, queue_size=40))
-  pubs.append(rospy.Publisher('/hand_yaw_position_controller/command', Float64, queue_size=40))
-  pubs.append(rospy.Publisher('/scoop_yaw_position_controller/command', Float64, queue_size=40))
-  rate = rospy.Rate(pub_rate) # Hz
+      # extracting each data row one by one 
+      for row in csvreader: 
+        guard_rows.append(row) 
 
-  if int(guard_start_time) > 0 : # If the activity is a move_guarded
-    # Start subscriber for the joint_states
-    rospy.Subscriber("/joint_states", JointState, joint_states_cb)
-
-  start_guard_delay_acc = 0 
-  for row in rows[1:-2]: # Cycles on all the rows except header and guard
+  # === PUBLISH TRAJ FILE(S) ===============================
+  for row in rows[1:]: # Cycles on all the rows except header
     if row[0][0] == '1' : # If the row is a command
-      
-      if int(guard_start_time) > 0 : # If the activity is a move_guarded
-        # If guard move sequence has started
-        if int(row[0]) > int(guard_start_time) + constants.GUARD_INIT_INTERVAL : 
-          print int(row[0])
-          print "and"
-          print int(guard_start_time) + constants.GUARD_INIT_INTERVAL
-
-          start_guard_delay_acc += 1
-          rate = rospy.Rate(int(pub_rate/2)) # Hz
-          if start_guard_delay_acc > constants.GUARD_FILTER_AV_WIDTH:
-            if check_for_contact() == True :
-              print "Found ground, stopped motion..."
-              return True, "Done publishing move_guarded"
-
       for x in range(nb_links):
         pubs[x].publish(float("%14s\n"%row[12+x]))
       print "Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
       rate.sleep()
 
-  #close(filename)
+  if move_guarded_bool : # If the activity is a move_guarded
+    # Start subscriber for the joint_states
+    rate = rospy.Rate(int(pub_rate/2)) # Hz
+    rospy.Subscriber("/joint_states", JointState, joint_states_cb)
+    time.sleep(2)
+    start_guard_delay_acc = 0 
+    for row in guard_rows[1:]: # Cycles on all the rows except header
+      if row[0][0] == '1' : # If the row is a command
+        start_guard_delay_acc += 1
+        if start_guard_delay_acc > constants.GUARD_FILTER_AV_WIDTH:
+          if check_for_contact() == True :
+            print "Found ground, stopped motion..."
+            return True, "Done publishing move_guarded"
+
+        for x in range(nb_links):
+          pubs[x].publish(float("%14s\n"%row[12+x]))
+        print "Guarded. Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
+        rate.sleep()
+
   return True, "Done publishing trajectory"
 
 

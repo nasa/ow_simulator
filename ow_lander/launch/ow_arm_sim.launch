@@ -2,8 +2,7 @@
 <launch>
 
   <!-- == launch all but Gazebo in planning namespace ======== -->
-  <group ns="ns_planning">
-    <arg name="db" default="false" />
+  <group ns="planning">
     <arg name="debug" default="false" />
     <arg name="use_gui" default="false" />
 

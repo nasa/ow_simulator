@@ -17,6 +17,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
 from ow_lander.srv import *
+import datetime
+import time
 
 import constants
 import utils
@@ -46,9 +48,21 @@ def handle_move_guarded(req):
     print "Starting move guarded planning session"
     args = activity_move_guarded.arg_parsing(req)
 
-    bagname = utils.start_traj_recording(args[1], "move_guarded_traj_")
-    result, guard_start_time = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname, guard_start_time)
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "pre_move_guarded_traj_"
+    bagname = location + currentDT
+
+    # Approach
+    utils.start_traj_recording(args[1], bagname)
+    result = activity_move_guarded.pre_move_guarded(interface.move_arm,interface.move_limbs,args)
+    utils.stop_traj_recording(result, bagname)
+
+    # Safe move, monitoring torques
+    location = "move_guarded_traj_"
+    bagname = location + currentDT
+    utils.start_traj_recording(args[1], bagname)
+    result = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
+    utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
     return
@@ -69,7 +83,11 @@ def handle_start_planning(req):
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
       return
 
-    bagname = utils.start_traj_recording(args[4], "full_traj_")
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "full_traj_"
+    bagname = location + currentDT
+
+    utils.start_traj_recording(args[4], bagname)
     result = activity_full_digging_traj.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
     utils.stop_traj_recording(result, bagname)
 
