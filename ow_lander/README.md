@@ -7,7 +7,7 @@ $ roslaunch ow_lander ow_arm_sim.launch
 
 This will start Gazebo, as well as the planning and feeding nodes. Now to run both these nodes, you need to call the appropriate services (note that PLEXIL will be calling these services in code):
 
-=== Trajectory planning === 
+=== Full trajectory planning === 
 Call the StartPlanning service. Args:
 
 bool use_defaults 			# Set to true to use the defualt trench loc
@@ -15,6 +15,21 @@ float32 trench_x			# Trench x location
 float32 trench_y			# Trench Y location
 float32 trench_d			# Trench depth
 bool delete_prev_traj		# Set to true to cleanup ~/.ros
+
+=== move_guarded trajectory planning === 
+Call the MoveGuarded service. This creates two trajectories in .ros Args:
+
+bool use_defaults			# Set to true to use the defualt touch loc
+bool delete_prev_traj		# Set to true for cleanup
+float32 target_x			# Touch x,y,z
+float32 target_y
+float32 target_z
+float32 surface_normal_x	# Normal vector (for approach direction)
+float32 surface_normal_y
+float32 surface_normal_z
+float32 offset_distance		# Start offset dist along normal vector
+float32 overdrive_distance	# How deep after expected ground do we go
+float32 retract				# TODO, unused as of now
 
 === Trajectory feeding === 
 Call the PublishTrajectory service. Args:
