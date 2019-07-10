@@ -18,6 +18,7 @@ fragment_program ow_saturn_frag glsl
 
   default_params
   {
+    // Sun lux at Saturn
     param_named sunIntensity float3 1302.0 1302.0 1302.0
 
     param_named diffuseMap int 0

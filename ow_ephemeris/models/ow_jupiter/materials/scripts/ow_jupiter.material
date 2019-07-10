@@ -18,6 +18,7 @@ fragment_program ow_jupiter_frag glsl
 
   default_params
   {
+    // Sun lux at Jupiter
     param_named sunIntensity float3 4438.0 4438.0 4438.0
 
     param_named diffuseMap int 0
