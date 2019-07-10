@@ -52,7 +52,7 @@
     <arg name="init_P" value="0.008"/>
     <arg name="init_Y" value="0"/>
     <arg name="freeze_base_link" value="true"/>
-    <arg name="arm_sim_disable" value="false" />
+    <arg name="arm_sim_enable" value="true" />
   </include>
 
 </launch>
