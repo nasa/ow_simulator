@@ -17,11 +17,11 @@ def arg_parsing(req):
     trench_d=0.02
     delete_prev_traj=False
 
-  else :
-		trench_x=req.trench_x
-		trench_y=req.trench_y
-		trench_d=req.trench_d
-		delete_prev_traj=req.delete_prev_traj
+else :
+  trench_x=req.trench_x
+  trench_y=req.trench_y
+  trench_d=req.trench_d
+  delete_prev_traj=req.delete_prev_traj
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
 
@@ -43,7 +43,7 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   # If out of joint range, abort (TODO: parse limit from urdf)
   if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
     return False
-  
+
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()

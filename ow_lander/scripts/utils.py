@@ -23,34 +23,34 @@ def check_arguments(tx, ty, td):
     return False
 
 def start_traj_recording(delete_prev_traj,bagname): 	
- # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
-	if delete_prev_traj == True :
-	  os.system("rm ~/.ros/*.csv")
+  # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
+  if delete_prev_traj == True :
+    os.system("rm ~/.ros/*.csv")
 
-	# Start rosbag recording
-	command = "rosbag record -O " + bagname + " /planning/joint_states"    
-	p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
+  # Start rosbag recording
+  command = "rosbag record -O " + bagname + " /planning/joint_states"    
+  p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
 
 def stop_traj_recording(result, bagname):
-	time.sleep(1)
+  time.sleep(1)
   # Stop rosbag recording (TODO: clean process)
-	os.system("killall -s SIGINT record")
+  os.system("killall -s SIGINT record")
 
-	if result == False : 
-		time.sleep(1)
-		print "[ERROR] No plan found. Exiting path_planning_commander..."
-		command = "rm " + bagname + ".bag"
-		os.system(command)
-		return
+  if result == False : 
+    time.sleep(1)
+    print "[ERROR] No plan found. Exiting path_planning_commander..."
+    command = "rm " + bagname + ".bag"
+    os.system(command)
+    return
 
-	time.sleep(1)
-
-	# rosbag to csv
-	trajname = bagname + ".csv" 
-	command = "rostopic echo -p -b " + bagname + ".bag /planning/joint_states > " + trajname
-	os.system(command)
-	time.sleep(1)
-
-	# Cleanup bag and csv
-	command = "rm " + bagname + ".bag"
-	os.system(command)
+  time.sleep(1)
+  
+  # rosbag to csv
+  trajname = bagname + ".csv" 
+  command = "rostopic echo -p -b " + bagname + ".bag /planning/joint_states > " + trajname
+  os.system(command)
+  time.sleep(1)
+  
+  # Cleanup bag and csv
+  command = "rm " + bagname + ".bag"
+  os.system(command)
