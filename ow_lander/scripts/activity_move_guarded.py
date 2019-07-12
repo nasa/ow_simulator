@@ -92,7 +92,7 @@ def pre_move_guarded(move_arm,move_limbs,args):
   # goal_pose.orientation.x = norm_x
   
   # TODO: trigo on scoop offset
-  goal_pose.positi  on.z = targ_elevation + constants.SCOOP_OFFSET + norm_z*offset
+  goal_pose.position.z = targ_elevation + constants.SCOOP_OFFSET + norm_z*offset
   move_limbs.set_pose_target(goal_pose)
 
   plan = move_limbs.plan()

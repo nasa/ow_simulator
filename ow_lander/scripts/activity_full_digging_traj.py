@@ -17,11 +17,11 @@ def arg_parsing(req):
     trench_d=0.02
     delete_prev_traj=False
 
-else :
-  trench_x=req.trench_x
-  trench_y=req.trench_y
-  trench_d=req.trench_d
-  delete_prev_traj=req.delete_prev_traj
+  else :
+    trench_x=req.trench_x
+    trench_y=req.trench_y
+    trench_d=req.trench_d
+    delete_prev_traj=req.delete_prev_traj
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
 
