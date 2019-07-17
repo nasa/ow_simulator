@@ -3,8 +3,8 @@
 
   <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
   <xacro:property name="Camera01UpdateRate" value="5" />
-  <xacro:property name="camera_baseline"    value="0.40" />
-  <xacro:property name="camera_head_mass"   value="0.10" />
+  <xacro:property name="camera_baseline"    value="0.2" />
+  <xacro:property name="camera_head_mass"   value="0.1" />
 
   <xacro:property name="deg_to_rad"         value="0.0174533" />
 

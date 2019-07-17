@@ -1,7 +1,7 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
   <xacro:include filename="$(find ow_lander)/urdf/stereo_camera_triggered.xacro" />
   <xacro:stereo_camera stereo_camera_parent_link="l_ant_panel"
-                     hfov="70" img_w="1024" img_h="1024" update_rate="1"
+                     hfov="21" img_w="1600" img_h="1200" update_rate="1"
                      off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
 
   <xacro:include filename="$(find ow_lander)/urdf/lander_lights.xacro" />
@@ -118,7 +118,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_shou.STL" />
+          filename="package://ow_lander/meshes/l_shou_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -439,7 +439,8 @@
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. -->
+         this to work, the terrain must use a different collide_bitmask.
+
     <collision>
       <surface>
         <contact>
@@ -447,7 +448,9 @@
         </contact>
       </surface>
     </collision>
-  </gazebo>
+    -->
+  </gazebo> 
+
   <joint
     name="j_hand_yaw"
     type="continuous">
@@ -524,7 +527,7 @@
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. -->
+         this to work, the terrain must use a different collide_bitmask. 
     <collision>
       <surface>
         <contact>
@@ -532,6 +535,7 @@
         </contact>
       </surface>
     </collision>
+    -->
   </gazebo>
   <joint
     name="j_scoop_yaw"
@@ -592,7 +596,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_ant_foot.STL" />
+          filename="package://ow_lander/meshes/l_ant_foot_col.STL" />
       </geometry>
     </collision>
   </link>

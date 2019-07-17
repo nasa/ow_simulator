@@ -8,44 +8,28 @@
 
 import sys
 import rosbag
-import subprocess, os, signal
 import copy
 import rospy
-import time
-import csv
-import datetime
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-import math
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
+from ow_lander.srv import *
+import datetime
+import time
 
-## GLOBAL VARS ##
-J_SCOOP_YAW = 5
-J_HAND_YAW = 4
-J_DIST_PITCH = 3 
-J_PROX_PITCH = 2
-J_SHOU_PITCH = 1
-J_SHOU_YAW = 0
+import constants
+import utils
+import activity_full_digging_traj
+import activity_move_guarded
 
-X_SHOU = 0.79
-Y_SHOU = 0.175
-HAND_Y_OFFSET = 0.0249979319838 
-GROUND_POSITION = -0.175
-SCOOP_OFFSET = 0.215
-
-X_DELIV = 0.2
-Y_DELIV = 0.2
-Z_DELIV = 1.2
-SHOU_YAW_DELIV = 0.4439
-
+# === MAIN COMMANDER CLASS =============================
 class MoveGroupPythonInteface(object):
   def __init__(self):
     super(MoveGroupPythonInteface, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('path_planning_commander', anonymous=True)
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
 
@@ -54,216 +38,77 @@ class MoveGroupPythonInteface(object):
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
-
     self.move_arm = move_arm
     self.move_limbs = move_limbs
 
-  def go_home(self):
-    # Move to home position
-    move_arm = self.move_arm
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_DIST_PITCH] = 3.1416
-    joint_goal[J_HAND_YAW] = 0
-    joint_goal[J_PROX_PITCH] = -2.75
-    joint_goal[J_SHOU_PITCH] = 1.5708
-    joint_goal[J_SHOU_YAW] = -1.5
-    joint_goal[J_SCOOP_YAW] = 0
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-  def dig_trench(self, x_tr, y_tr, depth):
-    move_arm = self.move_arm
-    move_limbs = self.move_limbs
-
-    # Compute shoulder yaw angle to trench
-    alpha = math.atan2(y_tr-Y_SHOU, x_tr-X_SHOU)
-    h = math.sqrt( pow(y_tr-Y_SHOU,2) + pow(x_tr-X_SHOU,2) )
-    l = Y_SHOU - HAND_Y_OFFSET
-    beta = math.asin (l/h)
-
-    # Move to pre trench position, align shoulder yaw
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_DIST_PITCH] = 0
-    joint_goal[J_HAND_YAW] = math.pi/2.2
-    joint_goal[J_PROX_PITCH] = -math.pi/2
-    joint_goal[J_SHOU_PITCH] = math.pi/2
-    joint_goal[J_SHOU_YAW] = alpha + beta
-    
-    # If out of joint range, abort (TODO: parse limit from urdf)
-    if (joint_goal[J_SHOU_YAW]<-1.8) or (joint_goal[J_SHOU_YAW]>1.8): 
-      return False
-    
-    joint_goal[J_SCOOP_YAW] = 0
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    # Once aligned to trench goal, place hand above trench middle point
-    goal_pose = move_limbs.get_current_pose().pose
-    goal_pose.position.x = x_tr
-    goal_pose.position.y = y_tr
-    goal_pose.position.z = GROUND_POSITION + SCOOP_OFFSET - depth
-    move_limbs.set_pose_target(goal_pose)
-    plan = move_limbs.plan()
-
-    if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-      return False
-
-    plan = move_limbs.go(wait=True)
-    move_limbs.stop()
-    move_limbs.clear_pose_targets()
-
-    # Rotate hand yaw to dig in
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = 0
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    # Insert here for linear trenching
-
-    # Rotate hand yaw to dig out
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = -math.pi/2.2
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    # Go back to safe position and align yaw to deliver
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_DIST_PITCH] = 0
-    joint_goal[J_HAND_YAW] = -math.pi/2
-    joint_goal[J_PROX_PITCH] = -math.pi/2
-    joint_goal[J_SHOU_PITCH] = math.pi/2
-    joint_goal[J_SHOU_YAW] = SHOU_YAW_DELIV
-    joint_goal[J_SCOOP_YAW]= 0
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    # Go to deliver position
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_PROX_PITCH]= math.pi/2 - 0.1
-    joint_goal[J_SCOOP_YAW]= math.pi - 0.05
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    # Deliver (high amplitude)
-    joint_goal = move_arm.get_current_joint_values()
-    joint_goal[J_HAND_YAW] = -math.pi
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-    joint_goal[J_HAND_YAW] = math.pi/2
-    move_arm.go(joint_goal, wait=True)
-    move_arm.stop()
-
-    return True
-
-# Converts csv trajectory file to 6 yaml joint trajectories
-def csv_to_yamls(filename): 
-  rows = [] 
-  out = []
-  nb_links = 6
-
-  for x in range(nb_links):
-    out.append(open(filename[:-4] + "_j" + str(x+1) + ".yaml","w"))
-
-  # reading csv file 
-  with open(filename, 'r') as csvfile: 
-    # creating a csv reader object 
-    csvreader = csv.reader(csvfile) 
-  
-    # extracting each data row one by one 
-    for row in csvreader: 
-      rows.append(row) 
-  
-  for row in rows[1:]: 
-    for x in range(nb_links):
-      out[x].write("---\n")
-      out[x].write("%14s\n"%row[12+x])
-
-  for x in range(nb_links):
-    out[x].write("...")
-    out[x].close()
-
-# Basic check if input trench arguments are numbers
-def check_arguments(tx, ty, td):
-  try:
-    float(tx)
-    float(ty)
-    float(td)
-    return True
-  except ValueError:
-    return False
-
-def main():
+# === SERVICE ACTIVITIES - MOVE GUARDED =============================
+def handle_move_guarded(req):
   try:
     interface = MoveGroupPythonInteface()
-    trench_x = rospy.get_param('/path_planning_commander/trench_x')
-    trench_y = rospy.get_param('/path_planning_commander/trench_y')
-    trench_d = rospy.get_param('/path_planning_commander/trench_d')
+    print "Starting move guarded planning session"
+    args = activity_move_guarded.arg_parsing(req)
 
-    # If argument is true, delet all traj files in /.ros, to prevent sending wrong traj
-    if rospy.get_param('/path_planning_commander/delete_prev_traj') == True :
-      os.system("rm ~/.ros/traj*")
-
-
-    if check_arguments(trench_x, trench_y, trench_d) != True:
-      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
-      return
-
-    # Home robot
-    interface.go_home()
-    
-    # Start rosbag recording
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    location = "trajectory_"
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "pre_move_guarded_traj_"
     bagname = location + currentDT
-    command = "rosbag record -O " + bagname + " /joint_states"    
-    p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
-    
-    if (interface.dig_trench(trench_x,trench_y,trench_d) == True) :
-      time.sleep(1)
-      # Stop rosbag recording (TODO: clean process)
-      os.system("killall -s SIGINT record") 
-    
-    else: # Clean empty bag and exit
-      time.sleep(1)
-      # Stop rosbag recording (TODO: clean process)
-      os.system("killall -s SIGINT record") 
-      time.sleep(1)
-      print "[ERROR] No plan found. Exiting path_planning_commander..."
-      command = "rm " + bagname + ".bag"
-      os.system(command)
-      os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
-      return
-    
-    time.sleep(1)
 
-    # rosbag to csv
-    trajname = bagname + ".csv" 
-    command = "rostopic echo -p -b " + bagname + ".bag /joint_states > " + trajname
-    print command
-    os.system(command)
-    time.sleep(1)
+    # Approach
+    utils.start_traj_recording(args[1], bagname)
+    result = activity_move_guarded.pre_move_guarded(interface.move_arm,interface.move_limbs,args)
+    utils.stop_traj_recording(result, bagname)
 
-    # csv to yaml
-    csv_to_yamls(trajname) 
-
-    # Cleanup bag and csv
-    command = "rm " + bagname + ".bag"
-    os.system(command)
-    command = "rm " + trajname
-    os.system(command)
-
-    # Kill rosmaster and exit
-    time.sleep(1)
-    os.system("ps -ef | grep rosmaster | grep -v grep | awk '{print $2}' | xargs kill")
+    # Safe move, monitoring torques
+    location = "move_guarded_traj_"
+    bagname = location + currentDT
+    utils.start_traj_recording(args[1], bagname)
+    result = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
+    utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
     return
   except KeyboardInterrupt:
     return
 
+  print "Finished move guarded planning session succesfully..."
+  return True, "Done"
+
+# === SERVICE ACTIVITIES - FULL TRAJ =============================
+def handle_start_planning(req):
+  try:
+    interface = MoveGroupPythonInteface()
+    print "Starting full traj planning session"
+    args = activity_full_digging_traj.arg_parsing(req)
+
+    if utils.check_arguments(args[1],args[2],args[3]) != True:
+      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
+      return
+
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "full_traj_"
+    bagname = location + currentDT
+
+    utils.start_traj_recording(args[4], bagname)
+    result = activity_full_digging_traj.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    utils.stop_traj_recording(result, bagname)
+
+  except rospy.ROSInterruptException:
+    return
+  except KeyboardInterrupt:
+    return
+
+  print "Finished planning session succesfully..."
+  return True, "Done"
+
+# === MAIN ================================================
+def main():
+  rospy.init_node('path_planning_commander', anonymous=True)
+
+  # Setup planner triggering service
+  start_srv = rospy.Service('start_plannning_session', StartPlanning, handle_start_planning)
+  move_guarded_srv = rospy.Service('start_move_guarded', MoveGuarded, handle_move_guarded)
+
+  rospy.spin()
+
 if __name__ == '__main__':
   main()
-
-
 
