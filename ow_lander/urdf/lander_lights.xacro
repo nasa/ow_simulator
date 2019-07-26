@@ -60,8 +60,9 @@
         <diffuse>1 1 1 1</diffuse>
         <attenuation>
           <range>100</range>
-          <!-- 0.5 gives us 0.02 of sun illumination at 10 meters -->
-          <quadratic>0.5</quadratic>
+          <!-- Our shader only uses a quadratic term for attenuation.
+            Attenuation = 1.0 / (q * d^2) So q = 0.001 gives us 1000 lux at 1 meter.-->
+          <quadratic>0.001</quadratic>
         </attenuation>
         <direction>0 0 -1</direction>
         <spot>
