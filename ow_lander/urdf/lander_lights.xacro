@@ -60,7 +60,7 @@
         <diffuse>1 1 1 1</diffuse>
         <attenuation>
           <range>100</range>
-          <!-- Our shader only uses a quadratic term for attenuation.
+          <!-- Our shader uses a quadratic term for attenuation, but no constant or linear terms.
             Attenuation = 1.0 / (q * d^2) So q = 0.001 gives us 1000 lux at 1 meter.-->
           <quadratic>0.001</quadratic>
         </attenuation>

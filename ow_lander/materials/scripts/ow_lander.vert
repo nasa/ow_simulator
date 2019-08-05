@@ -1,10 +1,12 @@
 #version 130
 
-// variable prefixes to indicate coordinate systems:
+// variable prefixes or sub-names to indicate data requirements:
 // os = object space
 // ws = world space
 // vs = view space
 // ls = light space
+// vec = vector of any length
+// dir = unit vector (short for "direction")
 
 // params bound by Ogre
 in vec4 position;
@@ -59,22 +61,22 @@ mat4 perspectiveProjection(float halfFOVy, float near, float far)
   );
 }
 
-mat4 makeInverseViewMatrix(vec4 pos, vec3 forward)
+mat4 makeInverseViewMatrix(vec4 pos, vec3 forwardDir)
 {
   // Ogre uses y-up system, but Gazebo uses z-up system
-  vec3 right = normalize(cross(normalize(forward), vec3(0.0, 0.0, 1.0)));
-  vec3 up = normalize(cross(right, normalize(forward)));
+  vec3 rightDir = normalize(cross(normalize(forwardDir), vec3(0.0, 0.0, 1.0)));
+  vec3 upDir = normalize(cross(rightDir, normalize(forwardDir)));
 
   mat3 rotmat = mat3(
-    right, up, -forward
+    rightDir, upDir, -forwardDir
   );
   vec4 posXformed = vec4(-pos.xyz * rotmat, 1.0);
 
   // The first element should be divided by aspect ratio, but we're assuming 1.0.
   return mat4(
-    vec4(right.x, up.x, -forward.x, 0.0),
-    vec4(right.y, up.y, -forward.y, 0.0),
-    vec4(right.z, up.z, -forward.z, 0.0),
+    vec4(rightDir.x, upDir.x, -forwardDir.x, 0.0),
+    vec4(rightDir.y, upDir.y, -forwardDir.y, 0.0),
+    vec4(rightDir.z, upDir.z, -forwardDir.z, 0.0),
     posXformed
   );
 }

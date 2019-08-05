@@ -1,10 +1,12 @@
 #version 130
 
-// variable prefixes to indicate coordinate systems:
+// variable prefixes or sub-names to indicate data requirements:
 // os = object space
 // ws = world space
 // vs = view space
 // ls = light space
+// vec = vector of any length
+// dir = unit vector (short for "direction")
 
 in vec3 wsPos;
 in vec3 wsNormal;
@@ -136,22 +138,21 @@ float calcPSSMDepthShadowDebug(
 }
 
 // vsVecToLight must not be normalized.
-// vsNegLightDir must be normalized.
+// vsNegLightDir and vsDirToEye must be normalized.
 void spotlight(in vec3 vsVecToLight,
-               in vec3 vsNegLightDir,
+               in vec3 vsNegLightDir,  // Light is pointed in this direction
                in vec4 attenParams,
                in vec3 spotParams,
                in vec3 color,
                in vec4 texCoord,
-               //in int index,
-               in vec3 vsVecToEye,
+               in vec3 vsDirToEye,
                in vec3 vsNormal,
                in float specularPower,
                inout vec3 diffuse,
                inout vec3 specular)
 {
   float lightD = length(vsVecToLight);
-  vec3 vsVecToLightNorm = vsVecToLight / lightD;
+  vec3 vsDirToLight = vsVecToLight / lightD;
   vec3 vsNegLightDirNorm = normalize(vsNegLightDir);
 
   // For realism, we are only using squared component in attenuation. A spotlight
@@ -161,7 +162,7 @@ void spotlight(in vec3 vsVecToLight,
 
   // Even though we are projecting textures, we use this spot cone calculation
   // to avoid artifacts to the side of the light
-  float rho = dot(vsNegLightDirNorm, vsVecToLightNorm);
+  float rho = dot(vsNegLightDirNorm, vsDirToLight);
   float spotT = clamp((rho - spotParams.y) / (spotParams.x - spotParams.y), 0.0, 1.0);
   // We don't need a falloff exponent to soften the spot edge because we are projecting a texture
   //spotT = pow(spotT, spotParams.z);
@@ -169,13 +170,14 @@ void spotlight(in vec3 vsVecToLight,
   vec3 texColor = textureProj(spotlightMap, texCoord).rgb;
 
   vec3 finalColor = max(texColor * color * (atten * spotT), vec3(0.0));
-  diffuse += max(dot(vsVecToLightNorm, vsNormal), 0.0) * finalColor;
-  vec3 reflectvec = reflect(-vsVecToEye, vsNormal);
-  float spotspec = pow(max(dot(vsVecToLightNorm, reflectvec), 0.0), specularPower);
+  diffuse += max(dot(vsDirToLight, vsNormal), 0.0) * finalColor;
+  vec3 reflectvec = reflect(-vsDirToEye, vsNormal);
+  float spotspec = pow(max(dot(vsDirToLight, reflectvec), 0.0), specularPower);
   specular += finalColor * spotspec;
 }
 
-void lighting(vec3 wsVecToSun, vec3 wsVecToEye, vec3 wsNormal, vec4 wsDetailNormalHeight, out vec3 diffuse, out vec3 specular)
+// wsDirToSun and wsDirToEye must be normalized
+void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNormalHeight, out vec3 diffuse, out vec3 specular)
 {
   const float specular_power = 100.0;
 
@@ -187,16 +189,16 @@ void lighting(vec3 wsVecToSun, vec3 wsVecToEye, vec3 wsNormal, vec4 wsDetailNorm
 
   // Only the highest parts of bumps should be lit when sun is at glancing angles
   // This removes a great deal of impossible light in shaded areas and hides shadow artifacts.
-  float surfaceDot = dot(wsNormal, wsVecToSun);
+  float surfaceDot = dot(wsNormal, wsDirToSun);
   float heightMultiplier = clamp((wsDetailNormalHeight.w * 5.0 + 5.0) - (10.0 - surfaceDot * 50.0), 0.0, 1.0);
 
   // directional light diffuse
-  float sundiffuse = max(dot(wsDetailNormalHeight.xyz, wsVecToSun), 0.0);
+  float sundiffuse = max(dot(wsDetailNormalHeight.xyz, wsDirToSun), 0.0);
   diffuse += sunIntensity * (sundiffuse * heightMultiplier * shadow);
 
   // directional light specular
-  vec3 reflectvec = reflect(-wsVecToEye, wsDetailNormalHeight.xyz);
-  float sunspec = pow(max(dot(wsVecToSun, reflectvec), 0.0), specular_power);
+  vec3 reflectvec = reflect(-wsDirToEye, wsDetailNormalHeight.xyz);
+  float sunspec = pow(max(dot(wsDirToSun, reflectvec), 0.0), specular_power);
   specular += sunIntensity * (sunspec * heightMultiplier * shadow);
 
   // irradiance diffuse (area light source simulation)
@@ -218,14 +220,14 @@ void lighting(vec3 wsVecToSun, vec3 wsVecToEye, vec3 wsNormal, vec4 wsDetailNorm
   // but it seems premature to make this consistent before implementing multiple
   // materials and lighting that is more advanced than the Lambertian diffuse +
   // Phong specular model we are currently using.
-  vec3 vsVecToEye = normalMatrix * wsVecToEye;
+  vec3 vsDirToEye = normalMatrix * wsDirToEye;
   vec3 vsDetailNormal = normalMatrix * wsDetailNormalHeight.xyz;
   spotlight(vsSpotlightPos0.xyz - vsPos, -vsSpotlightDir0.xyz, spotlightAtten0,
             spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord0,
-            vsVecToEye, vsDetailNormal, specular_power, diffuse, specular);
+            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
   spotlight(vsSpotlightPos1.xyz - vsPos, -vsSpotlightDir1.xyz, spotlightAtten0,
             spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord1,
-            vsVecToEye, vsDetailNormal, specular_power, diffuse, specular);
+            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
 }
 
 void main()
