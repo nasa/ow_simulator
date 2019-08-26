@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_lights">
 
-  <xacro:macro name="lander_lights" params="lander_lights_parent_link off_x off_y off_z off_R off_P off_Y" >
+  <xacro:macro name="lander_lights" params="lander_lights_parent_link off_x off_y off_z off_R off_P off_Y vis_mask" >
     <link name="lander_lights_link" />
 
     <joint name="lander_lights_joint" type="fixed">
@@ -53,7 +53,11 @@
 
     <gazebo reference="lander_light${suffix}">
       <material>Gazebo/Grey</material>
-
+      <visual>
+        <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+          <visibility_bitmask>${vis_mask}</visibility_bitmask>
+        </plugin>
+      </visual>
       <light name="lander_light_light${suffix}" type="spot">
         <!-- Light is not transformed by the joint above, so we transform it here. -->
         <pose>0 ${y} 0 ${roll} ${pitch} 0</pose>

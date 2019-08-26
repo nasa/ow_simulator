@@ -1,12 +1,17 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
+  <!-- A non-standard bitmask to prevent the lander from rendering into the irradiance environment map -->
+  <xacro:property name="vis_mask" value="0x00010000" />
+
   <xacro:include filename="$(find ow_lander)/urdf/stereo_camera_triggered.xacro" />
   <xacro:stereo_camera stereo_camera_parent_link="l_ant_panel"
                      hfov="21" img_w="1600" img_h="1200" update_rate="1"
-                     off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
+                     off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}"
+                     vis_mask="${vis_mask}" />
 
   <xacro:include filename="$(find ow_lander)/urdf/lander_lights.xacro" />
   <xacro:lander_lights lander_lights_parent_link="l_ant_panel"
-                     off_x="0.85" off_y="0.07" off_z="0.0" off_R="-${pi/2.0}" off_P="0.0" off_Y="0.0" />
+                     off_x="0.85" off_y="0.07" off_z="0.0" off_R="-${pi/2.0}" off_P="0.0" off_Y="0.0"
+                     vis_mask="${vis_mask}" />
 
   <xacro:arg name="freeze_base_link" default="false"/>
 
@@ -68,6 +73,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
@@ -132,6 +140,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
@@ -208,6 +219,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
@@ -284,6 +298,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
@@ -360,6 +377,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
@@ -436,6 +456,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
@@ -524,6 +547,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
@@ -610,6 +636,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
@@ -686,6 +715,9 @@
           <name>ow/lander</name>
         </script>
       </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
     </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
