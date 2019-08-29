@@ -25,7 +25,9 @@
   </include>
 
   <!-- == publish celestial body frames ==================== -->
-  <node pkg="ow_ephemeris" type="ephemeris_node" name="ephemeris_node" output="log" />
+  <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" >
+    <rosparam command="load" file="$(find irg_planetary_ephemeris)/config/europa_run_parameters.yaml" />
+  </node>
 
   <!-- == add lander model to scene ==================== -->
   <include file="$(find ow_lander)/launch/spawn.launch" >
@@ -40,8 +42,6 @@
 
   <!-- == add lander to tf-tree for rviz ==================== -->
   <node name="site_to_base_link" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 site base_link 10" />
-
-  <!--node name="ephemeris_publisher" pkg="irg_planetary_ephemeris" type="publisher" /-->
 
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
