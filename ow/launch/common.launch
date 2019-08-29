@@ -41,6 +41,8 @@
   <!-- == add lander to tf-tree for rviz ==================== -->
   <node name="site_to_base_link" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 site base_link 10" />
 
+  <!--node name="ephemeris_publisher" pkg="irg_planetary_ephemeris" type="publisher" /-->
+
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
