@@ -24,7 +24,7 @@
       </visual>
     </link>
     <plugin name="celestial_body" filename="libcelestial_body_plugin.so">
-      <frame>saturn</frame>
+      <frame>SATURN</frame>
       <radius>71492000</radius>
       <render_distance>150000</render_distance>
     </plugin>

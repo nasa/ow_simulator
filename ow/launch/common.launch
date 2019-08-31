@@ -25,7 +25,7 @@
   </include>
 
   <!-- == publish celestial body frames ==================== -->
-  <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" >
+  <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" output="screen">
     <rosparam command="load" file="$(find irg_planetary_ephemeris)/config/europa_run_parameters.yaml" />
   </node>
 

@@ -29,7 +29,7 @@
       </light>
     </link>
     <plugin name="celestial_body" filename="libcelestial_body_plugin.so">
-      <frame>sun</frame>
+      <frame>SUN</frame>
       <radius>696392000</radius>
       <render_distance>160000</render_distance>
     </plugin>
