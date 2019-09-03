@@ -25,9 +25,10 @@
   </include>
 
   <!-- == publish celestial body frames ==================== -->
-  <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" output="screen">
+  <node pkg="ow_ephemeris" type="ephemeris_node" name="ephemeris_node" output="log" />
+  <!--node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" output="screen">
     <rosparam command="load" file="$(find irg_planetary_ephemeris)/config/europa_run_parameters.yaml" />
-  </node>
+  </node-->
 
   <!-- == add lander model to scene ==================== -->
   <include file="$(find ow_lander)/launch/spawn.launch" >

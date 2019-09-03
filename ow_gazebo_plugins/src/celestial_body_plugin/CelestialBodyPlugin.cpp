@@ -79,7 +79,7 @@ void CelestialBodyPlugin::OnUpdate()
   pos.Normalize();
   pos *= m_renderDistance;
 
-  if(m_frame == "sun")
+  if(m_frame == "SUN")
   {
     // If this is the sun, set the rotation to describe the accompanying
     // directional light's direction. This assumes that light will have its
