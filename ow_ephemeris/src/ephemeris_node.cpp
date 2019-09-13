@@ -48,9 +48,9 @@ int main(int argc, char* argv[])
     // Publish the transforms we are interested in.
     // Using test data right now because Spice hasn't been integrated.
     geometry_msgs::TransformStamped xformStamped;
-    makeTransform(551000000000, 40000000000, 551000000000, "SUN", xformStamped);
+    makeTransform(551000000000, 40000000000, 551000000000, "sun", xformStamped);
     broadcaster.sendTransform(xformStamped);
-    makeTransform(-450000000, 0, 100000000, "JUPITER", xformStamped);
+    makeTransform(-450000000, 0, 100000000, "jupiter", xformStamped);
     broadcaster.sendTransform(xformStamped);
 
     ros::spinOnce();
