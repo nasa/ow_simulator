@@ -1,9 +1,30 @@
+vertex_program ow_sun_vert glsl
+{
+  source ow_sun.vert
+
+  default_params
+  {
+    param_named_auto worldViewProjMatrix worldviewproj_matrix
+  }
+}
+
+fragment_program ow_sun_frag glsl
+{
+  source ow_sun.frag
+}
+
 material ow/sun
 {
   technique
   {
     pass
     {
+      vertex_program_ref ow_sun_vert {
+      }
+      
+      fragment_program_ref ow_sun_frag {
+      }
+
       ambient  1 1 1
       diffuse  1 1 1
       emissive 1 1 1
