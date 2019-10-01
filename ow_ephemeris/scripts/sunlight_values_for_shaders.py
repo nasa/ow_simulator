@@ -53,7 +53,10 @@ class SunValues:
     self.lux_msg.paramValue = str(lux) + ' ' + str(lux) + ' ' + str(lux)
     self.publisher.publish(self.lux_msg)
 
-  # Pass sun occultation value from irg_planetary_ephemeris to shaders in our visual simulation
+  # Pass sun occultation value from irg_planetary_ephemeris to shaders in our
+  # visual simulation. The penumbra of a sun shadow on a moon would be on the
+  # order of 100 km wide, so we do not attempt to simulate a shadow gradient--
+  # we simply darken the whole scene.
   def __call__(self, imsg):
     self.occult_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
     self.occult_msg.paramName = "sunOccultation"

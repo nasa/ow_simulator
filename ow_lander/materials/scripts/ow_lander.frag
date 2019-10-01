@@ -25,6 +25,7 @@ uniform mat4 uvTransform;
 
 uniform vec4 wsSunPosition;
 uniform vec3 sunIntensity;  // lux (visual spectrum) or watts per square meter (some other spectrum)
+uniform float sunOccultation;  // fraction of sun that is visible in the range {0.0, 1.0}
 
 // Shadow parameters
 uniform vec4 pssmSplitPoints;
@@ -192,14 +193,16 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   float surfaceDot = dot(wsNormal, wsDirToSun);
   float heightMultiplier = clamp((wsDetailNormalHeight.w * 5.0 + 5.0) - (10.0 - surfaceDot * 50.0), 0.0, 1.0);
 
+  float visibility = sunOccultation * heightMultiplier * shadow;
+
   // directional light diffuse
   float sundiffuse = max(dot(wsDetailNormalHeight.xyz, wsDirToSun), 0.0);
-  diffuse += sunIntensity * (sundiffuse * heightMultiplier * shadow);
+  diffuse += sunIntensity * (sundiffuse * visibility);
 
   // directional light specular
   vec3 reflectvec = reflect(-wsDirToEye, wsDetailNormalHeight.xyz);
   float sunspec = pow(max(dot(wsDirToSun, reflectvec), 0.0), specular_power);
-  specular += sunIntensity * (sunspec * heightMultiplier * shadow);
+  specular += sunIntensity * (sunspec * visibility);
 
   // irradiance diffuse (area light source simulation)
   // Gazebo is z-up but Ogre is y-up. Must rotate before cube texture lookup.
