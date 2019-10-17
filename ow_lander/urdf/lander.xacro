@@ -462,7 +462,7 @@
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask.
+         this to work, the terrain must use a different collide_bitmask.-->
 
     <collision>
       <surface>
@@ -471,7 +471,7 @@
         </contact>
       </surface>
     </collision>
-    -->
+    
   </gazebo> 
 
   <joint
@@ -553,7 +553,7 @@
     </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. 
+         this to work, the terrain must use a different collide_bitmask. -->
     <collision>
       <surface>
         <contact>
@@ -561,8 +561,27 @@
         </contact>
       </surface>
     </collision>
-    -->
+    
   </gazebo>
+  
+  <!-- link that we can reference in Gazebo to get altitude of tip 
+       of scoop above the terrain. Note that without an inertial
+       tag, the link will not show up in the SDF/Gazebo at all -->
+  <link name="l_scoop_tip">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+  </link>
+  <joint name="l_scoop_tip_joint" type="fixed">
+    <origin xyz="0.1 0.0 0.08" rpy="0 0 0"/>
+    <parent link="l_scoop"/>
+    <child link="l_scoop_tip"/>
+  </joint>
+  <gazebo reference="l_scoop_tip_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+  
   <joint
     name="j_scoop_yaw"
     type="continuous">
