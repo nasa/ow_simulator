@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="arm_sim_enable" default="false"/>
+
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/test_dem.world"/>
     <arg name="init_x" value="20"/>
@@ -10,6 +12,7 @@
     <arg name="init_P" value="0.097"/>
     <arg name="init_Y" value="0.035"/>
     <arg name="freeze_base_link" value="true"/>
+    <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
   </include>
 
 </launch>

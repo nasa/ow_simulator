@@ -35,7 +35,10 @@
   </node>
 
   <!-- == add celestial bodies to tf-tree ==================== -->
-  <node name="site_to_europa" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 site europa 1000" />\
+  <node name="site_to_celestial_bodies" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 site celestial_body_origin 1000" />
+  <node name="celestial_bodies_to_europa" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 celestial_body_origin europa 1000" />
 
   <!-- == add lander model to scene ==================== -->
   <include file="$(find ow_lander)/launch/spawn.launch" >

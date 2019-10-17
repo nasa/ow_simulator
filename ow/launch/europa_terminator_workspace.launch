@@ -4,7 +4,7 @@
   <arg name="arm_sim_enable" default="false"/>
 
   <include file="$(find ow)/launch/common.launch" >
-    <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
+    <arg name="world_name" value="$(find ow_europa)/worlds/terminator_workspace.world"/>
     <arg name="init_x" value="0"/>
     <arg name="init_y" value="0"/>
     <arg name="init_z" value="-7.291"/>

@@ -28,7 +28,7 @@
     </include>
 
     <!-- == launch arm spcific rviz ============== -->
-    <include file="$(find ow_lander)/launch/ow_arm_sim_rviz.launch">
+    <include file="$(find ow_lander)/launch/arm_sim_rviz.launch">
       <arg name="config" value="true"/>
       <arg name="debug" value="$(arg debug)"/>
     </include>
@@ -43,15 +43,7 @@
   </group>
 
   <!-- == launch gazebo with the chosen world without specific rviz = -->
-  <include file="$(find ow)/launch/common.launch" >
-    <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
-    <arg name="init_x" value="0"/>
-    <arg name="init_y" value="0"/>
-    <arg name="init_z" value="-7.291"/>
-    <arg name="init_R" value="-0.105"/>
-    <arg name="init_P" value="0.008"/>
-    <arg name="init_Y" value="0"/>
-    <arg name="freeze_base_link" value="true"/>
+  <include file="$(find ow)/launch/europa_terminator_workspace.launch" >
     <arg name="arm_sim_enable" value="true" />
   </include>
 
