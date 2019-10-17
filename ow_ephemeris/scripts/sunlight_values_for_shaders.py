@@ -27,7 +27,7 @@ class SunValues:
 
     # Must use separate messages or they sometimes interfere with one another
     self.lux_msg = ShaderParamUpdate()
-    self.occult_msg = ShaderParamUpdate()
+    self.visibility_msg = ShaderParamUpdate()
 
     self.publisher = rospy.Publisher("/gazebo/global_shader_param", ShaderParamUpdate, queue_size=1)
 
@@ -53,22 +53,22 @@ class SunValues:
     self.lux_msg.paramValue = str(lux) + ' ' + str(lux) + ' ' + str(lux)
     self.publisher.publish(self.lux_msg)
 
-  # Pass sun occultation value from irg_planetary_ephemeris to shaders in our
+  # Pass sun visibility value from irg_planetary_ephemeris to shaders in our
   # visual simulation. The penumbra of a sun shadow on a moon would be on the
   # order of 100 km wide, so we do not attempt to simulate a shadow gradient--
   # we simply darken the whole scene.
   def __call__(self, imsg):
-    self.occult_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
-    self.occult_msg.paramName = "sunOccultation"
-    self.occult_msg.paramValue = str(imsg.data)
-    self.publisher.publish(self.occult_msg)
+    self.visibility_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
+    self.visibility_msg.paramName = "sunVisibility"
+    self.visibility_msg.paramValue = str(imsg.data)
+    self.publisher.publish(self.visibility_msg)
 
 
 def main():
   rospy.init_node("sunlight_values")
 
   sun_values = SunValues()
-  rospy.Subscriber("sun_occultation", Float64, sun_values)
+  rospy.Subscriber("sun_visibility", Float64, sun_values)
 
   rate = rospy.Rate(1.0)
   while not rospy.is_shutdown():
