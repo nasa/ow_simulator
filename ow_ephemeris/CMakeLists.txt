@@ -42,7 +42,7 @@ function(download_file URL MD5)
   # Emit a warning whenever JPL updates files and their MD5s don't match ours.
   file(MD5 ${PATH} COMPUTED_MD5)
   if(NOT ${COMPUTED_MD5} STREQUAL ${MD5})
-    message(WARNING "${PATH} does not produce the expected md5sum.")
+    message(SEND_ERROR "${PATH} does not produce the expected md5sum.")
   endif()
 endfunction()
 
