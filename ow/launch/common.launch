@@ -35,8 +35,8 @@
   </node>
 
   <!-- == add celestial bodies to tf-tree ==================== -->
-  <node name="site_to_celestial_bodies" pkg="tf" type="static_transform_publisher"
-    args="0 0 0 0 0 0 site celestial_body_origin 1000" />
+  <node name="world_to_celestial_bodies" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 world celestial_body_origin 1000" />
   <node name="celestial_bodies_to_europa" pkg="tf" type="static_transform_publisher"
     args="0 0 0 0 0 0 celestial_body_origin europa 1000" />
 
@@ -52,7 +52,13 @@
   </include>
 
   <!-- == add lander to tf-tree ==================== -->
-  <node name="site_to_base_link" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 site base_link 1000" />
+  <!-- This is necessary for rviz but not gazebo. We only do this if
+    freeze_base_link=false. If true, the same link is made with a fixed joint in
+    lander.xacro. Rigidly fixing a robot to the world requires the name "world"
+    and is explained here http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld
+    and here http://sdformat.org/tutorials?tut=pose_frame_semantics&cat=specification&#specifying-parent-and-child-link-names-for-joints-in-sdf-1-4 -->
+  <node name="world_to_base_link" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
