@@ -1,0 +1,2 @@
+export GAZEBO_RESOURCE_PATH="$(catkin_find --first-only ow_lander materials/scripts):${GAZEBO_RESOURCE_PATH}"
+

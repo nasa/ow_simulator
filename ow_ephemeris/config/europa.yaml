@@ -1,0 +1,9 @@
+reference_body: europa
+target_bodies: [sun, jupiter]
+mission_lat: 45.0
+mission_lon: 45.0
+mission_elev: 0.0
+z_down_surface_frame: false
+leap_second_kernel: $(find ow_ephemeris)/data/latest_leapseconds.tls
+constants_kernel: $(find ow_ephemeris)/data/pck00010.tpc
+ephemerides: [$(find ow_ephemeris)/data/de430.bsp, $(find ow_ephemeris)/data/jup310.bsp]

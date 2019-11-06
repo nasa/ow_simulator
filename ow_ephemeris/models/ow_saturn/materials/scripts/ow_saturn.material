@@ -15,6 +15,14 @@ vertex_program ow_saturn_vert glsl
 fragment_program ow_saturn_frag glsl
 {
   source ow_saturn.frag
+
+  default_params
+  {
+    // Sun lux at Saturn
+    param_named sunIntensity float3 1302.0 1302.0 1302.0
+
+    param_named diffuseMap int 0
+  }
 }
 
 material ow/saturn
@@ -27,16 +35,6 @@ material ow/saturn
       }
       
       fragment_program_ref ow_saturn_frag {
-        param_named diffuseMap int 0
-
-        //## tunable parameters 
-        //#####################################################
-
-        // linear multiplier on output color to emulate exposure time
-        param_named exposureMultiplier float 1.0
-
-        // add gamma curve to make images easier for the human eye to view
-        param_named gammaCorrection float 1.0
       }
 
       ambient  0 0 0

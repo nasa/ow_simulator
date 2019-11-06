@@ -3,12 +3,12 @@
 
   <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
   <xacro:property name="Camera01UpdateRate" value="5" />
-  <xacro:property name="camera_baseline"    value="0.40" />
-  <xacro:property name="camera_head_mass"   value="0.10" />
+  <xacro:property name="camera_baseline"    value="0.2" />
+  <xacro:property name="camera_head_mass"   value="0.1" />
 
   <xacro:property name="deg_to_rad"         value="0.0174533" />
 
-  <xacro:macro name="stereo_camera" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y">
+  <xacro:macro name="stereo_camera" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y vis_mask">
 
   <link name="${Camera01Name}_head_link">
     <collision>
@@ -17,13 +17,13 @@
         <box size="0.1 0.1 0.1"/>
       </geometry>
     </collision>
-      <visual>
-        <origin xyz="0 0 0"  rpy="0 0 0"/>
-        <geometry>
-          <box size="0.025 ${camera_baseline} 0.025"/>
-        </geometry>
-        <material name="Gold"/>
-      </visual>
+    <visual>
+      <origin xyz="0 0 0"  rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 ${camera_baseline} 0.025"/>
+      </geometry>
+      <material name="Gold"/>
+    </visual>
     <visual>
       <origin xyz="0 ${camera_baseline/2} 0"  rpy="0 0 0"/>
       <geometry>
@@ -54,6 +54,14 @@
     <origin xyz="${off_x} ${off_y} ${off_z}" rpy="${off_R} ${off_P} ${off_Y}" />
   </joint>
   
+  <gazebo reference="${Camera01Name}_head_link">
+    <visual>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
+  </gazebo>
+
   <!-- example for stereo setup is here: -->
   <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/multisense_sl_description/urdf/multisense_sl.urdf?at=default#cl-200 -->
   <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/drcsim_gazebo/launch/atlas_bringup.launch?at=default#cl-38 -->
@@ -118,7 +126,6 @@
         </clip>
       </camera>
 
-      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
       <plugin name="stereo_camera_controller" filename="libgazebo_ros_triggered_multicamera.so">
         <cameraName>${Camera01Name}</cameraName>
         <alwaysOn>true</alwaysOn>
@@ -134,7 +141,11 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
+      <plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/>
+      <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
+        <exposure>0.02</exposure>
+        <energy_conversion>0.01625</energy_conversion>
+      </plugin>
     </sensor>
   </gazebo>  
   
@@ -185,7 +196,6 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="noise" filename="libIRGCameraNoisePlugin.so" />
     </sensor>
   </gazebo>
 

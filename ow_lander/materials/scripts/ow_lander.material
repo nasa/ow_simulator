@@ -1,0 +1,108 @@
+vertex_program ow_lander_vert glsl
+{
+  source ow_lander.vert
+
+  default_params
+  {
+    param_named_auto worldMatrix world_matrix
+    param_named_auto worldViewMatrix worldview_matrix
+    param_named_auto worldViewProjMatrix worldviewproj_matrix
+    param_named_auto inverseViewMatrix inverse_view_matrix
+    param_named_auto inverseTransposeWorldMatrix inverse_transpose_world_matrix
+    param_named_auto inverseTransposeWorldViewMatrix inverse_transpose_worldview_matrix
+
+    // shadow mapping (PSSM)
+    param_named_auto texViewProjMatrix0 texture_viewproj_matrix 0
+    param_named_auto texViewProjMatrix1 texture_viewproj_matrix 1
+    param_named_auto texViewProjMatrix2 texture_viewproj_matrix 2
+
+    // lander lights
+    param_named_auto wsSpotlightPos0    light_position 1
+    param_named_auto wsSpotlightPos1    light_position 2
+    param_named_auto wsSpotlightDir0    light_direction 1
+    param_named_auto wsSpotlightDir1    light_direction 2
+    // Assuming these spotlights are the same, these parameters can be reused for each.
+    param_named_auto spotlightAtten0    light_attenuation 1
+    param_named_auto spotlightParams0   spotlight_params 1
+  }
+}
+
+fragment_program ow_lander_frag glsl
+{
+  source ow_lander.frag
+
+  default_params
+  {
+    param_named_auto wsSunPosition      light_position 0
+    // Sun lux at Jupiter
+    param_named sunIntensity            float3 4438.0 4438.0 4438.0
+    param_named sunOccultation          float 1.0
+
+    // shadow mapping (PSSM)
+    param_named shadowMap0       int 0
+    param_named shadowMap1       int 1
+    param_named shadowMap2       int 2
+    param_named_auto inverseShadowmapSize0 inverse_texture_size 0
+    param_named_auto inverseShadowmapSize1 inverse_texture_size 1
+    param_named_auto inverseShadowmapSize2 inverse_texture_size 2
+    // This line is necessary sometimes. Seems like a Gazebo bug.
+    param_named pssmSplitPoints float4 6.66067 38.364 500 0
+
+    // texture references
+    param_named irradianceMap           int 3
+
+    // lander lights
+    param_named_auto vsSpotlightPos0    light_position_view_space 1
+    param_named_auto vsSpotlightPos1    light_position_view_space 2
+    param_named_auto vsSpotlightDir0    light_direction_view_space 1
+    param_named_auto vsSpotlightDir1    light_direction_view_space 2
+    // Assuming these spotlights are the same, these parameters can be reused for each.
+    param_named_auto spotlightColor0  light_diffuse_colour 1
+    param_named_auto spotlightAtten0    light_attenuation 1
+    param_named_auto spotlightParams0   spotlight_params 1
+    //param_named spotlightColor0         float4 1.0 1.0 1.0 1.0
+    // spotlight texture
+    param_named spotlightMap            int 4
+  }
+}
+
+material ow/lander
+{
+  technique
+  {
+    pass
+    {
+      vertex_program_ref ow_lander_vert {}
+      
+      fragment_program_ref ow_lander_frag {
+        // material properties
+        param_named_auto materialDiffuse surface_diffuse_colour
+        param_named_auto materialSpecular surface_specular_colour
+      }
+
+      texture_unit shadowMap0
+      {
+        content_type shadow
+        tex_address_mode clamp
+      }
+      texture_unit shadowMap1
+      {
+        content_type shadow
+        tex_address_mode clamp
+      }
+      texture_unit shadowMap2
+      {
+        content_type shadow
+        tex_address_mode clamp
+      }
+
+      texture_unit ow_irradiance_environment_map {}
+
+      texture_unit spotlightMap {
+        texture lander_light_beam.png 2d
+        tex_address_mode clamp 
+      }
+    }
+  }
+}
+

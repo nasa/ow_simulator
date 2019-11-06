@@ -13,6 +13,7 @@
         </geometry>
         <plugin name="IrradianceMap" filename="libIRGIrradianceMapPlugin.so">
           <texture_unit>ow_irradiance_environment_map</texture_unit>
+          <visibility_bitmask>0x00000001</visibility_bitmask> <!-- GZ_VISIBILITY_GUI, default visuals mask -->
         </plugin>
       </visual>
     </link>

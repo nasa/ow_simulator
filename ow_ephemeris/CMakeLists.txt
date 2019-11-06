@@ -22,6 +22,51 @@ find_package(catkin REQUIRED COMPONENTS
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 # catkin_python_setup()
 
+###########
+## Fetch ##
+###########
+set(DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+file(MAKE_DIRECTORY ${DOWNLOAD_DIR})
+
+function(download_file URL MD5)
+  get_filename_component(FILENAME ${URL} NAME)
+  set(PATH "${DOWNLOAD_DIR}/${FILENAME}")
+  if(NOT EXISTS ${PATH})
+    # Download the file
+    message(WARNING "Downloading file: ${URL}")
+    file(DOWNLOAD ${URL} ${PATH} SHOW_PROGRESS)
+  else()
+    message(STATUS "You already have ${PATH}")
+  endif()
+
+  # Emit a warning whenever JPL updates files and their MD5s don't match ours.
+  file(MD5 ${PATH} COMPUTED_MD5)
+  if(NOT ${COMPUTED_MD5} STREQUAL ${MD5})
+    message(SEND_ERROR "${PATH} does not produce the expected md5sum.")
+  endif()
+endfunction()
+
+download_file(
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/latest_leapseconds.tls
+  25a2fff30b0dedb4d76c06727b1895b1
+)
+download_file(
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc
+  da153641f7346bd5b6a1226778e0d51b
+)
+download_file(
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
+  91e21181f6a96edbfeb1ff5a419ce095
+)
+download_file(
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/jup310.bsp
+  be5c27b3c2d30cefbcee218ff5711807
+)
+download_file(
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/sat425.bsp
+  9ebc18ef42565274de13119f2dae9caf
+)
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################

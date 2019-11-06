@@ -1,17 +1,23 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
+  <!-- A non-standard bitmask to prevent the lander from rendering into the irradiance environment map -->
+  <xacro:property name="vis_mask" value="0x00010000" />
+
   <xacro:include filename="$(find ow_lander)/urdf/stereo_camera_triggered.xacro" />
   <xacro:stereo_camera stereo_camera_parent_link="l_ant_panel"
-                     hfov="70" img_w="1024" img_h="1024" update_rate="1"
-                     off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}" />
+                     hfov="21" img_w="1600" img_h="1200" update_rate="1"
+                     off_x="0.55" off_y="0.05" off_z="0.0" off_R="${pi/2.0}" off_P="${pi}" off_Y="${pi/2.0}"
+                     vis_mask="${vis_mask}" />
 
   <xacro:include filename="$(find ow_lander)/urdf/lander_lights.xacro" />
   <xacro:lander_lights lander_lights_parent_link="l_ant_panel"
-                     off_x="0.85" off_y="0.07" off_z="0.0" off_R="-${pi/2.0}" off_P="0.0" off_Y="0.0" />
+                     off_x="0.85" off_y="0.07" off_z="0.0" off_R="-${pi/2.0}" off_P="0.0" off_Y="0.0"
+                     vis_mask="${vis_mask}" />
 
   <xacro:arg name="freeze_base_link" default="false"/>
 
   <xacro:if value="$(arg freeze_base_link)">
-    <!-- Rigidly fix robot to world: http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld -->
+    <!-- Rigidly fix robot to world: http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld
+      "world" special behavior: http://sdformat.org/tutorials?tut=pose_frame_semantics&cat=specification&#specifying-parent-and-child-link-names-for-joints-in-sdf-1-4 -->
     <link name="world"/>
     <joint name="fixed" type="fixed">
       <parent link="world"/>
@@ -59,6 +65,19 @@
     </collision>
   </link>
   <gazebo reference="base_link">
+    <visual>
+      <material>
+        <diffuse>0.792 0.819 0.933 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
          because these collisions cause strange physics side effects. For this
@@ -113,6 +132,19 @@
     </collision>
   </link>
   <gazebo reference="l_shou">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -179,6 +211,19 @@
     </collision>
   </link>
   <gazebo reference="l_prox">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -245,6 +290,19 @@
     </collision>
   </link>
   <gazebo reference="l_dist">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -311,6 +369,19 @@
     </collision>
   </link>
   <gazebo reference="l_wrist">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -377,9 +448,23 @@
     </collision>
   </link>
   <gazebo reference="l_hand">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask. -->
+         this to work, the terrain must use a different collide_bitmask.-->
+
     <collision>
       <surface>
         <contact>
@@ -387,7 +472,9 @@
         </contact>
       </surface>
     </collision>
-  </gazebo>
+    
+  </gazebo> 
+
   <joint
     name="j_hand_yaw"
     type="continuous">
@@ -452,6 +539,19 @@
     </collision>
   </link>
   <gazebo reference="l_scoop">
+    <visual>
+      <material>
+        <diffuse>0.898 0.917 0.929 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
     <!-- Turn off collisions with the terrain so scoop can go underground. For
          this to work, the terrain must use a different collide_bitmask. -->
@@ -462,7 +562,27 @@
         </contact>
       </surface>
     </collision>
+    
   </gazebo>
+  
+  <!-- link that we can reference in Gazebo to get altitude of tip 
+       of scoop above the terrain. Note that without an inertial
+       tag, the link will not show up in the SDF/Gazebo at all -->
+  <link name="l_scoop_tip">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+  </link>
+  <joint name="l_scoop_tip_joint" type="fixed">
+    <origin xyz="0.1 0.0 0.08" rpy="0 0 0"/>
+    <parent link="l_scoop"/>
+    <child link="l_scoop_tip"/>
+  </joint>
+  <gazebo reference="l_scoop_tip_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+  
   <joint
     name="j_scoop_yaw"
     type="continuous">
@@ -527,6 +647,19 @@
     </collision>
   </link>
   <gazebo reference="l_ant_foot">
+    <visual>
+      <material>
+        <diffuse>0.294 0.294 0.294 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint
@@ -593,6 +726,19 @@
     </collision>
   </link>
   <gazebo reference="l_ant_panel">
+    <visual>
+      <material>
+        <diffuse>0.294 0.294 0.294 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <script>
+          <uri>package://ow_lander/materials/scripts</uri>
+          <name>ow/lander</name>
+        </script>
+      </material>
+      <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+        <visibility_bitmask>${vis_mask}</visibility_bitmask>
+      </plugin>
+    </visual>
     <selfCollide>1</selfCollide>
   </gazebo>
   <joint

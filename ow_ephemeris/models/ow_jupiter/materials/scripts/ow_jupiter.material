@@ -15,6 +15,14 @@ vertex_program ow_jupiter_vert glsl
 fragment_program ow_jupiter_frag glsl
 {
   source ow_jupiter.frag
+
+  default_params
+  {
+    // Sun lux at Jupiter
+    param_named sunIntensity float3 4438.0 4438.0 4438.0
+
+    param_named diffuseMap int 0
+  }
 }
 
 material ow/jupiter
@@ -27,16 +35,6 @@ material ow/jupiter
       }
       
       fragment_program_ref ow_jupiter_frag {
-        param_named diffuseMap int 0
-
-        //## tunable parameters 
-        //#####################################################
-
-        // linear multiplier on output color to emulate exposure time
-        param_named exposureMultiplier float 1.0
-
-        // add gamma curve to make images easier for the human eye to view
-        param_named gammaCorrection float 1.0
       }
 
       ambient  0 0 0

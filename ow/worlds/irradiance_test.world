@@ -10,13 +10,13 @@
     </scene>
 
     <include>
-      <uri>model://ow_sun</uri>
+      <uri>model://irg_sun</uri>
       <pose> -100 0 50 0 0.5 0</pose>
     </include>
 
     <include>
-      <uri>model://ow_jupiter</uri>
-      <pose> -2 3 3 0 0 0</pose>
+      <uri>model://irg_earth</uri>
+      <pose> 3 0 3 0 0 0</pose>
     </include>
 
     <include>
@@ -89,7 +89,7 @@
             </script>
           </material>
         </visual>
-        <pose>10 0 3 0 0 0.5</pose>
+        <pose>0 10 3 0 0 0.5</pose>
       </link>
     </model>
 

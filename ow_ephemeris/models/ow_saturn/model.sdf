@@ -8,6 +8,7 @@
     <link name='ellipsoid'>
       <gravity>0</gravity>
       <visual name="visual">
+        <pose>0 0 0  1.570796327 0 0</pose>
         <cast_shadows>true</cast_shadows>
         <geometry>
           <sphere>
