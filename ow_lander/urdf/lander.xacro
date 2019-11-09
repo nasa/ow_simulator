@@ -16,7 +16,8 @@
   <xacro:arg name="freeze_base_link" default="false"/>
 
   <xacro:if value="$(arg freeze_base_link)">
-    <!-- Rigidly fix robot to world: http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld -->
+    <!-- Rigidly fix robot to world: http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld
+      "world" special behavior: http://sdformat.org/tutorials?tut=pose_frame_semantics&cat=specification&#specifying-parent-and-child-link-names-for-joints-in-sdf-1-4 -->
     <link name="world"/>
     <joint name="fixed" type="fixed">
       <parent link="world"/>
