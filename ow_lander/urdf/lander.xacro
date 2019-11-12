@@ -60,7 +60,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/base_link.STL" />
+          filename="package://ow_lander/meshes/base_link_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -206,7 +206,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_prox.STL" />
+          filename="package://ow_lander/meshes/l_prox_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -285,7 +285,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_dist.STL" />
+          filename="package://ow_lander/meshes/l_dist_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -364,7 +364,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_wrist.STL" />
+          filename="package://ow_lander/meshes/l_wrist_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -443,7 +443,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_hand.STL" />
+          filename="package://ow_lander/meshes/l_hand_col.STL" />
       </geometry>
     </collision>
   </link>
@@ -721,7 +721,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/l_ant_panel.STL" />
+          filename="package://ow_lander/meshes/l_ant_panel_col.STL" />
       </geometry>
     </collision>
   </link>
