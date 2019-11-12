@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="gazebo" default="true"/>
+  <arg name="gui" default="true"/>
 
   <!-- == launch all but Gazebo in planning namespace ======== -->
   <group ns="planning">
@@ -34,17 +36,19 @@
     </include>
 
     <!-- == launch the path planner node ============== -->
-    <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"> 
+    <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen">
     </node>
-  
+
     <!-- == launch the trajectory publishing node ========= -->
-    <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen"> 
+    <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen">
     </node>
   </group>
 
-  <!-- == launch gazebo with the chosen world without specific rviz = -->
-  <include file="$(find ow)/launch/europa_terminator_workspace.launch" >
+  <!-- == if specified, launch gazebo with the chosen world without specific rviz = -->
+  <include file="$(find ow)/launch/europa_terminator_workspace.launch"
+	   if="$(arg gazebo)">
     <arg name="arm_sim_enable" value="true" />
+    <arg name="gui" value="$(arg gui)"/>
   </include>
 
 </launch>

@@ -2,6 +2,7 @@
 <launch>
 
   <arg name="arm_sim_enable" default="false"/>
+  <arg name="gui" default="true"/>
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator_workspace.world"/>
@@ -13,8 +14,7 @@
     <arg name="init_Y" value="0"/>
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
+    <arg name="gui" value="$(arg gui)"/>
   </include>
 
 </launch>
-
-
