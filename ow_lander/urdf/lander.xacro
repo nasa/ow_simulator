@@ -60,7 +60,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://ow_lander/meshes/base_link_col.STL" />
+          filename="package://ow_lander/meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
