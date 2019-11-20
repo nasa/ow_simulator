@@ -50,8 +50,6 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>tf2_ros</build_depend>
-  <build_export_depend>tf2_ros</build_export_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
