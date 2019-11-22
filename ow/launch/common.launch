@@ -63,7 +63,13 @@
 
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
+    <node name="rviz" pkg="rviz" type="rviz"
+      args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
   </group>
+
+  <!-- == start rqt ===================== -->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/-->
 
 </launch>
