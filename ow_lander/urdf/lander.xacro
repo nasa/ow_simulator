@@ -25,6 +25,14 @@
     </joint>
   </xacro:if>
 
+  <xacro:macro name="material_script">
+    <script>
+      <uri>$(find ow_lander)/materials/scripts</uri>
+      <uri>$(find ow_europa)/models/terminator/materials/textures</uri>
+      <name>ow/lander</name>
+    </script>
+  </xacro:macro>
+
   <link name="base_link">
     <inertial>
       <origin
@@ -69,10 +77,7 @@
       <material>
         <diffuse>0.792 0.819 0.933 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -136,10 +141,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -215,10 +217,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -294,10 +293,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -373,10 +369,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -452,10 +445,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -543,10 +533,7 @@
       <material>
         <diffuse>0.898 0.917 0.929 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -651,10 +638,7 @@
       <material>
         <diffuse>0.294 0.294 0.294 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
@@ -730,10 +714,7 @@
       <material>
         <diffuse>0.294 0.294 0.294 1</diffuse>
         <specular>0.4 0.4 0.4 1</specular>
-        <script>
-          <uri>package://ow_lander/materials/scripts</uri>
-          <name>ow/lander</name>
-        </script>
+        <xacro:material_script />
       </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
