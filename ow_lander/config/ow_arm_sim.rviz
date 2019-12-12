@@ -76,31 +76,31 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          NavCamStereoCenter_link:
+          StereoCameraCenter_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoCenter_optical_frame:
+          StereoCameraCenter_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoLeft_link:
+          StereoCameraLeft_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoLeft_optical_frame:
+          StereoCameraLeft_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoRight_link:
+          StereoCameraRight_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoRight_optical_frame:
+          StereoCameraRight_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereo_head_link:
+          StereoCamera_head_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -209,31 +209,31 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          NavCamStereoCenter_link:
+          StereoCameraCenter_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoCenter_optical_frame:
+          StereoCameraCenter_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoLeft_link:
+          StereoCameraLeft_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoLeft_optical_frame:
+          StereoCameraLeft_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoRight_link:
+          StereoCameraRight_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereoRight_optical_frame:
+          StereoCameraRight_optical_frame:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          NavCamStereo_head_link:
+          StereoCamera_head_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -312,31 +312,31 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        NavCamStereoCenter_link:
+        StereoCameraCenter_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereoCenter_optical_frame:
+        StereoCameraCenter_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereoLeft_link:
+        StereoCameraLeft_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereoLeft_optical_frame:
+        StereoCameraLeft_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereoRight_link:
+        StereoCameraRight_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereoRight_optical_frame:
+        StereoCameraRight_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        NavCamStereo_head_link:
+        StereoCamera_head_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false

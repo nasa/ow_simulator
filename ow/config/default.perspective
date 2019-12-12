@@ -203,7 +203,7 @@
                 },
                 "mouse_pub_topic": {
                   "type": "repr",
-                  "repr": "u'/NavCamStereo/left/image_raw_mouse_left'"
+                  "repr": "u'/StereoCamera/left/image_raw_mouse_left'"
                 },
                 "num_gridlines": {
                   "type": "repr",
@@ -223,7 +223,7 @@
                 },
                 "topic": {
                   "type": "repr",
-                  "repr": "u'/NavCamStereo/left/image_raw'"
+                  "repr": "u'/StereoCamera/left/image_raw'"
                 },
                 "publish_click_location": {
                   "type": "repr",
@@ -357,7 +357,7 @@
               "keys": {
                 "publishers": {
                   "type": "repr",
-                  "repr": "u\"[{'topic_name': '/ant_pan_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}, {'topic_name': '/ant_tilt_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 1, 'counter': 0}, {'topic_name': '/shou_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 2, 'counter': 0}, {'topic_name': '/shou_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 3, 'counter': 0}, {'topic_name': '/prox_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 4, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/dist_pitch_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 11, 'counter': 0}, {'topic_name': '/hand_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 5, 'counter': 0}, {'topic_name': '/scoop_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 6, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/exposure/data': '0.02'}, 'publisher_id': 7, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}, 'publisher_id': 8, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/exposure/data': '0.02'}, 'publisher_id': 9, 'counter': 0}, {'topic_name': '/NavCamStereo/left/image_trigger', 'type_name': 'std_msgs/Empty', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 10, 'counter': 0}]\""
+                  "repr": "u\"[{'topic_name': '/ant_pan_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}, {'topic_name': '/ant_tilt_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 1, 'counter': 0}, {'topic_name': '/shou_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 2, 'counter': 0}, {'topic_name': '/shou_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 3, 'counter': 0}, {'topic_name': '/prox_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 4, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/dist_pitch_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 11, 'counter': 0}, {'topic_name': '/hand_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 5, 'counter': 0}, {'topic_name': '/scoop_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 6, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/exposure/data': '0.02'}, 'publisher_id': 7, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}, 'publisher_id': 8, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/exposure/data': '0.02'}, 'publisher_id': 9, 'counter': 0}, {'topic_name': '/StereoCamera/left/image_trigger', 'type_name': 'std_msgs/Empty', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 10, 'counter': 0}]\""
                 }
               },
               "groups": {}

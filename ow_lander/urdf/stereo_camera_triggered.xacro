@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_camera">
 
-  <xacro:property name="Camera01Name"       value="NavCamStereo" /> 
+  <xacro:property name="Camera01Name"       value="StereoCamera" /> 
   <xacro:property name="Camera01UpdateRate" value="5" />
   <xacro:property name="camera_baseline"    value="0.2" />
   <xacro:property name="camera_head_mass"   value="0.1" />
