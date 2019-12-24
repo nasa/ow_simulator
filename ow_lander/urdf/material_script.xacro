@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_lights">
+
+  <xacro:macro name="material_script">
+    <script>
+      <uri>$(find ow_lander)/materials/scripts</uri>
+      <uri>$(find ow_europa)/models/terminator/materials/textures</uri>
+      <name>ow/lander</name>
+    </script>
+  </xacro:macro>
+
+</robot>
