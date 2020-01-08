@@ -1,2 +1,2 @@
-add_subdirectory(celestial_body_plugin)
-
+#add_subdirectory(celestial_body_plugin)
+add_subdirectory(LinkForcePlugin)
