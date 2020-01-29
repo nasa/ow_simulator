@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_power_system</name>
+  <version>0.1.0</version>
+  <description>Eventually-functional version of OW power system</description>
+  <maintainer email="molly.c.oconnor@nasa.gov">Molly O'Connor</maintainer>
+  <license>NASA Internal - OpenSourcing is TODO</license>
+  <author email="molly.c.oconnor@nasa.gov">Molly O'Connor and Chetan Kulkarni</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>

@@ -1,0 +1,2 @@
+float64 voltage
+float64 percent_charge
