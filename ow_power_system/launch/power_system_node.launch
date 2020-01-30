@@ -1,0 +1,8 @@
+<!-- Launch the Power System module, which is a single node. -->
+
+<launch>
+  <node pkg="ow_power_system"
+        name="power_system_node"
+        type="power_system_node"
+        output="screen" />
+</launch>

@@ -6,14 +6,12 @@
   <maintainer email="molly.c.oconnor@nasa.gov">Molly O'Connor</maintainer>
   <license>NASA Internal - OpenSourcing is TODO</license>
   <author email="molly.c.oconnor@nasa.gov">Molly O'Connor</author>
-  <author email="chetan.s.kulkarni@nasa.gov">Chetan Kulkarni</author>
-
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
+  <depend>roslib</depend>
 
   <export>
     <!-- Other tools can request additional information be placed here -->
-
   </export>
 </package>
