@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "power_sytem_node");
+  ros::init(argc, argv, "power_system_node");
 
   ros::NodeHandle nhandle ("power_system_node");
 
