@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- == launch all but Gazebo in planning namespace ======== -->
+  <group ns="planning">
+    <arg name="debug" default="false" />
+    <arg name="use_gui" default="false" />
+
+    <include file="$(find ow_lander)/launch/planning_context.launch">
+      <arg name="load_robot_description" value="true"/>
+    </include>
+
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+      <param name="use_gui" value="$(arg use_gui)"/>
+      <param name="zeros/j_dist_pitch" value="3.1416"/>
+      <param name="zeros/j_prox_pitch" value="-2.75"/>
+      <param name="zeros/j_shou_pitch" value="1.5708"/>
+      <param name="zeros/j_shou_yaw" value="-1.5"/>
+      <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
+    </node>
+
+    <!-- == movegroup, used to control the arm ========== -->
+    <include file="$(find ow_lander)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="true"/>
+      <arg name="fake_execution" value="true"/>
+      <arg name="info" value="true"/>
+      <arg name="debug" value="$(arg debug)"/>
+    </include>
+
+    <!-- == launch arm spcific rviz ============== -->
+    <include file="$(find ow_lander)/launch/arm_sim_rviz.launch">
+      <arg name="config" value="true"/>
+      <arg name="debug" value="$(arg debug)"/>
+    </include>
+
+    <!-- == launch the path planner node ============== -->
+    <node pkg="ow_lander" name="path_planning_commander_anjan" type="path_planning_commander_anjan.py" output="screen"> 
+    </node>
+  
+    <!-- == launch the trajectory publishing node ========= -->
+    <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen"> 
+    </node>
+  </group>
+
+  <!-- == launch gazebo with the chosen world without specific rviz = -->
+  <include file="$(find ow)/launch/europa_terminator_workspace.launch" >
+    <arg name="arm_sim_enable" value="true" />
+  </include>
+
+</launch>
