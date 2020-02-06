@@ -1,4 +1,4 @@
-// OW power system ROS node - listen and publish.
+// OW power system ROS node - publishes 0 as a placeholder for once Battery models are linked.
 
 // __BEGIN_LICENSE__
 // Copyright (c) 2018-2020, United States Government as represented by the
@@ -12,10 +12,16 @@
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 
+void computeSOC(const std_msgs::Float64& power){}
+
 int main(int argc, char* argv[]) {
   
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle n ("power_system_node");
+
+  //Construct our power draw listener
+  //TODO: Check out latching
+  ros::Subscriber power_listener = n.subscribe("power_draw", 1000, computeSOC);
 
   //Construct our State of Charge (SOC) publisher
   ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
