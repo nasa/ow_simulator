@@ -63,8 +63,8 @@ download_file(
   be5c27b3c2d30cefbcee218ff5711807
 )
 download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/sat425.bsp
-  9ebc18ef42565274de13119f2dae9caf
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/sat427.bsp
+  f09fb34fc9ec04af4971e4ea097628e5
 )
 
 ################################################
