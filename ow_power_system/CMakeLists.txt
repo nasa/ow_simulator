@@ -10,7 +10,7 @@ project(power_system_node)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  )
+)
 find_package(roslaunch)
 
 ## System dependencies are found with CMake's conventions
@@ -29,7 +29,7 @@ find_package(roslaunch)
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
+##     * add an exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -62,10 +62,10 @@ find_package(roslaunch)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#)# Uncommented gives error:  Unknown CMake command "generate_messages"
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -98,8 +98,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES power_system_node GSAP
-#  CATKIN_DEPENDS roscpp std_msgs
+#  LIBRARIES power_system_node 
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -112,7 +112,8 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
-)
+  )
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -127,7 +128,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/power_system_node_node.cpp)
+# add_executable(${PROJECT_NAME} power_system_node src/power_system_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -198,3 +199,5 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_subdirectory(src)

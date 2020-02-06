@@ -10,10 +10,11 @@
 //ROS
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <std_msgs/Float64.h>
 
 int main(int argc, char* argv[]) {
   
-  ros::init(argc,argvf,"power_system_node");
+  ros::init(argc,argv,"power_system_node");
   ros::NodeHandle n ("power_system_node");
 
   //Construct our State of Charge (SOC) publisher
