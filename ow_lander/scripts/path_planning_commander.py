@@ -23,7 +23,7 @@ import time
 import constants
 import utils
 import activity_full_digging_traj
-import activity_dig_trench
+#import activity_dig_trench
 import activity_move_guarded
 import activity_reset
 
