@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>power_system_node</name>
+  <name>ow_power_system</name>
   <version>0.1.0</version>
-  <description>The power_system_node package</description>
+  <description>The ow_power_system package. Simulates (or will simulate) the lander's power system, taking in power use and future loading and outputting state of charge and a predicted remaining useful life.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per --> 
   <maintainer email="molly.c.oconnor@nasa.gov">Molly O'Connor</maintainer>
