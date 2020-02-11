@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_lights">
 
+  <xacro:include filename="$(find ow_lander)/urdf/material_script.xacro" />
+
   <xacro:macro name="lander_lights" params="lander_lights_parent_link off_x off_y off_z off_R off_P off_Y vis_mask" >
     <link name="lander_lights_link" />
 
@@ -19,7 +21,7 @@
     <xacro:lander_light_link suffix="1" roll="0" pitch="0" y="0.33" />
   </xacro:macro>
 
-  <xacro:property name="light_mass" value="0.2" /> 
+  <xacro:property name="light_mass" value="0.2" />
 
   <xacro:macro name="lander_light_link" params="suffix roll pitch y">
     <link name="lander_light${suffix}">
@@ -34,6 +36,9 @@
         <geometry>
           <cylinder length="0.05" radius="0.03" />
         </geometry>
+        <material name="">
+          <color rgba="0.7 0.7 0.7 1" />
+        </material>
       </visual>
       <inertial>
         <origin rpy="0 0 0" xyz="0 0 0.05"/>
@@ -52,8 +57,12 @@
     </joint>
 
     <gazebo reference="lander_light${suffix}">
-      <material>Gazebo/Grey</material>
       <visual>
+        <material>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <xacro:material_script />
+        </material>
         <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
           <visibility_bitmask>${vis_mask}</visibility_bitmask>
         </plugin>

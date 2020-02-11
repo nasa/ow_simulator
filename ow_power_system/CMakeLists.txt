@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_ephemeris)
+project(ow_power_system)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,64 +8,13 @@ project(ow_ephemeris)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-#  roscpp
-#  geometry_msgs
-#  tf2_ros
+  roscpp
+  std_msgs
 )
+find_package(roslaunch)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-###########
-## Fetch ##
-###########
-set(DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-file(MAKE_DIRECTORY ${DOWNLOAD_DIR})
-
-function(download_file URL MD5)
-  get_filename_component(FILENAME ${URL} NAME)
-  set(PATH "${DOWNLOAD_DIR}/${FILENAME}")
-  if(NOT EXISTS ${PATH})
-    # Download the file
-    message(WARNING "Downloading file: ${URL}")
-    file(DOWNLOAD ${URL} ${PATH} SHOW_PROGRESS)
-  else()
-    message(STATUS "You already have ${PATH}")
-  endif()
-
-  # Emit a warning whenever JPL updates files and their MD5s don't match ours.
-  file(MD5 ${PATH} COMPUTED_MD5)
-  if(NOT ${COMPUTED_MD5} STREQUAL ${MD5})
-    message(SEND_ERROR "${PATH} does not produce the expected md5sum.")
-  endif()
-endfunction()
-
-download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/latest_leapseconds.tls
-  25a2fff30b0dedb4d76c06727b1895b1
-)
-download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc
-  da153641f7346bd5b6a1226778e0d51b
-)
-download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
-  91e21181f6a96edbfeb1ff5a419ce095
-)
-download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/jup310.bsp
-  be5c27b3c2d30cefbcee218ff5711807
-)
-download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/sat427.bsp
-  f09fb34fc9ec04af4971e4ea097628e5
-)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -80,7 +29,7 @@ download_file(
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
+##     * add an exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -113,10 +62,10 @@ download_file(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-# )
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#)# Uncommented gives error:  Unknown CMake command "generate_messages"
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -147,16 +96,12 @@ download_file(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-#catkin_package(
+catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ephemeris
-#  CATKIN_DEPENDS tf2_ros
+#  LIBRARIES power_system_node 
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
-#)
-
-catkin_add_env_hooks(
-  70.ow_ephemeris
-  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+)
 
 ###########
 ## Build ##
@@ -164,14 +109,15 @@ catkin_add_env_hooks(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-#include_directories(
+include_directories(
 # include
-#  ${catkin_INCLUDE_DIRS}
-#)
+  ${catkin_INCLUDE_DIRS}
+  )
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ephemeris.cpp
+#   src/${PROJECT_NAME}/power_system_node.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -182,7 +128,7 @@ catkin_add_env_hooks(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/ephemeris_node.cpp)
+# add_executable(${PROJECT_NAME} power_system_node src/power_system_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -195,9 +141,9 @@ catkin_add_env_hooks(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(${PROJECT_NAME}_node
-#  ${catkin_LIBRARIES}
-#)
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -213,11 +159,18 @@ catkin_add_env_hooks(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+## Mark executables for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
+# install(TARGETS ${PROJECT_NAME}_node
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+## Mark libraries for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
+# install(TARGETS ${PROJECT_NAME}
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 # )
 
 ## Mark cpp header files for installation
@@ -239,10 +192,12 @@ catkin_add_env_hooks(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ephemeris.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_power_system_node.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_subdirectory(src)

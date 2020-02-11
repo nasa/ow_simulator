@@ -25,7 +25,7 @@ uniform mat4 uvTransform;
 
 uniform vec4 wsSunPosition;
 uniform vec3 sunIntensity;  // lux (visual spectrum) or watts per square meter (some other spectrum)
-uniform float sunOccultation;  // fraction of sun that is visible in the range {0.0, 1.0}
+uniform float sunVisibility;  // fraction of sun that is visible in the range {0.0, 1.0}
 
 // Shadow parameters
 uniform vec4 pssmSplitPoints;
@@ -177,7 +177,7 @@ void spotlight(in vec3 vsVecToLight,
   specular += finalColor * spotspec;
 }
 
-// wsDirToSun and wsDirToEye must be normalized
+// wsDirToSun, wsDirToEye, wsNormal, and wsDetailNormalHeight.xyz must be normalized
 void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNormalHeight, out vec3 diffuse, out vec3 specular)
 {
   const float specular_power = 100.0;
@@ -193,7 +193,7 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   float surfaceDot = dot(wsNormal, wsDirToSun);
   float heightMultiplier = clamp((wsDetailNormalHeight.w * 5.0 + 5.0) - (10.0 - surfaceDot * 50.0), 0.0, 1.0);
 
-  float visibility = sunOccultation * heightMultiplier * shadow;
+  float visibility = sunVisibility * heightMultiplier * shadow;
 
   // directional light diffuse
   float sundiffuse = max(dot(wsDetailNormalHeight.xyz, wsDirToSun), 0.0);
@@ -223,8 +223,8 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   // but it seems premature to make this consistent before implementing multiple
   // materials and lighting that is more advanced than the Lambertian diffuse +
   // Phong specular model we are currently using.
-  vec3 vsDirToEye = normalMatrix * wsDirToEye;
-  vec3 vsDetailNormal = normalMatrix * wsDetailNormalHeight.xyz;
+  vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
+  vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
   spotlight(vsSpotlightPos0.xyz - vsPos, -vsSpotlightDir0.xyz, spotlightAtten0,
             spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord0,
             vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);

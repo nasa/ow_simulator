@@ -8,6 +8,8 @@
 
   <xacro:property name="deg_to_rad"         value="0.0174533" />
 
+  <xacro:include filename="$(find ow_lander)/urdf/material_script.xacro" />
+
   <xacro:macro name="stereo_camera" params="stereo_camera_parent_link hfov img_w img_h update_rate off_x off_y off_z off_R off_P off_Y vis_mask">
 
   <link name="${Camera01Name}_head_link">
@@ -22,26 +24,31 @@
       <geometry>
         <box size="0.025 ${camera_baseline} 0.025"/>
       </geometry>
-      <material name="Gold"/>
+      <material name="">
+        <color rgba="0.9 0.7 0.2 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="0 ${camera_baseline/2} 0"  rpy="0 0 0"/>
       <geometry>
         <box size="0.1 0.1 0.1"/>
       </geometry>
-      <material name="Gold"/>
+      <material name="">
+        <color rgba="0.9 0.7 0.2 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="0 -${camera_baseline/2} 0"  rpy="0 0 0"/>
       <geometry>
         <box size="0.1 0.1 0.1"/>
       </geometry>
-      <material name="Gold"/>
+      <material name="">
+        <color rgba="0.9 0.7 0.2 1" />
+      </material>
     </visual>
     <inertial>
       <mass value="${camera_head_mass}" />
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <!-- inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" / -->
       <inertia
           ixx="${camera_head_mass / 12.0 * (camera_baseline*camera_baseline + 0.1*0.1)}" ixy="0.0" ixz="0.0"
           iyy="${camera_head_mass / 12.0 * (0.1*0.1 + 0.1*0.1)}" iyz="0.0"
@@ -56,6 +63,11 @@
   
   <gazebo reference="${Camera01Name}_head_link">
     <visual>
+      <material>
+        <diffuse>0.9 0.7 0.2 1</diffuse>
+        <specular>0.4 0.4 0.4 1</specular>
+        <xacro:material_script />
+      </material>
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
       </plugin>
@@ -65,8 +77,7 @@
   <!-- example for stereo setup is here: -->
   <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/multisense_sl_description/urdf/multisense_sl.urdf?at=default#cl-200 -->
   <!-- https://bitbucket.org/osrf/drcsim/src/52a691b8956045442ef22ba0aaee4520716807ff/drcsim_gazebo/launch/atlas_bringup.launch?at=default#cl-38 -->
-  
-  <gazebo reference="${Camera01Name}Left_link"/>
+
   <link name="${Camera01Name}Left_link"/>
   <link name="${Camera01Name}Left_optical_frame"/>
   <joint name="leftCamera_joint" type="fixed">
@@ -80,7 +91,6 @@
     <child link="${Camera01Name}Left_optical_frame"/>
   </joint>
 
-  <gazebo reference="${Camera01Name}Right_link"/>
   <link name="${Camera01Name}Right_link"/>
   <link name="${Camera01Name}Right_optical_frame"/>
   <joint name="rightCamera_joint" type="fixed">
@@ -95,7 +105,6 @@
   </joint>
   
   <gazebo reference="${Camera01Name}Left_link">
-    <material>Gazebo/Red</material>
     <sensor type="multicamera" name="${Camera01Name}">
       <update_rate>${update_rate}</update_rate>
       <always_on>0</always_on>
@@ -150,7 +159,6 @@
   </gazebo>  
   
   <!-- "Center Camera" for "video" -->
-  <gazebo reference="${Camera01Name}Center_link"/>
   <link name="${Camera01Name}Center_link"/>
   <link name="${Camera01Name}Center_optical_frame"/>
   <joint name="CenterCamera_joint" type="fixed">
@@ -171,8 +179,6 @@
       <camera name="head">
         <horizontal_fov>${hfov*deg_to_rad}</horizontal_fov>
         <image>
-          <!--width>1280</width>
-          <height>720</height -->
           <width>${img_w/2}</width>
           <height>${img_h/2}</height>
           <format>R8G8B8</format>
