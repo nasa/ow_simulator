@@ -70,6 +70,10 @@
   <!-- == start rqt ===================== -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
-    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/-->
+      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/-->
+
+  <!-- Start power_system_node -->
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" args=""/>
+
 
 </launch>
