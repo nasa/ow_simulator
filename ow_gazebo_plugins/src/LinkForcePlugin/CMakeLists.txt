@@ -1,6 +1,8 @@
 set(TARGET_NAME LinkForcePlugin)
 
 set (HEADERS
+  CSVRow.h
+  ForceRow.h
   LinkForcePlugin.h
 )
 

@@ -41,7 +41,7 @@ void LinkForcePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     gzerr << "LinkForcePlugin: you must specify a filename in a <lookupTable> element." << endl;
     return;
   }
-  if(!loadLookupTable(_sdf->Get<string>("lookupTable")))
+  if(!LoadLookupTable(_sdf->Get<string>("lookupTable")))
     return;
 
   // Listen to the update event. This event is broadcast every sim iteration.
@@ -49,17 +49,29 @@ void LinkForcePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&LinkForcePlugin::OnUpdate, this));
 }
 
-bool LinkForcePlugin::loadLookupTable(string filename)
+bool LinkForcePlugin::LoadLookupTable(string filename)
 {
   ifstream infile(filename.c_str(), fstream::in);
   if (!infile.is_open()) {
-    gzerr << "cannot open file: " << filename << endl;
+    gzerr << "LinkForcePlugin: cannot open file: " << filename << endl;
     return false;
   }
 
-  //string row;
-  //while(infile >> row)
-  //  cout << row << endl;
+  // Read in force and torque lookup table
+  CSVRow row;
+  bool first = true;
+  while(infile >> row) {
+    if(first) {
+      first = false;
+      continue;
+    }
+    //m_forceRows.push_back(ForceRow(row));
+
+    ForceRow f(row);
+    auto& vec = m_forcesMap[f.m_m][f.m_d][f.m_p][f.m_rho];
+    vec.insert(vec.end(), f.m_force_torque.begin(), f.m_force_torque.end());
+  }
+  infile.close();
 
   return true;
 }
@@ -91,9 +103,66 @@ void LinkForcePlugin::OnUpdate()
     return;
   }
 
-  // TODO: Get force and torque from lookup table here.
+  // Get force and torque from lookup table here.
+  std::vector<float> forces;
+  GetForces(1, 6.0, 1, 0.2f, forces);
 
   // TODO: Figure out if this force applied at the CoG and where exactly we
   // want to apply it.
-  m_link->AddRelativeForce(ignition::math::Vector3d(-20,0,0));
+  m_link->AddRelativeForce(ignition::math::Vector3d(forces[0], forces[1], forces[2]));
+  m_link->AddRelativeTorque(ignition::math::Vector3d(forces[3], forces[4], forces[5]));
+}
+
+bool LinkForcePlugin::GetForces(int material, float depth, int pass, float rho,
+                                std::vector<float>& out_forces)
+{
+  // find this material
+  auto depth_map = m_forcesMap[material];
+
+  // Find the nearest map associated with this floating point depth
+  auto pass_map = depth_map.rbegin()->second;
+  {
+    auto not_less_than_iter = depth_map.lower_bound(depth);
+    if(not_less_than_iter != depth_map.end()) {
+      if(not_less_than_iter == depth_map.begin())
+        pass_map = not_less_than_iter->second;
+      else {
+        auto previous_iter = std::prev(not_less_than_iter);
+        if ((depth - previous_iter->first) < (not_less_than_iter->first - depth))
+          pass_map = previous_iter->second;
+        else
+          pass_map = not_less_than_iter->second;
+      }
+    }
+  }
+
+  // find this pass
+  auto rho_map = pass_map[pass];
+
+  // Find the nearest forces vector associated with this floating point rho
+  auto forces = rho_map.rbegin()->second;
+  {
+    auto not_less_than_iter = rho_map.lower_bound(depth);
+    if(not_less_than_iter != rho_map.end()) {
+      if(not_less_than_iter == rho_map.begin())
+        forces = not_less_than_iter->second;
+      else {
+        auto previous_iter = std::prev(not_less_than_iter);
+        if ((depth - previous_iter->first) < (not_less_than_iter->first - depth))
+          forces = previous_iter->second;
+        else
+          forces = not_less_than_iter->second;
+      }
+    }
+  }
+
+  if(forces.size() != 6) {
+    gzerr << "LinkForcePlugin::GetForces - forces vector has size = "
+          << forces.size() << ". It should be 6." << endl;
+    return false;
+  }
+
+  out_forces = forces;
+
+  return true;
 }
