@@ -26,7 +26,7 @@ public:
   }
 
   int m_m;
-  int m_d;
+  float m_d;
   int m_p;
   float m_rho;
   std::vector<float> m_force_torque;
