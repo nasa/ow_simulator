@@ -100,7 +100,6 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     // Cosimulation timestep parameter
     m_timestep = parseElement<double>(sdf, "timestep");
   } catch (common::Exception err) {
-    gzerr << err << std::endl;
     return;
   }
 
@@ -125,12 +124,12 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   m_workspace_box.Size(workspace_dimensions);
   m_workspace_box.Pose(workspace_pose);
   // get heightmap and pass it to the cosimulation as a cropped heightmap
-  auto scene = rendering::get_scene();
+  rendering::ScenePtr scene = rendering::get_scene();
   if (!scene) {
     gzerr << "CosimulationPlugin::Load - scene pointer is NULL" << std::endl;
     return;
   }
-  auto heightmap = scene->GetHeightmap();
+  rendering::Heightmap* heightmap = scene->GetHeightmap();
   if (!heightmap) {
     gzerr << "CosimulationPlugin::Load - heightmap pointer is NULL" << std::endl;
     return;  
