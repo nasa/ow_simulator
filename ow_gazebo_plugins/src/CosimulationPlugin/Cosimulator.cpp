@@ -12,7 +12,7 @@ Cosimulator::Cosimulator() : m_relaxed(false)
 }
 
 void Cosimulator::initialize(void) {
-  gzdbg << "Cosimulator::initialize - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::initialize - STUBBED" << std::endl;
 
   // fill mesh with DE's
 
@@ -20,11 +20,9 @@ void Cosimulator::initialize(void) {
 }
 
 void Cosimulator::relax(const int &max_it, const int &max_speed) {
-  gzdbg << "Cosimulator::relax - STUBBED" << std::endl;
-  gzdbg << "Cosimulator::relax     max_it="
-            << max_it << std::endl;
-  gzdbg << "Cosimulator::relax     max_speed="
-            << max_speed << std::endl;
+  gzwarn << "Cosimulator::relax - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::relax     max_it=" << max_it << std::endl;
+  gzwarn << "Cosimulator::relax     max_speed="<< max_speed << std::endl;
 
   // iterate till max_it or all particles are under max_speed
 
@@ -33,11 +31,9 @@ void Cosimulator::relax(const int &max_it, const int &max_speed) {
 
 void Cosimulator::update(const ignition::math::Pose3d &tool_pose, double timestep,
   ignition::math::Vector3d &out_force, ignition::math::Vector3d &out_torque) {
-  gzdbg << "Cosimulator::update - STUBBED" << std::endl;
-  gzdbg << "Cosimulator::update     tool_pos=" 
-            << tool_pose << std::endl;
-  gzdbg << "Cosimulator::update     timestep=" 
-            << timestep << std::endl;
+  gzwarn << "Cosimulator::update - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::update     tool_pos=" << tool_pose << std::endl;
+  gzwarn << "Cosimulator::update     timestep=" << timestep << std::endl;
   
   if (timestep <= 0) {
     out_force = ignition::math::Vector3d();
@@ -55,7 +51,7 @@ void Cosimulator::update(const ignition::math::Pose3d &tool_pose, double timeste
 
 double Cosimulator::getSimTime(void)
 {
-  gzdbg << "Cosimulator::getSimTime - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::getSimTime - STUBBED" << std::endl;
 
   // get in-sim time from cosimulation
 
@@ -63,15 +59,15 @@ double Cosimulator::getSimTime(void)
 }
 
 void Cosimulator::setParticleFillGeometry(gazebo::common::Mesh mesh) {
-  gzdbg << "Cosimulator::setParticleFillGeometry - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::setParticleFillGeometry - STUBBED" << std::endl;
 
   // set the value of pfill_mesh, convert if needed
 
 }
 
 void Cosimulator::setToolMesh(const std::string& path_to_mesh) {
-  gzdbg << "Cosimulator::setToolMesh - STUBBED" << std::endl;
-  gzdbg << "Cosimulator::setToolMesh     path_to_mesh="
+  gzwarn << "Cosimulator::setToolMesh - STUBBED" << std::endl;
+  gzwarn << "Cosimulator::setToolMesh     path_to_mesh="
             << path_to_mesh << std::endl;
 
   // set the value of tool_mesh, convert if needed

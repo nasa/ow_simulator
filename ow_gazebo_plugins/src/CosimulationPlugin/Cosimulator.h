@@ -5,9 +5,9 @@
 // __END_LICENSE__
 
 // TODO:
-//   1) Add a mesh data structure to define the fill value of discrete elements
-//   2) Add a mesh data structure to assign to the manipulating tool  
-//   3) Add all necessary thirdparty data structures for cosimulation
+//   1) Add a mesh data structure to define the fill volume of discrete elements
+//   2) Add a mesh data structure to for the tool
+//   3) Add all necessary external physics simulation data structures and calls
 
 #ifndef Cosimulator_h
 #define Cosimulator_h
@@ -17,17 +17,15 @@
 
 #include <gazebo/common/common.hh>
 
-// TODO: include thirdparty simulation software includes
-
 class Cosimulator
 {
 public:
   Cosimulator();
 
-  // fill geometry with DE, place tool in sim, and initialize sim
+  // fill geometry with discrete elements, place tool in sim, and initialize sim
   void initialize(void);
 
-  // relax DE geometry (optional)
+  // relax DE geometry
   // can be ran in the background to shorten total simulation time
   void relax(const int &max_it, const int &max_speed);
   bool isRelaxed(void) {
@@ -35,7 +33,7 @@ public:
   }
 
   // moves tool in cosimulation and iterates by a single timestep
-  // returns forces and torques acted on scoop during timestep
+  // outputs force and torque acted on scoop during timestep
   void update(const ignition::math::Pose3d &tool_pose, double timestep,
       ignition::math::Vector3d &out_force, 
       ignition::math::Vector3d &out_torque);

@@ -12,6 +12,8 @@
 //       Cosimulator::update to ensure smooth movement.
 //    4) Implement CropHeightmap
 //    5) Decide on proper error handling (gzerr or something else?)
+//    6) Improve on clarity of SDF parameters when external simulator has
+//       been selected.
 
 #include "CosimulationPlugin.h"
 
@@ -33,7 +35,7 @@ using namespace gazebo;
 static common::Mesh CropHeightmap(rendering::Heightmap* heightmap, 
     ignition::math::OrientedBoxd& box)
 {
-  gzdbg << "CropHeightmap - STUBBED" << std::endl;
+  gzwarn << "CropHeightmap - STUBBED" << std::endl;
 
   return common::Mesh();
 }
@@ -42,8 +44,7 @@ static common::Mesh CropHeightmap(rendering::Heightmap* heightmap,
 template <class T>
 static T parseElement(sdf::ElementPtr sdf, const std::string &name) {
   if (!sdf->HasElement(name)) {
-    gzerr << "CosimulationPlugin::Load - you must specify a " 
-          << name << " element." << std::endl;
+    gzthrow ("CosimulationPlugin::Load - you must specify a " << name << " element.");
   }
   return sdf->Get<T>(name);
 }
@@ -98,20 +99,19 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     workspace_pose = parseElement<ignition::math::Pose3d>(sdf, "workspace_pose");  
     // Cosimulation timestep parameter
     m_timestep = parseElement<double>(sdf, "timestep");
-  } catch (sdf::Exception err) {
-    gzerr << err.GetErrorStr() << std::endl;
+  } catch (common::Exception err) {
+    gzerr << err << std::endl;
     return;
   }
 
-  gzdbg << "CosimulationPlugin::Load - Initializing cosimulation..." << std::endl;
-  
+  gzmsg << "CosimulationPlugin::Load - Initializing cosimulation..." << std::endl;
   // pass material properties from the SDF configuration
   m_cosim.setToolProperties(link_youngs_modulus, link_poisson_ratio,
       link_restitution_coef, link_friction_static, link_friction_rolling);
   m_cosim.setParticleProperties(part_youngs_modulus, part_poisson_ratio, 
       part_restitution_coef, part_friction_static, part_friction_rolling, 
       part_density, part_radius);
-  // get world pointer 
+  // get world pointer
   m_world = physics::get_world();
   if (!m_world) {
     gzerr << "CosimulationPlugin::Load - world pointer is NULL" << std::endl;
@@ -119,7 +119,7 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   }
   // set gravity to be the same as Gazebo's
   m_cosim.setGravity(m_world->Gravity());
-  // let cosimulation load model from a file path
+  // pass model file path to cosimulator
   m_cosim.setToolMesh(link_model);
   // build workspace bounding box
   m_workspace_box.Size(workspace_dimensions);
@@ -139,20 +139,21 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
   m_cosim.initialize();
 
-  // bind updateTerraPhysics() to the physics update event
   m_phys_connect = event::Events::ConnectBeforePhysicsUpdate(
       std::bind(&CosimulationPlugin::OnUpdate, this));
 }
 
 void CosimulationPlugin::OnUpdate(void)
 {
-  // NOTE: So long as region's height is larger than the link using the link's
+  // NOTE: So long as region's height is larger than the link, using the link's
   //       CoG here works fine.
   ignition::math::Pose3d link_pose = m_link->WorldCoGPose();
-  
+
   if (m_workspace_box.Contains(link_pose.Pos()) == false) {
+    // ignore this call if link is not within workspace yet  
     return;
   } else if (m_started == false) {
+    // record time when link first enters workspace
     m_started = true;
     m_starttime = m_world->SimTime().Double();
   }
