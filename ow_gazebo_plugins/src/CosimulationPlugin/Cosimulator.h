@@ -17,6 +17,11 @@
 
 #include <gazebo/common/common.hh>
 
+// Cosimulator encapsulates the methods and data structures of a discrete
+// element method (DEM) API. 
+
+// NOTE: A DEM API has not yet been implemented, so many of its methods are
+// stubs and this plugin does not presently function.
 class Cosimulator
 {
 public:

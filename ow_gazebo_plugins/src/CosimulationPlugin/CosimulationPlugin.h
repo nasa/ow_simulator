@@ -15,6 +15,11 @@
 
 namespace gazebo {
 
+// CosimulationPlugin acts as the primary interface between Gazebo and the 
+// Cosimulator. It is responsbile for closing the loop between Gazebo's physics
+// engine and the cosimulation. It also computes the geometry that Cosimulator 
+// will operate on based on the portion of the scene's heightmap that intersects 
+// the workspace box.
 class CosimulationPlugin : public ModelPlugin
 {
 public:
@@ -24,7 +29,7 @@ public:
   virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
 
 protected:
-  // Called before each Gazebo physics loop
+  // Called before each Gazebo physics loop to sync simulations
   void OnUpdate();
 
 private:

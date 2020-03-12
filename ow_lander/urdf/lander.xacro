@@ -750,31 +750,5 @@
        j_hand_yaw, j_scoop_yaw, j_ant_pan, j_ant_tilt</jointName>
       <updateRate>10</updateRate>
     </plugin-->
-
-    <plugin name="CosimulationPlugin" filename="libCosimulationPlugin.so">
-      <!-- all parameters given in SI units -->
-      <!-- link_ and particle_ are set to the same values used in EDEM sim -->
-      <link>l_scoop</link>
-      <link_model>l_scoop.STL</link_model>
-      
-      <link_youngs_modulus>6.9e10</link_youngs_modulus>
-      <link_poisson_ratio>0.33</link_poisson_ratio>
-      <link_restitution_coef>0.7</link_restitution_coef>
-      <link_static_friction_coef>0.58</link_static_friction_coef>
-      <link_rolling_friction_coef>0.05</link_rolling_friction_coef>
-
-      <particle_youngs_modulus>2.72e7</particle_youngs_modulus>
-      <particle_poisson_ratio>0.36</particle_poisson_ratio>
-      <particle_restitution_coef>0.88</particle_restitution_coef>
-      <particle_static_friction_coef>0.58</particle_static_friction_coef>
-      <particle_rolling_friction_coef>0.05</particle_rolling_friction_coef>
-      <particle_density>300</particle_density>
-      <particle_radius>1.75e-3</particle_radius>
-
-      <workspace_dimensions>0.5 0.5 0.2</workspace_dimensions>
-      <workspace_pose>0 0 0 1 0 0 0</workspace_pose>
-
-      <timestep>1e-6</timestep>
-    </plugin>
   </gazebo>
 </robot>
