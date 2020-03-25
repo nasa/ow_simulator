@@ -1,0 +1,62 @@
+ow_faults
+=========
+This package contains infrastructure for fault management and injection. Users
+can inject simulated faults into their simulations to cause problems for their
+autonomy algorithms.
+
+Faults are implemented using ROS parameters.
+
+## `faults` node
+The `faults` node in this package is the source of all the fault state in
+OceanWATERS. It uses a `dynamic_reconfigure::Server` under the hood so that
+clients can modify fault state at runtime.
+
+## Setting faults
+You can set faults in RViz, on the command line, or from a python script.
+Setting a fault causes it to be updated on the `dynamic_reconfigure::Server` in
+the faults node such that a message is emitted on the `/faults/update_parameters`
+topic and `rqt_reconfigure` is updated with your new value.
+
+### RViz
+In rviz, look at the `faults` section in the `rqt_reconfigure` widget. There
+you can see and set all faults available in OceanWATERS.
+
+### Command line
+You can't just do:
+
+`rosparam set /faults/ant_pan_encoder_failure True`
+
+That will set the param on the `faults` node, but it won't be changed in the
+node's dynamic_reconfigure::Server. Instead, you have to do:
+
+`rosrun dynamic_reconfigure dynparam set /faults ant_pan_encoder_failure True`
+
+More info is [here](http://wiki.ros.org/dynamic_reconfigure#dynamic_reconfigure.2BAC8-groovy.dynparam_command-line_tool).
+
+### Python script
+Include the dynamic_reconfigure client API:
+
+`import dynamic_reconfigure.client`
+
+Then set faults on the `faults` node from anywhere in your script:
+
+```
+client = dynamic_reconfigure.client.Client('/faults')
+params = { 'ant_pan_encoder_failure' : 'True', 'ant_tilt_torque_sensor_failure' : 'True' }
+config = client.update_configuration(params)
+```
+
+## Simulation of faults
+Some faults are more difficult to simulate than others. For example, a dead
+sensor can be simulated by turning off its output or setting its output to zero.
+But a problem with the movement of a joint must be simulated by modifying the
+properties of the joint in the dynamics simulation.
+
+The `faults` node currently handles the simplest of these faults. Joint encoder
+and torque sensor failures are simulated by receiving `/joint_states` and
+publishing a modified version of it called `/faults/joint_states`. Similarly,
+all faulty versions of messages should be prefixed with `/faults`.
+
+As more faults are added, their simulation will need to be distributed
+throughout the simulation depending on their characteristics.
+

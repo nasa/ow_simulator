@@ -61,6 +61,12 @@
   <node name="world_to_base_link" pkg="tf" type="static_transform_publisher"
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
+  <!-- Start power_system_node -->
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+
+  <!-- Start faults node -->
+  <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
     <node name="rviz" pkg="rviz" type="rviz"
@@ -68,12 +74,9 @@
   </group>
 
   <!-- == start rqt ===================== -->
+  <!-- Starting without a .perspective file will reload the last used configuration. -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
-  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
-      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/-->
-
-  <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" args=""/>
-
+  <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
 
 </launch>
