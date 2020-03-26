@@ -10,6 +10,7 @@
 #include <ros/ros.h>
 #include <ow_faults/FaultsConfig.h>
 #include <sensor_msgs/JointState.h>
+#include <unordered_map>
 
 
 // This class injects simple message faults that don't need to be simulated
@@ -46,7 +47,7 @@ private:
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-  std::map<std::string, int> m_joint_index_map;
+  std::unordered_map<std::string, int> m_joint_index_map;
 };
 
 
