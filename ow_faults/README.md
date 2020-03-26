@@ -22,16 +22,23 @@ In rviz, look at the `faults` section in the `rqt_reconfigure` widget. There
 you can see and set all faults available in OceanWATERS.
 
 ### Command line
-You can't just do:
+To see all possible faults you can set, do this:
+
+`rosparam list /faults`
+
+To set a particular fault:
+
+`rosrun dynamic_reconfigure dynparam set /faults ant_pan_encoder_failure True`
+
+Here is more information about [dynparam](http://wiki.ros.org/dynamic_reconfigure#dynamic_reconfigure.2BAC8-groovy.dynparam_command-line_tool).
+
+Note: you *cannot* use `rosparam` to set faults:
 
 `rosparam set /faults/ant_pan_encoder_failure True`
 
 That will set the param on the `faults` node, but it won't be changed in the
-node's dynamic_reconfigure::Server. Instead, you have to do:
-
-`rosrun dynamic_reconfigure dynparam set /faults ant_pan_encoder_failure True`
-
-More info is [here](http://wiki.ros.org/dynamic_reconfigure#dynamic_reconfigure.2BAC8-groovy.dynparam_command-line_tool).
+node's `dynamic_reconfigure::Server` and the change won't propagate to the rest
+of the simulation.
 
 ### Python script
 Include the dynamic_reconfigure client API:
@@ -47,9 +54,9 @@ config = client.update_configuration(params)
 ```
 
 ## Simulation of faults
-Some faults are more difficult to simulate than others. For example, a dead
-sensor can be simulated by turning off its output or setting its output to zero.
-But a problem with the movement of a joint must be simulated by modifying the
+Some faults are easier to simulate than others. For example, a dead sensor can
+be simulated by turning off its output or setting its output to zero. But a
+problem with the movement of a joint must be simulated by modifying the
 properties of the joint in the dynamics simulation.
 
 The `faults` node currently handles the simplest of these faults. Joint encoder
@@ -58,5 +65,5 @@ publishing a modified version of it called `/faults/joint_states`. Similarly,
 all faulty versions of messages should be prefixed with `/faults`.
 
 As more faults are added, their simulation will need to be distributed
-throughout the simulation depending on their characteristics.
+throughout the OceanWATERS components depending on their characteristics.
 
