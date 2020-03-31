@@ -8,7 +8,7 @@
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator_workspace.world"/>
     <arg name="init_x" value="0"/>
     <arg name="init_y" value="0"/>
-    <arg name="init_z" value="-7.291"/>
+    <arg name="init_z" value="-7.19"/>
     <arg name="init_R" value="-0.105"/>
     <arg name="init_P" value="0.008"/>
     <arg name="init_Y" value="0"/>
