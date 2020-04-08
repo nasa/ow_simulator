@@ -18,6 +18,7 @@ add_service_files(
   MoveGuarded.srv
   MoveReset.srv
   DigTrench.srv
+  SampleDelivery.srv
 )
 
 generate_messages(
