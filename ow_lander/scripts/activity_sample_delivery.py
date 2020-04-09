@@ -103,17 +103,93 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
+
   
   
-    ###rotate scoop 
-  #joint_goal = move_arm.get_current_joint_values()
-  #joint_goal[constants.J_SCOOP_YAW] = math.pi/2
-  #move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-    ### trying delivery with pose goal
+  # find return sampe point begin
+  goal_pose = move_arm.get_current_pose().pose
+  return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  return_o = goal_pose.orientation
+    # find return sampe point end
     
-      # RPY to convert: 90deg, 0, -90deg
-  #q = quaternion_from_euler(1.5707, 0, -1.5707)
+  #rotate scoop outwards 
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_SCOOP_YAW] = math.pi/2
+  print ()
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()  
+  
+    #rotate dist pith to pre-trenching position. 
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_DIST_PITCH] = -math.pi/4
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+  
+
+  
+ 
+  
+  
+ 
+  
+  
+  ## Once aligned to trench goal, place hand above trench middle point
+  goal_pose = move_limbs.get_current_pose().pose
+  goal_pose.position.x = x_tr
+  goal_pose.position.y = y_tr
+  goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  move_limbs.set_pose_target(goal_pose)
+  plan = move_limbs.plan()
+
+  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    return False
+
+  plan = move_limbs.go(wait=True)
+  move_limbs.stop()
+  move_limbs.clear_pose_targets()
+  
+  #  rotate to dig in the ground  ###rotate scoop to deliver sample at current location begin
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_DIST_PITCH] = math.pi/10 # we want zero so a number very close to zero
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+  
+  # linear trenching 
+  
+  cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
+  move_limbs.execute(cartesian_plan, wait=True)
+  move_limbs.stop()
+  move_arm.execute(cartesian_plan, wait=True)
+  move_arm.stop()
+  
+  #  rotate to dig out 
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_DIST_PITCH] = math.pi/4
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+  
+  # after sample collect 
+  
+  goal_pose = move_arm.get_current_pose().pose
+  #return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  goal_pose.position.x = return_pt[0]
+  goal_pose.position.y = return_pt[1]
+  goal_pose.position.z = return_pt[2]
+  goal_pose.orientation = return_o 
+  #goal_pose.orientation.w = 1; 
+  #goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+  
+  move_arm.set_pose_target(goal_pose)
+  plan = move_arm.plan()
+
+  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    return False
+
+  plan = move_arm.go(wait=True)
+  move_arm.stop()
+  
+  
+    ###rotate scoop to deliver sample at current location begin
   mypi = 3.14159
   r = -180
   p = 90  # 45 worked get
@@ -122,8 +198,6 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   r2d = 180/mypi
   q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
   #print "The quaternion representation is %s %s %s %s." % (q[0], q[1], q[2], q[3])
-  
-  
   goal_pose = move_arm.get_current_pose().pose
   qg= goal_pose.orientation
   #rotation = (qg.x, qg.y, qg.z, qg.w)
@@ -133,10 +207,12 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   print "Current euler is ******************************************** %s %s %s." % (euler_angle[0]*r2d, euler_angle[1]*r2d, euler_angle[2]*r2d)
   #print "goal quaternion is %s %s %s %s." % (q[0], q[1], q[2], q[3])
   print "goal euler is ----------------------------------------------  %s %s %s." % (r ,p, y)
+  print "current position is ++++++++++++++++++++++++++++++++++++++++ %s %s %s." % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
   #goal_pose.position.x = x_tr
   #goal_pose.position.y = y_tr
   #goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  #goal_pose.orientation.w = 1;
+  #goal_pose.orientation.w = 1; 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
   move_arm.set_pose_target(goal_pose)
@@ -148,146 +224,8 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   move_arm.clear_pose_targets()
-  '''
+  ###rotate scoop to deliver sample at current location end
   
-  # plan with constraint 
-  #name: ['irg_sun::ellipsoid', 'irg_jupiter::ellipsoid', 'ow_light_probe::sphere', 'heightmap::link',
-  #'gui_camera_sim::link', 'lander::base_link', 'lander::l_ant_foot', 'lander::l_ant_panel',
-  #'lander::lander_lights_link', 'lander::l_shou', 'lander::l_prox', 'lander::l_dist',
-  #'lander::l_wrist', 'lander::l_hand', 'lander::l_scoop', 'lander::l_scoop_tip']
-
-  
-  #moveit_msgs::OrientationConstraint ocm;
-  #ocm.link_name = "lander::l_scoop";
-  #ocm.header.frame_id = "lander::base_link";
-  #ocm.orientation.w = 1.0;
-  #ocm.absolute_x_axis_tolerance = 0.1;
-  #ocm.absolute_y_axis_tolerance = 0.1;
-  #ocm.absolute_z_axis_tolerance = 0.1;
-  #ocm.weight = 1.0;
-  
-  #moveit_msgs::Constraints test_constraints;
-  #test_constraints.orientation_constraints.push_back(ocm);
-  #move_group.setPathConstraints(test_constraints);
-  
- # enable_upright_path_constraints(move_arm)
-  
-
-  
-  
-  #rotate dist pith to pre-trenching position. 
-  
-  #enable_upright_path_constraints(move_arm)
-  
-  #upright_constraints = Constraints()
-  #upright_constraints.name = "upright"
-  #orientation_constraint = OrientationConstraint()
-  #orientation_constraint.header = pose.header
-  #orientation_constraint.link_name = self.arm.get_end_effector_link()
-  #orientation_constraint.orientation = pose.pose.orientation
-  #orientation_constraint.absolute_x_axis_tolerance = 0.5
-  #orientation_constraint.absolute_y_axis_tolerance = 0.5
-  #orientation_constraint.absolute_z_axis_tolerance = 3.14 # allow free rotation around this axis
-  #orientation_constraint.weight = 1
-  
-      #constraint = Constraints()
-    #constraint.name = "tilt constraint"
-    #tilt_constraint = OrientationConstraint()
-    ## 'base_link' is equal to the world link
-    #tilt_constraint.header.frame_id = "base_link"
-    ## The link that must be oriented upwards
-    #tilt_constraint.link_name = "box_gripper_link"
-    #tilt_constraint.orientation = Quaternion(0.5, 0.5, 0.5, 0.5)
-    ## Allow rotation of 45 degrees around the x and y axis
-    #tilt_constraint.absolute_x_axis_tolerance = 0.45 #Allow max rotation of 45 degrees
-    #tilt_constraint.absolute_y_axis_tolerance = 3.6 #Allow max rotation of 360 degrees
-    #tilt_constraint.absolute_z_axis_tolerance = 0.45 #Allow max rotation of 45 degrees
-    ## The tilt constraint is the only constraint
-    #tilt_constraint.weight = 1
-    #constraint.orientation_constraints = [tilt_constraint]
-    #self.robot_controller.move_group.set_path_constraints(constraint)
-  
-  upright_constraints = Constraints()
-  upright_constraints.name = "upright"
-  orientation_constraint = OrientationConstraint()
-  orientation_constraint.header.frame_id = "base_link"
-  orientation_constraint.link_name = "l_scoop"
-  #orientation_constraint.orientation = Quaternion(0.5, 0.5, 0.5, 0.5)
-  #orientation_constraint.orientation = Quaternion(0.999424, -0.017672, -0.028959, -0.000525)
-  orientation_constraint.orientation.w = 1.0
-  orientation_constraint.absolute_x_axis_tolerance = 0.5
-  orientation_constraint.absolute_y_axis_tolerance = 0.5
-  orientation_constraint.absolute_z_axis_tolerance = 3.14 # allow free rotation around this axis
-  orientation_constraint.weight = 1
-  upright_constraints.orientation_constraints = [orientation_constraint]
-  #move_arm.set_path_constraints(upright_constraints) #this resulted in no paths 
-  #upright_constraints.orientation_constraints.append(orientation_constraint)
-  
-  delivery_constraints = Constraints()
-  delivery_constraints.name = "delivery"
-  pos_constraint = PositionConstraint()
-  pos_constraint.header.frame_id = "base_link"
-  pos_constraint.link_name = "l_scoop_tip"
-  #orientation_constraint.orientation = Quaternion(0.5, 0.5, 0.5, 0.5)
-  #orientation_constraint.orientation = Quaternion(0.999424, -0.017672, -0.028959, -0.000525)
-  #orientation_constraint.orientation.w = 1.0
-     #position_c.header = goal_to_append.request.goal_constraints[0].header
-    #position_c.link_name = goal_to_append.request.goal_constraints[0].link_name
-    #position_c.constraint_region.primitives.append(SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
-    #position_c.constraint_region.primitive_poses.append(goal_pose)
-  
-  pos_constraint.target_point_offset.x = 0.1
-  pos_constraint.target_point_offset.y = 0.1
-  pos_constraint.target_point_offset.z = 0.1
-  #pos_constraint.constraint_region = 
-  pos_constraint.constraint_region.primitives.append(SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[1.0]))
-  pos_constraint.weight = 1
-  delivery_constraints.position_constraints = [pos_constraint]
-  move_arm.set_path_constraints(delivery_constraints)
-  
-  #joint_goal = move_arm.get_current_joint_values()
-  #joint_goal[constants.J_DIST_PITCH] = -math.pi/4
-  #move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-  
-  #move_arm.clear_path_constraints()
-  
-  
-  ### Once aligned to trench goal, place hand above trench middle point
-  #goal_pose = move_limbs.get_current_pose().pose
-  #goal_pose.position.x = x_tr
-  #goal_pose.position.y = y_tr
-  #goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  #move_limbs.set_pose_target(goal_pose)
-  #plan = move_limbs.plan()
-
-  #if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    #return False
-
-  #plan = move_limbs.go(wait=True)
-  #move_limbs.stop()
-  #move_limbs.clear_pose_targets()
-  
-  ##  rotate to dig in the ground
-  #joint_goal = move_arm.get_current_joint_values()
-  #joint_goal[constants.J_DIST_PITCH] = math.pi/10 # we want zero so a number very close to zero
-  #move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-  
-  ## linear trenching 
-  
-  #cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
-  #move_limbs.execute(cartesian_plan, wait=True)
-  #move_limbs.stop()
-  #move_arm.execute(cartesian_plan, wait=True)
-  #move_arm.stop()
-  
-  ##  rotate to dig out 
-  #joint_goal = move_arm.get_current_joint_values()
-  #joint_goal[constants.J_DIST_PITCH] = math.pi/4
-  #move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-  '''
   
   return True
 
