@@ -10,6 +10,8 @@ import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
+import xml.etree.ElementTree as ET
+import os
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -56,8 +58,12 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_PITCH] = math.pi/2
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
-  # If out of joint range, abort (TODO: parse limit from urdf)
-  if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+  # If out of joint range, abort
+  lander_xacro = os.path.join(os.path.split(os.path.abspath(''))[0],'oceanwaters_ws/src/ow_simulator/ow_lander/urdf/lander.xacro')
+  upper_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['upper']
+  lower_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['lower']
+
+  if (joint_goal[constants.J_SHOU_YAW]<float(lower_limit)) or (joint_goal[constants.J_SHOU_YAW]>float(upper_limit)): 
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
@@ -141,8 +147,12 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_PITCH] = math.pi/2
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
-  # If out of joint range, abort (TODO: parse limit from urdf)
-  if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+  # If out of joint range, abort
+  lander_xacro = os.path.join(os.path.split(os.path.abspath(''))[0],'oceanwaters_ws/src/ow_simulator/ow_lander/urdf/lander.xacro')
+  upper_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['upper']
+  lower_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['lower']
+
+  if (joint_goal[constants.J_SHOU_YAW]<float(lower_limit)) or (joint_goal[constants.J_SHOU_YAW]>float(upper_limit)): 
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
