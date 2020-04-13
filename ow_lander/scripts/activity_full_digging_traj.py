@@ -62,6 +62,7 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   # If out of joint range, abort
   limit = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit
   if (joint_goal[constants.J_SHOU_YAW]<limit.lower) or (joint_goal[constants.J_SHOU_YAW]>limit.upper): 
+    print "[ERROR] Shoulder yaw angle out of range. Valid range: [-1.8, 1.8] radians."
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
@@ -148,6 +149,7 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   # If out of joint range, abort
   limit = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit
   if (joint_goal[constants.J_SHOU_YAW]<limit.lower) or (joint_goal[constants.J_SHOU_YAW]>limit.upper): 
+    print "[ERROR] Shoulder yaw angle out of range. Valid range: [-1.8, 1.8] radians."
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
