@@ -16,5 +16,5 @@ Required Packages:
 > **_NOTE:_** The DynamicTerrainModel plugin relies on a recently merged pull request https://bitbucket.org/osrf/gazebo/pull-requests/3210/add-setheight-method-to-heightmapshape. So make sure to link against that latest gazebo9 branch if you wish to compile the code.
 
 # usage
-Launch demo world using ```roslaunch dynamic_terrain terrain_world.launch```.  
+Launch demo world using ```roslaunch ow_dynamic_terrain terrain_world.launch```.  
 To control the husky robot using a keyboard execute ```rosrun teleop_twist_keyboard teleop_twist_keyboard.py``` in another terminal.

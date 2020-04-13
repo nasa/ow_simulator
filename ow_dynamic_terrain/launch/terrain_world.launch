@@ -2,7 +2,7 @@
 
 <launch>
 
-  <env name="GAZEBO_RESOURCE_PATH" value="$(find dynamic_terrain):$(optenv GAZEBO_RESOURCE_PATH /usr/share/gazebo-9)" />
+  <env name="GAZEBO_RESOURCE_PATH" value="$(find ow_dynamic_terrain):$(optenv GAZEBO_RESOURCE_PATH /usr/share/gazebo-9)" />
   
   <arg name="world" default="empty"/>
   <arg name="paused" default="false"/>
@@ -13,7 +13,7 @@
   <arg name="physics" default="ode"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find dynamic_terrain)/worlds/default.world"/>
+    <arg name="world_name" value="$(find ow_dynamic_terrain)/worlds/default.world"/>
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="gui" value="$(arg gui)"/>
@@ -32,6 +32,6 @@
   </include>
 
   <!-- Show in Rviz   -->
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dynamic_terrain)/launch/husky.rviz"/> -->
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ow_dynamic_terrain)/launch/husky.rviz"/> -->
 
 </launch>

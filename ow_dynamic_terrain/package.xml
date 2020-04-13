@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>dynamic_terrain</name>
+  <name>ow_dynamic_terrain</name>
   <version>0.0.0</version>
   <description>A demo of dynamic terrain within ROS/Gazebo environment</description>
 
@@ -14,13 +14,6 @@
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
-
-
-  <!-- Url tags are optional, but multiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
-  <!-- <url type="website">http://github.com/Samahu/dynamic_terrain</url> -->
-
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
   <!-- Authors do not have to be maintainers, but could be -->
