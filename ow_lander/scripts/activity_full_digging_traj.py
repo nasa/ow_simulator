@@ -10,8 +10,9 @@ import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
-import xml.etree.ElementTree as ET
-import os
+import rospy
+import roslib; roslib.load_manifest('urdfdom_py')
+from urdf_parser_py.urdf import URDF
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -59,11 +60,8 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  lander_xacro = os.path.join(os.path.split(os.path.abspath(''))[0],'oceanwaters_ws/src/ow_simulator/ow_lander/urdf/lander.xacro')
-  upper_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['upper']
-  lower_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['lower']
-
-  if (joint_goal[constants.J_SHOU_YAW]<float(lower_limit)) or (joint_goal[constants.J_SHOU_YAW]>float(upper_limit)): 
+  limit = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit
+  if (joint_goal[constants.J_SHOU_YAW]<limit.lower) or (joint_goal[constants.J_SHOU_YAW]>limit.upper): 
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
@@ -148,11 +146,8 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  lander_xacro = os.path.join(os.path.split(os.path.abspath(''))[0],'oceanwaters_ws/src/ow_simulator/ow_lander/urdf/lander.xacro')
-  upper_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['upper']
-  lower_limit = ET.parse(lander_xacro).getroot().find('./joint/[@name="j_shou_yaw"]/limit').attrib['lower']
-
-  if (joint_goal[constants.J_SHOU_YAW]<float(lower_limit)) or (joint_goal[constants.J_SHOU_YAW]>float(upper_limit)): 
+  limit = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit
+  if (joint_goal[constants.J_SHOU_YAW]<limit.lower) or (joint_goal[constants.J_SHOU_YAW]>limit.upper): 
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
