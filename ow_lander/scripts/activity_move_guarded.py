@@ -79,7 +79,7 @@ def pre_move_guarded(move_arm,move_limbs,args):
   upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
   lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
   if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
-    print("[ERROR] Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians." % (lower,upper))
+    rospy.logerr("Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians.", lower, upper)
     return False
   
   joint_goal[constants.J_SCOOP_YAW] = 0
