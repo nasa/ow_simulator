@@ -136,6 +136,10 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
+catkin_add_env_hooks(
+  80.ow_dynamic_terrain
+  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+
 ###########
 ## Build ##
 ###########

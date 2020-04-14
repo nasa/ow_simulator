@@ -2,14 +2,16 @@
 
 <launch>
 
-  <env name="GAZEBO_RESOURCE_PATH" value="$(find ow_dynamic_terrain):$(optenv GAZEBO_RESOURCE_PATH /usr/share/gazebo-9)" />
-  
+  <!-- <env name="GAZEBO_RESOURCE_PATH" value="$(find ow_dynamic_terrain):$(optenv GAZEBO_RESOURCE_PATH /usr/share/gazebo-9)"/> -->
+  <!-- <env name="GAZEBO_MODEL_PATH" value="$(find ow_dynamic_terrain)/models:$(optenv GAZEBO_MODEL_PATH /usr/share/gazebo-9/models)"/> -->
+
   <arg name="world" default="empty"/>
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
+  <arg name="verbose" default="false"/>
   <arg name="physics" default="ode"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -18,6 +20,7 @@
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="gui" value="$(arg gui)"/>
     <arg name="headless" value="$(arg headless)"/>
+    <arg name="verbose" value="$(arg verbose)" />
     <arg name="debug" value="$(arg debug)"/>
     <arg name="physics" value="$(arg physics)"/>
   </include>

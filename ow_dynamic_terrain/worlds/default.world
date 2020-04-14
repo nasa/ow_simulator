@@ -14,13 +14,13 @@
     </include>
 
     <include>
-      <uri>file://models/gas_station</uri>
+      <uri>model://gas_station</uri>
       <name>gas_station</name>
       <pose>330 -290 0 0 0 3.14</pose>
     </include>
 
     <include>
-      <uri>file://models/ogre_terrain</uri>
+      <uri>model://ogre_terrain</uri>
     </include>
 
   </world>

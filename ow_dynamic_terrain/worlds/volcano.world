@@ -7,7 +7,7 @@
     </include>
 
     <include>
-      <uri>file://models/volcano_terrain</uri>
+      <uri>model:///volcano_terrain</uri>
     </include>
 
   </world>
