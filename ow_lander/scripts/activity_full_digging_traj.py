@@ -11,8 +11,7 @@ import math
 import copy
 from tf.transformations import quaternion_from_euler
 import rospy
-import roslib; roslib.load_manifest('urdfdom_py')
-from urdf_parser_py.urdf import URDF
+from utils import abort_if_out_of_range
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -60,16 +59,11 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
-  lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
-    rospy.logerr("Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians.", lower, upper)
-    return False
+  abort_if_out_of_range(joint_goal)
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-
 
   ## Rotate hand yaw to dig in
   joint_goal = move_arm.get_current_joint_values()
@@ -148,11 +142,7 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
-  lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
-    rospy.logerr("Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians.", lower, upper)
-    return False
+  abort_if_out_of_range(joint_goal)
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)

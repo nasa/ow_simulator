@@ -11,9 +11,7 @@ import math
 import datetime
 import time
 import rospy
-import roslib; roslib.load_manifest('urdfdom_py')
-from urdf_parser_py.urdf import URDF
-
+from utils import abort_if_out_of_range
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -76,11 +74,7 @@ def pre_move_guarded(move_arm,move_limbs,args):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
 
   # If out of joint range, abort
-  upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
-  lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
-    rospy.logerr("Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians.", lower, upper)
-    return False
+  abort_if_out_of_range(joint_goal)
   
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
