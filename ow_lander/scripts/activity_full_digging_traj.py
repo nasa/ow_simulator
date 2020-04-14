@@ -10,7 +10,6 @@ import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
-import rospy
 from utils import abort_if_out_of_range
 
 def arg_parsing(req):
