@@ -5,10 +5,48 @@
       "keys": {
         "running-plugins": {
           "type": "repr",
-          "repr": "{u'rqt_image_view/ImageView': [1], u'rqt_publisher/Publisher': [1]}"
+          "repr": "{u'rqt_service_caller/ServiceCaller': [1], u'__DockWidgetContainer': [1], u'rqt_reconfigure/Param': [1], u'rqt_image_view/ImageView': [1], u'rqt_publisher/Publisher': [1]}"
         }
       },
       "groups": {
+        "plugin____DockWidgetContainer__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "True"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'&Control and Viz'"
+                }
+              },
+              "groups": {
+                "mainwindow": {
+                  "keys": {
+                    "geometry": {
+                      "type": "repr(QByteArray.hex)",
+                      "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000000000020000001e00000635000003100000000000000000ffffffffffffffff00000000000000000780')",
+                      "pretty-print": "         5               "
+                    },
+                    "state": {
+                      "type": "repr(QByteArray.hex)",
+                      "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd000000010000000200000634000002f3fc0100000003fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c006900730068006500720057006900640067006500740100000000000003470000026201000003fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000348000002ec000001c001000003fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f00770069006400670065007403000004be0000009c0000013e00000312000006340000000000000004000000040000000800000008fc00000000')",
+                      "pretty-print": "                 Xrqt_publisher__Publisher__1__PublisherWidget          Zrqt_image_view__ImageView__1__ImageViewWidget          lrqt_reconfigure__Param__1___plugincontainer_top_widget                       "
+                    }
+                  },
+                  "groups": {}
+                }
+              }
+            }
+          }
+        },
         "plugin__rqt_robot_steering__RobotSteering__2": {
           "keys": {},
           "groups": {
@@ -33,28 +71,6 @@
                 "vx_max": {
                   "type": "repr",
                   "repr": "u'1'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_rpgsim_tools__ImageTrigger__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget__ImageTriggerPanel": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Ima&geTrigger'"
                 }
               },
               "groups": {}
@@ -167,6 +183,43 @@
             }
           }
         },
+        "plugin__rqt_reconfigure__Param__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget___plugincontainer_top_widget": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "True"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'&Dynamic Reconfigure'"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "splitter": {
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000010000000200000159000004da01ffffffff010000000100')",
+                  "pretty-print": "       Y       "
+                },
+                "_splitter": {
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000020000012c000000640100000009010000000200')",
+                  "pretty-print": "       , d     "
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
         "plugin__rqt_image_view__ImageView__1": {
           "keys": {},
           "groups": {
@@ -178,7 +231,7 @@
                 },
                 "parent": {
                   "type": "repr",
-                  "repr": "None"
+                  "repr": "1"
                 },
                 "dock_widget_title": {
                   "type": "repr",
@@ -228,6 +281,28 @@
                 "publish_click_location": {
                   "type": "repr",
                   "repr": "False"
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__rqt_rpgsim_tools__ImageTrigger__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__ImageTriggerPanel": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'Ima&geTrigger'"
                 }
               },
               "groups": {}
@@ -344,7 +419,7 @@
                 },
                 "parent": {
                   "type": "repr",
-                  "repr": "None"
+                  "repr": "1"
                 },
                 "dock_widget_title": {
                   "type": "repr",
@@ -357,7 +432,7 @@
               "keys": {
                 "publishers": {
                   "type": "repr",
-                  "repr": "u\"[{'topic_name': '/ant_pan_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}, {'topic_name': '/ant_tilt_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 1, 'counter': 0}, {'topic_name': '/shou_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 2, 'counter': 0}, {'topic_name': '/shou_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 3, 'counter': 0}, {'topic_name': '/prox_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 4, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/dist_pitch_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 11, 'counter': 0}, {'topic_name': '/hand_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 5, 'counter': 0}, {'topic_name': '/scoop_yaw_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 6, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/exposure/data': '0.02'}, 'publisher_id': 7, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}, 'publisher_id': 8, 'counter': 0}, {'topic_name': '/gazebo/plugins/camera_sim/exposure', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/exposure/data': '0.02'}, 'publisher_id': 9, 'counter': 0}, {'topic_name': '/StereoCamera/left/image_trigger', 'type_name': 'std_msgs/Empty', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 10, 'counter': 0}]\""
+                  "repr": "u\"[{'type_name': 'std_msgs/Float64', 'topic_name': '/ant_pan_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/ant_tilt_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 1, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/shou_yaw_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 2, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/shou_pitch_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 3, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/prox_pitch_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 4, 'counter': 0}, {'topic_name': '/dist_pitch_position_controller/command', 'type_name': 'std_msgs/Float64', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 5, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/hand_yaw_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 6, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/scoop_yaw_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 7, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/exposure/data': '0.02'}, 'publisher_id': 8, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}, 'publisher_id': 9, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/exposure', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/exposure/data': '0.02'}, 'publisher_id': 10, 'counter': 0}, {'type_name': 'std_msgs/Empty', 'topic_name': '/StereoCamera/left/image_trigger', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 11, 'counter': 0}]\""
                 }
               },
               "groups": {}
@@ -448,7 +523,7 @@
               "keys": {
                 "dockable": {
                   "type": "repr",
-                  "repr": "u'true'"
+                  "repr": "True"
                 },
                 "parent": {
                   "type": "repr",
@@ -469,7 +544,7 @@
                 },
                 "splitter_orientation": {
                   "type": "repr",
-                  "repr": "u'2'"
+                  "repr": "2"
                 }
               },
               "groups": {}
@@ -504,13 +579,13 @@
       "keys": {
         "geometry": {
           "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000000007a40000049d00000e8d00000844000007aa000004c600000e870000083e00000001000000000f00')",
-          "pretty-print": "           D       >     "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb000200000000004f0000023f00000692000005e700000055000002680000068c000005e100000000000000000780')",
+          "pretty-print": "     O ?     U h         "
         },
         "state": {
           "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000006de00000334fc0100000002fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074010000000000000397000000ec01000003fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c006900730068006500720057006900640067006500740100000398000003460000026201000003000006de0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
-          "pretty-print": "                 Zrqt_image_view__ImageView__1__ImageViewWidget          Xrqt_publisher__Publisher__1__PublisherWidget                            6MinimizedDockWidgetsToolbar        "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000063800000335fc0100000002fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074030000039b000000cb000001c000000312fc00000000000006380000042700fffffffc0200000002fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c0069007300680065007200570069006400670065007403000001d3000000b60000026200000312fc00000026000003350000016901000021fa000000000100000004fb00000030005f005f0044006f0063006b0057006900640067006500740043006f006e007400610069006e00650072005f005f00310100000000ffffffff0000042701000003fb00000072007200710074005f0073006500720076006900630065005f00630061006c006c00650072005f005f005300650072007600690063006500430061006c006c00650072005f005f0031005f005f005300650072007600690063006500430061006c006c006500720057006900640067006500740100000000ffffffff000003ae01000003fb00000030005f005f0044006f0063006b0057006900640067006500740043006f006e007400610069006e00650072005f005f00320100000000ffffffff0000000000000000fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f0077006900640067006500740100000000000005970000013e01000003000006380000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
+          "pretty-print": "                 Zrqt_image_view__ImageView__1__ImageViewWidget            8 '                                                         b                 0__DockWidgetContainer__1          rrqt_service_caller__ServiceCaller__1__ServiceCallerWidget          0__DockWidgetContainer__2          lrqt_reconfigure__Param__1___plugincontainer_top_widget                            6MinimizedDockWidgetsToolbar        "
         }
       },
       "groups": {

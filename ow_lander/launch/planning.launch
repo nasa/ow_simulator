@@ -1,9 +1,14 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="gazebo" default="true"/>
-  <arg name="gui" default="true"/>
 
-  <!-- == launch all but Gazebo in planning namespace ======== -->
+  <!-- Stowed arm joint positions -->
+  <arg name="stowed_shou_yaw" default="0" />
+  <arg name="stowed_shou_pitch" default="0" />
+  <arg name="stowed_prox_pitch" default="0" />
+  <arg name="stowed_dist_pitch" default="0" />
+  <arg name="stowed_hand_yaw" default="0" />
+  <arg name="stowed_scoop_yaw" default="0" />
+
   <group ns="planning">
     <arg name="debug" default="false" />
     <arg name="use_gui" default="false" />
@@ -14,10 +19,12 @@
 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
       <param name="use_gui" value="$(arg use_gui)"/>
-      <param name="zeros/j_dist_pitch" value="3.1416"/>
-      <param name="zeros/j_prox_pitch" value="-2.75"/>
-      <param name="zeros/j_shou_pitch" value="1.5708"/>
-      <param name="zeros/j_shou_yaw" value="-1.5"/>
+      <param name="zeros/j_shou_yaw" value="$(arg stowed_shou_yaw)"/>
+      <param name="zeros/j_shou_pitch" value="$(arg stowed_shou_pitch)"/>
+      <param name="zeros/j_prox_pitch" value="$(arg stowed_prox_pitch)"/>
+      <param name="zeros/j_dist_pitch" value="$(arg stowed_dist_pitch)"/>
+      <param name="zeros/j_hand_yaw" value="$(arg stowed_hand_yaw)"/>
+      <param name="zeros/j_scoop_yaw" value="$(arg stowed_scoop_yaw)"/>
       <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
     </node>
 
@@ -29,7 +36,7 @@
       <arg name="debug" value="$(arg debug)"/>
     </include>
 
-    <!-- == launch arm spcific rviz ============== -->
+    <!-- == launch arm specific rviz ============== -->
     <include file="$(find ow_lander)/launch/arm_sim_rviz.launch">
       <arg name="config" value="true"/>
       <arg name="debug" value="$(arg debug)"/>
@@ -43,12 +50,5 @@
     <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen">
     </node>
   </group>
-
-  <!-- == if specified, launch gazebo with the chosen world without specific rviz = -->
-  <include file="$(find ow)/launch/europa_terminator_workspace.launch"
-	   if="$(arg gazebo)">
-    <arg name="arm_sim_enable" value="true" />
-    <arg name="gui" value="$(arg gui)"/>
-  </include>
 
 </launch>

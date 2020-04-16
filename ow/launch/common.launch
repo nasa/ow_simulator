@@ -3,7 +3,8 @@
 
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
-  <arg name="gui" default="true"/>
+  <arg name="gazebo" default="true"/>
+  <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -15,11 +16,11 @@
   <arg name="freeze_base_link" default="false" />
 
   <!-- == launch gazebo with the chosen world ==================== -->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg gazebo)">
     <arg name="world_name" value="$(arg world_name)"/>
     <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="$(arg gui)"/>
+    <arg name="gui" value="$(arg gzclient)"/>
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
@@ -61,6 +62,12 @@
   <node name="world_to_base_link" pkg="tf" type="static_transform_publisher"
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
+  <!-- Start power_system_node -->
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+
+  <!-- Start faults node -->
+  <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+
   <!-- == start rviz ==================== -->
   <group unless="$(arg arm_sim_enable)">
     <node name="rviz" pkg="rviz" type="rviz"
@@ -68,12 +75,9 @@
   </group>
 
   <!-- == start rqt ===================== -->
+  <!-- Starting without a .perspective file will reload the last used configuration. -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
-  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
-      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/-->
-
-  <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" args=""/>
-
+  <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
 
 </launch>

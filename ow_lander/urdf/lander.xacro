@@ -750,5 +750,10 @@
        j_hand_yaw, j_scoop_yaw, j_ant_pan, j_ant_tilt</jointName>
       <updateRate>10</updateRate>
     </plugin-->
+
+    <plugin name="LinkForce" filename="libLinkForcePlugin.so">
+      <link>l_scoop</link>
+      <lookupTable>$(find ow_gazebo_plugins)/data/scoop_force_circular.csv</lookupTable>
+    </plugin>
   </gazebo>
 </robot>
