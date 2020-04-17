@@ -58,13 +58,14 @@ def stop_traj_recording(result, bagname):
   command = "rm " + bagname + ".bag"
   os.system(command)
 
-def abort_if_out_of_range(joint_goal):
+def is_shou_yaw_goal_in_range(joint_goal):
   # If shoulder yaw goal angle is out of joint range, abort
   upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
   lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
   if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
-    rospy.logerr("Shoulder yaw angle out of range. Valid range: [%1.2f,%1.2f] radians.", lower, upper)
     return False
+  else:
+    return True
 
 
 

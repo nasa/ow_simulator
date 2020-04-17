@@ -10,7 +10,7 @@ import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
-from utils import abort_if_out_of_range
+from utils import is_shou_yaw_goal_in_range
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -58,7 +58,8 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  abort_if_out_of_range(joint_goal)
+  if (is_shou_yaw_goal_in_range(joint_goal) == False):
+    return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
@@ -141,7 +142,8 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
   
   # If out of joint range, abort
-  abort_if_out_of_range(joint_goal)
+  if (is_shou_yaw_goal_in_range(joint_goal) == False):
+    return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
