@@ -28,6 +28,31 @@ def arg_parsing(req):
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
 
+
+def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
+  # Compute shoulder yaw angle to trench
+  alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
+  h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
+  l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+  beta = math.asin (l/h)
+    # Move to pre trench position, align shoulder yaw
+  joint_goal = move_arm.get_current_joint_values()
+  joint_goal[constants.J_DIST_PITCH] = 0
+  joint_goal[constants.J_HAND_YAW] = math.pi/2.2
+  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
+  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
+  joint_goal[constants.J_SHOU_YAW] = alpha + beta
+
+  # If out of joint range, abort
+  if (is_shou_yaw_goal_in_range(joint_goal) == False):
+    return False
+
+  joint_goal[constants.J_SCOOP_YAW] = 0
+  move_arm.go(joint_goal, wait=True)
+  move_arm.stop()
+  return True
+
+
 def plan_cartesian_path(move_arm, move_limbs, scale):
 
     waypoints = []
@@ -44,26 +69,10 @@ def plan_cartesian_path(move_arm, move_limbs, scale):
     return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
-  # Compute shoulder yaw angle to trench
-  alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
-  h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
-  l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
-    # Move to pre trench position, align shoulder yaw
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
-  joint_goal[constants.J_HAND_YAW] = math.pi/2.2
-  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  
-  # If out of joint range, abort
-  if (is_shou_yaw_goal_in_range(joint_goal) == False):
-    return False
 
-  joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  if pre_move_complete == False:
+    return False
 
   ## Rotate hand yaw to dig in
   joint_goal = move_arm.get_current_joint_values()
@@ -76,15 +85,13 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SCOOP_YAW] = math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
-  #rotate dist pith to pre-trenching position. 
+
+  #rotate dist pith to pre-trenching position.
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = -math.pi/4
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
+
   ## Once aligned to trench goal, place hand above trench middle point
   goal_pose = move_limbs.get_current_pose().pose
   goal_pose.position.x = x_tr
@@ -99,55 +106,34 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   plan = move_limbs.go(wait=True)
   move_limbs.stop()
   move_limbs.clear_pose_targets()
-  
+
   #  rotate to dig in the ground
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = math.pi/10 # we want zero so a number very close to zero
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
-  # linear trenching 
-  
+
+  # linear trenching
   cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
   move_limbs.execute(cartesian_plan, wait=True)
   move_limbs.stop()
+  cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
-  
 
-  
-  #  rotate to dig out 
+  #  rotate to dig out
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = math.pi/4
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
+
   return True
 
 def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
-  # Compute shoulder yaw angle to trench
-  alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
-  h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
-  l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
 
-  # Move to pre trench position, align shoulder yaw
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
-  joint_goal[constants.J_HAND_YAW] = math.pi/2.2
-  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  
-  # If out of joint range, abort
-  if (is_shou_yaw_goal_in_range(joint_goal) == False):
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  if pre_move_complete == False:
     return False
-
-  joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
 
   # Once aligned to trench goal, place hand above trench middle point
   goal_pose = move_limbs.get_current_pose().pose
