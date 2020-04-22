@@ -3,7 +3,7 @@
 
   <model name="heightmap">
 
-    <plugin name="dynamic_terrain_model" filename="libdynamic_terrain_model.so"/>
+    <plugin name="ow_dynamic_terrain_model" filename="libow_dynamic_terrain_model.so"/>
 
     <pose>0 0 0  0 0 0</pose>
     <static>true</static>
@@ -30,7 +30,7 @@
         </surface>
       </collision>
       <visual name="terrain-visual">
-        <plugin name="dynamic_terrain_visual" filename="libdynamic_terrain_visual.so" />
+        <plugin name="ow_dynamic_terrain_visual" filename="libow_dynamic_terrain_visual.so" />
         <cast_shadows>false</cast_shadows>
         <geometry>
           <heightmap>
