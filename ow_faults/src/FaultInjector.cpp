@@ -4,6 +4,7 @@
  * All rights reserved.
  ******************************************************************************/
 #include "ow_faults/FaultInjector.h"
+#include <ow_lander/lander_joints.h>
 #include <algorithm>
 
 
@@ -30,9 +31,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_index_map.empty()) {
-    string names[] = {"j_ant_pan", "j_ant_tilt", "j_dist_pitch", "j_hand_yaw",
-                      "j_prox_pitch", "j_scoop_yaw", "j_shou_pitch", "j_shou_yaw"};
-    for (auto& n : names) {
+    for (auto& n : ow_lander::joint_names) {
       int index = findPositionInGroup(msg->name, n);
       if (index >= 0)
         m_joint_index_map[n] = index;
