@@ -1,5 +1,6 @@
 #include <gazebo/common/common.hh>
-#include "modify_terrain.h"
+
+#include "terrain_modifier.h"
 #include "shared_constants.h"
 
 using namespace gazebo;
@@ -51,7 +52,7 @@ private:
         auto position_xy = Ogre::Vector3(x, y, 0);
         
         auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-        ModifyTerrain::modify(heightmap, position_xy, 0.003, 0.002, 1.0, "lower",
+        TerrainModifier::modify(heightmap, "lower", position_xy, 0.003, 0.002, 1.0,
             [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
             [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); }
         );
@@ -76,10 +77,9 @@ private:
         drillTerrainAt(SharedConstants::DRILL_POINT_X, SharedConstants::DRILL_POINT_Y);
     }
 
-private:
-    event::ConnectionPtr on_update_connection_;
-    bool hole_drilled_;
-    common::Time plugin_load_time_;
+private: event::ConnectionPtr on_update_connection_;
+private: bool hole_drilled_;                // TODO: remove
+private: common::Time plugin_load_time_;    // TODO: remove
 };
 
 GZ_REGISTER_VISUAL_PLUGIN(DynamicTerrainVisual)

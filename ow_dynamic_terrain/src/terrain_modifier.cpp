@@ -1,4 +1,4 @@
-#include "modify_terrain.h"
+#include "terrain_modifier.h"
 #include <gazebo/rendering/Conversions.hh>
 
 using namespace std;
@@ -6,10 +6,10 @@ using namespace Ogre;
 using namespace gazebo;
 using namespace rendering;
 
-void ModifyTerrain::modify(Heightmap* heightmap,
+void TerrainModifier::modify(Heightmap* heightmap,
+        const string& op,
         Vector3 terrain_position,
         double outside_radius, double inside_radius, double weight,
-        const string& op,
         function<float (long, long)> get_height_value,
         function<void (long, long, float)> set_height_value)
 {

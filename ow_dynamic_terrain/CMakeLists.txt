@@ -66,12 +66,11 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  modify_terrain.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -85,12 +84,6 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 #   FILES
 #   Action1.action
 #   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
 # )
 
 generate_messages(
@@ -132,7 +125,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ow_dynamic_terrain
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
@@ -173,7 +166,7 @@ include_directories(
 
 ## Model Plugin
 add_library(${PROJECT_NAME}_model
-    src/modify_terrain.cpp src/dynamic_terrain_model.cpp
+    src/terrain_modifier.cpp src/dynamic_terrain_model.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_model
@@ -183,7 +176,7 @@ target_link_libraries(${PROJECT_NAME}_model
 
 ## Visual Plugin
 add_library(${PROJECT_NAME}_visual
-    src/modify_terrain.cpp src/dynamic_terrain_visual.cpp
+    src/terrain_modifier.cpp src/dynamic_terrain_visual.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_visual
