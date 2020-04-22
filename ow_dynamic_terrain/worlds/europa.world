@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf version='1.4'>
+  <world name='europa'>
+
+    <include>
+      <uri>model://europa_terrain</uri>
+    </include>
+
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose frame=''>5.0 5.0 5.0   0.0 0.6 -2.25</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+  </world>
+</sdf>

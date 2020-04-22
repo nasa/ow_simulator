@@ -1,0 +1,98 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+
+  <model name="heightmap">
+
+    <plugin name="dynamic_terrain_model" filename="libdynamic_terrain_model.so"/>
+
+    <pose>0 0 0  0 0 0</pose>
+    <static>true</static>
+    <link name="terrain-link">
+      <collision name="collision">
+        <geometry>
+          <heightmap>
+            <uri>model://europa_terrain/dem/europa_terrain.tif</uri>
+            <sampling>1</sampling>
+            <size>10 10 1.147</size>
+            <pos>0 0 8.853</pos>
+          </heightmap>
+        </geometry>
+        <surface>
+          <contact>
+            <collide_bitmask>0x0001</collide_bitmask>
+          </contact>
+          <friction>
+            <ode>
+              <mu>0.8</mu>
+              <mu2>0.8</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="terrain-visual">
+        <plugin name="dynamic_terrain_visual" filename="libdynamic_terrain_visual.so" />
+        <cast_shadows>false</cast_shadows>
+        <geometry>
+          <heightmap>
+            <texture>
+              <diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/grass_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/fungus_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <blend>
+              <min_height>0</min_height>
+              <fade_dist>2</fade_dist>
+            </blend>
+            <blend>
+              <min_height>1</min_height>
+              <fade_dist>3</fade_dist>
+            </blend>
+            <texture>
+              <diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/grass_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/fungus_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <blend>
+              <min_height>2</min_height>
+              <fade_dist>5</fade_dist>
+            </blend>
+            <blend>
+              <min_height>4</min_height>
+              <fade_dist>5</fade_dist>
+            </blend>
+            <uri>model://europa_terrain/dem/europa_terrain.tif</uri>
+            <sampling>1</sampling>
+            <size>10 10 1.147</size>
+            <pos>0 0 8.853</pos>
+          </heightmap>
+        </geometry>
+        <!--
+        <plugin name="lod" filename="libHeightmapLODPlugin.so">
+          <lod>3</lod>
+          <skirt_length>0.1</skirt_length>
+        </plugin>
+        -->
+      </visual>
+    </link>
+  </model>
+</sdf>
