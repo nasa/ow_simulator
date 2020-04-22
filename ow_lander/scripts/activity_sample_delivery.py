@@ -168,14 +168,18 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
-  # after sample collect 
+  # after sample collect  #0.52 -0.22 0.82
   
   goal_pose = move_arm.get_current_pose().pose
   #return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
-  goal_pose.position.x = return_pt[0]
-  goal_pose.position.y = return_pt[1]
-  goal_pose.position.z = return_pt[2]
+  #goal_pose.position.x = return_pt[0]
+  #goal_pose.position.y = return_pt[1]
+  #goal_pose.position.z = return_pt[2]
+  goal_pose.position.x = 0.52
+  goal_pose.position.y = -0.22
+  goal_pose.position.z = 0.82
   goal_pose.orientation = return_o 
+  #goal_pose.orientation = goal_pose.orientation
   #goal_pose.orientation.w = 1; 
   #goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
@@ -188,6 +192,14 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   
+  #0.52 -0.22 0.82
+    ##rotate scoop outwards 
+  #joint_goal = move_arm.get_current_joint_values()
+  #joint_goal[constants.J_SCOOP_YAW] = 0
+  #print ()
+  #move_arm.go(joint_goal, wait=True)
+  #move_arm.stop()  
+  ################################
   
     ###rotate scoop to deliver sample at current location begin
   mypi = 3.14159
