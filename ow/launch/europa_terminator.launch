@@ -2,7 +2,8 @@
 <launch>
 
   <arg name="arm_sim_enable" default="false"/>
-  <arg name="gui" default="true"/>
+  <arg name="gazebo" default="true"/>
+  <arg name="gzclient" default="true"/>
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
@@ -14,7 +15,8 @@
     <arg name="init_Y" value="0"/>
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
-    <arg name="gui" value="$(arg gui)"/>
+    <arg name="gazebo" value="$(arg gazebo)"/>
+    <arg name="gzclient" value="$(arg gzclient)"/>
   </include>
 
 </launch>

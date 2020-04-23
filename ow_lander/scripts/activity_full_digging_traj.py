@@ -6,6 +6,7 @@
 # rights reserved.
 # __END_LICENSE__
 
+import rospy
 import constants
 import math
 import copy
@@ -195,11 +196,11 @@ def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
 def go_home(move_arm):
   # Move to home position
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 3.1416
-  joint_goal[constants.J_HAND_YAW] = 0
-  joint_goal[constants.J_PROX_PITCH] = -2.75
-  joint_goal[constants.J_SHOU_PITCH] = 1.5708
-  joint_goal[constants.J_SHOU_YAW] = -1.5
-  joint_goal[constants.J_SCOOP_YAW] = 0
+  joint_goal[constants.J_SHOU_YAW] = rospy.get_param('/stowed_shou_yaw', default=0)
+  joint_goal[constants.J_SHOU_PITCH] = rospy.get_param('/stowed_shou_pitch', default=0)
+  joint_goal[constants.J_PROX_PITCH] = rospy.get_param('/stowed_prox_pitch', default=0)
+  joint_goal[constants.J_DIST_PITCH] = rospy.get_param('/stowed_dist_pitch', default=0)
+  joint_goal[constants.J_HAND_YAW] = rospy.get_param('/stowed_hand_yaw', default=0)
+  joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
