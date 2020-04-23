@@ -1,27 +1,40 @@
 #include <gazebo/common/common.hh>
-
+#include <ros/ros.h>
+#include <ros/subscribe_options.h>
+#include <ros/callback_queue.h>
+#include "ow_dynamic_terrain/modify_terrain.h"
 #include "terrain_modifier.h"
-#include "shared_constants.h"
 
 using namespace gazebo;
 
 class DynamicTerrainVisual : public VisualPlugin
 {
-public:
-    void Load(rendering::VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/)
+public: void Load(rendering::VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/)
     {
         gzlog << "DynamicTerrainVisual: successfully loaded!" << std::endl;
 
         this->on_update_connection_ = event::Events::ConnectPostRender(
             std::bind(&DynamicTerrainVisual::onUpdate, this));
 
-        hole_drilled_ = false;
-        plugin_load_time_ = gazebo::common::Time::GetWallTime();
+        if (!ros::isInitialized())
+        {
+            gzerr << "DynamicTerrainVisual: ROS not initilized!" << std::endl;
+        }
+        else
+        {
+            auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
+                "/ow_dynamic_terrain/modify_terrain",
+                1,
+                boost::bind(&DynamicTerrainVisual::onModifyTerrainMsg, this, _1),
+                ros::VoidPtr(), &this->ros_queue_
+            );
+
+            ros_node_.reset(new ros::NodeHandle("dynamic_terrain_visual"));
+            ros_subscriber_ = ros_node_->subscribe(so);
+        }
     }
 
-private:
-
-    rendering::Heightmap* getHeightmap()
+private: rendering::Heightmap* getHeightmap()
     {
         auto scene = rendering::get_scene();
         if (!scene)
@@ -40,7 +53,13 @@ private:
         return heightmap;
     }
 
-    void drillTerrainAt(double x, double y)
+private: void onUpdate()
+    {
+        if (ros_node_->ok())
+            ros_queue_.callAvailable();
+    }
+
+private: void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
     {
         auto heightmap = getHeightmap();
         if (heightmap == nullptr)
@@ -48,11 +67,14 @@ private:
             gzerr << "DynamicTerrainVisual: Couldn't acquire heightmap!" << std::endl;
             return;
         }
-
-        auto position_xy = Ogre::Vector3(x, y, 0);
         
         auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-        TerrainModifier::modify(heightmap, "lower", position_xy, 0.003, 0.002, 1.0,
+        TerrainModifier::modify(heightmap,
+            mt_msg->operation,
+            mt_msg->position,
+            mt_msg->outer_radius,
+            mt_msg->inner_radius,
+            mt_msg->weight,
             [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
             [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); }
         );
@@ -60,26 +82,12 @@ private:
         terrain->updateGeometry();
         terrain->updateDerivedData(false,
             Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
-
-        hole_drilled_ = true;
-        gzlog << "DynamicTerrainVisual: A hole has been drilled at ("
-            << position_xy.x << ", " << position_xy.y << ")" << std::endl;
-    }
-
-    void onUpdate()
-    {
-        if (gazebo::common::Time::GetWallTime().sec - plugin_load_time_.sec < SharedConstants::WARM_UP_PERIOD_IN_SECONDS)
-            return;
-
-        if (hole_drilled_ || gazebo::common::Time::GetWallTime().sec % 10 != 0)
-            return;
-
-        drillTerrainAt(SharedConstants::DRILL_POINT_X, SharedConstants::DRILL_POINT_Y);
     }
 
 private: event::ConnectionPtr on_update_connection_;
-private: bool hole_drilled_;                // TODO: remove
-private: common::Time plugin_load_time_;    // TODO: remove
+private: std::unique_ptr<ros::NodeHandle> ros_node_;
+private: ros::Subscriber ros_subscriber_;
+private: ros::CallbackQueue ros_queue_;
 };
 
 GZ_REGISTER_VISUAL_PLUGIN(DynamicTerrainVisual)

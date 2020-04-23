@@ -1,15 +1,17 @@
 #include "terrain_modifier.h"
 #include <gazebo/rendering/Conversions.hh>
+#include <OgreVector3.h>
 
 using namespace std;
 using namespace Ogre;
 using namespace gazebo;
 using namespace rendering;
+using namespace geometry_msgs;
 
 void TerrainModifier::modify(Heightmap* heightmap,
         const string& op,
-        Vector3 terrain_position,
-        double outside_radius, double inside_radius, double weight,
+        const Point& terrain_position,
+        double outer_radius, double inner_radius, double weight,
         function<float (long, long)> get_height_value,
         function<void (long, long, float)> set_height_value)
 {
@@ -21,17 +23,18 @@ void TerrainModifier::modify(Heightmap* heightmap,
         return;
     }
 
+    auto _terrain_position = Vector3(terrain_position.x, terrain_position.y, 0);
     Vector3 heightmap_position;
-    terrain->getTerrainPosition(terrain_position, &heightmap_position);
+    terrain->getTerrainPosition(_terrain_position, &heightmap_position);
 
     auto size = static_cast<int>(terrain->getSize());
-    auto left = max(int((heightmap_position.x - outside_radius) * size), 0);
-    auto top = max(int((heightmap_position.y - outside_radius) * size), 0);
-    auto right = min(int((heightmap_position.x + outside_radius) * size), size);
-    auto bottom = min(int((heightmap_position.y + outside_radius) * size), size);
+    auto left = max(int((heightmap_position.x - outer_radius) * size), 0);
+    auto top = max(int((heightmap_position.y - outer_radius) * size), 0);
+    auto right = min(int((heightmap_position.x + outer_radius) * size), size);
+    auto bottom = min(int((heightmap_position.y + outer_radius) * size), size);
 
     auto average_height = op == "flatten" || op == "smooth" ?
-        heightmap->AvgHeight(Conversions::ConvertIgn(heightmap_position), outside_radius) :
+        heightmap->AvgHeight(Conversions::ConvertIgn(heightmap_position), outer_radius) :
         0.0;
 
     for (auto y = top; y <= bottom; ++y)
@@ -42,9 +45,9 @@ void TerrainModifier::modify(Heightmap* heightmap,
             auto dist = sqrt(ts_y_dist * ts_y_dist + ts_x_dist * ts_x_dist);
 
             auto inner_weight = 1.0;
-            if (dist > inside_radius)
+            if (dist > inner_radius)
             {
-                inner_weight = ignition::math::clamp(dist / outside_radius, 0.0, 1.0);
+                inner_weight = ignition::math::clamp(dist / outer_radius, 0.0, 1.0);
                 inner_weight = 1.0 - (inner_weight * inner_weight);
             }
 
@@ -74,4 +77,7 @@ void TerrainModifier::modify(Heightmap* heightmap,
 
             set_height_value(x, y, new_height);
         }
+
+    gzlog << "DynamicTerrain: performed " << op << " operation at ("
+        << terrain_position.x << ", " << terrain_position.y << ")" << std::endl;
 }

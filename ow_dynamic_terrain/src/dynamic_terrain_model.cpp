@@ -3,16 +3,14 @@
 #include <ros/ros.h>
 #include <ros/subscribe_options.h>
 #include <ros/callback_queue.h>
-#include <geometry_msgs/Point.h>
-#include <ow_dynamic_terrain/modify_terrain.h>
+#include "ow_dynamic_terrain/modify_terrain.h"
 #include "terrain_modifier.h"
-#include "shared_constants.h"   // TODO: remove
 
 using namespace gazebo;
 
 class DynamicTerrainModel : public ModelPlugin
 {
-    public: void Load(physics::ModelPtr model, sdf::ElementPtr /*sdf*/)
+public: void Load(physics::ModelPtr model, sdf::ElementPtr /*sdf*/)
     {
         gzlog << "DynamicTerrainModel: successfully loaded!" << std::endl;
 
@@ -21,25 +19,20 @@ class DynamicTerrainModel : public ModelPlugin
         on_update_connection_ = event::Events::ConnectPostRender(
             std::bind(&DynamicTerrainModel::onUpdate, this));
 
-        hole_drilled_ = false;
-        plugin_load_time_ = gazebo::common::Time::GetWallTime();
-
-
         if (!ros::isInitialized())
         {
             gzerr << "DynamicTerrainModel: ROS not initilized!" << std::endl;
         }
         else
         {
-            ros_node_.reset(new ros::NodeHandle("dynamic_terrain_model"));
-
             auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
-                "/dynamic_terrain_model/modify_terrain_msg",
+                "/ow_dynamic_terrain/modify_terrain",
                 1,
                 boost::bind(&DynamicTerrainModel::onModifyTerrainMsg, this, _1),
                 ros::VoidPtr(), &this->ros_queue_
             );
 
+            ros_node_.reset(new ros::NodeHandle("dynamic_terrain_model"));
             ros_subscriber_ = ros_node_->subscribe(so);
         }
     }
@@ -91,7 +84,13 @@ private: physics::HeightmapShapePtr getHeightmapShape()
         return shape;
     }
 
-private: void drillTerrainAt(double x, double y)
+private: void onUpdate()
+    {
+        if (ros_node_->ok())
+            ros_queue_.callAvailable();
+    }
+
+    void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
     {
         auto heightmap = getHeightmap();
         if (heightmap == nullptr)
@@ -107,44 +106,19 @@ private: void drillTerrainAt(double x, double y)
             return;
         }
 
-        auto position_xy = Ogre::Vector3(x, y, 0);
-        
-        TerrainModifier::modify(heightmap, "lower", position_xy, 0.003, 0.002, 1.0,
+        TerrainModifier::modify(heightmap,
+            mt_msg->operation,
+            mt_msg->position,
+            mt_msg->outer_radius,
+            mt_msg->inner_radius,
+            mt_msg->weight,
             [&heightmap_shape](int x, int y) { return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1); },
             [&heightmap_shape](int x, int y, float value) { heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value); }
         );
-
-        hole_drilled_ = true;
-        gzlog << "DynamicTerrainModel: A hole has been drilled at ("
-            << position_xy.x << ", " << position_xy.y << ")" << std::endl;
-    }
-
-private: void onUpdate()
-    {
-        static const double timeout = 0.01;
-
-        if (ros_node_->ok())
-        {
-            ros_queue_.callAvailable(ros::WallDuration(timeout));
-        }
-
-        if (gazebo::common::Time::GetWallTime().sec - plugin_load_time_.sec < SharedConstants::WARM_UP_PERIOD_IN_SECONDS)
-            return;
-
-        if (hole_drilled_ || gazebo::common::Time::GetWallTime().sec % 10 != 0)
-            return;
-
-        drillTerrainAt(SharedConstants::DRILL_POINT_X, SharedConstants::DRILL_POINT_Y);
-    }
-
-    void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
-    {
     }
 
 private: physics::ModelPtr model_;
 private: event::ConnectionPtr on_update_connection_;
-private: bool hole_drilled_;             // TODO: remove
-private: common::Time plugin_load_time_; // TODO: remove
 private: std::unique_ptr<ros::NodeHandle> ros_node_;
 private: ros::Subscriber ros_subscriber_;
 private: ros::CallbackQueue ros_queue_;

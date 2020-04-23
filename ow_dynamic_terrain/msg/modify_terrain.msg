@@ -1,5 +1,5 @@
 string operation
 geometry_msgs/Point position
-float64 outside_radius
-float64 inside_radius
+float64 outer_radius
+float64 inner_radius
 float64 weight

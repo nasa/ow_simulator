@@ -160,28 +160,28 @@ include_directories(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 ## Model Plugin
 add_library(${PROJECT_NAME}_model
-    src/terrain_modifier.cpp src/dynamic_terrain_model.cpp
+  src/terrain_modifier.cpp src/dynamic_terrain_model.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_model
-   ${catkin_LIBRARIES}
-   ${GAZEBO_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
 )
+
+add_dependencies(${PROJECT_NAME}_model
+  ${${PROJECT_NAME}_model_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
 
 ## Visual Plugin
 add_library(${PROJECT_NAME}_visual
-    src/terrain_modifier.cpp src/dynamic_terrain_visual.cpp
+  src/terrain_modifier.cpp src/dynamic_terrain_visual.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_visual
-   ${catkin_LIBRARIES}
-   ${GAZEBO_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
 )
 
 #############
