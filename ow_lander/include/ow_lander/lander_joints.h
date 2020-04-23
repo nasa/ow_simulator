@@ -34,8 +34,8 @@ const std::vector<std::string> joint_names {
 
 // These names are good for displaying to humans
 const std::vector<std::string> joint_display_names {
-  "shoulder yaw", "shoulder pitch", "proximal pitch", "distal pitch", "hand yaw", "scoop yaw",
-  "antenna pan", "antenna tilt"
+  "Shoulder Yaw", "Shoulder Pitch", "Proximal Pitch", "Distal Pitch", "Hand Yaw", "Scoop Yaw",
+  "Antenna Pan", "Antenna Tilt"
 };
 
 
