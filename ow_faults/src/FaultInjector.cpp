@@ -4,11 +4,11 @@
  * All rights reserved.
  ******************************************************************************/
 #include "ow_faults/FaultInjector.h"
-#include <ow_lander/lander_joints.h>
 #include <algorithm>
 
 
 using namespace std;
+using namespace ow_lander;
 
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
@@ -30,71 +30,71 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   // Populate the map once here.
   // This assumes the collection of joints will never change.
-  if (m_joint_index_map.empty()) {
-    for (auto& n : ow_lander::joint_names) {
-      int index = findPositionInGroup(msg->name, n);
+  if (m_joint_state_indices.empty()) {
+    for (int j = 0; j < NUM_JOINTS; j ++) {
+      int index = findPositionInGroup(msg->name, joint_names[j]);
       if (index >= 0)
-        m_joint_index_map[n] = index;
+        m_joint_state_indices.push_back(index);
     }
   }
 
   sensor_msgs::JointState output(*msg);
 
   // Set failed sensor values to 0
-  int index;
-  if (m_faults.ant_pan_encoder_failure && findJointIndex("j_ant_pan", index)) {
+  unsigned int index;
+  if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.ant_pan_torque_sensor_failure && findJointIndex("j_ant_pan", index)) {
+  if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.ant_tilt_encoder_failure && findJointIndex("j_ant_tilt", index)) {
+  if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex("j_ant_tilt", index)) {
+  if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.shou_yaw_encoder_failure && findJointIndex("j_shou_yaw", index)) {
+  if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex("j_shou_yaw", index)) {
+  if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.shou_pitch_encoder_failure && findJointIndex("j_shou_pitch", index)) {
+  if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex("j_shou_pitch", index)) {
+  if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.prox_pitch_encoder_failure && findJointIndex("j_prox_pitch", index)) {
+  if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex("j_prox_pitch", index)) {
+  if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.dist_pitch_encoder_failure && findJointIndex("j_dist_pitch", index)) {
+  if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex("j_dist_pitch", index)) {
+  if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.hand_yaw_encoder_failure && findJointIndex("j_hand_yaw", index)) {
+  if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex("j_hand_yaw", index)) {
+  if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.scoop_yaw_encoder_failure && findJointIndex("j_scoop_yaw", index)) {
+  if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index] = 0.0;
   }
-  if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex("j_scoop_yaw", index)) {
+  if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index] = 0.0;
   }
 
@@ -110,13 +110,11 @@ int FaultInjector::findPositionInGroup(const group_t& group, const item_t& item)
   return iter - group.begin();
 }
 
-bool FaultInjector::findJointIndex(const string& name, int& out_index)
+bool FaultInjector::findJointIndex(const unsigned int joint, unsigned int& out_index)
 {
-  auto iter = m_joint_index_map.find(name);
-
-  if (iter == m_joint_index_map.end())
+  if(joint >= NUM_JOINTS)
     return false;
 
-  out_index = iter->second;
+  out_index = m_joint_state_indices[joint];
   return true;
 }

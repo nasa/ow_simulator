@@ -9,6 +9,7 @@
 
 #include <ros/ros.h>
 #include <ow_faults/FaultsConfig.h>
+#include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <unordered_map>
 
@@ -40,14 +41,15 @@ private:
 
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
-  bool findJointIndex(const std::string& name, int& out_index);
+  bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   ow_faults::FaultsConfig m_faults;
 
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-  std::unordered_map<std::string, int> m_joint_index_map;
+  // Map ow_lander::joint_t enum values to indices in JointState messages
+  std::vector<unsigned int> m_joint_state_indices;
 };
 
 
