@@ -121,17 +121,12 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   
     #rotate dist pith to pre-trenching position. 
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = -math.pi/4
+  joint_goal[constants.J_DIST_PITCH] = -math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
 
-  
- 
-  
-  
- 
-  
+
   
   ## Once aligned to trench goal, place hand above trench middle point
   goal_pose = move_limbs.get_current_pose().pose
@@ -150,7 +145,7 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   
   #  rotate to dig in the ground  ###rotate scoop to deliver sample at current location begin
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/10 # we want zero so a number very close to zero
+  joint_goal[constants.J_DIST_PITCH] = 55.0/180.0*math.pi # we want zero so a number very close to zero
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
@@ -159,12 +154,12 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
   move_limbs.execute(cartesian_plan, wait=True)
   move_limbs.stop()
-  move_arm.execute(cartesian_plan, wait=True)
-  move_arm.stop()
+  #move_arm.execute(cartesian_plan, wait=True)
+  #move_arm.stop()
   
   #  rotate to dig out 
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/4
+  joint_goal[constants.J_DIST_PITCH] = math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
