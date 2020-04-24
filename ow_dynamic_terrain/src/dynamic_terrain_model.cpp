@@ -60,25 +60,43 @@ private: physics::HeightmapShapePtr getHeightmapShape()
     {
         if (model_ == nullptr)
         {
-            gzerr << "DynamicTerrainModel plugin: Couldn't acquire heightmap model!" << std::endl;
+            gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << std::endl;
             return nullptr;
         }
 
-        auto collision = model_->GetLink("terrain-link")->GetCollision("collision");
+        auto links = model_->GetLinks();
+
+        if (links.size() == 0)
+        {
+            gzerr << "DynamicTerrainModel: Associcated model has no links!" << std::endl;
+            return nullptr;
+        }
+
+        auto link0 = links[0];
+
+        auto collisions = link0->GetCollisions();
+
+        if (collisions.size() == 0)
+        {
+            gzerr << "DynamicTerrainModel: Model has no collisions for first link!" << std::endl;
+            return nullptr;
+        }
+
+        auto collision = collisions[0];
         if (collision == nullptr)
         {
-            gzerr << "DynamicTerrainModel plugin: Couldn't acquire heightmap model collision!" << std::endl;
+            gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << std::endl;
             return nullptr;
         }
         
         auto shape = boost::dynamic_pointer_cast<physics::HeightmapShape>(collision->GetShape());
         if (shape == nullptr)
         {
-            gzerr << "DynamicTerrainModel plugin: Couldn't acquire heightmap model collision!" << std::endl;
+            gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << std::endl;
             return nullptr;
         }            
 
-        gzlog << "DynamicTerrainModel plugin: heightmap shape ["
+        gzlog << "DynamicTerrainModel: heightmap shape ["
             << shape->VertexCount().X() << ", " << shape->VertexCount().Y() << "]" << std::endl;
 
         return shape;
