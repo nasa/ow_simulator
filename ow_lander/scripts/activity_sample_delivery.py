@@ -159,11 +159,35 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   
   #  rotate to dig out 
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/2
+  joint_goal[constants.J_DIST_PITCH] = math.pi/3
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
-  # after sample collect  #0.52 -0.22 0.82
+  # after sample collect  
+  
+  # Create a contraints list and give it a name
+  #constraints = Constraints()
+  #constraints.name = "Keep scoop horizontal"
+        
+  ## Create an orientation constraint for the right gripper 
+  #orientation_constraint = OrientationConstraint()
+  ##orientation_constraint.header = start_pose.header
+  ##orientation_constraint.link_name = move_arm.get_end_effector_link()
+  #orientation_constraint.header.frame_id = "base_link"
+  #orientation_constraint.link_name = "l_scoop"
+  #orientation_constraint.orientation.w = 1.0
+  #orientation_constraint.absolute_x_axis_tolerance = 0.1
+  #orientation_constraint.absolute_y_axis_tolerance = 0.1
+  #orientation_constraint.absolute_z_axis_tolerance = 3.14
+  #orientation_constraint.weight = 1.0
+        
+  ## Append the constraint to the list of contraints
+  #constraints.orientation_constraints.append(orientation_constraint)
+          
+  ## Set the path constraints on the move_arm
+  #move_arm.set_path_constraints(constraints)
+
+  # move to top of lander to deliver sample 
   
   goal_pose = move_arm.get_current_pose().pose
   #return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
@@ -196,7 +220,7 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   #move_arm.stop()  
   ################################
   
-    ###rotate scoop to deliver sample at current location begin
+  ###rotate scoop to deliver sample at current location begin
   mypi = 3.14159
   r = -180
   p = 90  # 45 worked get
