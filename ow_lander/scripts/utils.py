@@ -11,6 +11,9 @@ import math
 import time
 import subprocess, os, signal
 from std_msgs.msg import String
+import rospy
+import roslib; roslib.load_manifest('urdfdom_py')
+from urdf_parser_py.urdf import URDF
 
 # Basic check if input trench arguments are numbers
 def check_arguments(tx, ty, td):
@@ -54,3 +57,17 @@ def stop_traj_recording(result, bagname):
   # Cleanup bag and csv
   command = "rm " + bagname + ".bag"
   os.system(command)
+
+def is_shou_yaw_goal_in_range(joint_goal):
+  # If shoulder yaw goal angle is out of joint range, abort
+  upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
+  lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
+  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
+    return False
+  else:
+    return True
+
+
+
+
+

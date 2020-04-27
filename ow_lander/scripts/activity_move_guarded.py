@@ -11,6 +11,7 @@ import math
 import datetime
 import time
 import rospy
+from utils import is_shou_yaw_goal_in_range
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -72,8 +73,8 @@ def pre_move_guarded(move_arm,move_limbs,args):
   joint_goal  [constants.J_SHOU_PITCH] = math.pi/2
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
 
-  # If out of joint range, abort (TODO: parse limit from urdf)
-  if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+  # If out of joint range, abort
+  if (is_shou_yaw_goal_in_range(joint_goal) == False):
     return False
   
   joint_goal[constants.J_SCOOP_YAW] = 0
