@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   roscpp
   rospy
+  ow_lander
 )
 
 ## System dependencies are found with CMake's conventions
