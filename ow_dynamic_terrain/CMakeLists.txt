@@ -171,7 +171,7 @@ target_link_libraries(${PROJECT_NAME}_model
 )
 
 add_dependencies(${PROJECT_NAME}_model
-  ${${PROJECT_NAME}_model_EXPORTED_TARGETS}
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
 ## Visual Plugin
@@ -183,6 +183,10 @@ target_link_libraries(${PROJECT_NAME}_visual
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
 )
+
+add_dependencies(${PROJECT_NAME}_visual
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##
