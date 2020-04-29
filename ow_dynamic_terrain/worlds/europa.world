@@ -14,5 +14,11 @@
       </camera>
     </gui>
 
+    <include>
+      <uri>model://construction_barrel</uri>
+      <name>construction_barrel</name>
+      <pose>3 3 2 0 0 0</pose>
+    </include>
+
   </world>
 </sdf>

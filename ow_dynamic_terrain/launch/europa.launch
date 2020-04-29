@@ -4,11 +4,15 @@
   <include file="$(find ow_dynamic_terrain)/launch/default.launch" >
     <arg name="world_name" value="europa.world"/>
 
-    <!-- Husky Params -->
-    <arg name="husky_x" default="0"/>
-    <arg name="husky_y" default="0"/>
-    <arg name="husky_z" default="0.5"/>
-    <arg name="husky_yaw" default="0.0"/>
+    <!-- Initial pose arguments -->
+    <arg name="init_x" default="0" />
+    <arg name="init_y" default="0" />
+    <arg name="init_z" default="2" />
+    <arg name="init_R" default="0" />
+    <arg name="init_P" default="0" />
+    <arg name="init_Y" default="0" />
+    <arg name="freeze_base_link" default="false" />
+
   </include>
 
 </launch>

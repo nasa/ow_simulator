@@ -94,7 +94,7 @@ private: physics::HeightmapShapePtr getHeightmapShape()
         {
             gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << std::endl;
             return nullptr;
-        }            
+        }
 
         gzlog << "DynamicTerrainModel: heightmap shape ["
             << shape->VertexCount().X() << ", " << shape->VertexCount().Y() << "]" << std::endl;
@@ -124,6 +124,7 @@ private: void onUpdate()
             return;
         }
 
+        // TODO: Check for out of bounds
         TerrainModifier::modify(heightmap,
             mt_msg->operation,
             mt_msg->position,

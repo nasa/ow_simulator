@@ -1,0 +1,21 @@
+<launch>
+    <arg name="robot_name" />
+    <arg name="robot_file" />
+    <arg name="init_x" default="0"/>
+    <arg name="init_y" default="0"/>
+    <arg name="init_z" default="0"/>
+    <arg name="init_R" default="0"/>
+    <arg name="init_P" default="0"/>
+    <arg name="init_Y" default="0"/>
+
+    <param name="robot_description" command="cat $(arg robot_file)" />
+
+    <node name="$(arg robot_name)_spawn" pkg="gazebo_ros" type="spawn_model"
+        args="-urdf -param robot_description -model $(arg robot_name)
+            -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
+            -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)"
+        respawn="false" output="screen" />
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen" />
+
+</launch>
