@@ -124,6 +124,7 @@ private:
       return;
     }
 
+#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 13
     TerrainModifier::modify(heightmap, mt_msg->operation, mt_msg->position, mt_msg->outer_radius, mt_msg->inner_radius,
                             mt_msg->weight,
                             [&heightmap_shape](int x, int y) {
@@ -132,6 +133,7 @@ private:
                             [&heightmap_shape](int x, int y, float value) {
                               heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
                             });
+#endif
   }
 
 private:
