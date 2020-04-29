@@ -74,18 +74,18 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
 
 def plan_cartesian_path(move_arm, length):
 
-    waypoints = []
-    wpose = move_arm.get_current_pose().pose
-    wpose.position.x += length # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
+  waypoints = []
+  wpose = move_arm.get_current_pose().pose
+  wpose.position.x += length # Second move forward/backwards in (x)
+  waypoints.append(copy.deepcopy(wpose))
 
-    (plan, fraction) = move_arm.compute_cartesian_path(
-                                   waypoints,   # waypoints to follow
-                                   0.01,        # eef_step
-                                   0.0)         # jump_threshold
-    #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-# Note: We are just planning, not asking move_group to actually move the robot yet:
-    return plan, fraction
+  (plan, fraction) = move_arm.compute_cartesian_path(
+                               waypoints,   # waypoints to follow
+                               0.01,        # eef_step
+                               0.0)         # jump_threshold
+  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
+  # Note: We are just planning, not asking move_group to actually move the robot yet:
+  return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
 
