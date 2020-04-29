@@ -23,6 +23,12 @@
       <uri>model://ogre_terrain</uri>
     </include>
 
+    <include>
+      <uri>model://construction_barrel</uri>
+      <name>construction_barrel</name>
+      <pose>310 -275 2 0 0 0</pose>
+    </include>
+
   </world>
 
 </sdf>
