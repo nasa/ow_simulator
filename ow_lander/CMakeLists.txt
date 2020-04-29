@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
- 
+
 project(ow_lander)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 )
-  
+
 find_package(roslaunch)
 
 add_service_files(
@@ -18,6 +18,7 @@ add_service_files(
   MoveGuarded.srv
   MoveReset.srv
   DigTrench.srv
+  SawMotionPlanning.srv
 )
 
 generate_messages(
