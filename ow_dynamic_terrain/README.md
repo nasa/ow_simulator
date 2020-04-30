@@ -68,4 +68,4 @@ Then you may perform a terrain operation by submitting a rostopic message as fol
 rostopic pub /ow_dynamic_terrain/modify_terrain ow_dynamic_terrain/modify_terrain "{operation: lower, position: {x: 0,  y: 0}, outer_radius: 0.1, inner_radius: 0.001, weight: 1}"
 ```
 
-Current supported terrain operations are: _raise, lower, flatten, smooth_
+Current supported terrain operations are: _raise, lower, flatten_

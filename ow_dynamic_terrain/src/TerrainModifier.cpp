@@ -62,13 +62,6 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& op, const Point
         else
           new_height -= added_height;
       }
-      else if (op == "smooth")
-      {
-        if (new_height < average_height)
-          new_height += added_height;
-        else
-          new_height -= added_height;
-      }
       else
         gzerr << "Unknown terrain operation[" << op << "]" << endl;
 
