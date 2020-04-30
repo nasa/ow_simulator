@@ -80,7 +80,7 @@ def handle_start_planning(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing(req)
+    args = activity_full_digging_traj.arg_parsing_circ(req)
 
     if utils.check_arguments(args[1],args[2],args[3]) != True:
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
@@ -107,7 +107,7 @@ def handle_dig_linear_trench(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing(req)
+    args = activity_full_digging_traj.arg_parsing_lin(req)
     #args = activity_dig_trench.arg_parsing(req)
 
     if utils.check_arguments(args[1],args[2],args[3]) != True:
@@ -118,10 +118,10 @@ def handle_dig_linear_trench(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[4], bagname)
+    utils.start_traj_recording(args[5], bagname)
     #result = activity_full_digging_traj.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
     #result = activity_dig_trench.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
-    result = activity_full_digging_traj.dig_linear_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    result = activity_full_digging_traj.dig_linear_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
