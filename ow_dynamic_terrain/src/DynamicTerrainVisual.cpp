@@ -3,7 +3,7 @@
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
 #include "ow_dynamic_terrain/modify_terrain.h"
-#include "terrain_modifier.h"
+#include "TerrainModifier.h"
 
 using namespace gazebo;
 
@@ -14,7 +14,7 @@ public:
   {
     gzlog << "DynamicTerrainVisual: successfully loaded!" << std::endl;
 
-    this->on_update_connection_ = event::Events::ConnectPostRender(std::bind(&DynamicTerrainVisual::onUpdate, this));
+    this->m_on_update_connection = event::Events::ConnectPostRender(std::bind(&DynamicTerrainVisual::onUpdate, this));
 
     if (!ros::isInitialized())
     {
@@ -24,10 +24,10 @@ public:
     {
       auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
           "/ow_dynamic_terrain/modify_terrain", 1, boost::bind(&DynamicTerrainVisual::onModifyTerrainMsg, this, _1),
-          ros::VoidPtr(), &this->ros_queue_);
+          ros::VoidPtr(), &this->m_ros_queue);
 
-      ros_node_.reset(new ros::NodeHandle("dynamic_terrain_visual"));
-      ros_subscriber_ = ros_node_->subscribe(so);
+      m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_visual"));
+      m_ros_subscriber = m_ros_node->subscribe(so);
     }
   }
 
@@ -54,8 +54,8 @@ private:
 private:
   void onUpdate()
   {
-    if (ros_node_->ok())
-      ros_queue_.callAvailable();
+    if (m_ros_node->ok())
+      m_ros_queue.callAvailable();
   }
 
 private:
@@ -79,16 +79,16 @@ private:
   }
 
 private:
-  event::ConnectionPtr on_update_connection_;
+  event::ConnectionPtr m_on_update_connection;
 
 private:
-  std::unique_ptr<ros::NodeHandle> ros_node_;
+  std::unique_ptr<ros::NodeHandle> m_ros_node;
 
 private:
-  ros::Subscriber ros_subscriber_;
+  ros::Subscriber m_ros_subscriber;
 
 private:
-  ros::CallbackQueue ros_queue_;
+  ros::CallbackQueue m_ros_queue;
 };
 
 GZ_REGISTER_VISUAL_PLUGIN(DynamicTerrainVisual)

@@ -160,7 +160,7 @@ include_directories(
 
 ## Model Plugin
 add_library(${PROJECT_NAME}_model
-  src/terrain_modifier.cpp src/dynamic_terrain_model.cpp
+  src/TerrainModifier.cpp src/DynamicTerrainModel.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_model
@@ -174,7 +174,7 @@ add_dependencies(${PROJECT_NAME}_model
 
 ## Visual Plugin
 add_library(${PROJECT_NAME}_visual
-  src/terrain_modifier.cpp src/dynamic_terrain_visual.cpp
+  src/TerrainModifier.cpp src/DynamicTerrainVisual.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_visual

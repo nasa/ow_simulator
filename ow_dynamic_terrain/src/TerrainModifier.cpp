@@ -1,6 +1,6 @@
 #include <OgreVector3.h>
 #include <gazebo/rendering/Conversions.hh>
-#include "terrain_modifier.h"
+#include "TerrainModifier.h"
 
 using namespace std;
 using namespace Ogre;

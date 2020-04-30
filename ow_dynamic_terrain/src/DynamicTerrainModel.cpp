@@ -4,7 +4,7 @@
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
 #include "ow_dynamic_terrain/modify_terrain.h"
-#include "terrain_modifier.h"
+#include "TerrainModifier.h"
 
 using namespace gazebo;
 
@@ -15,9 +15,9 @@ public:
   {
     gzlog << "DynamicTerrainModel: successfully loaded!" << std::endl;
 
-    model_ = model;
+    m_model = model;
 
-    on_update_connection_ = event::Events::ConnectPostRender(std::bind(&DynamicTerrainModel::onUpdate, this));
+    m_on_update_connection = event::Events::ConnectPostRender(std::bind(&DynamicTerrainModel::onUpdate, this));
 
     if (!ros::isInitialized())
     {
@@ -27,10 +27,10 @@ public:
     {
       auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
           "/ow_dynamic_terrain/modify_terrain", 1, boost::bind(&DynamicTerrainModel::onModifyTerrainMsg, this, _1),
-          ros::VoidPtr(), &this->ros_queue_);
+          ros::VoidPtr(), &this->m_ros_queue);
 
-      ros_node_.reset(new ros::NodeHandle("dynamic_terrain_model"));
-      ros_subscriber_ = ros_node_->subscribe(so);
+      m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
+      m_ros_subscriber = m_ros_node->subscribe(so);
     }
   }
 
@@ -57,13 +57,13 @@ private:
 private:
   physics::HeightmapShapePtr getHeightmapShape()
   {
-    if (model_ == nullptr)
+    if (m_model == nullptr)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << std::endl;
       return nullptr;
     }
 
-    auto links = model_->GetLinks();
+    auto links = m_model->GetLinks();
 
     if (links.size() == 0)
     {
@@ -104,8 +104,8 @@ private:
 private:
   void onUpdate()
   {
-    if (ros_node_->ok())
-      ros_queue_.callAvailable();
+    if (m_ros_node->ok())
+      m_ros_queue.callAvailable();
   }
 
   void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
@@ -137,19 +137,19 @@ private:
   }
 
 private:
-  physics::ModelPtr model_;
+  physics::ModelPtr m_model;
 
 private:
-  event::ConnectionPtr on_update_connection_;
+  event::ConnectionPtr m_on_update_connection;
 
 private:
-  std::unique_ptr<ros::NodeHandle> ros_node_;
+  std::unique_ptr<ros::NodeHandle> m_ros_node;
 
 private:
-  ros::Subscriber ros_subscriber_;
+  ros::Subscriber m_ros_subscriber;
 
 private:
-  ros::CallbackQueue ros_queue_;
+  ros::CallbackQueue m_ros_queue;
 };
 
 // Register this plugin with the simulator
