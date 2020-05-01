@@ -14,8 +14,8 @@
     </include>
 
     <include>
-      <uri>model://gas_station</uri>
-      <name>gas_station</name>
+      <uri>model://ambulance</uri>
+      <name>ambulance</name>
       <pose>330 -290 0 0 0 3.14</pose>
     </include>
 
