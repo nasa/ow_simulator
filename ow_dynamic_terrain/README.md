@@ -81,4 +81,5 @@ rostopic pub /ow_dynamic_terrain/modify_terrain ow_dynamic_terrain/modify_terrai
     weight: 1}"
 ```
 
-Current supported terrain operations are: _raise, lower, flatten_
+Current supported terrain operations are: _raise, lower_. Operations are case-
+sensitive.

@@ -8,15 +8,26 @@ using namespace gazebo;
 using namespace rendering;
 using namespace geometry_msgs;
 
-void TerrainModifier::modify(Heightmap* heightmap, const string& op, const Point& terrain_position, double outer_radius,
-                             double inner_radius, double weight, function<float(long, long)> get_height_value,
+void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
+                             const Point& terrain_position,
+                             double outer_radius, double inner_radius, double weight,
+                             function<float(long, long)> get_height_value,
                              function<void(long, long, float)> set_height_value)
 {
+  if (operation != "lower" && operation != "raise")
+  {
+    gzerr << "Unknown terrain operation [" << operation << "]" << endl;
+    return;
+  }
+
+  bool raise_operation = operation == "raise";  // otherwise it is lower
+
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (!terrain)
   {
-    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!"
+      << endl;
     return;
   }
 
@@ -29,10 +40,6 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& op, const Point
   auto top = max(int((heightmap_position.y - outer_radius) * size), 0);
   auto right = min(int((heightmap_position.x + outer_radius) * size), size);
   auto bottom = min(int((heightmap_position.y + outer_radius) * size), size);
-
-  auto average_height = op == "flatten" || op == "smooth" ?
-                            heightmap->AvgHeight(Conversions::ConvertIgn(heightmap_position), outer_radius) :
-                            0.0;
 
   for (auto y = top; y <= bottom; ++y)
     for (auto x = left; x <= right; ++x)
@@ -51,23 +58,14 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& op, const Point
       auto added_height = inner_weight * weight;
       auto new_height = get_height_value(x, y);
 
-      if (op == "raise")
+      if (raise_operation)
         new_height += added_height;
-      else if (op == "lower")
+      else  // "lower"
         new_height -= added_height;
-      else if (op == "flatten")
-      {
-        if (new_height < average_height)
-          new_height += added_height;
-        else
-          new_height -= added_height;
-      }
-      else
-        gzerr << "Unknown terrain operation[" << op << "]" << endl;
 
       set_height_value(x, y, new_height);
     }
 
-  gzlog << "DynamicTerrain: performed " << op << " operation at (" << terrain_position.x << ", " << terrain_position.y
-        << ")" << std::endl;
+  gzlog << "DynamicTerrain: performed " << operation << " operation at ("
+    << terrain_position.x << ", " << terrain_position.y << ")" << std::endl;
 }
