@@ -14,12 +14,13 @@ time (both physically and visually)
 
 ## Requirements
 
-ROS distro: melodic
+ROS distro: melodic  
 Gazebo version 9.13 or later
 
 > **_NOTE:_** The DynamicTerrainModel plugin relies on a recently merged pull request
 https://bitbucket.org/osrf/gazebo/pull-requests/3210/add-setheight-method-to-heightmapshape.
-So make sure to link against that latest gazebo9 branch otherwise the plugin wouldn't function as expected.
+So make sure to link against that latest gazebo9 branch otherwise the plugin wouldn't
+function as expected.
 
 ## Usage
 
