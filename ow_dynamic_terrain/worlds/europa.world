@@ -2,10 +2,6 @@
 <sdf version='1.4'>
   <world name='europa'>
 
-    <include>
-      <uri>model://europa_terrain</uri>
-    </include>
-
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose frame=''>5.0 5.0 5.0   0.0 0.6 -2.25</pose>
@@ -13,6 +9,14 @@
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://europa_terrain</uri>
+    </include>
 
     <include>
       <uri>model://construction_barrel</uri>

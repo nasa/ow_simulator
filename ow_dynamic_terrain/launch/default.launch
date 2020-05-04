@@ -37,6 +37,12 @@
     <include file="$(find ow_dynamic_terrain)/launch/robot.launch">
       <arg name="robot_name" value="dummy_camera" />
       <arg name="robot_file" value="$(find ow_dynamic_terrain)/urdf/simple_camera.urdf" />
+      <arg name="init_x" value="5.0" />
+      <arg name="init_y" value="5.0" />
+      <arg name="init_z" value="5.0" />
+      <arg name="init_R" value="0.0" />
+      <arg name="init_P" value="0.6" />
+      <arg name="init_Y" value="-2.25" />
     </include>
   </group>
 

@@ -20,12 +20,16 @@
   <!-- Example: -->
   <author email="ussama.naal@nasa.gov">Ussama Naal</author>
 
-
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
+
   <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>geometry_msgs</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
   <exec_depend>message_runtime</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
