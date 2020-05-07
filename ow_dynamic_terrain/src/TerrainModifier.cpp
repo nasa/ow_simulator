@@ -16,7 +16,7 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
 {
   if (operation != "lower" && operation != "raise")
   {
-    gzerr << "Unknown terrain operation [" << operation << "]" << endl;
+    gzerr << "DynamicTerrain: Unknown terrain operation [" << operation << "]" << endl;
     return;
   }
 
@@ -26,8 +26,13 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
 
   if (!terrain)
   {
-    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!"
-      << endl;
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    return;
+  }
+
+  if (inner_radius > outer_radius)
+  {
+    gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
     return;
   }
 
@@ -51,17 +56,14 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
       auto inner_weight = 1.0;
       if (dist > inner_radius)
       {
-        inner_weight = ignition::math::clamp(dist / outer_radius, 0.0, 1.0);
+        inner_weight = ignition::math::clamp(
+          (dist-inner_radius) / (outer_radius-inner_radius), 0.0, 1.0);
         inner_weight = 1.0 - (inner_weight * inner_weight);
       }
 
       auto added_height = inner_weight * weight;
-      auto new_height = get_height_value(x, y);
-
-      if (raise_operation)
-        new_height += added_height;
-      else  // "lower"
-        new_height -= added_height;
+      auto new_height = get_height_value(x, y) +
+       (raise_operation ? +added_height : -added_height);
 
       set_height_value(x, y, new_height);
     }

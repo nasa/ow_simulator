@@ -56,7 +56,7 @@ The following excerpt shows how to apply the two plugins towards a DEM object:
         <geometry>
           <heightmap>
             <uri>file://media/materials/textures/terrain.png</uri>
-            <size>2048 2048 100</size>
+            <size>1024 1024 100</size>
             <pos>0 0 0</pos>
           </heightmap>
         </geometry>

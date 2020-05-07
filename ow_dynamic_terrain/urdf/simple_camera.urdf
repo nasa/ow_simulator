@@ -5,11 +5,11 @@
   xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
   xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <link name="dummy_link" />
-    <joint name="dummy_fixed_joint" type="fixed">
-        <parent link="dummy_link" />
-        <child link="camera_link" />
-    </joint>
+  <link name="world" />
+  <joint name="dummy_fixed_joint" type="fixed">
+      <parent link="world" />
+      <child link="camera_link" />
+  </joint>
   
   <link name="camera_link">
 
