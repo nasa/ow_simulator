@@ -13,7 +13,25 @@ import copy
 from tf.transformations import quaternion_from_euler
 from utils import is_shou_yaw_goal_in_range
 
-def arg_parsing(req):
+def arg_parsing_lin(req):
+  if req.use_defaults :
+    # Default trenching values
+    trench_x=1.5
+    trench_y=0
+    trench_d=0.02
+    length=0.3
+    delete_prev_traj=False
+
+  else :
+    trench_x=req.trench_x
+    trench_y=req.trench_y
+    trench_d=req.trench_d
+    length=req.length
+    delete_prev_traj=req.delete_prev_traj
+
+  return [req.use_defaults,trench_x,trench_y,trench_d,length,delete_prev_traj]
+
+def arg_parsing_circ(req):
   if req.use_defaults :
     # Default trenching values
     trench_x=1.5
@@ -54,22 +72,22 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path(move_arm, move_limbs, scale):
+def plan_cartesian_path(move_arm, length):
 
-    waypoints = []
-    wpose = move_limbs.get_current_pose().pose
-    wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
+  waypoints = []
+  wpose = move_arm.get_current_pose().pose
+  wpose.position.x += length # Second move forward/backwards in (x)
+  waypoints.append(copy.deepcopy(wpose))
 
-    (plan, fraction) = move_arm.compute_cartesian_path(
-                                   waypoints,   # waypoints to follow
-                                   0.01,        # eef_step
-                                   0.0)         # jump_threshold
-    #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-# Note: We are just planning, not asking move_group to actually move the robot yet:
-    return plan, fraction
+  (plan, fraction) = move_arm.compute_cartesian_path(
+                               waypoints,   # waypoints to follow
+                               0.01,        # eef_step
+                               0.0)         # jump_threshold
+  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
+  # Note: We are just planning, not asking move_group to actually move the robot yet:
+  return plan, fraction
 
-def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
+def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
@@ -114,9 +132,9 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.stop()
 
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
-  move_limbs.execute(cartesian_plan, wait=True)
-  move_limbs.stop()
+  cartesian_plan, fraction = plan_cartesian_path(move_arm, length)
+  move_arm.execute(cartesian_plan, wait=True)
+  move_arm.stop()
 
   #  rotate to dig out
   joint_goal = move_arm.get_current_joint_values()
