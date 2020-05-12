@@ -103,21 +103,36 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
   
+  
+  #rotate shoulder joint to dig radially outwards
 
+  #joint_goal = move_arm.get_current_joint_values()
+  #joint_goal[constants.J_SHOU_YAW] = math.pi/4
+  ## If out of joint range, abort (TODO: parse limit from urdf)
+  #if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+    #return False
+
+  #joint_goal[constants.J_SCOOP_YAW] = 0
+  #move_arm.go(joint_goal, wait=True)
+  #move_arm.stop()
   
-  
-  # find return sampe point begin
+      # find return sampe point begin
   goal_pose = move_arm.get_current_pose().pose
   return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
   return_o = goal_pose.orientation
     # find return sampe point end
+  
+  
+
     
   #rotate scoop outwards 
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_SCOOP_YAW] = math.pi/2
   print ()
   move_arm.go(joint_goal, wait=True)
-  move_arm.stop()  
+  move_arm.stop()
+  
+
   
     #rotate dist pith to pre-trenching position. 
   joint_goal = move_arm.get_current_joint_values()
@@ -157,7 +172,7 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   #move_arm.execute(cartesian_plan, wait=True)
   #move_arm.stop()
   
-  #  rotate to dig out 
+  #  rotate to dig out of ground
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = math.pi/3
   move_arm.go(joint_goal, wait=True)
@@ -194,9 +209,12 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   #goal_pose.position.x = return_pt[0]
   #goal_pose.position.y = return_pt[1]
   #goal_pose.position.z = return_pt[2]
-  goal_pose.position.x = 0.52
-  goal_pose.position.y = -0.22
-  goal_pose.position.z = 0.82
+  #goal_pose.position.x = 0.52 #top of lander pos 
+  #goal_pose.position.y = -0.22
+  #goal_pose.position.z = 0.82
+  goal_pose.position.x = 0.53 #top of lander pos 
+  goal_pose.position.y = -0.36
+  goal_pose.position.z = 0.78
   goal_pose.orientation = return_o 
   #goal_pose.orientation = goal_pose.orientation
   #goal_pose.orientation.w = 1; 
@@ -212,6 +230,7 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   move_arm.stop()
   
   #0.52 -0.22 0.82
+  #0.6 -0.4 0.82
     ##rotate scoop outwards 
   #joint_goal = move_arm.get_current_joint_values()
   #joint_goal[constants.J_SCOOP_YAW] = 0
@@ -221,40 +240,40 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   ################################
   
   ###rotate scoop to deliver sample at current location begin
-  mypi = 3.14159
-  r = -180
-  p = 90  # 45 worked get
-  y = -90
-  d2r = mypi/180
-  r2d = 180/mypi
-  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-  #print "The quaternion representation is %s %s %s %s." % (q[0], q[1], q[2], q[3])
-  goal_pose = move_arm.get_current_pose().pose
-  qg= goal_pose.orientation
-  #rotation = (qg.x, qg.y, qg.z, qg.w)
-  rotation = (goal_pose.orientation.x, goal_pose.orientation.y, goal_pose.orientation.z, goal_pose.orientation.w)
-  euler_angle = euler_from_quaternion(rotation)
-  #print "Current quaternion is %s." % (qg)
-  print "Current euler is ******************************************** %s %s %s." % (euler_angle[0]*r2d, euler_angle[1]*r2d, euler_angle[2]*r2d)
-  #print "goal quaternion is %s %s %s %s." % (q[0], q[1], q[2], q[3])
-  print "goal euler is ----------------------------------------------  %s %s %s." % (r ,p, y)
-  print "current position is ++++++++++++++++++++++++++++++++++++++++ %s %s %s." % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
-  return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
-  #goal_pose.position.x = x_tr
-  #goal_pose.position.y = y_tr
-  #goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  #goal_pose.orientation.w = 1; 
-  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+  #mypi = 3.14159
+  #r = -180
+  #p = 90  # 45 worked get
+  #y = -90
+  #d2r = mypi/180
+  #r2d = 180/mypi
+  #q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+  ##print "The quaternion representation is %s %s %s %s." % (q[0], q[1], q[2], q[3])
+  #goal_pose = move_arm.get_current_pose().pose
+  #qg= goal_pose.orientation
+  ##rotation = (qg.x, qg.y, qg.z, qg.w)
+  #rotation = (goal_pose.orientation.x, goal_pose.orientation.y, goal_pose.orientation.z, goal_pose.orientation.w)
+  #euler_angle = euler_from_quaternion(rotation)
+  ##print "Current quaternion is %s." % (qg)
+  #print "Current euler is ******************************************** %s %s %s." % (euler_angle[0]*r2d, euler_angle[1]*r2d, euler_angle[2]*r2d)
+  ##print "goal quaternion is %s %s %s %s." % (q[0], q[1], q[2], q[3])
+  #print "goal euler is ----------------------------------------------  %s %s %s." % (r ,p, y)
+  #print "current position is ++++++++++++++++++++++++++++++++++++++++ %s %s %s." % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  #return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  ##goal_pose.position.x = x_tr
+  ##goal_pose.position.y = y_tr
+  ##goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  ##goal_pose.orientation.w = 1; 
+  #goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
-  move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
+  #move_arm.set_pose_target(goal_pose)
+  #plan = move_arm.plan()
 
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    return False
+  #if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    #return False
 
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
+  #plan = move_arm.go(wait=True)
+  #move_arm.stop()
+  #move_arm.clear_pose_targets()
   ###rotate scoop to deliver sample at current location end
   
   
