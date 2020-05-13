@@ -65,7 +65,7 @@ private:
   }
 
 private:
-  void onModifyTerrainCircleMsg(const ow_dynamic_terrain::modify_terrain_circleConstPtr msg)
+  void onModifyTerrainCircleMsg(const ow_dynamic_terrain::modify_terrain_circle::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -75,8 +75,7 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modify(heightmap, msg->operation, msg->position, msg->outer_radius, msg->inner_radius,
-                            msg->weight,
+    TerrainModifier::modify(heightmap, msg,
                             [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
                             [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 
@@ -85,7 +84,7 @@ private:
   }
 
 private:
-  void onModifyTerrainPatchMsg(const ow_dynamic_terrain::modify_terrain_patchConstPtr msg)
+  void onModifyTerrainPatchMsg(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -95,7 +94,7 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modify(heightmap, msg->position, msg->patch, msg->z_scale,
+    TerrainModifier::modify(heightmap, msg,
                             [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
                             [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 

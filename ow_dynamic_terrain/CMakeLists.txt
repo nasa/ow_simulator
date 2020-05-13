@@ -17,6 +17,10 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
 )
 
+find_package(OpenCV 3 REQUIRED
+    core
+)
+
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
@@ -29,9 +33,16 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${GAZEBO_INCLUDE_DIRS}
     ${OGRE-Terrain_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 )
 
-link_directories(${GAZEBO_LIBRARY_DIRS})
+link_directories(
+    ${Boost_LIBRARY_DIR}
+    ${catkin_LIBRARY_DIRS}
+    ${GAZEBO_LIBRARY_DIRS}
+    ${OGRE-Terrain_LIBRARY_DIRS}
+    ${OpenCV_LIBRARY_DIRS}
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -155,6 +166,7 @@ add_library(${PROJECT_NAME}_model
 target_link_libraries(${PROJECT_NAME}_model
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 add_dependencies(${PROJECT_NAME}_model
@@ -169,6 +181,7 @@ add_library(${PROJECT_NAME}_visual
 target_link_libraries(${PROJECT_NAME}_visual
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 add_dependencies(${PROJECT_NAME}_visual

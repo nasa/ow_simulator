@@ -1,19 +1,31 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import rospy
-from ow_dynamic_terrain.msg import modify_terrain_patch
-from cv_bridge import CvBridge
 import cv2
+from cv_bridge import CvBridge
+import numpy as np
+from ow_dynamic_terrain.msg import modify_terrain_patch
+
+cv_bridge = CvBridge()
+
+def convert_tiff_to_grayscale(tiff_img):
+    min_intensity, max_intensity, _, _ = cv2.minMaxLoc(tiff_img)
+    img_scaled = (tiff_img - min_intensity) * (255.0 / (max_intensity - min_intensity))
+    return img_scaled.astype(np.uint8)
 
 def callback(msg):
-    rospy.loginfo("message received")
+    rospy.loginfo("modify_terrain_patch message received")
     rospy.loginfo("Position (%d, %d, %d)" % (msg.position.x, msg.position.y, msg.position.z))
     rospy.loginfo("Z-Scale (%d)" % msg.z_scale)
-    
-    br = CvBridge()
-    image = br.imgmsg_to_cv2(msg.patch)
+
+    image = cv_bridge.imgmsg_to_cv2(msg.patch)
+
+    if msg.patch.encoding == "64FC1" or msg.patch.encoding == "32FC1":
+        print "Converiting to a displayable format .."
+        image = convert_tiff_to_grayscale(image)
     cv2.imshow("view", image)
-    cv2.waitKey(5)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     rospy.init_node("modify_terrain_patch_sub", anonymous=True)

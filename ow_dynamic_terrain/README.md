@@ -4,6 +4,8 @@
 - [Requirements](#requirements)
 - [Usage](#usage)
 - [Demo](#demo)
+  - [Modify Terrain with Circle](#modify-terrain-with-circle)
+  - [Modify Terrain with Patch](#modify-terrain-with-patch)
 
 ## Introduction
 
@@ -70,6 +72,9 @@ The following excerpt shows how to apply the two plugins towards a DEM object:
 ## Demo
 
 Launch demo world using `roslaunch ow_dynamic_terrain europa.launch`.
+Then use one of the two described methods to modify the terrain
+
+### Modify Terrain with Circle
 
 Then you may perform a terrain operation by submitting a rostopic message as follows:
 
@@ -83,4 +88,29 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify
 ```
 
 Current supported terrain operations are: _raise, lower_. Operations are case-
-sensitive.
+sensitive. The following table shows the effect of varying the inner and outer radisu per operation type:  
+
+Original|Lower|Raise
+:------:|:---:|:---:
+![](./misc/modify_terrain_original.jpg)|![](./misc/modify_terrain_lower_1.jpg)|![](./misc/modify_terrain_raise_1.jpg)
+&nbsp;|outer_radius: 0.1, inner_radius: 0.001|outer_radius: 0.1, inner_radius: 0.001
+![](./misc/modify_terrain_original.jpg)|![](./misc/modify_terrain_lower_2.jpg)|![](./misc/modify_terrain_raise_2.jpg)
+&nbsp;|outer_radius: 0.1, inner_radius: 0.05|outer_radius: 0.1, inner_radius: 0.05
+![](./misc/modify_terrain_original.jpg)|![](./misc/modify_terrain_lower_3.jpg)|![](./misc/modify_terrain_raise_3.jpg)
+&nbsp;|outer_radius: 0.1, inner_radius: 0.1|outer_radius: 0.1, inner_radius: 0.1
+
+
+### Modify Terrain with Patch
+
+```bash
+rosrun ow_dynamic_terrain modify_terrain_patch_pub.py image_file
+```
+
+For example executing the above operation using the provided `misc/first_pass_heightmap.tif`
+should result in:
+
+Original|After|Zoomed In
+:------:|:---:|:-------:
+![](./misc/modify_terrain_original.jpg)|![](./misc/modify_terrain_patch_1.jpg)|![](./misc/modify_terrain_patch_2.jpg)
+
+> **_NOTE:_** Only single channel 32/64 float image formats are supported.

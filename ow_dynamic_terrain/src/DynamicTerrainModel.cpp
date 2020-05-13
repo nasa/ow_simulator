@@ -130,8 +130,7 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modify(heightmap, msg->operation, msg->position, msg->outer_radius, msg->inner_radius,
-                            msg->weight,
+    TerrainModifier::modify(heightmap, msg,
                             [&heightmap_shape](int x, int y) {
                               return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
                             },
@@ -159,7 +158,7 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modify(heightmap, msg->position, msg->patch, msg->z_scale,
+    TerrainModifier::modify(heightmap, msg,
                             [&heightmap_shape](int x, int y) {
                               return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
                             },

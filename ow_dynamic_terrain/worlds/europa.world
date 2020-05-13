@@ -24,5 +24,11 @@
       <pose>3 3 2 0 0 0</pose>
     </include>
 
+  <physics type='ode'>
+    <max_step_size>0.01</max_step_size>
+    <real_time_factor>1</real_time_factor>
+    <real_time_update_rate>100</real_time_update_rate>
+  </physics>
+
   </world>
 </sdf>
