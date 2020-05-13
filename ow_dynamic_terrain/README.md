@@ -9,8 +9,7 @@
 
 ## Introduction
 
-A package that adds the capability to update Gazebo terrains dynamically at run-
-time (both physically and visually)
+A package that adds the capability to update Gazebo terrains dynamically at run-time (both physically and visually).
 
 ![](./misc/scene_dynamic_terrain_no_smooth_1.gif)
 
@@ -21,14 +20,12 @@ Gazebo version 9.13 or later
 
 > **_NOTE:_** The DynamicTerrainModel plugin relies on a recently merged pull request
 https://bitbucket.org/osrf/gazebo/pull-requests/3210/add-setheight-method-to-heightmapshape.
-So make sure to link against that latest gazebo9 branch otherwise the plugin wouldn't
-function as expected.
+So make sure to link against that latest gazebo9 branch otherwise the plugin wouldn't function as expected.
 
 ## Usage
 
-The package is made up of two plugins, namely DynamicTerrainModel (ModelPlugin)
-and DyanmicTerrainVisual (VisualPlugin). The two plugins are typically used
-togther towards a terrain model, although it is possible to use each one separately.
+The package is made up of two plugins, namely DynamicTerrainModel (ModelPlugin) and DyanmicTerrainVisual (VisualPlugin).
+The two plugins are typically used togther towards a terrain model, although it is possible to use each one separately.
 
 The following excerpt shows how to apply the two plugins towards a DEM object:
 
@@ -71,8 +68,8 @@ The following excerpt shows how to apply the two plugins towards a DEM object:
 
 ## Demo
 
-Launch demo world using `roslaunch ow_dynamic_terrain europa.launch`.
-Then use one of the two described methods to modify the terrain
+Launch demo world using `roslaunch ow_dynamic_terrain europa.launch`. Then use one of the two described methods to
+modify the terrain
 
 ### Modify Terrain with Circle
 
@@ -87,8 +84,7 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify
     weight: 1}"
 ```
 
-Current supported terrain operations are: _raise, lower_. Operations are case-
-sensitive. The following table shows the effect of varying the inner and outer radisu per operation type:  
+Current supported terrain operations are: _raise, lower_. Operations are case-sensitive. The following table shows the effect of varying the inner and outer radii per operation type:  
 
 Original|Lower|Raise
 :------:|:---:|:---:
