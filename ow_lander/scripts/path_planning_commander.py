@@ -107,7 +107,7 @@ def handle_dig_linear_trench(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_circ(req)
+    args = activity_full_digging_traj.arg_parsing_lin(req)
     #args = activity_dig_trench.arg_parsing(req)
 
     if utils.check_arguments(args[1],args[2],args[3]) != True:
