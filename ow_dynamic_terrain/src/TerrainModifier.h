@@ -4,17 +4,20 @@
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
-class TerrainModifier
+namespace ow_dynamic_terrain
 {
-public:
-  static void modify(gazebo::rendering::Heightmap* heightmap,
-                     const ow_dynamic_terrain::modify_terrain_circle::ConstPtr& msg,
-                     std::function<float(long, long)> get_height_value,
-                     std::function<void(long, long, float)> set_height_value);
+  class TerrainModifier
+  {
+  public:
+    static void modify(gazebo::rendering::Heightmap* heightmap,
+                      const ow_dynamic_terrain::modify_terrain_circle::ConstPtr& msg,
+                      std::function<float(long, long)> get_height_value,
+                      std::function<void(long, long, float)> set_height_value);
 
-public:
-  static void modify(gazebo::rendering::Heightmap* heightmap,
-                     const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg,
-                     std::function<float(long, long)> get_height_value,
-                     std::function<void(long, long, float)> set_height_value);
-};
+  public:
+    static void modify(gazebo::rendering::Heightmap* heightmap,
+                      const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg,
+                      std::function<float(long, long)> get_height_value,
+                      std::function<void(long, long, float)> set_height_value);
+  };
+}  // namespace ow_dynamic_terrain

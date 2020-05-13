@@ -3,13 +3,15 @@
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
+#include "TerrainModifier.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
-#include "TerrainModifier.h"
 
 using namespace std;
 using namespace gazebo;
 
+namespace ow_dynamic_terrain
+{
 class DynamicTerrainModel : public ModelPlugin
 {
 public:
@@ -26,17 +28,15 @@ public:
     m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
     m_ros_node->setCallbackQueue(&m_ros_queue);
 
-    m_ros_subscriber_circle = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_circle>(
-      "/ow_dynamic_terrain/modify_terrain_circle", 10,
-      boost::bind(&DynamicTerrainModel::onModifyTerrainCircleMsg, this, _1));
+    m_ros_subscriber_circle = m_ros_node->subscribe<modify_terrain_circle>(
+        "/ow_dynamic_terrain/modify_terrain_circle", 10,
+        boost::bind(&DynamicTerrainModel::onModifyTerrainCircleMsg, this, _1));
 
-    m_ros_subscriber_patch = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_patch>(
-      "/ow_dynamic_terrain/modify_terrain_patch", 10,
-      boost::bind(&DynamicTerrainModel::onModifyTerrainPatchMsg, this, _1));
-    
+    m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
+        "/ow_dynamic_terrain/modify_terrain_patch", 10,
+        boost::bind(&DynamicTerrainModel::onModifyTerrainPatchMsg, this, _1));
 
-    m_on_update_connection = event::Events::ConnectPostRender(
-      bind(&DynamicTerrainModel::onUpdate, this));
+    m_on_update_connection = event::Events::ConnectPostRender(bind(&DynamicTerrainModel::onUpdate, this));
 
     gzlog << "DynamicTerrainModel: successfully loaded!" << endl;
   }
@@ -113,7 +113,7 @@ private:
   }
 
 private:
-  void onModifyTerrainCircleMsg(const ow_dynamic_terrain::modify_terrain_circleConstPtr msg)
+  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -141,7 +141,7 @@ private:
   }
 
 private:
-  void onModifyTerrainPatchMsg(const ow_dynamic_terrain::modify_terrain_patchConstPtr msg)
+  void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -189,3 +189,4 @@ private:
 
 // Register this plugin with the simulator
 GZ_REGISTER_MODEL_PLUGIN(DynamicTerrainModel)
+}  // namespace ow_dynamic_terrain
