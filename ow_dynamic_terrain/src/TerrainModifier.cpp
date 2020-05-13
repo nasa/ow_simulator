@@ -20,7 +20,7 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
     return;
   }
 
-  bool raise_operation = operation == "raise";  // otherwise it is lower
+  auto raise_operation = operation == "raise";  // otherwise it is lower
 
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
@@ -68,6 +68,52 @@ void TerrainModifier::modify(Heightmap* heightmap, const string& operation,
       set_height_value(x, y, new_height);
     }
 
-  gzlog << "DynamicTerrain: performed " << operation << " operation at ("
+  gzlog << "DynamicTerrain: circle " << operation << " operation at ("
+    << terrain_position.x << ", " << terrain_position.y << ")" << std::endl;
+}
+
+void TerrainModifier::modify(Heightmap* heightmap,
+                             const Point& terrain_position,
+                             const sensor_msgs::Image& patch,
+                             double z_scale,
+                             function<float(long, long)> get_height_value,
+                             function<void(long, long, float)> set_height_value)
+{
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (!terrain)
+  {
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    return;
+  }
+
+  if (patch.width != patch.step)
+  {
+    gzerr << "DynamicTerrain: patch step does't match width!"
+     << " For now only mono8 format is supported." << endl;
+    return;
+  }
+
+  auto _terrain_position = Vector3(terrain_position.x, terrain_position.y, 0);
+  Vector3 heightmap_position;
+  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+
+  auto size = static_cast<int>(terrain->getSize());
+  auto left = max(int(heightmap_position.x * size), 0);
+  auto top = max(int(heightmap_position.y * size), 0);
+  auto right = min(left + static_cast<int>(patch.width - 1), size);
+  auto bottom = min(top + static_cast<int>(patch.height - 1), size);
+
+  for (auto y = top; y <= bottom; ++y)
+    for (auto x = left; x <= right; ++x)
+    {
+      auto row = y - top;
+      auto col = x - left;
+      auto diff_height = patch.data[patch.step * row + col] / 255.0;
+      auto new_height = get_height_value(x, y) + diff_height * z_scale;
+      set_height_value(x, y, new_height);
+    }
+
+  gzlog << "DynamicTerrain: patch applied at ("
     << terrain_position.x << ", " << terrain_position.y << ")" << std::endl;
 }

@@ -3,35 +3,42 @@
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
-#include "ow_dynamic_terrain/modify_terrain.h"
+#include "ow_dynamic_terrain/modify_terrain_circle.h"
+#include "ow_dynamic_terrain/modify_terrain_patch.h"
 #include "TerrainModifier.h"
 
+using namespace std;
 using namespace gazebo;
 
 class DynamicTerrainModel : public ModelPlugin
 {
 public:
-  void Load(physics::ModelPtr model, sdf::ElementPtr /*sdf*/)
+  void Load(physics::ModelPtr model, sdf::ElementPtr /*sdf*/) override
   {
-    gzlog << "DynamicTerrainModel: successfully loaded!" << std::endl;
+    if (!ros::isInitialized())
+    {
+      gzerr << "DynamicTerrainModel: ROS not initilized!" << endl;
+      return;
+    }
 
     m_model = model;
 
-    m_on_update_connection = event::Events::ConnectPostRender(std::bind(&DynamicTerrainModel::onUpdate, this));
+    m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
+    m_ros_node->setCallbackQueue(&m_ros_queue);
 
-    if (!ros::isInitialized())
-    {
-      gzerr << "DynamicTerrainModel: ROS not initilized!" << std::endl;
-    }
-    else
-    {
-      auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
-          "/ow_dynamic_terrain/modify_terrain", 1, boost::bind(&DynamicTerrainModel::onModifyTerrainMsg, this, _1),
-          ros::VoidPtr(), &this->m_ros_queue);
+    m_ros_subscriber_circle = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_circle>(
+      "/ow_dynamic_terrain/modify_terrain_circle", 10,
+      boost::bind(&DynamicTerrainModel::onModifyTerrainCircleMsg, this, _1));
 
-      m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
-      m_ros_subscriber = m_ros_node->subscribe(so);
-    }
+    m_ros_subscriber_patch = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_patch>(
+      "/ow_dynamic_terrain/modify_terrain_patch", 10,
+      boost::bind(&DynamicTerrainModel::onModifyTerrainPatchMsg, this, _1));
+    
+
+    m_on_update_connection = event::Events::ConnectPostRender(
+      bind(&DynamicTerrainModel::onUpdate, this));
+
+    gzlog << "DynamicTerrainModel: successfully loaded!" << endl;
   }
 
 private:
@@ -40,14 +47,14 @@ private:
     auto scene = rendering::get_scene();
     if (!scene)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire scene!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire scene!" << endl;
       return nullptr;
     }
 
     auto heightmap = scene->GetHeightmap();
     if (heightmap == nullptr)
     {
-      gzerr << "DynamicTerrainModel: scene has no heightmap!" << std::endl;
+      gzerr << "DynamicTerrainModel: scene has no heightmap!" << endl;
       return nullptr;
     }
 
@@ -59,7 +66,7 @@ private:
   {
     if (m_model == nullptr)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << endl;
       return nullptr;
     }
 
@@ -67,7 +74,7 @@ private:
 
     if (links.size() == 0)
     {
-      gzerr << "DynamicTerrainModel: Associcated model has no links!" << std::endl;
+      gzerr << "DynamicTerrainModel: Associcated model has no links!" << endl;
       return nullptr;
     }
 
@@ -77,21 +84,21 @@ private:
 
     if (collisions.size() == 0)
     {
-      gzerr << "DynamicTerrainModel: Model has no collisions for first link!" << std::endl;
+      gzerr << "DynamicTerrainModel: Model has no collisions for first link!" << endl;
       return nullptr;
     }
 
     auto collision = collisions[0];
     if (collision == nullptr)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << endl;
       return nullptr;
     }
 
     auto shape = boost::dynamic_pointer_cast<physics::HeightmapShape>(collision->GetShape());
     if (shape == nullptr)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << endl;
       return nullptr;
     }
 
@@ -105,25 +112,54 @@ private:
       m_ros_queue.callAvailable();
   }
 
-  void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
+private:
+  void onModifyTerrainCircleMsg(const ow_dynamic_terrain::modify_terrain_circleConstPtr msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap!" << endl;
       return;
     }
 
     auto heightmap_shape = getHeightmapShape();
     if (heightmap_shape == nullptr)
     {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << std::endl;
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << endl;
       return;
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modify(heightmap, mt_msg->operation, mt_msg->position, mt_msg->outer_radius, mt_msg->inner_radius,
-                            mt_msg->weight,
+    TerrainModifier::modify(heightmap, msg->operation, msg->position, msg->outer_radius, msg->inner_radius,
+                            msg->weight,
+                            [&heightmap_shape](int x, int y) {
+                              return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+                            },
+                            [&heightmap_shape](int x, int y, float value) {
+                              heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+                            });
+#endif
+  }
+
+private:
+  void onModifyTerrainPatchMsg(const ow_dynamic_terrain::modify_terrain_patchConstPtr msg)
+  {
+    auto heightmap = getHeightmap();
+    if (heightmap == nullptr)
+    {
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap!" << endl;
+      return;
+    }
+
+    auto heightmap_shape = getHeightmapShape();
+    if (heightmap_shape == nullptr)
+    {
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << endl;
+      return;
+    }
+
+#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
+    TerrainModifier::modify(heightmap, msg->position, msg->patch, msg->z_scale,
                             [&heightmap_shape](int x, int y) {
                               return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
                             },
@@ -140,13 +176,16 @@ private:
   event::ConnectionPtr m_on_update_connection;
 
 private:
-  std::unique_ptr<ros::NodeHandle> m_ros_node;
-
-private:
-  ros::Subscriber m_ros_subscriber;
+  unique_ptr<ros::NodeHandle> m_ros_node;
 
 private:
   ros::CallbackQueue m_ros_queue;
+
+private:
+  ros::Subscriber m_ros_subscriber_circle;
+
+private:
+  ros::Subscriber m_ros_subscriber_patch;
 };
 
 // Register this plugin with the simulator

@@ -2,33 +2,39 @@
 #include <ros/ros.h>
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
-#include "ow_dynamic_terrain/modify_terrain.h"
+#include "ow_dynamic_terrain/modify_terrain_circle.h"
+#include "ow_dynamic_terrain/modify_terrain_patch.h"
 #include "TerrainModifier.h"
 
+using namespace std;
 using namespace gazebo;
 
 class DynamicTerrainVisual : public VisualPlugin
 {
 public:
-  void Load(rendering::VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/)
+  void Load(rendering::VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/) override
   {
-    gzlog << "DynamicTerrainVisual: successfully loaded!" << std::endl;
-
-    this->m_on_update_connection = event::Events::ConnectPostRender(std::bind(&DynamicTerrainVisual::onUpdate, this));
-
     if (!ros::isInitialized())
     {
-      gzerr << "DynamicTerrainVisual: ROS not initilized!" << std::endl;
+      gzerr << "DynamicTerrainVisual: ROS not initilized!" << endl;
+      return;
     }
-    else
-    {
-      auto so = ros::SubscribeOptions::create<ow_dynamic_terrain::modify_terrain>(
-          "/ow_dynamic_terrain/modify_terrain", 1, boost::bind(&DynamicTerrainVisual::onModifyTerrainMsg, this, _1),
-          ros::VoidPtr(), &this->m_ros_queue);
 
-      m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_visual"));
-      m_ros_subscriber = m_ros_node->subscribe(so);
-    }
+    m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_visual"));
+    m_ros_node->setCallbackQueue(&m_ros_queue);
+
+    m_ros_subscriber_circle = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_circle>(
+      "/ow_dynamic_terrain/modify_terrain_circle", 10,
+      boost::bind(&DynamicTerrainVisual::onModifyTerrainCircleMsg, this, _1));
+
+    m_ros_subscriber_patch = m_ros_node->subscribe<ow_dynamic_terrain::modify_terrain_patch>(
+      "/ow_dynamic_terrain/modify_terrain_patch", 10,
+      boost::bind(&DynamicTerrainVisual::onModifyTerrainPatchMsg, this, _1));
+
+    m_on_update_connection = event::Events::ConnectPostRender(
+      bind(&DynamicTerrainVisual::onUpdate, this));
+
+    gzlog << "DynamicTerrainVisual: successfully loaded!" << endl;
   }
 
 private:
@@ -37,14 +43,14 @@ private:
     auto scene = rendering::get_scene();
     if (!scene)
     {
-      gzerr << "DynamicTerrainVisual: Couldn't acquire scene!" << std::endl;
+      gzerr << "DynamicTerrainVisual: Couldn't acquire scene!" << endl;
       return nullptr;
     }
 
     auto heightmap = scene->GetHeightmap();
     if (heightmap == nullptr)
     {
-      gzerr << "DynamicTerrainVisual: scene has no heightmap!" << std::endl;
+      gzerr << "DynamicTerrainVisual: scene has no heightmap!" << endl;
       return nullptr;
     }
 
@@ -59,18 +65,37 @@ private:
   }
 
 private:
-  void onModifyTerrainMsg(const ow_dynamic_terrain::modify_terrainConstPtr mt_msg)
+  void onModifyTerrainCircleMsg(const ow_dynamic_terrain::modify_terrain_circleConstPtr msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
     {
-      gzerr << "DynamicTerrainVisual: Couldn't acquire heightmap!" << std::endl;
+      gzerr << "DynamicTerrainVisual: Couldn't acquire heightmap!" << endl;
       return;
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modify(heightmap, mt_msg->operation, mt_msg->position, mt_msg->outer_radius, mt_msg->inner_radius,
-                            mt_msg->weight,
+    TerrainModifier::modify(heightmap, msg->operation, msg->position, msg->outer_radius, msg->inner_radius,
+                            msg->weight,
+                            [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
+                            [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+
+    terrain->updateGeometry();
+    terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
+  }
+
+private:
+  void onModifyTerrainPatchMsg(const ow_dynamic_terrain::modify_terrain_patchConstPtr msg)
+  {
+    auto heightmap = getHeightmap();
+    if (heightmap == nullptr)
+    {
+      gzerr << "DynamicTerrainVisual: Couldn't acquire heightmap!" << endl;
+      return;
+    }
+
+    auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+    TerrainModifier::modify(heightmap, msg->position, msg->patch, msg->z_scale,
                             [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
                             [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 
@@ -82,13 +107,16 @@ private:
   event::ConnectionPtr m_on_update_connection;
 
 private:
-  std::unique_ptr<ros::NodeHandle> m_ros_node;
-
-private:
-  ros::Subscriber m_ros_subscriber;
+  unique_ptr<ros::NodeHandle> m_ros_node;
 
 private:
   ros::CallbackQueue m_ros_queue;
+
+private:
+  ros::Subscriber m_ros_subscriber_circle;
+
+private:
+  ros::Subscriber m_ros_subscriber_patch;
 };
 
 GZ_REGISTER_VISUAL_PLUGIN(DynamicTerrainVisual)

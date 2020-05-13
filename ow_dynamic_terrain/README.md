@@ -74,7 +74,7 @@ Launch demo world using `roslaunch ow_dynamic_terrain europa.launch`.
 Then you may perform a terrain operation by submitting a rostopic message as follows:
 
 ```bash
-rostopic pub /ow_dynamic_terrain/modify_terrain ow_dynamic_terrain/modify_terrain \
+rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify_terrain_circle \
   "{operation: lower,
     position: {x: 0,  y: 0},
     outer_radius: 0.1,
