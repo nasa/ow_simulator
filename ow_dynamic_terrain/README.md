@@ -102,8 +102,8 @@ Original|Lower|Raise
 rosrun ow_dynamic_terrain modify_terrain_patch_pub.py image_file
 ```
 
-For example executing the above operation using the provided `misc/first_pass_heightmap.tif`
-should result in:
+For example, if you take the provided image `misc/first_pass_heightmap.tif` ![](./misc/first_pass_heightmap.png) and 
+pass it to the command above you should see the terrain change around the center as shown below:
 
 Original|After|Zoomed In
 :------:|:---:|:-------:
