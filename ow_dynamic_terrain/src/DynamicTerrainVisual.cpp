@@ -2,6 +2,8 @@
 #include <ros/ros.h>
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
+#include <gazebo/rendering/RenderingIface.hh>
+#include <gazebo/rendering/Scene.hh>
 #include "TerrainModifier.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
@@ -76,9 +78,9 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modify(heightmap, msg,
-                            [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
-                            [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+    TerrainModifier::modifyCircle(heightmap, msg,
+                                  [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
+                                  [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
@@ -95,9 +97,9 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modify(heightmap, msg,
-                            [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
-                            [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+    TerrainModifier::modifyPatch(heightmap, msg,
+                                 [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
+                                 [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);

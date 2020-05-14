@@ -1,6 +1,6 @@
 #include <OgreVector3.h>
-#include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <gazebo/common/Console.hh>
 #include "TerrainModifier.h"
 
 using namespace std;
@@ -12,9 +12,9 @@ using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
-void TerrainModifier::modify(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
-                             function<float(long, long)> get_height_value,
-                             function<void(long, long, float)> set_height_value)
+void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
+                                   function<float(long, long)> get_height_value,
+                                   function<void(long, long, float)> set_height_value)
 {
   if (msg->operation != "lower" && msg->operation != "raise")
   {
@@ -73,9 +73,9 @@ void TerrainModifier::modify(Heightmap* heightmap, const modify_terrain_circle::
         << msg->position.y << ")" << endl;
 }
 
-void TerrainModifier::modify(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
-                             function<float(long, long)> get_height_value,
-                             function<void(long, long, float)> set_height_value)
+void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
+                                  function<float(long, long)> get_height_value,
+                                  function<void(long, long, float)> set_height_value)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
@@ -91,14 +91,10 @@ void TerrainModifier::modify(Heightmap* heightmap, const modify_terrain_patch::C
     return;
   }
 
-  CvImageConstPtr cv_ptr;
-  try
+  auto image_handle = TerrainModifier::importImageToOpenCV(msg);
+  if (image_handle == nullptr)
   {
-    cv_ptr = toCvShare(msg->patch, msg, image_encodings::TYPE_32FC1);
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    gzerr << "DynamicTerrain: cv_bridge exception: %s" << e.what() << endl;
+    gzerr << "DynamicTerrain: Failed to convert ROS image" << endl;
     return;
   }
 
@@ -117,10 +113,28 @@ void TerrainModifier::modify(Heightmap* heightmap, const modify_terrain_patch::C
     {
       auto row = y - top;
       auto col = x - left;
-      auto diff_height = cv_ptr->image.at<float>(row, col);
+      auto diff_height = image_handle->image.at<float>(row, col);
       auto new_height = get_height_value(x, y) + diff_height * msg->z_scale;
       set_height_value(x, y, new_height);
     }
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
+}
+
+CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch::ConstPtr& msg)
+{
+  CvImageConstPtr image_handle;
+
+  try
+  {
+    image_handle = toCvShare(msg->patch, msg, image_encodings::TYPE_32FC1);  // Using single precision (32-bit) float
+                                                                             // same as the heightmap
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    gzerr << "DynamicTerrain: cv_bridge exception: %s" << e.what() << endl;
+    return nullptr;
+  }
+
+  return image_handle;
 }
