@@ -29,11 +29,13 @@
         <origin rpy="0 0 0" xyz="0 0 0.25"/>
         <geometry>
           <box size="0.3 0.05 0.095"/>
+          <!--box size="0.3 0.05 0.095"/-->
         </geometry>
       </collision>
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0.025"/>
         <geometry>
+          <!--box size="0.3 0.05 0.095"/-->
           <box size="0.3 0.05 0.095"/>
         </geometry>
         <material name="">

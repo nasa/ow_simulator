@@ -212,9 +212,9 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   #goal_pose.position.x = 0.52 #top of lander pos 
   #goal_pose.position.y = -0.22
   #goal_pose.position.z = 0.82
-  goal_pose.position.x = 0.53 #top of lander pos 
+  goal_pose.position.x = 0.55 #top of lander pos was 0.53
   goal_pose.position.y = -0.36
-  goal_pose.position.z = 0.78
+  goal_pose.position.z = 0.82 # was .78
   goal_pose.orientation = return_o 
   #goal_pose.orientation = goal_pose.orientation
   #goal_pose.orientation.w = 1; 
@@ -274,8 +274,49 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   #plan = move_arm.go(wait=True)
   #move_arm.stop()
   #move_arm.clear_pose_targets()
-  ###rotate scoop to deliver sample at current location end
+  ##rotate scoop to deliver sample at current location end
   
+    ###rotate scoop to deliver sample at current location this translates back...  begin
+  mypi = 3.14159
+  r = +180
+  p = 90  # 45 worked get
+  y = -90
+  d2r = mypi/180
+  r2d = 180/mypi
+  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+  #print "The quaternion representation is %s %s %s %s." % (q[0], q[1], q[2], q[3])
+  goal_pose = move_arm.get_current_pose().pose
+  qg= goal_pose.orientation
+  #rotation = (qg.x, qg.y, qg.z, qg.w)
+  rotation = (goal_pose.orientation.x, goal_pose.orientation.y, goal_pose.orientation.z, goal_pose.orientation.w)
+  euler_angle = euler_from_quaternion(rotation)
+  
+  target_rotation = (-0.48, 0.49, 0.5, 0.52)
+  target_euler_angle = euler_from_quaternion(target_rotation)
+  
+  
+  #print "Current quaternion is %s." % (qg)
+  print "Current euler is ******************************************** %s %s %s." % (euler_angle[0]*r2d, euler_angle[1]*r2d, euler_angle[2]*r2d)
+  #print "goal quaternion is %s %s %s %s." % (q[0], q[1], q[2], q[3])
+  print "target goal euler is ----------------------------------------------  %s %s %s." % (target_euler_angle[0]*r2d, target_euler_angle[1]*r2d, target_euler_angle[2]*r2d)
+  #print "current position is ++++++++++++++++++++++++++++++++++++++++ %s %s %s." % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  return_pt = (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+  #goal_pose.position.x = x_tr
+  #goal_pose.position.y = y_tr
+  #goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  #goal_pose.orientation.w = 1; 
+  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+  #goal_pose.orientation = Quaternion(-0.48, 0.49, 0.5, 0.52)
+  move_arm.set_pose_target(goal_pose)
+  plan = move_arm.plan()
+
+  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    return False
+
+  plan = move_arm.go(wait=True)
+  move_arm.stop()
+  move_arm.clear_pose_targets()
+  #rotate scoop to deliver sample at current location end
   
   return True
 
