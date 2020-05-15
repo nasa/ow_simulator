@@ -11,11 +11,11 @@ import math
 import copy
 from tf.transformations import quaternion_from_euler
 from utils import is_shou_yaw_goal_in_range
-from activity_full_digging_traj import plan_cartesian_path
+from activity_full_digging_traj import plan_cartesian_path_lin
 from activity_full_digging_traj import move_to_pre_trench_configuration
 
 
-def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth):
+def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
@@ -42,7 +42,7 @@ def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth):
   move_arm.clear_pose_targets()
 
   # sawing ice - along +X
-  cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
   move_limbs.execute(cartesian_plan, wait=True)
   move_limbs.stop()
 

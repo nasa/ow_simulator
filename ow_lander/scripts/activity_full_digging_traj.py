@@ -72,7 +72,7 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path(move_arm, length):
+def plan_cartesian_path_lin(move_arm, length):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
@@ -132,7 +132,7 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   move_arm.stop()
 
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path(move_arm, length)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
 
