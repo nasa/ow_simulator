@@ -82,6 +82,7 @@ add_message_files(
   FILES
   modify_terrain_circle.msg
   modify_terrain_patch.msg
+  modify_terrain_capsule.msg
 )
 
 generate_messages(

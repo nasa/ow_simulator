@@ -84,6 +84,22 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify
 
 Current supported terrain operations are: _raise, lower_. Operations are case-sensitive.
 
+### Modify Terrain with Capsule
+
+Then you may perform a terrain operation by submitting a rostopic message as follows:
+
+```bash
+rostopic pub /ow_dynamic_terrain/modify_terrain_capsule ow_dynamic_terrain/modify_terrain_capsule \
+  "{operation: lower,
+    position1: {x: 0,  y: 0},
+    position2: {x: 0,  y: 3},
+    outer_radius: 0.04,
+    inner_radius: 0.02,
+    weight: 1}"
+```
+
+Current supported terrain operations are: _raise, lower_. Operations are case-sensitive.
+
 
 ### Modify Terrain with Patch
 

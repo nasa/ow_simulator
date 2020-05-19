@@ -7,6 +7,7 @@
 #include <gazebo/rendering/Scene.hh>
 #include "TerrainModifier.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
+#include "ow_dynamic_terrain/modify_terrain_capsule.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
 using namespace std;
@@ -33,6 +34,10 @@ public:
     m_ros_subscriber_circle = m_ros_node->subscribe<modify_terrain_circle>(
         "/ow_dynamic_terrain/modify_terrain_circle", 10,
         boost::bind(&DynamicTerrainModel::onModifyTerrainCircleMsg, this, _1));
+
+    m_ros_subscriber_capsule = m_ros_node->subscribe<modify_terrain_capsule>(
+        "/ow_dynamic_terrain/modify_terrain_capsule", 10,
+        boost::bind(&DynamicTerrainModel::onModifyTerrainCapsuleMsg, this, _1));
 
     m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
         "/ow_dynamic_terrain/modify_terrain_patch", 10,
@@ -143,6 +148,34 @@ private:
   }
 
 private:
+  void onModifyTerrainCapsuleMsg(const modify_terrain_capsule::ConstPtr msg)
+  {
+    auto heightmap = getHeightmap();
+    if (heightmap == nullptr)
+    {
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap!" << endl;
+      return;
+    }
+
+    auto heightmap_shape = getHeightmapShape();
+    if (heightmap_shape == nullptr)
+    {
+      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << endl;
+      return;
+    }
+
+#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
+    TerrainModifier::modifyCapsule(heightmap, msg,
+                                  [&heightmap_shape](int x, int y) {
+                                    return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+                                  },
+                                  [&heightmap_shape](int x, int y, float value) {
+                                    heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+                                  });
+#endif
+  }
+
+private:
   void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr msg)
   {
     auto heightmap = getHeightmap();
@@ -184,6 +217,9 @@ private:
 
 private:
   ros::Subscriber m_ros_subscriber_circle;
+
+private:
+  ros::Subscriber m_ros_subscriber_capsule;
 
 private:
   ros::Subscriber m_ros_subscriber_patch;
