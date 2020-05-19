@@ -1,3 +1,0 @@
-#add_subdirectory(celestial_body_plugin)
-#add_subdirectory(CosimulationPlugin)
-add_subdirectory(LinkForcePlugin)

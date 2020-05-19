@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ow_gazebo_plugins</name>
+  <name>link_force_plugin</name>
   <version>0.0.0</version>
-  <description>A collection of Gazebo plugins for OceanWATERS</description>
+  <description>A LinkForcePlugin for OceanWATERS</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -38,18 +38,11 @@
   <buildtool_depend>catkin</buildtool_depend>
   
   <build_depend>roscpp</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>tf2</build_depend>
-  <build_depend>tf2_ros</build_depend>
   
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>tf2</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
   </export>
 </package>

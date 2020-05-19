@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_dynamic_terrain</name>
+  <version>0.0.0</version>
+  <description>A package that adds the capability to update Gazebo terrains dynamically at run-time.</description>
+
+  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
+  <license>TODO</license>
+  <url type="repository">https://babelfish.arc.nasa.gov/git/ow_simulator/ow_gazebo_plugins/ow_dynamic_terrain</url>
+  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <export>
+    <gazebo_ros plugin_path="${prefix}/../../lib" gazebo_media_path="${prefix}" />
+  </export>
+</package>

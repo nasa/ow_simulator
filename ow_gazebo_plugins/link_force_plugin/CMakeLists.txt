@@ -1,3 +1,17 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(Link_force_plugin)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+)
+
+find_package(gazebo REQUIRED)
+find_package(OGRE REQUIRED)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
 set(TARGET_NAME LinkForcePlugin)
 
 set (HEADERS

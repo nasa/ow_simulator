@@ -17,7 +17,7 @@ This is a model plugin that can only be use within a Gazebo `<model>` tag like t
     .
     <plugin name="LinkForce" filename="libLinkForcePlugin.so">
       <link>l_scoop</link>
-      <lookupTable>$(find ow_gazebo_plugins)/data/scoop_force_circular.csv</lookupTable>
+      <lookupTable>$(find link_force_plugin)/data/scoop_force_circular.csv</lookupTable>
     </plugin>
   </gazebo>
 </robot>

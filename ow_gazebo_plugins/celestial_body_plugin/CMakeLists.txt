@@ -1,3 +1,20 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(celestial_body_plugin)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  tf2
+  tf2_ros
+)
+
+find_package(gazebo REQUIRED)
+find_package(OGRE REQUIRED)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
 set (HEADERS
   CelestialBodyPlugin.h
 )

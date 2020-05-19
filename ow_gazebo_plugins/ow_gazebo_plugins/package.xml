@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_gazebo_plugins</name>
+  <version>0.0.0</version>
+  <description>The ow_gazebo_plugins metapackage</description>
+
+  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
+  <maintainer email="terence.m.welsh@nasa.gov">Terry Welsh</maintainer>
+  <maintainer email="thomas.stucky@nasa.gov">Thomas Stucky</maintainer>
+
+  <license>TODO</license>
+
+  <url type="repository">https://babelfish.arc.nasa.gov/git/ow_simulator/ow_gazebo_plugins</url>
+
+  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
+  <author email="terence.m.welsh@nasa.gov">Terry Welsh</author>
+  <author email="thomas.stucky@nasa.gov">Thomas Stucky</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>ow_dynamic_terrain1</exec_depend>
+  <exec_depend>celestial_body_plugin</exec_depend>
+  <exec_depend>CosimulationPlugin</exec_depend>
+  <exec_depend>LinkForcePlugin</exec_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    <metapackage/>
+  </export>
+</package>
