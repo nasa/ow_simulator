@@ -18,7 +18,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <exec_depend>ow_dynamic_terrain1</exec_depend>
+  <exec_depend>ow_dynamic_terrain</exec_depend>
   <exec_depend>celestial_body_plugin</exec_depend>
   <exec_depend>CosimulationPlugin</exec_depend>
   <exec_depend>LinkForcePlugin</exec_depend>
