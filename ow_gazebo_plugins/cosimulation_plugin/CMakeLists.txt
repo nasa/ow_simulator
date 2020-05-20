@@ -12,6 +12,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+catkin_package()
+
 set(TARGET_NAME CosimulationPlugin)
 
 set (HEADERS

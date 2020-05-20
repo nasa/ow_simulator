@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(Link_force_plugin)
+project(link_force_plugin)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -11,6 +11,8 @@ find_package(OGRE REQUIRED)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+
+catkin_package()
 
 set(TARGET_NAME LinkForcePlugin)
 

@@ -15,6 +15,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+catkin_package()
+
 set (HEADERS
   CelestialBodyPlugin.h
 )
