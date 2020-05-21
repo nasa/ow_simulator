@@ -27,29 +27,29 @@ import activity_full_digging_traj
 import activity_dig_trench
 import activity_move_guarded
 import activity_reset
+import activity_move_guarded_action
 
+class MoveGroupPythonInteface(object):
+  def __init__(self):
+    super(MoveGroupPythonInteface, self).__init__()
+    moveit_commander.roscpp_initialize(sys.argv)
+    robot = moveit_commander.RobotCommander()
+    scene = moveit_commander.PlanningSceneInterface()
 
+    move_arm = moveit_commander.MoveGroupCommander("arm")
+    move_limbs = moveit_commander.MoveGroupCommander("limbs")
+    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
+                                                   moveit_msgs.msg.DisplayTrajectory,
+                                                   queue_size=20)
+    self.move_arm = move_arm
+    self.move_limbs = move_limbs
 # === SERVICE ACTIVITIES - MOVE GUARDED =============================
-def handle_move_guarded(req):
+#def handle_move_guarded(req):
+def handle_move_guarded():
   try:
     interface = MoveGroupPythonInteface()
-    args = activity_move_guarded.arg_parsing(req)
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "pre_move_guarded_traj_"
-    bagname = location + currentDT
-
-    # Approach
-    utils.start_traj_recording(args[1], bagname)
-    result = activity_move_guarded.pre_move_guarded(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname)
-
-    # Safe move, monitoring torques
-    location = "move_guarded_traj_"
-    bagname = location + currentDT
-    utils.start_traj_recording(args[1], bagname)
-    result = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname)
+    result = activity_move_guarded_action.pre_move_guarded(interface.move_arm,interface.move_limbs,args)
+    result = activity_move_guarded_action.move_guarded(interface.move_arm,interface.move_limbs,args)
 
   except rospy.ROSInterruptException:
     return
