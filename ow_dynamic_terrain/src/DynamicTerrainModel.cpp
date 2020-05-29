@@ -3,6 +3,8 @@
 #include <ros/subscribe_options.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
+#include <gazebo/rendering/RenderingIface.hh>
+#include <gazebo/rendering/Scene.hh>
 #include "TerrainModifier.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
@@ -130,13 +132,13 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modify(heightmap, msg,
-                            [&heightmap_shape](int x, int y) {
-                              return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                            },
-                            [&heightmap_shape](int x, int y, float value) {
-                              heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                            });
+    TerrainModifier::modifyCircle(heightmap, msg,
+                                  [&heightmap_shape](int x, int y) {
+                                    return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+                                  },
+                                  [&heightmap_shape](int x, int y, float value) {
+                                    heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+                                  });
 #endif
   }
 
@@ -158,13 +160,13 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modify(heightmap, msg,
-                            [&heightmap_shape](int x, int y) {
-                              return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                            },
-                            [&heightmap_shape](int x, int y, float value) {
-                              heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                            });
+    TerrainModifier::modifyPatch(heightmap, msg,
+                                 [&heightmap_shape](int x, int y) {
+                                   return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+                                 },
+                                 [&heightmap_shape](int x, int y, float value) {
+                                   heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+                                 });
 #endif
   }
 
