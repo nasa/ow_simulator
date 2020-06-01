@@ -47,7 +47,7 @@ class MoveGroupPythonInteface(object):
 # === SERVICE ACTIVITIES - MOVE GUARDED =============================
 def handle_move_guarded(req):
   try:
-     
+    interface = MoveGroupPythonInteface()
     print "Starting move guarded planning session"
     args = activity_move_guarded.arg_parsing(req)
 

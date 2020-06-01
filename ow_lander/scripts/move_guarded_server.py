@@ -85,7 +85,7 @@ class FibonacciAction(object):
         # publish info to the console for the user
         rospy.loginfo('%s: Executing, creating fibonacci sequence of order %i with seeds %i, %i' % (self._action_name, goal.order, self._feedback.sequence[0], self._feedback.sequence[1]))
         
-        handle_move_guarded()
+        #handle_move_guarded()
         
         # start executing the action
         for i in range(1, goal.order):
