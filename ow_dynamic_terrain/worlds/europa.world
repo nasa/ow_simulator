@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<sdf version='1.4'>
+  <world name='europa'>
+
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose frame=''>5.0 5.0 5.0   0.0 0.6 -2.25</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://europa_terrain</uri>
+    </include>
+
+    <include>
+      <uri>model://construction_barrel</uri>
+      <name>construction_barrel</name>
+      <pose>3 3 2 0 0 0</pose>
+    </include>
+
+  <physics type='ode'>
+    <max_step_size>0.01</max_step_size>
+    <real_time_factor>1</real_time_factor>
+    <real_time_update_rate>100</real_time_update_rate>
+  </physics>
+
+  </world>
+</sdf>

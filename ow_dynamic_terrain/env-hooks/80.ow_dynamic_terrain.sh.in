@@ -1,0 +1,2 @@
+export GAZEBO_MODEL_PATH="$(catkin_find --first-only ow_dynamic_terrain models):${GAZEBO_MODEL_PATH}"
+export GAZEBO_RESOURCE_PATH="/usr/share/gazebo-9:$(catkin_find --first-only ow_dynamic_terrain):${GAZEBO_RESOURCE_PATH}"

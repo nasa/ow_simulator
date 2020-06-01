@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find ow_dynamic_terrain)/launch/default.launch" >
+    <arg name="world_name" value="europa.world"/>
+
+    <!-- Initial pose arguments -->
+    <arg name="init_x" default="0" />
+    <arg name="init_y" default="0" />
+    <arg name="init_z" default="2" />
+    <arg name="init_R" default="0" />
+    <arg name="init_P" default="0" />
+    <arg name="init_Y" default="0" />
+    <arg name="freeze_base_link" default="false" />
+
+  </include>
+
+</launch>

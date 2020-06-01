@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_dynamic_terrain</name>
+  <version>0.0.0</version>
+  <description>A demo of dynamic terrain within ROS/Gazebo environment</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <!-- Example:  -->
+  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintainers, but could be -->
+  <!-- Example: -->
+  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
+
+  <!-- The *depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    <gazebo_ros plugin_path="${prefix}/../../lib" gazebo_media_path="${prefix}" />
+  </export>
+</package>

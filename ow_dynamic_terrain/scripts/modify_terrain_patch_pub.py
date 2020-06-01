@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+import os, argparse, time
+import rospy, rospkg
+import cv2
+from cv_bridge import CvBridge
+from geometry_msgs.msg import Point
+from ow_dynamic_terrain.msg import modify_terrain_patch
+
+def get_image_path():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("image", help="path of the image file to send", type=str)
+    args = parser.parse_args()
+    return args.image
+
+def compose_modify_terrain_patch_message(image_path):
+    msg = modify_terrain_patch()
+    msg.position = Point(0, 0, 0)
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    cv_bridge = CvBridge()
+    msg.patch = cv_bridge.cv2_to_imgmsg(image)
+    min_intensity, max_intensity, _, _ = cv2.minMaxLoc(image)
+    msg.z_scale = 1.0 / (max_intensity - min_intensity) # TODO: this will have to be revisted after task
+                                                        # https://babelfish.arc.nasa.gov/jira/browse/OCEANWATER-334
+    return msg
+
+def publish_image(image_path):
+    rospy.init_node("modify_terrain_patch_pub", anonymous=True)
+    pub = rospy.Publisher('/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, queue_size=1)
+
+    try:
+        while not rospy.is_shutdown():
+            connections = pub.get_num_connections()
+            if connections > 0:
+                msg = compose_modify_terrain_patch_message(image_path)
+                pub.publish(msg)
+                rospy.loginfo("modify_terrain_patch message sent")
+                break
+            time.sleep(0.1)
+    except rospy.ROSInterruptException, e:
+        raise e
+
+if __name__ == '__main__':
+    image_path = get_image_path()
+    if not os.path.exists(image_path):
+        print("file not found")
+        quit()
+    publish_image(image_path)
+    

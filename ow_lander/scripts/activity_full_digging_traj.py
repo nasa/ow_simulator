@@ -11,8 +11,27 @@ import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
+from utils import is_shou_yaw_goal_in_range
 
-def arg_parsing(req):
+def arg_parsing_lin(req):
+  if req.use_defaults :
+    # Default trenching values
+    trench_x=1.5
+    trench_y=0
+    trench_d=0.02
+    length=0.3
+    delete_prev_traj=False
+
+  else :
+    trench_x=req.trench_x
+    trench_y=req.trench_y
+    trench_d=req.trench_d
+    length=req.length
+    delete_prev_traj=req.delete_prev_traj
+
+  return [req.use_defaults,trench_x,trench_y,trench_d,length,delete_prev_traj]
+
+def arg_parsing_circ(req):
   if req.use_defaults :
     # Default trenching values
     trench_x=1.5
@@ -28,22 +47,8 @@ def arg_parsing(req):
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
 
-def plan_cartesian_path(move_arm, move_limbs, scale):
 
-    waypoints = []
-    wpose = move_limbs.get_current_pose().pose
-    wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
-
-    (plan, fraction) = move_arm.compute_cartesian_path(
-                                   waypoints,   # waypoints to follow
-                                   0.01,        # eef_step
-                                   0.0)         # jump_threshold
-    #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-# Note: We are just planning, not asking move_group to actually move the robot yet:
-    return plan, fraction
-
-def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
+def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
   h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
@@ -56,16 +61,37 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_PROX_PITCH] = -math.pi/2
   joint_goal[constants.J_SHOU_PITCH] = math.pi/2
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  
-  # If out of joint range, abort (TODO: parse limit from urdf)
-  if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+
+  # If out of joint range, abort
+  if (is_shou_yaw_goal_in_range(joint_goal) == False):
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
+  return True
 
 
+def plan_cartesian_path_lin(move_arm, length):
+
+  waypoints = []
+  wpose = move_arm.get_current_pose().pose
+  wpose.position.x += length # Second move forward/backwards in (x)
+  waypoints.append(copy.deepcopy(wpose))
+
+  (plan, fraction) = move_arm.compute_cartesian_path(
+                               waypoints,   # waypoints to follow
+                               0.01,        # eef_step
+                               0.0)         # jump_threshold
+  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
+  # Note: We are just planning, not asking move_group to actually move the robot yet:
+  return plan, fraction
+
+def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
+
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  if pre_move_complete == False:
+    return False
   ## Rotate hand yaw to dig in
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_HAND_YAW] = 0
@@ -77,15 +103,13 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   joint_goal[constants.J_SCOOP_YAW] = math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
-  #rotate dist pith to pre-trenching position. 
+
+  #rotate dist pith to pre-trenching position.
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = -math.pi/4
+  joint_goal[constants.J_DIST_PITCH] = -math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
+
   ## Once aligned to trench goal, place hand above trench middle point
   goal_pose = move_limbs.get_current_pose().pose
   goal_pose.position.x = x_tr
@@ -100,55 +124,31 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth):
   plan = move_limbs.go(wait=True)
   move_limbs.stop()
   move_limbs.clear_pose_targets()
-  
+
   #  rotate to dig in the ground
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/10 # we want zero so a number very close to zero
+  joint_goal[constants.J_DIST_PITCH] = 55.0/180.0*math.pi # scoop parallel to ground
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
-  # linear trenching 
-  
-  cartesian_plan, fraction = plan_cartesian_path(move_arm,move_limbs, scale=100)
-  move_limbs.execute(cartesian_plan, wait=True)
-  move_limbs.stop()
+
+  # linear trenching
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
-  
 
-  
-  #  rotate to dig out 
+  #  rotate to dig out
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/4
+  joint_goal[constants.J_DIST_PITCH] = math.pi/2
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
-  
-  
+
   return True
 
 def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
-  # Compute shoulder yaw angle to trench
-  alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
-  h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
-  l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
 
-  # Move to pre trench position, align shoulder yaw
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
-  joint_goal[constants.J_HAND_YAW] = math.pi/2.2
-  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  
-  # If out of joint range, abort (TODO: parse limit from urdf)
-  if (joint_goal[constants.J_SHOU_YAW]<-1.8) or (joint_goal[constants.J_SHOU_YAW]>1.8): 
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  if pre_move_complete == False:
     return False
-
-  joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
 
   # Once aligned to trench goal, place hand above trench middle point
   goal_pose = move_limbs.get_current_pose().pose

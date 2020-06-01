@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
- 
+
 project(ow_lander)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 )
-  
+
 find_package(roslaunch)
 
 add_service_files(
@@ -19,6 +19,7 @@ add_service_files(
   MoveReset.srv
   DigTrench.srv
   SampleDelivery.srv
+  SawMotionPlanning.srv
 )
 
 generate_messages(
@@ -26,14 +27,22 @@ generate_messages(
   std_msgs
 )
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS include
+)
 
 catkin_add_env_hooks(
   65.ow_lander
   SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks
 )
 
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
 foreach(dir config launch meshes urdf)
         install(DIRECTORY ${dir}/
                 DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
 endforeach(dir)
+

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+
+  <arg name="world" default="empty" />
+  <arg name="paused" default="false" />
+  <arg name="use_sim_time" default="true" />
+  <arg name="gui" default="true" />
+  <arg name="headless" default="false" />
+  <arg name="debug" default="false" />
+  <arg name="verbose" default="false" />
+  <arg name="physics" default="ode" />
+  <arg name="world_name" default="default.world" />
+
+  <!-- Lander Initial Pose arguments -->
+  <arg name="init_x" default="+310" />
+  <arg name="init_y" default="-275" />
+  <arg name="init_z" default="1" />
+  <arg name="init_R" default="0" />
+  <arg name="init_P" default="0" />
+  <arg name="init_Y" default="0" />
+  <arg name="freeze_base_link" default="false" />
+  <arg name="enable_lander" default="false" />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find ow_dynamic_terrain)/worlds/$(arg world_name)" />
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="verbose" value="$(arg verbose)" />
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="physics" value="$(arg physics)" />
+  </include>
+
+  <group ns="required">
+    <include file="$(find ow_dynamic_terrain)/launch/robot.launch">
+      <arg name="robot_name" value="dummy_camera" />
+      <arg name="robot_file" value="$(find ow_dynamic_terrain)/urdf/simple_camera.urdf" />
+      <arg name="init_x" value="5.0" />
+      <arg name="init_y" value="5.0" />
+      <arg name="init_z" value="5.0" />
+      <arg name="init_R" value="0.0" />
+      <arg name="init_P" value="0.6" />
+      <arg name="init_Y" value="-2.25" />
+    </include>
+  </group>
+
+  <group ns="lander" if="$(arg enable_lander)">
+    <include file="$(find ow_lander)/launch/spawn.launch">
+      <arg name="init_x" value="$(arg init_x)" />
+      <arg name="init_y" value="$(arg init_y)" />
+      <arg name="init_z" value="$(arg init_z)" />
+      <arg name="init_R" value="$(arg init_R)" />
+      <arg name="init_P" value="$(arg init_P)" />
+      <arg name="init_Y" value="$(arg init_Y)" />
+      <arg name="freeze_base_link" value="$(arg freeze_base_link)" />
+    </include>
+  </group>
+
+</launch>
