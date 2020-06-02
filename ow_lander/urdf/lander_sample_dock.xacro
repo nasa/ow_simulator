@@ -70,25 +70,7 @@
           <visibility_bitmask>${vis_mask}</visibility_bitmask>
         </plugin>
       </visual>
-      <light name="lander_sample_dock${suffix}" type="spot">
-        <!-- Light is not transformed by the joint above, so we transform it here. -->
-        <pose>0 ${y} 0 ${roll} ${pitch} 0</pose>
-        <diffuse>1 1 1 1</diffuse>
-        <attenuation>
-          <range>100</range>
-          <!-- Our shader uses a quadratic term for attenuation, but no constant or linear terms.
-            Attenuation = 1.0 / (q * d^2) So q = 0.001 gives us 1000 lux at 1 meter.-->
-          <quadratic>0.001</quadratic>
-        </attenuation>
-        <direction>0 0 -1</direction>
-        <spot>
-          <!-- Keep inner and outer cone angles the same when projecting a texture -->
-          <inner_angle>1.222</inner_angle>
-          <outer_angle>1.222</outer_angle>
-          <falloff>1.0</falloff>
-        </spot>
-        <cast_shadows>false</cast_shadows>
-      </light>
+
     </gazebo>
 
   </xacro:macro>
