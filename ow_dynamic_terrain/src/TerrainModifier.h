@@ -1,3 +1,6 @@
+#ifndef TERRAIN_MODIFIER_H
+#define TERRAIN_MODIFIER_H
+
 #include <cv_bridge/cv_bridge.h>
 #include <gazebo/rendering/Heightmap.hh>
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
@@ -30,3 +33,5 @@ private:
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 };
 }  // namespace ow_dynamic_terrain
+
+#endif  // TERRAIN_MODIFIER_H
