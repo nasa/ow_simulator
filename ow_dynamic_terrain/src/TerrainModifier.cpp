@@ -11,6 +11,7 @@ using namespace geometry_msgs;
 using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
+using ignition::math::clamp;
 
 void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
                                    function<float(long, long)> get_height_value,
@@ -58,8 +59,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
       auto inner_weight = 1.0;
       if (dist > msg->inner_radius)
       {
-        inner_weight =
-            ignition::math::clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
+        inner_weight = clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
         inner_weight = 1.0 - (inner_weight * inner_weight);
       }
 
@@ -117,6 +117,9 @@ void TerrainModifier::modifyCapsule(Heightmap* heightmap, const modify_terrain_c
   auto right = min(int((heightmap_position1.x + msg->outer_radius) * size), size);
   auto bottom = min(int((y_bot + msg->outer_radius) * size), size);
 
+  // Render into a offscreen image first
+  auto image = cv::Mat(bottom - top + 1, right - left + 1, CV_32FC1);
+
   for (auto y = top; y <= bottom; ++y)
     for (auto x = left; x <= right; ++x)
     {
@@ -136,16 +139,16 @@ void TerrainModifier::modifyCapsule(Heightmap* heightmap, const modify_terrain_c
       auto inner_weight = 1.0;
       if (dist > msg->inner_radius)
       {
-        inner_weight =
-            ignition::math::clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
+        inner_weight = clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
         inner_weight = 1.0 - (inner_weight * inner_weight);
       }
 
       auto added_height = inner_weight * msg->weight;
-      auto new_height = get_height_value(x, y) + (raise_operation ? +added_height : -added_height);
-
-      set_height_value(x, y, new_height);
+      auto new_height = raise_operation ? +added_height : -added_height;
+      image.at<float>(y - top, x - left) = new_height;
     }
+
+  applyImageToHeightmap(heightmap, left, top, image, get_height_value, set_height_value);
 
   gzlog << "DynamicTerrain: capsule " << msg->operation << " operation between ("
     << msg->position1.x << ", " << msg->position1.y << ") and ("
@@ -216,4 +219,39 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   }
 
   return image_handle;
+}
+
+void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, int x, int y, const cv::Mat& image,
+                          std::function<float(long, long)> get_height_value,
+                          std::function<void(long, long, float)> set_height_value)
+{
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (!terrain)
+  {
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    return;
+  }
+
+  if (image.type() != CV_32FC1 && image.type() != CV_64FC1)
+  {
+    gzerr << "DynamicTerrain: Only {32FC1, 64FC1} formats are supported" << endl;
+    return;
+  }
+
+  auto size = static_cast<int>(terrain->getSize());
+  auto left = max(x, 0);
+  auto top = max(y, 0);
+  auto right = min(x + static_cast<int>(image.size().width - 1), size);
+  auto bottom = min(y + static_cast<int>(image.size().height - 1), size);
+
+  for (auto y = top; y <= bottom; ++y)
+    for (auto x = left; x <= right; ++x)
+    {
+      auto row = y - top;
+      auto col = x - left;
+      auto diff_height = image.at<float>(row, col);
+      auto new_height = get_height_value(x, y) + diff_height;
+      set_height_value(x, y, new_height);
+    }
 }
