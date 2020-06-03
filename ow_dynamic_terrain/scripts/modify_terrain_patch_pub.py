@@ -13,15 +13,22 @@ def get_image_path():
     args = parser.parse_args()
     return args.image
 
+def scale_image_intensities(image, scale):
+    h = image.shape[0]
+    w = image.shape[1]
+    for y in range(0, h):
+        for x in range(0, w):
+            image[y, x] *= scale
+
 def compose_modify_terrain_patch_message(image_path):
     msg = modify_terrain_patch()
     msg.position = Point(0, 0, 0)
     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    min_intensity, max_intensity, _, _ = cv2.minMaxLoc(image)
+    z_scale = 1.0 / (max_intensity - min_intensity)
+    scale_image_intensities(image, z_scale)
     cv_bridge = CvBridge()
     msg.patch = cv_bridge.cv2_to_imgmsg(image)
-    min_intensity, max_intensity, _, _ = cv2.minMaxLoc(image)
-    msg.z_scale = 1.0 / (max_intensity - min_intensity) # TODO: this will have to be revisted after task
-                                                        # https://babelfish.arc.nasa.gov/jira/browse/OCEANWATER-334
     return msg
 
 def publish_image(image_path):

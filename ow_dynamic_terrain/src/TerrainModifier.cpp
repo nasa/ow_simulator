@@ -40,7 +40,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   }
 
   auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
-  Vector3 heightmap_position;
+  auto heightmap_position = Vector3();
   terrain->getTerrainPosition(_terrain_position, &heightmap_position);
 
   auto size = static_cast<int>(terrain->getSize());
@@ -100,11 +100,11 @@ void TerrainModifier::modifyCapsule(Heightmap* heightmap, const modify_terrain_c
   }
 
   auto _terrain_position1 = Vector3(msg->position1.x, msg->position1.y, 0);
-  Vector3 heightmap_position1;
+  auto heightmap_position1 = Vector3();
   terrain->getTerrainPosition(_terrain_position1, &heightmap_position1);
 
   auto _terrain_position2 = Vector3(msg->position2.x, msg->position2.y, 0);
-  Vector3 heightmap_position2;
+  auto heightmap_position2 = Vector3();
   terrain->getTerrainPosition(_terrain_position2, &heightmap_position2);
 
   // Check which should be top
@@ -173,6 +173,14 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     return;
   }
 
+  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
+  auto heightmap_position = Vector3();
+  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+
+  auto size = static_cast<int>(terrain->getSize());
+  auto left = static_cast<int>(heightmap_position.x * size);
+  auto top = static_cast<int>(heightmap_position.y * size);
+
   auto image_handle = TerrainModifier::importImageToOpenCV(msg);
   if (image_handle == nullptr)
   {
@@ -180,25 +188,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     return;
   }
 
-  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
-  Vector3 heightmap_position;
-  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
-
-  auto size = static_cast<int>(terrain->getSize());
-  auto left = max(int(heightmap_position.x * size), 0);
-  auto top = max(int(heightmap_position.y * size), 0);
-  auto right = min(left + static_cast<int>(msg->patch.width - 1), size);
-  auto bottom = min(top + static_cast<int>(msg->patch.height - 1), size);
-
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
-    {
-      auto row = y - top;
-      auto col = x - left;
-      auto diff_height = image_handle->image.at<float>(row, col);
-      auto new_height = get_height_value(x, y) + diff_height * msg->z_scale;
-      set_height_value(x, y, new_height);
-    }
+  applyImageToHeightmap(heightmap, left, top, image_handle->image, get_height_value, set_height_value);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
