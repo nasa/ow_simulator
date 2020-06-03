@@ -7,8 +7,11 @@ namespace ow_dynamic_terrain
 {
 class OpenCV_Util
 {
-  static cv::Mat expandImage(cv::Mat image);
-  static cv::Mat rotateImage(cv::Mat image, float angle);
+public:
+  static cv::Mat expandImage(const cv::Mat& image);
+  static cv::Mat rotateImage(const cv::Mat& image, float angle);
+
+  static cv::Mat scaleImage_32FC1_To_8UC1(const cv::Mat& image);
 };
 }  // namespace ow_dynamic_terrain
 
