@@ -1,8 +1,8 @@
 bool use_defaults
 float32 trench_x
 float32 trench_y
-float32 trench_d
-bool radial
+float32 trench_d #desired depth
+bool radial #True=desired trenching along radial direction, False=perpendicular to radial
 bool delete_prev_traj
 ---
 bool success
