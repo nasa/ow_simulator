@@ -162,6 +162,7 @@ include_directories(
 ## Model Plugin
 add_library(${PROJECT_NAME}_model
   src/OpenCV_Util.cpp
+  src/TerrainBrush.cpp
   src/TerrainModifier.cpp
   src/DynamicTerrainModel.cpp
 )
@@ -179,6 +180,7 @@ add_dependencies(${PROJECT_NAME}_model
 ## Visual Plugin
 add_library(${PROJECT_NAME}_visual
   src/OpenCV_Util.cpp
+  src/TerrainBrush.cpp
   src/TerrainModifier.cpp
   src/DynamicTerrainVisual.cpp
 )

@@ -1,6 +1,7 @@
 #ifndef TERRAIN_MODIFIER_H
 #define TERRAIN_MODIFIER_H
 
+#include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <gazebo/rendering/Heightmap.hh>
 #include "ow_dynamic_terrain/modify_terrain_capsule.h"
@@ -32,7 +33,8 @@ public:
 private:
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
-  static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap, int x, int y, const cv::Mat& image,
+  static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap, const cv::Point2i& center,
+                                    const cv::Mat& image,
                                     std::function<float(long, long)> get_height_value,
                                     std::function<void(long, long, float)> set_height_value);
 };

@@ -75,14 +75,13 @@ Then you may perform a terrain operation by submitting a rostopic message as fol
 
 ```bash
 rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify_terrain_circle \
-  "{operation: lower,
-    position: {x: 0,  y: 0},
+  "{position: {x: 0,  y: 0},
     outer_radius: 0.1,
     inner_radius: 0.001,
     weight: 1}"
 ```
 
-Current supported terrain operations are: _raise, lower_. Operations are case-sensitive.
+Depending on the weight sign the operation will either raise or lower the terrain around the provided position.
 
 ### Modify Terrain with Capsule
 
@@ -90,16 +89,14 @@ Then you may perform a terrain operation by submitting a rostopic message as fol
 
 ```bash
 rostopic pub /ow_dynamic_terrain/modify_terrain_capsule ow_dynamic_terrain/modify_terrain_capsule \
-  "{operation: lower,
-    position1: {x: 0,  y: 0},
+  "{position1: {x: 0,  y: 0},
     position2: {x: 0,  y: 3},
     outer_radius: 0.04,
     inner_radius: 0.02,
     weight: 1}"
 ```
 
-Current supported terrain operations are: _raise, lower_. Operations are case-sensitive.
-
+Depending on the weight sign the operation will either raise or lower the terrain around the provided position.
 
 ### Modify Terrain with Patch
 
