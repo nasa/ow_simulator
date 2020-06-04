@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
+  <!--node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="1 0 0 0 0 0 1 base_link j_shou_yaw" /-->
+
   <!-- Stowed arm joint positions -->
   <arg name="stowed_shou_yaw" default="0" />
   <arg name="stowed_shou_pitch" default="0" />

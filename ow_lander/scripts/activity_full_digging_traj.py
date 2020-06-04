@@ -12,6 +12,7 @@ import math
 import copy
 from tf.transformations import quaternion_from_euler
 from utils import is_shou_yaw_goal_in_range
+import tf
 
 def arg_parsing_lin(req):
   if req.use_defaults :
@@ -72,11 +73,18 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path_lin(move_arm, length):
+def plan_cartesian_path_lin(move_arm, length,x_tr,y_tr):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
-  wpose.position.x += length # Second move forward/backwards in (x)
+
+
+  x_shou = 1.0
+  y_shou = 1.0
+  alpha = math.atan2(y_tr-y_shou,x_tr-x_shou)
+  wpose.position.x += x_tr + length*math.cos(alpha) # Second move forward/backwards in (x)
+  wpose.position.y += y_tr + length*math.sin(alpha) # Second move forward/backwards in (x)
+
   waypoints.append(copy.deepcopy(wpose))
 
   (plan, fraction) = move_arm.compute_cartesian_path(
@@ -88,6 +96,12 @@ def plan_cartesian_path_lin(move_arm, length):
   return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
+  # now = rospy.Time.now()
+  listener = tf.TransformListener()
+  now = rospy.Time(0)
+  listener.waitForTransform("base_link", "j_shou_yaw", now, rospy.Duration(5.0) );
+  (trans,rot) = listener.lookupTransform("base_link", "j_shou_yaw", now)
+  print(trans)
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
@@ -132,7 +146,7 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   move_arm.stop()
 
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, x_tr, y_tr)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
 
