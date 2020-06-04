@@ -13,6 +13,7 @@ from tf.transformations import quaternion_from_euler
 from utils import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import plan_cartesian_path_lin
 from activity_full_digging_traj import move_to_pre_trench_configuration
+from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
 
 def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
@@ -22,24 +23,11 @@ def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
     return False
 
   # rotate hand
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_HAND_YAW] = -2*math.pi/3
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_HAND_YAW, -2*math.pi/3)
 
   # approaching and entering terrain - along -Z
-  goal_pose = move_arm.get_current_pose().pose
-  goal_pose.position.z = constants.GROUND_POSITION - depth
-
-  move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
-
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-     return False
-
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
+  z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+  go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
 
   # sawing ice - along +X
   cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
@@ -47,17 +35,8 @@ def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
   move_limbs.stop()
 
   # exiting terrain - along +Z
-  goal_pose = move_arm.get_current_pose().pose
-  goal_pose.position.z = constants.GROUND_POSITION + constants.SAW_OFFSET - depth
+  z_tr = constants.GROUND_POSITION + constants.SAW_OFFSET - depth
+  go_to_Z_coordinate(move_arm,x_tr,y_tr,z_tr)
 
-  move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
-
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    return False
-
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
 
   return True
