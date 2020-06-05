@@ -25,6 +25,7 @@ import utils
 import activity_full_digging_traj
 #import activity_dig_trench
 import activity_move_guarded
+import activity_sample_delivery
 import activity_saw_motion_planning
 #import activity_reset
 
@@ -90,8 +91,8 @@ def handle_start_planning(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[4], bagname)
-    result = activity_full_digging_traj.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    utils.start_traj_recording(args[5], bagname)
+    result = activity_full_digging_traj.dig_trench(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -132,13 +133,41 @@ def handle_dig_linear_trench(req):
   print "Finished planning session for linear trenching succesfully..."
   return True, "Done"
 
+# === SERVICE ACTIVITIES - SampleDelivery =============================
+def handle_sample_delivery(req):
+  try:
+    interface = MoveGroupPythonInteface()
+    print "Starting sample delivery session"
+    args = activity_sample_delivery.arg_parsing(req)
+    #args = activity_dig_trench.arg_parsing(req)
+
+    if utils.check_arguments(args[1],args[2],args[3]) != True:
+      print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
+      return
+
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "full_traj_"
+    bagname = location + currentDT
+
+    utils.start_traj_recording(args[4], bagname)
+    result = activity_sample_delivery.sample_delivery(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    utils.stop_traj_recording(result, bagname)
+
+  except rospy.ROSInterruptException:
+    return
+  except KeyboardInterrupt:
+    return
+
+  print "Finished planning session for linear trenching succesfully..."
+  return True, "Done"
+
 # === SERVICE ACTIVITIES - Reset=============================
 def handle_reset(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
     #args = activity_reset.arg_parsing(req)
-    args = activity_full_digging_traj.arg_parsing_circ(req)
+    args = activity_full_digging_traj.arg_parsing_reset(req)
 
     if utils.check_arguments(args[1],args[2],args[3]) != True:
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
@@ -209,6 +238,7 @@ def main():
   start_dig_srv = rospy.Service('start_dig_trench_session', DigTrench, handle_dig_linear_trench)
   move_guarded_srv = rospy.Service('start_move_guarded', MoveGuarded, handle_move_guarded)
   move_reset_srv = rospy.Service('start_reset_session', MoveReset, handle_reset)
+  move_reset_srv = rospy.Service('start_sample_delivery', SampleDelivery, handle_sample_delivery)
   saw_motion_plan_srv = rospy.Service('start_saw_motion_planning',SawMotionPlanning, handle_saw_motion_planning)
 
   rospy.spin()
