@@ -115,7 +115,7 @@ def plan_cartesian_path_lin(move_arm, length,x_tr,y_tr):
   waypoints = []
   wpose = move_arm.get_current_pose().pose
 
-  x_shou = 10.0 * constants.SCOOP_HEIGHT
+  x_shou = 0.0 * constants.SCOOP_HEIGHT.
   y_shou = 2.8 * constants.SCOOP_HEIGHT
   alpha = math.atan2(y_tr-y_shou,x_tr-x_shou)
   wpose.position.x += x_tr + length*math.cos(alpha) # Second move forward/backwards in (x)
