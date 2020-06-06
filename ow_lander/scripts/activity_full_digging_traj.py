@@ -12,8 +12,6 @@ import math
 import copy
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
-import tf
-from moveit_msgs.msg import RobotState, Constraints, OrientationConstraint, PositionConstraint
 
 
 def go_to_Z_coordinate(move_group,x_tr,y_tr,z_tr):
