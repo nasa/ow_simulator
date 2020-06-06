@@ -111,16 +111,13 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path_lin(move_arm, length, alpha, x_tr,y_tr):
+def plan_cartesian_path_lin(move_arm, length, alpha):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
 
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
-
-  print(wpose.position.x)
-  print(wpose.position.y)
 
   waypoints.append(copy.deepcopy(wpose))
 
@@ -156,13 +153,10 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   current_pose = move_arm.get_current_pose().pose
   quaternion = [current_pose.orientation.x,current_pose.orientation.y,current_pose.orientation.z,current_pose.orientation.w]
   current_euler = euler_from_quaternion(quaternion)
-  print(current_euler[2])
   alpha = current_euler[2]
-  print(alpha)
 
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha, x_tr, y_tr)
-  print(cartesian_plan)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
 

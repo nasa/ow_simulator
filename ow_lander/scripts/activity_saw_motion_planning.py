@@ -14,7 +14,7 @@ from utils import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import move_to_pre_trench_configuration
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
-def plan_cartesian_path_lin(move_arm, length, x_tr,y_tr):
+def plan_cartesian_path_lin(move_arm, length):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
@@ -25,8 +25,6 @@ def plan_cartesian_path_lin(move_arm, length, x_tr,y_tr):
                                waypoints,   # waypoints to follow
                                0.01,        # eef_step
                                0.0)         # jump_threshold
-  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-  # Note: We are just planning, not asking move_group to actually move the robot yet:
   return plan, fraction
 
 def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
