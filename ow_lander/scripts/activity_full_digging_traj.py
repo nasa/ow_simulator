@@ -131,7 +131,7 @@ def plan_cartesian_path_lin(move_arm, length, alpha, x_tr,y_tr):
   return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
-  move_arm.set_planner_id("RRTconnect")
+
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
     return False
