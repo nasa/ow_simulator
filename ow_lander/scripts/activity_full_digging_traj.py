@@ -121,8 +121,8 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
 
   (plan, fraction) = move_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow
-                               0.01,        # eef_step
-                               0.0)         # jump_threshold
+                               0.01,        # end effector follow step (meters)
+                               0.0)         # jump threshold
   return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
