@@ -47,6 +47,9 @@ def plan_cartesian_path(move_arm, move_limbs, scale):
     return plan, fraction
 
 def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
+
+  move_arm.set_planner_id("RRTstar")
+  
   # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
   h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
@@ -186,6 +189,8 @@ def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   move_arm.clear_pose_targets()
+
+  move_arm.set_planner_id("RRTconnect")
   
   return True
 
