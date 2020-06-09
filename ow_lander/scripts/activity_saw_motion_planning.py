@@ -11,10 +11,21 @@ import math
 import copy
 from tf.transformations import quaternion_from_euler
 from utils import is_shou_yaw_goal_in_range
-from activity_full_digging_traj import plan_cartesian_path_lin
 from activity_full_digging_traj import move_to_pre_trench_configuration
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
+def plan_cartesian_path_lin(move_arm, length):
+
+  waypoints = []
+  wpose = move_arm.get_current_pose().pose
+  wpose.position.x += length
+  waypoints.append(copy.deepcopy(wpose))
+
+  (plan, fraction) = move_arm.compute_cartesian_path(
+                               waypoints,   # waypoints to follow
+                               0.01,        # end effector follow step (meters)
+                               0.0)         # jump threshold
+  return plan, fraction
 
 def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
 

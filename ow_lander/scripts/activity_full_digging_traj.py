@@ -10,7 +10,7 @@ import rospy
 import constants
 import math
 import copy
-from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 
 
@@ -109,19 +109,20 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path_lin(move_arm, length):
+def plan_cartesian_path_lin(move_arm, length, alpha):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
-  wpose.position.x += length # Second move forward/backwards in (x)
+
+  wpose.position.x += length*math.cos(alpha)
+  wpose.position.y += length*math.sin(alpha)
+
   waypoints.append(copy.deepcopy(wpose))
 
   (plan, fraction) = move_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow
-                               0.01,        # eef_step
-                               0.0)         # jump_threshold
-  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-  # Note: We are just planning, not asking move_group to actually move the robot yet:
+                               0.01,        # end effector follow step (meters)
+                               0.0)         # jump threshold
   return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
@@ -146,8 +147,14 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   #  rotate to dig in the ground
   change_joint_value(move_arm,constants.J_DIST_PITCH,55.0/180.0*math.pi)
 
+  # determine linear trenching direction (alpha)
+  current_pose = move_arm.get_current_pose().pose
+  quaternion = [current_pose.orientation.x,current_pose.orientation.y,current_pose.orientation.z,current_pose.orientation.w]
+  current_euler = euler_from_quaternion(quaternion)
+  alpha = current_euler[2]
+
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
 

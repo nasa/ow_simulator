@@ -17,7 +17,7 @@
   <xacro:lander_sample_dock lander_sample_dock_parent_link="base_link"
                      off_x="0.53" off_y="-0.35" off_z="0.32" off_R="-${pi/2.0}" off_P="0.0" off_Y="-${pi/2.0}"
                      vis_mask="${vis_mask}" />
-                     
+
   <xacro:arg name="freeze_base_link" default="false"/>
 
   <xacro:if value="$(arg freeze_base_link)">
@@ -459,8 +459,8 @@
         </contact>
       </surface>
     </collision>
-    
-  </gazebo> 
+
+  </gazebo>
 
   <joint
     name="j_hand_yaw"
@@ -547,8 +547,8 @@
       </surface>
     </collision>
   </gazebo>
-  
-  <!-- link that we can reference in Gazebo to get altitude of tip 
+
+  <!-- link that we can reference in Gazebo to get altitude of tip
        of scoop above the terrain. Note that without an inertial
        tag, the link will not show up in the SDF/Gazebo at all -->
   <link name="l_scoop_tip">
@@ -565,7 +565,7 @@
   <gazebo reference="l_scoop_tip_joint">
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
-  
+
   <joint
     name="j_scoop_yaw"
     type="continuous">
