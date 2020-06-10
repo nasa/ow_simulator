@@ -20,17 +20,28 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
                                    function<float(long, long)> get_height_value,
                                    function<void(long, long, float)> set_height_value)
 {
+  if (msg->outer_radius <= 0.0f)
+  {
+    gzerr << "DynamicTerrain: outer_radius has to be a positive number!" << endl;
+    return;
+  }
+  if (msg->inner_radius > msg->outer_radius)
+  {
+    gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
+    return;
+  }
+
+  if (heightmap == nullptr)
+  {
+    gzerr << "DynamicTerrain: heightmap is null!" << endl;
+    return;
+  }
+
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (!terrain)
   {
     gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
-    return;
-  }
-
-  if (msg->inner_radius > msg->outer_radius)
-  {
-    gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
     return;
   }
 
@@ -50,17 +61,29 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
                                    function<float(long, long)> get_height_value,
                                    function<void(long, long, float)> set_height_value)
 {
-  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-
-  if (!terrain)
+  if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
-    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    gzerr << "DynamicTerrain: outer_radius a & b has to be positive!" << endl;
     return;
   }
 
   if (msg->inner_radius_a > msg->outer_radius_a || msg->inner_radius_b > msg->outer_radius_b)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
+    return;
+  }
+
+  if (heightmap == nullptr)
+  {
+    gzerr << "DynamicTerrain: heightmap is null!" << endl;
+    return;
+  }
+
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (!terrain)
+  {
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
     return;
   }
 
@@ -72,68 +95,14 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   auto image = TerrainBrush::ellipse(
     heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
     heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
-  auto center = Point2i(heightmap_size * heightmap_position.x, heightmap_size * heightmap_position.y);
-
-
-  cv::imwrite("ellipse_image.png", OpenCV_Util::scaleImage_32FC1_To_8UC1(image));
-
-  // TODO: apply msg->angle before applying it to the heightmap
+  image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output
+  image = OpenCV_Util::rotateImage(image, msg->orientation);
+  
+  auto center = Point2i(lround(heightmap_size * heightmap_position.x), lround(heightmap_size * heightmap_position.y));
   applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value);
 
   gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", "
         << msg->position.y << ")" << endl;
-}
-
-  auto _terrain_position2 = Vector3(msg->position2.x, msg->position2.y, 0);
-  auto heightmap_position2 = Vector3();
-  terrain->getTerrainPosition(_terrain_position2, &heightmap_position2);
-
-  // Check which should be top
-  auto y_top = heightmap_position1.y < heightmap_position2.y ? heightmap_position1.y : heightmap_position2.y;
-  auto y_bot = heightmap_position1.y >= heightmap_position2.y ? heightmap_position1.y : heightmap_position2.y;
-
-  auto size = static_cast<int>(terrain->getSize());
-  auto left = max(int((heightmap_position1.x - msg->outer_radius) * size), 0);
-  auto top = max(int((y_top - msg->outer_radius) * size), 0);
-  auto right = min(int((heightmap_position1.x + msg->outer_radius) * size), size);
-  auto bottom = min(int((y_bot + msg->outer_radius) * size), size);
-
-  // Render into a offscreen image first
-  auto image = cv::Mat(bottom - top + 1, right - left + 1, CV_32FC1);
-
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
-    {
-      auto ts_x_dist = x / static_cast<double>(size) - heightmap_position1.x;
-
-      auto ts_y_dist_top = y / static_cast<double>(size) - y_top;
-      auto ts_y_dist_bot = y / static_cast<double>(size) - y_bot;
-
-      auto ts_y_dist = 0.0f;
-      if (ts_y_dist_top < 0)
-        ts_y_dist = ts_y_dist_top;
-      else if (ts_y_dist_bot > 0)
-        ts_y_dist = ts_y_dist_bot;
-        
-      auto dist = sqrt(ts_y_dist * ts_y_dist + ts_x_dist * ts_x_dist);
-
-      auto inner_weight = 1.0;
-      if (dist > msg->inner_radius)
-      {
-        inner_weight = clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
-        inner_weight = 1.0 - (inner_weight * inner_weight);
-      }
-
-      auto added_height = inner_weight * msg->weight;
-      auto new_height = raise_operation ? +added_height : -added_height;
-      image.at<float>(y - top, x - left) = new_height;
-    }
-
-  applyImageToHeightmap(heightmap, left, top, image, get_height_value, set_height_value);
-
-  gzlog << "DynamicTerrain: capsule " << msg->operation << " operation between ("
-    << msg->position1.x << ", " << msg->position1.y << ") and ("
-    << msg->position2.x << ", " << msg->position2.y << ")" << endl;
 }
 
 void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,

@@ -31,7 +31,7 @@ Mat TerrainBrush::circle(float outer_radius, float inner_radius, float weight)
   return result;
 }
 
-float intersect_ellipse_line_x(float a, float b, float m)
+float TerrainBrush::intersectEllipseLineX(float a, float b, float m)
 {
   return a * b / sqrtf(b * b + m * m * a * a);
 }
@@ -56,8 +56,8 @@ Mat TerrainBrush::ellipse(float outer_radius_a, float inner_radius_a, float oute
         if (ts_x_dist != 0)
         {
           auto m = float(ts_y_dist) / float(ts_x_dist);
-          auto x1 = intersect_ellipse_line_x(inner_radius_a, inner_radius_b, m);
-          auto x2 = intersect_ellipse_line_x(radius_a, radius_b, m);
+          auto x1 = TerrainBrush::intersectEllipseLineX(inner_radius_a, inner_radius_b, m);
+          auto x2 = TerrainBrush::intersectEllipseLineX(radius_a, radius_b, m);
           intermediary_weight =  clamp((abs(ts_x_dist) - x1) / (x2 - x1), 0.0f, 1.0f);
         }
         else
