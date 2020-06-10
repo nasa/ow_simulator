@@ -35,6 +35,6 @@ Mat OpenCV_Util::scaleImage_32FC1_To_8UC1(const Mat& image)
   for (auto y = 0; y < image.rows; ++y)
     for (auto x = 0; x < image.cols; ++x)
       result.at<uchar>(y, x) = (image.at<float>(y, x) - min_intensity) * z_scale;
-      
+
   return result;
 }

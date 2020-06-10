@@ -15,7 +15,8 @@ def convert_tiff_to_grayscale(tiff_img):
 
 def callback(msg):
     rospy.loginfo("modify_terrain_patch message received")
-    rospy.loginfo("Position (%d, %d, %d)" % (msg.position.x, msg.position.y, msg.position.z))
+    rospy.loginfo("Position: (%d, %d, %d)" % (msg.position.x, msg.position.y, msg.position.z))
+    rospy.loginfo("Orientation: %d" % msg.orientation)
 
     image = cv_bridge.imgmsg_to_cv2(msg.patch)
     if msg.patch.encoding == "64FC1" or msg.patch.encoding == "32FC1":

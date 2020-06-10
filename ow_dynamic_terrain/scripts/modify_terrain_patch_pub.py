@@ -23,6 +23,7 @@ def scale_image_intensities(image, scale):
 def compose_modify_terrain_patch_message(image_path):
     msg = modify_terrain_patch()
     msg.position = Point(0, 0, 0)
+    msg.orientation = 45.0
     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
     min_intensity, max_intensity, _, _ = cv2.minMaxLoc(image)
     z_scale = 1.0 / (max_intensity - min_intensity)

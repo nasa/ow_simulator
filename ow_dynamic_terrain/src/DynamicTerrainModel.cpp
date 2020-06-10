@@ -166,12 +166,12 @@ private:
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyEllipse(heightmap, msg,
-                                  [&heightmap_shape](int x, int y) {
-                                    return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                                  },
-                                  [&heightmap_shape](int x, int y, float value) {
-                                    heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                                  });
+                                   [&heightmap_shape](int x, int y) {
+                                     return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+                                   },
+                                   [&heightmap_shape](int x, int y, float value) {
+                                     heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+                                   });
 #endif
   }
 

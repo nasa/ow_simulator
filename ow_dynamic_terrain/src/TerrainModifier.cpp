@@ -1,9 +1,9 @@
 #include <OgreVector3.h>
 #include <sensor_msgs/image_encodings.h>
 #include <gazebo/common/Console.hh>
-#include "TerrainModifier.h"
 #include "OpenCV_Util.h"
 #include "TerrainBrush.h"
+#include "TerrainModifier.h"
 
 using namespace std;
 using namespace Ogre;
@@ -49,17 +49,18 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto heightmap_position = Vector3();
   terrain->getTerrainPosition(_terrain_position, &heightmap_position);
   auto heightmap_size = static_cast<int>(terrain->getSize());
-  auto image = TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
-  auto center = Point2i(heightmap_size * heightmap_position.x, heightmap_size * heightmap_position.y);
+  auto image =
+      TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
+  auto center = Point2i(lround(heightmap_size * heightmap_position.x), lround(heightmap_size * heightmap_position.y));
   applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value);
 
-  gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", "
-        << msg->position.y << ")" << endl;
+  gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+        << endl;
 }
 
 void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
-                                   function<float(long, long)> get_height_value,
-                                   function<void(long, long, float)> set_height_value)
+                                    function<float(long, long)> get_height_value,
+                                    function<void(long, long, float)> set_height_value)
 {
   if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
@@ -91,24 +92,30 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   auto heightmap_position = Vector3();
   terrain->getTerrainPosition(_terrain_position, &heightmap_position);
   auto heightmap_size = static_cast<int>(terrain->getSize());
-  
-  auto image = TerrainBrush::ellipse(
-    heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
-    heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
-  image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output
-  image = OpenCV_Util::rotateImage(image, msg->orientation);
-  
   auto center = Point2i(lround(heightmap_size * heightmap_position.x), lround(heightmap_size * heightmap_position.y));
+
+  auto image =
+      TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
+                            heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
+  image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
+  image = OpenCV_Util::rotateImage(image, msg->orientation);
+
   applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value);
 
-  gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", "
-        << msg->position.y << ")" << endl;
+  gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+        << endl;
 }
 
 void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
                                   function<float(long, long)> get_height_value,
                                   function<void(long, long, float)> set_height_value)
 {
+  if (heightmap == nullptr)
+  {
+    gzerr << "DynamicTerrain: heightmap is null!" << endl;
+    return;
+  }
+
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (!terrain)
@@ -123,20 +130,22 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     return;
   }
 
+  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
+  auto heightmap_position = Vector3();
+  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+  auto heightmap_size = terrain->getSize();
+  auto center = Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
+
   auto image_handle = TerrainModifier::importImageToOpenCV(msg);
   if (image_handle == nullptr)
   {
     gzerr << "DynamicTerrain: Failed to convert ROS image" << endl;
     return;
   }
-
-  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
-  auto heightmap_position = Vector3();
-  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
-  auto size = terrain->getSize();
-  auto center = Point2i(lroundf(heightmap_position.x * size),lroundf(heightmap_position.y * size));
-
-  applyImageToHeightmap(heightmap, center, image_handle->image, get_height_value, set_height_value);
+  auto image = OpenCV_Util::expandImage(image_handle->image);  // expand the image to hold rotation output with no loss
+  image = OpenCV_Util::rotateImage(image, msg->orientation);
+  
+  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
@@ -160,8 +169,8 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
 }
 
 void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, const Mat& image,
-                          std::function<float(long, long)> get_height_value,
-                          std::function<void(long, long, float)> set_height_value)
+                                            std::function<float(long, long)> get_height_value,
+                                            std::function<void(long, long, float)> set_height_value)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
