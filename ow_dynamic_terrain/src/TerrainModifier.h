@@ -35,7 +35,8 @@ private:
   static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap, const cv::Point2i& center,
                                     const cv::Mat& image,
                                     std::function<float(long, long)> get_height_value,
-                                    std::function<void(long, long, float)> set_height_value);
+                                    std::function<void(long, long, float)> set_height_value,
+                                    std::function<float(float, float)> merge_operation);
 };
 }  // namespace ow_dynamic_terrain
 

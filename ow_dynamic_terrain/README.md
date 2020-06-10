@@ -106,4 +106,4 @@ Depending on the weight sign the operation will either raise or lower the terrai
 rosrun ow_dynamic_terrain modify_terrain_patch_pub.py image_file
 ```
 
-> **_NOTE:_** Only single channel 32/64 float image formats are supported.
+> **_NOTE:_** Only single channel 32 float image formats are supported.

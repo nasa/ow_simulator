@@ -159,11 +159,16 @@ include_directories(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-## Model Plugin
-add_library(${PROJECT_NAME}_model
+set(${PROJECT_NAME}_shared
   src/OpenCV_Util.cpp
   src/TerrainBrush.cpp
+  src/MergeOperations.cpp
   src/TerrainModifier.cpp
+)
+
+## Model Plugin
+add_library(${PROJECT_NAME}_model
+  ${${PROJECT_NAME}_shared}
   src/DynamicTerrainModel.cpp
 )
 
@@ -179,9 +184,7 @@ add_dependencies(${PROJECT_NAME}_model
 
 ## Visual Plugin
 add_library(${PROJECT_NAME}_visual
-  src/OpenCV_Util.cpp
-  src/TerrainBrush.cpp
-  src/TerrainModifier.cpp
+  ${${PROJECT_NAME}_shared}
   src/DynamicTerrainVisual.cpp
 )
 
