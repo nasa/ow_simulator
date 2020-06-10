@@ -20,6 +20,9 @@ public:
 private:
   // solves for x the intersection of a concentric ellipse and a line
   // for y value simply multiply by m
+  // param a: radius a of the ellipse
+  // param b: radius b of the ellipse
+  // param m: line slope
   static float intersectEllipseLineX(float a, float b, float m);
 };
 }  // namespace ow_dynamic_terrain
