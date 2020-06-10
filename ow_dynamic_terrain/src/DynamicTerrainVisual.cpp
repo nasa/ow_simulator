@@ -6,7 +6,7 @@
 #include <gazebo/rendering/Scene.hh>
 #include "TerrainModifier.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
-#include "ow_dynamic_terrain/modify_terrain_capsule.h"
+#include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
 using namespace std;
@@ -32,9 +32,9 @@ public:
         "/ow_dynamic_terrain/modify_terrain_circle", 10,
         boost::bind(&DynamicTerrainVisual::onModifyTerrainCircleMsg, this, _1));
 
-    m_ros_subscriber_capsule = m_ros_node->subscribe<modify_terrain_capsule>(
-        "/ow_dynamic_terrain/modify_terrain_capsule", 10,
-        boost::bind(&DynamicTerrainVisual::onModifyTerrainCapsuleMsg, this, _1));
+    m_ros_subscriber_ellipse = m_ros_node->subscribe<modify_terrain_ellipse>(
+        "/ow_dynamic_terrain/modify_terrain_ellipse", 10,
+        boost::bind(&DynamicTerrainVisual::onModifyTerrainEllipseMsg, this, _1));
 
     m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
         "/ow_dynamic_terrain/modify_terrain_patch", 10,
@@ -92,7 +92,7 @@ private:
   }
 
 private:
-  void onModifyTerrainCapsuleMsg(const modify_terrain_capsule::ConstPtr& msg)
+  void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -102,7 +102,7 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyCapsule(heightmap, msg,
+    TerrainModifier::modifyEllipse(heightmap, msg,
                                   [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
                                   [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
 
@@ -142,7 +142,7 @@ private:
   ros::Subscriber m_ros_subscriber_circle;
 
 private:
-  ros::Subscriber m_ros_subscriber_capsule;
+  ros::Subscriber m_ros_subscriber_ellipse;
 
 private:
   ros::Subscriber m_ros_subscriber_patch;

@@ -78,22 +78,23 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify
   "{position: {x: 0,  y: 0},
     outer_radius: 0.1,
     inner_radius: 0.001,
-    weight: 1}"
+    weight: -1.0}"
 ```
 
 Depending on the weight sign the operation will either raise or lower the terrain around the provided position.
 
-### Modify Terrain with Capsule
+### Modify Terrain with Ellipse
 
-Then you may perform a terrain operation by submitting a rostopic message as follows:
+You may perform a terrain operation by submitting a rostopic message as follows:
 
 ```bash
-rostopic pub /ow_dynamic_terrain/modify_terrain_capsule ow_dynamic_terrain/modify_terrain_capsule \
-  "{position1: {x: 0,  y: 0},
-    position2: {x: 0,  y: 3},
-    outer_radius: 0.04,
-    inner_radius: 0.02,
-    weight: 1}"
+rostopic pub /ow_dynamic_terrain/modify_terrain_ellipse ow_dynamic_terrain/modify_terrain_ellipse \
+  "{position: {x: 0,  y: 0},
+    outer_radius_a: 0.2,
+    inner_radius_a: 0.001,
+    outer_radius_b: 0.1,
+    inner_radius_b: 0.001,
+    weight: -1.0}"
 ```
 
 Depending on the weight sign the operation will either raise or lower the terrain around the provided position.

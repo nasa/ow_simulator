@@ -46,18 +46,10 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
         << msg->position.y << ")" << endl;
 }
 
-void TerrainModifier::modifyCapsule(Heightmap* heightmap, const modify_terrain_capsule::ConstPtr& msg,
+void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
                                    function<float(long, long)> get_height_value,
                                    function<void(long, long, float)> set_height_value)
 {
-  if (msg->operation != "lower" && msg->operation != "raise")
-  {
-    gzerr << "DynamicTerrain: Unknown terrain operation [" << msg->operation << "]" << endl;
-    return;
-  }
-
-  auto raise_operation = msg->operation == "raise";  // otherwise it is lower
-
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (!terrain)
@@ -66,15 +58,31 @@ void TerrainModifier::modifyCapsule(Heightmap* heightmap, const modify_terrain_c
     return;
   }
 
-  if (msg->inner_radius > msg->outer_radius)
+  if (msg->inner_radius_a > msg->outer_radius_a || msg->inner_radius_b > msg->outer_radius_b)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
     return;
   }
 
-  auto _terrain_position1 = Vector3(msg->position1.x, msg->position1.y, 0);
-  auto heightmap_position1 = Vector3();
-  terrain->getTerrainPosition(_terrain_position1, &heightmap_position1);
+  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
+  auto heightmap_position = Vector3();
+  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+  auto heightmap_size = static_cast<int>(terrain->getSize());
+  
+  auto image = TerrainBrush::ellipse(
+    heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
+    heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
+  auto center = Point2i(heightmap_size * heightmap_position.x, heightmap_size * heightmap_position.y);
+
+
+  cv::imwrite("ellipse_image.png", OpenCV_Util::scaleImage_32FC1_To_8UC1(image));
+
+  // TODO: apply msg->angle before applying it to the heightmap
+  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value);
+
+  gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", "
+        << msg->position.y << ")" << endl;
+}
 
   auto _terrain_position2 = Vector3(msg->position2.x, msg->position2.y, 0);
   auto heightmap_position2 = Vector3();

@@ -4,8 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <gazebo/rendering/Heightmap.hh>
-#include "ow_dynamic_terrain/modify_terrain_capsule.h"
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
+#include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
 namespace ow_dynamic_terrain
@@ -19,10 +19,10 @@ public:
                            std::function<void(long, long, float)> set_height_value);
 
 public:
-  static void modifyCapsule(gazebo::rendering::Heightmap* heightmap,
-                            const ow_dynamic_terrain::modify_terrain_capsule::ConstPtr& msg,
-                            std::function<float(long, long)> get_height_value,
-                            std::function<void(long, long, float)> set_height_value);
+  static void modifyEllipse(gazebo::rendering::Heightmap* heightmap,
+                           const ow_dynamic_terrain::modify_terrain_ellipse::ConstPtr& msg,
+                           std::function<float(long, long)> get_height_value,
+                           std::function<void(long, long, float)> set_height_value);
 
 public:
   static void modifyPatch(gazebo::rendering::Heightmap* heightmap,
