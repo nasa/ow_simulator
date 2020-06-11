@@ -26,7 +26,7 @@
   <xacro:macro name="lander_sample_dock_link" params="suffix roll pitch y">
     <link name="lander_sample_dock${suffix}">
       <collision>
-        <origin rpy="0 0 0" xyz="0 0 0.25"/>
+        <origin rpy="0 0 0" xyz="0 0 0.025"/>
         <geometry>
           <box size="0.3 0.05 0.095"/>
         </geometry>
