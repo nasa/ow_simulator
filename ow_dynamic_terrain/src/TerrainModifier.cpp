@@ -1,6 +1,7 @@
 #include <OgreVector3.h>
 #include <sensor_msgs/image_encodings.h>
 #include <gazebo/common/Console.hh>
+#include <gazebo/common/Assert.hh>
 #include "OpenCV_Util.h"
 #include "TerrainBrush.h"
 #include "TerrainModifier.h"
@@ -21,6 +22,8 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
                                    function<float(long, long)> get_height_value,
                                    function<void(long, long, float)> set_height_value)
 {
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+
   if (msg->outer_radius <= 0.0f)
   {
     gzerr << "DynamicTerrain: outer_radius has to be a positive number!" << endl;
@@ -29,12 +32,6 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   if (msg->inner_radius > msg->outer_radius)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
-    return;
-  }
-
-  if (heightmap == nullptr)
-  {
-    gzerr << "DynamicTerrain: heightmap is null!" << endl;
     return;
   }
 
@@ -53,7 +50,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image =
       TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
   auto center = Point2i(lround(heightmap_size * heightmap_position.x), lround(heightmap_size * heightmap_position.y));
-  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::min);
+  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::add);
 
   gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -63,6 +60,8 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
                                     function<float(long, long)> get_height_value,
                                     function<void(long, long, float)> set_height_value)
 {
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+
   if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
     gzerr << "DynamicTerrain: outer_radius a & b has to be positive!" << endl;
@@ -72,12 +71,6 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   if (msg->inner_radius_a > msg->outer_radius_a || msg->inner_radius_b > msg->outer_radius_b)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
-    return;
-  }
-
-  if (heightmap == nullptr)
-  {
-    gzerr << "DynamicTerrain: heightmap is null!" << endl;
     return;
   }
 
@@ -101,7 +94,7 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
   image = OpenCV_Util::rotateImage(image, msg->orientation);
 
-  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::min);
+  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::add);
 
   gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -111,11 +104,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
                                   function<float(long, long)> get_height_value,
                                   function<void(long, long, float)> set_height_value)
 {
-  if (heightmap == nullptr)
-  {
-    gzerr << "DynamicTerrain: heightmap is null!" << endl;
-    return;
-  }
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
@@ -146,7 +135,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   auto image = OpenCV_Util::expandImage(image_handle->image);  // expand the image to hold rotation output with no loss
   image = OpenCV_Util::rotateImage(image, msg->orientation);
   
-  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::min);
+  applyImageToHeightmap(heightmap, center, image, get_height_value, set_height_value, MergeOperations::add);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }

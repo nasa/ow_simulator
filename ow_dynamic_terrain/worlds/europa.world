@@ -21,20 +21,20 @@
     <include>
       <uri>model://small_box</uri>
       <name>small_box_1</name>
-      <pose>2.0 2.0 1.5 0 0 0</pose>
+      <pose>0.0 0.0 1.5 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://small_box</uri>
       <name>small_box_2</name>
-      <pose>2.4 2.0 1.5 0 0 0</pose>
+      <pose>0.5 0.5 1.5 0 0 0</pose>
     </include>
 
-    <physics type='ode'>
-      <max_step_size>0.01</max_step_size>
-      <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>100</real_time_update_rate>
-    </physics>
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_3</name>
+      <pose>1.0 1.0 1.5 0 0 0</pose>
+    </include>
 
   </world>
 </sdf>
