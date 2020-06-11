@@ -25,13 +25,13 @@ def check_arguments(tx, ty, td):
   except ValueError:
     return False
 
-def start_traj_recording(delete_prev_traj,bagname): 	
+def start_traj_recording(delete_prev_traj,bagname):
   # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
-  if delete_prev_traj == True :
+  if delete_prev_traj == True and bagname[0:4] != "move":
     os.system("rm ~/.ros/*.csv")
 
   # Start rosbag recording
-  command = "rosbag record -O " + bagname + " /planning/joint_states"    
+  command = "rosbag record -O " + bagname + " /planning/joint_states"
   p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
 
 def stop_traj_recording(result, bagname):
@@ -39,7 +39,7 @@ def stop_traj_recording(result, bagname):
   # Stop rosbag recording (TODO: clean process)
   os.system("killall -s SIGINT record")
 
-  if result == False : 
+  if result == False :
     time.sleep(1)
     print "[ERROR] No plan found. Exiting path_planning_commander..."
     command = "rm " + bagname + ".bag"
@@ -47,13 +47,13 @@ def stop_traj_recording(result, bagname):
     return
 
   time.sleep(1)
-  
+
   # rosbag to csv
-  trajname = bagname + ".csv" 
+  trajname = bagname + ".csv"
   command = "rostopic echo -p -b " + bagname + ".bag /planning/joint_states > " + trajname
   os.system(command)
   time.sleep(1)
-  
+
   # Cleanup bag and csv
   command = "rm " + bagname + ".bag"
   os.system(command)
@@ -62,12 +62,7 @@ def is_shou_yaw_goal_in_range(joint_goal):
   # If shoulder yaw goal angle is out of joint range, abort
   upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
   lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper): 
+  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper):
     return False
   else:
     return True
-
-
-
-
-
