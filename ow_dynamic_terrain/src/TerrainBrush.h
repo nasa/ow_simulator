@@ -18,7 +18,7 @@ public:
                          float weight);
 
 private:
-  // solves for x the intersection of a concentric ellipse and a line
+  // solves for x the intersection of a ellipse and a line (where the line passes through the ellipse center)
   // for y value simply multiply by m
   // param a: radius a of the ellipse
   // param b: radius b of the ellipse

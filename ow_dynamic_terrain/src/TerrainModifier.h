@@ -32,7 +32,16 @@ public:
 private:
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
-  static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap, const cv::Point2i& center,
+  // Applies the an OpenCV image to a heightmap at a given position
+  // param heightmap: heightmap to merge the image with
+  // param center: absolute position within the heightmap where the image will be applied
+  // param z_bias: a value that will be applied as an offset to height values retrieved from the image.
+  // param image: a 2D matrix containing the height values (given as 32-bit floats) to be applied/merged.
+  // param get_height_value: a lambda function to retrive the height value from the heightmap
+  // param set_height_value: a lambda function to set back the height value on the heightmap.
+  // param merge_operation: Choices are keep, replace, add, sub, min and max.
+  static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap,
+                                    const cv::Point2i& center, float z_bias,
                                     const cv::Mat& image,
                                     std::function<float(long, long)> get_height_value,
                                     std::function<void(long, long, float)> set_height_value,
