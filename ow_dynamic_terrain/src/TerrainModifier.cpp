@@ -171,12 +171,6 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
-  if (!terrain)
-  {
-    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
-    return;
-  }
-
   if (image.type() != CV_32FC1)
   {
     gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
