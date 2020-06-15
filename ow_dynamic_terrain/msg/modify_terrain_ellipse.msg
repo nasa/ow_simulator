@@ -6,3 +6,5 @@ float32 outer_radius_b          # ellipse outer radius b
 float32 inner_radius_a          # ellipse inner radius a
 float32 inner_radius_b          # ellipse inner radius b
 float32 weight                  # weight of the operation on height values
+string merge_method             # decides how to merge generated values with height values of the terrain
+                                # current choices: keep, replace, add, sub, min, max. If not specified default is: add

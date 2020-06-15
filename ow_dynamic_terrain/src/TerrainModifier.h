@@ -3,6 +3,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <gazebo/rendering/Heightmap.hh>
+#include <geometry_msgs/Point32.h>
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
@@ -30,6 +31,11 @@ public:
                           std::function<void(long, long, float)> set_height_value);
 
 private:
+  // converts a world position to a heightmap position in heightmap image coordiantes.
+  // param heightmap: reference heightmap used for the conversion.
+  // param position: a position in world coordinates
+  static cv::Point2i getHeightmapPosition(gazebo::rendering::Heightmap* heightmap, const geometry_msgs::Point32& position);
+
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
   // Applies the an OpenCV image to a heightmap at a given position

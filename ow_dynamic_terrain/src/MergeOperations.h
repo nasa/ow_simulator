@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <boost/optional/optional.hpp>  // TODO: replace with std::optional for c++17
 
 // Predefined set of merge opertions used by TerrainModifier
 // First parameter is the current_value of the heightmap
@@ -11,18 +12,21 @@
 class MergeOperations
 {
 public:
-  static const std::function<float(float, float)> keep;
-  static const std::function<float(float, float)> replace;
-  static const std::function<float(float, float)> add;
-  static const std::function<float(float, float)> sub;
-  static const std::function<float(float, float)> min;
-  static const std::function<float(float, float)> max;
+  using MergeOperation = std::function<float(float, float)>;
+
+  static const MergeOperation keep;
+  static const MergeOperation replace;
+  static const MergeOperation add;
+  static const MergeOperation sub;
+  static const MergeOperation min;
+  static const MergeOperation max;
 
 public:
-  static std::function<float(float, float)> mergeOperationFromString(const std::string &operation);
+  static boost::optional<const MergeOperation&> mergeOperationFromString(const std::string& operation);
 
 private:
-  static const std::unordered_map<std::string, std::function<float(float, float)>> mapOperationNameToOperationFunction;
+  static const std::unordered_map<std::string, const MergeOperation&>
+      m_mapOperationNameToOperationFunction;
 };
 
 #endif  // MERGE_OPERATIONS_H
