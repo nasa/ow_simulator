@@ -2,7 +2,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <gazebo/common/Assert.hh>
 #include <gazebo/common/Console.hh>
-#include "MergeOperations.h"
+#include "MergeMethods.h"
 #include "OpenCV_Util.h"
 #include "TerrainBrush.h"
 #include "TerrainModifier.h"
@@ -35,7 +35,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
     return;
   }
 
-  auto merge_method = MergeOperations::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  auto merge_method = MergeMethods::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
@@ -56,7 +56,8 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image =
       TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, merge_method.get());
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value,
+                        merge_method.get());
 
   gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -80,7 +81,7 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
     return;
   }
 
-  auto merge_method = MergeOperations::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  auto merge_method = MergeMethods::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
@@ -104,7 +105,8 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
   image = OpenCV_Util::rotateImage(image, msg->orientation);
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, merge_method.get());
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value,
+                        merge_method.get());
 
   gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -116,7 +118,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
-  auto merge_method = MergeOperations::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  auto merge_method = MergeMethods::mergeOperationFromString(msg->merge_method != "" ? msg->merge_method : "add");
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
@@ -148,7 +150,8 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   auto image = OpenCV_Util::expandImage(image_handle->image);  // expand the image to hold rotation output with no loss
   image = OpenCV_Util::rotateImage(image, msg->orientation);
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, merge_method.get());
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value,
+                        merge_method.get());
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
