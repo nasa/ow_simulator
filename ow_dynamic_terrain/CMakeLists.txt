@@ -162,7 +162,7 @@ include_directories(
 set(${PROJECT_NAME}_shared
   src/OpenCV_Util.cpp
   src/TerrainBrush.cpp
-  src/MergeOperations.cpp
+  src/MergeMethods.cpp
   src/TerrainModifier.cpp
 )
 
