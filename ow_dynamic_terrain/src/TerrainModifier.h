@@ -15,20 +15,20 @@ class TerrainModifier
 public:
   static void modifyCircle(gazebo::rendering::Heightmap* heightmap,
                            const ow_dynamic_terrain::modify_terrain_circle::ConstPtr& msg,
-                           std::function<float(long, long)> get_height_value,
-                           std::function<void(long, long, float)> set_height_value);
+                           const std::function<float(int, int)>& get_height_value,
+                           const std::function<void(int, int, float)>& set_height_value);
 
 public:
   static void modifyEllipse(gazebo::rendering::Heightmap* heightmap,
                             const ow_dynamic_terrain::modify_terrain_ellipse::ConstPtr& msg,
-                            std::function<float(long, long)> get_height_value,
-                            std::function<void(long, long, float)> set_height_value);
+                            const std::function<float(int, int)>& get_height_value,
+                            const std::function<void(int, int, float)>& set_height_value);
 
 public:
   static void modifyPatch(gazebo::rendering::Heightmap* heightmap,
                           const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg,
-                          std::function<float(long, long)> get_height_value,
-                          std::function<void(long, long, float)> set_height_value);
+                          const std::function<float(int, int)>& get_height_value,
+                          const std::function<void(int, int, float)>& set_height_value);
 
 private:
   // converts a world position to a heightmap position in heightmap image coordiantes.
@@ -50,9 +50,9 @@ private:
   static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap,
                                     const cv::Point2i& center, float z_bias,
                                     const cv::Mat& image,
-                                    std::function<float(long, long)> get_height_value,
-                                    std::function<void(long, long, float)> set_height_value,
-                                    std::function<float(float, float)> merge_operation);
+                                    const std::function<float(int, int)>& get_height_value,
+                                    const std::function<void(int, int, float)>& set_height_value,
+                                    const std::function<float(float, float)>& merge_operation);
 };
 }  // namespace ow_dynamic_terrain
 

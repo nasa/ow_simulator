@@ -12,13 +12,14 @@
 
 using namespace std;
 using namespace gazebo;
+using namespace physics;
 
 namespace ow_dynamic_terrain
 {
 class DynamicTerrainModel : public ModelPlugin
 {
 public:
-  void Load(physics::ModelPtr model, sdf::ElementPtr /*sdf*/) override
+  void Load(ModelPtr model, sdf::ElementPtr /*sdf*/) override
   {
     if (!ros::isInitialized())
     {
@@ -69,7 +70,7 @@ private:
   }
 
 private:
-  physics::HeightmapShapePtr getHeightmapShape()
+  HeightmapShapePtr getHeightmapShape()
   {
     if (m_model == nullptr)
     {
@@ -102,7 +103,7 @@ private:
       return nullptr;
     }
 
-    auto shape = boost::dynamic_pointer_cast<physics::HeightmapShape>(collision->GetShape());
+    auto shape = boost::dynamic_pointer_cast<HeightmapShape>(collision->GetShape());
     if (shape == nullptr)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << endl;
@@ -120,7 +121,22 @@ private:
   }
 
 private:
-  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr msg)
+  static inline float getHeightInWorldCoords(const HeightmapShapePtr& heightmap_shape, int x, int y)
+  {
+    auto value = heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
+    value += heightmap_shape->Pos().Z();
+    return value;
+  }
+
+private:
+  static inline void setHeightFromWorldCoords(const HeightmapShapePtr& heightmap_shape, int x, int y, float value)
+  {
+    value -= heightmap_shape->Pos().Z();
+    heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
+  }
+
+private:
+  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -137,22 +153,14 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modifyCircle(heightmap, msg,
-                                  [&heightmap_shape](int x, int y) {
-                                    auto value =
-                                        heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                                    value += heightmap_shape->Pos().Z();
-                                    return value;
-                                  },
-                                  [&heightmap_shape](int x, int y, float value) {
-                                    value -= heightmap_shape->Pos().Z();
-                                    heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                                  });
+    TerrainModifier::modifyCircle(
+        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
+        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 #endif
   }
 
 private:
-  void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr msg)
+  void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -169,18 +177,14 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modifyEllipse(heightmap, msg,
-                                   [&heightmap_shape](int x, int y) {
-                                     return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                                   },
-                                   [&heightmap_shape](int x, int y, float value) {
-                                     heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                                   });
+    TerrainModifier::modifyEllipse(
+        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
+        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 #endif
   }
 
 private:
-  void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr msg)
+  void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
     if (heightmap == nullptr)
@@ -197,18 +201,14 @@ private:
     }
 
 #if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
-    TerrainModifier::modifyPatch(heightmap, msg,
-                                 [&heightmap_shape](int x, int y) {
-                                   return heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
-                                 },
-                                 [&heightmap_shape](int x, int y, float value) {
-                                   heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
-                                 });
+    TerrainModifier::modifyPatch(
+        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
+        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 #endif
   }
 
 private:
-  physics::ModelPtr m_model;
+  ModelPtr m_model;
 
 private:
   event::ConnectionPtr m_on_update_connection;

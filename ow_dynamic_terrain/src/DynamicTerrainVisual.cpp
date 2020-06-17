@@ -11,13 +11,14 @@
 
 using namespace std;
 using namespace gazebo;
+using namespace rendering;
 
 namespace ow_dynamic_terrain
 {
 class DynamicTerrainVisual : public VisualPlugin
 {
 public:
-  void Load(rendering::VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/) override
+  void Load(VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/) override
   {
     if (!ros::isInitialized())
     {
@@ -46,9 +47,9 @@ public:
   }
 
 private:
-  rendering::Heightmap* getHeightmap()
+  Heightmap* getHeightmap()
   {
-    auto scene = rendering::get_scene();
+    auto scene = get_scene();
     if (!scene)
     {
       gzerr << "DynamicTerrainVisual: Couldn't acquire scene!" << endl;
@@ -73,6 +74,21 @@ private:
   }
 
 private:
+  static inline float getHeightInWorldCoords(const Ogre::Terrain* terrain, int x, int y)
+  {
+    auto value = terrain->getHeightAtPoint(x, y);
+    value += terrain->getPosition().z;
+    return value;
+  }
+
+private:
+  static inline void setHeightFromWorldCoords(Ogre::Terrain* terrain, int x, int y, float value)
+  {
+    value -= terrain->getPosition().z;
+    terrain->setHeightAtPoint(x, y, value);
+  }
+
+private:
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg)
   {
     auto heightmap = getHeightmap();
@@ -83,16 +99,9 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyCircle(heightmap, msg,
-                                  [&terrain](long x, long y) {
-                                    auto value = terrain->getHeightAtPoint(x, y);
-                                    value += terrain->getPosition().z;
-                                    return value;
-                                  },
-                                  [&terrain](long x, long y, float value) {
-                                    value -= terrain->getPosition().z;
-                                    terrain->setHeightAtPoint(x, y, value);
-                                  });
+    TerrainModifier::modifyCircle(
+        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
+        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
@@ -109,9 +118,9 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyEllipse(heightmap, msg,
-                                   [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
-                                   [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+    TerrainModifier::modifyEllipse(
+        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
+        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
@@ -128,9 +137,9 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyPatch(heightmap, msg,
-                                 [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
-                                 [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+    TerrainModifier::modifyPatch(
+        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
+        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);

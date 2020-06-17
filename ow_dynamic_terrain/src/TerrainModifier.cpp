@@ -18,8 +18,8 @@ using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
 void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
-                                   function<float(long, long)> get_height_value,
-                                   function<void(long, long, float)> set_height_value)
+                                   const function<float(int, int)>& get_height_value,
+                                   const function<void(int, int, float)>& set_height_value)
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
@@ -64,8 +64,8 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
 }
 
 void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
-                                    function<float(long, long)> get_height_value,
-                                    function<void(long, long, float)> set_height_value)
+                                    const function<float(int, int)>& get_height_value,
+                                    const function<void(int, int, float)>& set_height_value)
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
@@ -113,8 +113,8 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
 }
 
 void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
-                                  function<float(long, long)> get_height_value,
-                                  function<void(long, long, float)> set_height_value)
+                                  const function<float(int, int)>& get_height_value,
+                                  const function<void(int, int, float)>& set_height_value)
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
@@ -163,8 +163,7 @@ Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geomet
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
   terrain->getTerrainPosition(_terrain_position, &heightmap_position);
   auto heightmap_size = terrain->getSize();
-  auto point = Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
-  return std::move(point);
+  return Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
 }
 
 CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch::ConstPtr& msg)
@@ -186,9 +185,9 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
 }
 
 void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias, const Mat& image,
-                                            function<float(long, long)> get_height_value,
-                                            function<void(long, long, float)> set_height_value,
-                                            function<float(float, float)> merge_operation)
+                                            const function<float(int, int)>& get_height_value,
+                                            const function<void(int, int, float)>& set_height_value,
+                                            const function<float(float, float)>& merge_operation)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
