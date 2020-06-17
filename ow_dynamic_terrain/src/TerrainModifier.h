@@ -37,8 +37,11 @@ private:
   static cv::Point2i getHeightmapPosition(gazebo::rendering::Heightmap* heightmap,
                                           const geometry_msgs::Point32& position);
 
+private:
+  // Imports an OpenCV Matrix object from a sensor_msgs::Image object through cv_bridge
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
+private:
   // Applies the an OpenCV image to a heightmap at a given position
   // param heightmap: heightmap to merge the image with
   // param center: absolute position within the heightmap where the image will be applied

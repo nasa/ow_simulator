@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 
-// TODO(feature suggestion): provide an option to restrict computations to a rectangular window
+// TODO (optimization): provide an option to restrict computations to a rectangular window.
 
 namespace ow_dynamic_terrain
 {

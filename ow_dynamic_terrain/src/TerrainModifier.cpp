@@ -102,8 +102,12 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   auto image =
       TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
                             heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
-  image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
-  image = OpenCV_Util::rotateImage(image, msg->orientation);
+
+  if (msg->orientation != 0.0f)  // Avoid performing the rotation if orientation is exactly zero
+  {
+    image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
+    image = OpenCV_Util::rotateImage(image, msg->orientation);
+  }
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value,
                         merge_method.get());
@@ -147,8 +151,13 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     gzerr << "DynamicTerrain: Failed to convert ROS image" << endl;
     return;
   }
-  auto image = OpenCV_Util::expandImage(image_handle->image);  // expand the image to hold rotation output with no loss
-  image = OpenCV_Util::rotateImage(image, msg->orientation);
+
+  auto image = image_handle->image;
+  if (msg->orientation != 0.0f)  // Avoid performing the rotation if orientation is exactly zero
+  {
+    image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
+    image = OpenCV_Util::rotateImage(image, msg->orientation);
+  }
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value,
                         merge_method.get());
@@ -168,7 +177,7 @@ Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geomet
 
 CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch::ConstPtr& msg)
 {
-  CvImageConstPtr image_handle;
+  auto image_handle = CvImageConstPtr();
 
   try
   {

@@ -3,6 +3,10 @@
 
 #include <cv_bridge/cv_bridge.h>
 
+// TODO (optimization): provide an optional parameter to rotateImage in which it speicifies if the rotation should not
+// lose details. In case this is selected the function can internally return an expanded image with the exact required
+// size to contain the output of the rotation (which saves memory and time to copy and fill the expanded image).
+
 namespace ow_dynamic_terrain
 {
 class OpenCV_Util
