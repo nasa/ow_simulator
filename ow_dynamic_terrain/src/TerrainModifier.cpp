@@ -187,7 +187,7 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
 void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias, const Mat& image,
                                             const function<float(int, int)>& get_height_value,
                                             const function<void(int, int, float)>& set_height_value,
-                                            const function<float(float, float)>& merge_operation)
+                                            const function<float(float, float)>& merge_method)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
@@ -208,7 +208,7 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
     {
       auto row = y - top;
       auto col = x - left;
-      auto new_height = merge_operation(get_height_value(x, y), image.at<float>(row, col) + z_bias);
+      auto new_height = merge_method(get_height_value(x, y), image.at<float>(row, col) + z_bias);
       set_height_value(x, y, new_height);
     }
 }

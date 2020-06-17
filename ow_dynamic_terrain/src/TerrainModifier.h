@@ -46,13 +46,13 @@ private:
   // param image: a 2D matrix containing the height values (given as 32-bit floats) to be applied/merged.
   // param get_height_value: a lambda function to retrive the height value from the heightmap
   // param set_height_value: a lambda function to set back the height value on the heightmap.
-  // param merge_operation: Choices are keep, replace, add, sub, min and max.
+  // param merge_method: Choices are keep, replace, add, sub, min, max and avg.
   static void applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap,
                                     const cv::Point2i& center, float z_bias,
                                     const cv::Mat& image,
                                     const std::function<float(int, int)>& get_height_value,
                                     const std::function<void(int, int, float)>& set_height_value,
-                                    const std::function<float(float, float)>& merge_operation);
+                                    const std::function<float(float, float)>& merge_method);
 };
 }  // namespace ow_dynamic_terrain
 

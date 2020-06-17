@@ -1,5 +1,5 @@
-#ifndef MERGE_OPERATIONS_H
-#define MERGE_OPERATIONS_H
+#ifndef MERGE_METHODS_H
+#define MERGE_METHODS_H
 
 #include <boost/optional/optional.hpp>  // TODO: replace with std::optional for c++17
 #include <functional>
@@ -8,9 +8,8 @@
 
 namespace ow_dynamic_terrain
 {
-// Predefined set of merge opertions used by TerrainModifier
-// First parameter is the current_value of the heightmap
-// Second parameter is the new_value
+// Predefined set of merge methods used by TerrainModifier
+// First parameter is the current_value of the heightmap, second parameter is the new_value.
 class MergeMethods
 {
 public:
@@ -32,4 +31,4 @@ private:
 };
 }  // namespace ow_dynamic_terrain
 
-#endif  // MERGE_OPERATIONS_H
+#endif  // MERGE_METHODS_H
