@@ -36,5 +36,41 @@
       <pose>1.0 1.0 1.5 0 0 0</pose>
     </include>
 
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_4</name>
+      <pose>-0.5 -0.5 1.5 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_4</name>
+      <pose>-1.0 -1.0 1.5 0 0 0</pose>
+    </include>
+
+        <include>
+      <uri>model://small_box</uri>
+      <name>small_box_6</name>
+      <pose>-0.5 0.5 1.5 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_7</name>
+      <pose>-1.0 1.0 1.5 0 0 0</pose>
+    </include>
+
+        <include>
+      <uri>model://small_box</uri>
+      <name>small_box_8</name>
+      <pose>0.5 -0.5 1.5 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_9</name>
+      <pose>1.0 -1.0 1.5 0 0 0</pose>
+    </include>
+
   </world>
 </sdf>
