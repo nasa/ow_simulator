@@ -78,10 +78,13 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify
   "{position: {x: 0,  y: 0, z: 0},
     outer_radius: 0.1,
     inner_radius: 0.001,
-    weight: -1.0}"
+    weight: -1.0,
+    merge_method: 'add' }"
 ```
 
-Depending on the weight sign the operation will either raise or lower the terrain around the provided position.
+Depending on the weight sign the operation will either raise or lower the terrain around the provided position.  
+The merge_method parameter decides how to merge generated values with height values of the terrain. Available choices:
+{ keep, replace, add, sub, min, max, avg }. If not specified default is: add.  
 
 ### Modify Terrain with Ellipse
 
@@ -95,10 +98,13 @@ rostopic pub /ow_dynamic_terrain/modify_terrain_ellipse ow_dynamic_terrain/modif
     outer_radius_b: 0.1,
     inner_radius_a: 0.001,
     inner_radius_b: 0.001,
-    weight: -1.0}"
+    weight: -1.0,
+    merge_method: 'min'}"
 ```
 
-Depending on the weight sign the operation will either raise or lower the terrain around the provided position.
+Depending on the weight sign the operation will either raise or lower the terrain around the provided position.  
+The merge_method parameter decides how to merge generated values with height values of the terrain. Available choices:
+{ keep, replace, add, sub, min, max, avg }. If not specified default is: add. 
 
 ### Modify Terrain with Patch
 

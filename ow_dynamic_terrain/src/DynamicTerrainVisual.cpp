@@ -84,8 +84,15 @@ private:
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
     TerrainModifier::modifyCircle(heightmap, msg,
-                                  [&terrain](long x, long y) { return terrain->getHeightAtPoint(x, y); },
-                                  [&terrain](long x, long y, float value) { terrain->setHeightAtPoint(x, y, value); });
+                                  [&terrain](long x, long y) {
+                                    auto value = terrain->getHeightAtPoint(x, y);
+                                    value += terrain->getPosition().z;
+                                    return value;
+                                  },
+                                  [&terrain](long x, long y, float value) {
+                                    value -= terrain->getPosition().z;
+                                    terrain->setHeightAtPoint(x, y, value);
+                                  });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);

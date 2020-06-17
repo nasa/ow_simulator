@@ -22,6 +22,7 @@ public:
   static const MergeMethod sub;
   static const MergeMethod min;
   static const MergeMethod max;
+  static const MergeMethod avg;
 
 public:
   static boost::optional<const MergeMethod&> mergeOperationFromString(const std::string& operation);

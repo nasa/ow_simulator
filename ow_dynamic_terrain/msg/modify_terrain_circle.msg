@@ -5,4 +5,5 @@ float32 inner_radius            # within inner radius the provided weight is app
                                 # interpolated between inner and outer radii
 float32 weight                  # weight of the operation on height values
 string merge_method             # decides how to merge generated values with height values of the terrain
-                                # current choices: keep, replace, add, sub, min, max. If not specified default is: add
+                                # available choices: { keep, replace, add, sub, min, max, avg }
+                                # If not specified default is: add
