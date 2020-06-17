@@ -10,15 +10,35 @@ import rospy
 import constants
 import math
 import copy
-from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
+
+
+def go_to_Z_coordinate(move_group,x_tr,y_tr,z_tr):
+  goal_pose = move_group.get_current_pose().pose
+  goal_pose.position.x = x_tr
+  goal_pose.position.y = y_tr
+  goal_pose.position.z = z_tr
+  move_group.set_pose_target(goal_pose)
+  plan = move_group.plan()
+  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+    return False
+  plan = move_group.go(wait=True)
+  move_group.stop()
+  move_group.clear_pose_targets()
+
+def change_joint_value(move_group,joint_name,target_value):
+  joint_goal = move_group.get_current_joint_values()
+  joint_goal[joint_name] = target_value
+  move_group.go(joint_goal, wait=True)
+  move_group.stop()
 
 def arg_parsing_lin(req):
   if req.use_defaults :
     # Default trenching values
     trench_x=1.5
     trench_y=0
-    trench_d=0.02
+    trench_d=0.01
     length=0.3
     delete_prev_traj=False
 
@@ -37,6 +57,24 @@ def arg_parsing_circ(req):
     trench_x=1.5
     trench_y=0
     trench_d=0.02
+    radial=False
+    delete_prev_traj=False
+
+  else :
+    trench_x=req.trench_x
+    trench_y=req.trench_y
+    trench_d=req.trench_d
+    radial=req.radial
+    delete_prev_traj=req.delete_prev_traj
+
+  return [req.use_defaults,trench_x,trench_y,trench_d,radial,delete_prev_traj]
+
+def arg_parsing_reset(req):
+  if req.use_defaults :
+    # Default trenching values
+    trench_x=1.5
+    trench_y=0
+    trench_d=0.02
     delete_prev_traj=False
 
   else :
@@ -46,7 +84,6 @@ def arg_parsing_circ(req):
     delete_prev_traj=req.delete_prev_traj
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
-
 
 def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   # Compute shoulder yaw angle to trench
@@ -72,19 +109,20 @@ def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   return True
 
 
-def plan_cartesian_path_lin(move_arm, length):
+def plan_cartesian_path_lin(move_arm, length, alpha):
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
-  wpose.position.x += length # Second move forward/backwards in (x)
+
+  wpose.position.x += length*math.cos(alpha)
+  wpose.position.y += length*math.sin(alpha)
+
   waypoints.append(copy.deepcopy(wpose))
 
   (plan, fraction) = move_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow
-                               0.01,        # eef_step
-                               0.0)         # jump_threshold
-  #ROS_INFO("tutorial", "Visualizing plan 4 (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-  # Note: We are just planning, not asking move_group to actually move the robot yet:
+                               0.01,        # end effector follow step (meters)
+                               0.0)         # jump threshold
   return plan, fraction
 
 def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
@@ -92,92 +130,74 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
     return False
+
   ## Rotate hand yaw to dig in
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_HAND_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_HAND_YAW,0.0)
 
   #rotate scoop
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_SCOOP_YAW] = math.pi/2
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_SCOOP_YAW,math.pi/2)
 
   #rotate dist pith to pre-trenching position.
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = -math.pi/2
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_DIST_PITCH,-math.pi/2)
 
   ## Once aligned to trench goal, place hand above trench middle point
-  goal_pose = move_limbs.get_current_pose().pose
-  goal_pose.position.x = x_tr
-  goal_pose.position.y = y_tr
-  goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  move_limbs.set_pose_target(goal_pose)
-  plan = move_limbs.plan()
-
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    return False
-
-  plan = move_limbs.go(wait=True)
-  move_limbs.stop()
-  move_limbs.clear_pose_targets()
+  z_tr = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
 
   #  rotate to dig in the ground
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 55.0/180.0*math.pi # scoop parallel to ground
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_DIST_PITCH,55.0/180.0*math.pi)
+
+  # determine linear trenching direction (alpha)
+  current_pose = move_arm.get_current_pose().pose
+  quaternion = [current_pose.orientation.x,current_pose.orientation.y,current_pose.orientation.z,current_pose.orientation.w]
+  current_euler = euler_from_quaternion(quaternion)
+  alpha = current_euler[2]
 
   # linear trenching
-  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha)
   move_arm.execute(cartesian_plan, wait=True)
   move_arm.stop()
 
   #  rotate to dig out
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = math.pi/2
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  change_joint_value(move_arm,constants.J_DIST_PITCH,math.pi/2)
 
   return True
 
-def dig_trench(move_arm,move_limbs,x_tr, y_tr, depth):
+
+def dig_trench(move_arm,move_limbs,x_tr,y_tr,depth,radial):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
     return False
 
-  # Once aligned to trench goal, place hand above trench middle point
-  goal_pose = move_limbs.get_current_pose().pose
-  goal_pose.position.x = x_tr
-  goal_pose.position.y = y_tr
-  goal_pose.position.z = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  move_limbs.set_pose_target(goal_pose)
-  plan = move_limbs.plan()
+  if radial==False:
 
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    return False
+    # Once aligned to trench goal, place hand above trench middle point
+    z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
 
-  plan = move_limbs.go(wait=True)
-  move_limbs.stop()
-  move_limbs.clear_pose_targets()
+    # Rotate hand perpendicular to radial direction
+    change_joint_value(move_arm,constants.J_HAND_YAW,-math.pi/2.2)
 
-  # Rotate hand yaw to dig in
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_HAND_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  else:
+    # Rotate hand so scoop is in middle point
+    change_joint_value(move_arm,constants.J_HAND_YAW,0.0)
 
-  # Insert here for linear trenching
+    # Rotate scoop
+    change_joint_value(move_arm,constants.J_SCOOP_YAW, math.pi/2)
 
-  # Rotate hand yaw to dig out
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_HAND_YAW] = -math.pi/2.2
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+    # Rotate dist so scoop is back
+    change_joint_value(move_arm,constants.J_DIST_PITCH,-19.0/54.0*math.pi)
+
+    # Once aligned to trench goal, place hand above trench middle point
+    z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
+
+    # Rotate dist to dig
+    joint_goal = move_arm.get_current_joint_values()
+    dist_now = joint_goal[3]
+    change_joint_value(move_arm,constants.J_DIST_PITCH,dist_now + 2*math.pi/3)
+
 
   # # Go back to safe position and align yaw to deliver
   # joint_goal = move_arm.get_current_joint_values()
