@@ -186,6 +186,7 @@ add_library(${PROJECT_NAME}_model
 )
 
 add_dependencies(${PROJECT_NAME}_model
+  ${${PROJECT_NAME}_shared_EXPORTED_TARGETS}
   ${${PROJECT_NAME}_model_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
@@ -200,6 +201,7 @@ add_library(${PROJECT_NAME}_visual
 )
 
 add_dependencies(${PROJECT_NAME}_visual
+  ${${PROJECT_NAME}_shared_EXPORTED_TARGETS}
   ${${PROJECT_NAME}_visual_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
