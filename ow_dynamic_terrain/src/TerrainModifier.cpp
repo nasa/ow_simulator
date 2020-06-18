@@ -103,7 +103,7 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
       TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
                             heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
 
-  if (ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
+  if (!ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
   {
     image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
     image = OpenCV_Util::rotateImage(image, msg->orientation);
@@ -153,7 +153,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   }
 
   auto image = image_handle->image;
-  if (ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
+  if (!ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
   {
     image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
     image = OpenCV_Util::rotateImage(image, msg->orientation);
