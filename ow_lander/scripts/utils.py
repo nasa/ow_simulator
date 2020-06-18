@@ -27,7 +27,7 @@ def check_arguments(tx, ty, td):
 
 def start_traj_recording(delete_prev_traj,bagname):
   # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
-  if delete_prev_traj == True and bagname[0:4] != "move":
+  if delete_prev_traj == True:
     os.system("rm ~/.ros/*.csv")
 
   # Start rosbag recording
