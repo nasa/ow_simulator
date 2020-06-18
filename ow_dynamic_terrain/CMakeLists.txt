@@ -250,10 +250,10 @@ install(DIRECTORY
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_dynamic_terrain.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}_test test/test_MergeMethods.cpp)
+  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME}_shared)
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
