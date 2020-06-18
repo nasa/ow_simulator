@@ -24,10 +24,10 @@ public:
   static const MergeMethod avg;
 
 public:
-  static boost::optional<const MergeMethod&> mergeOperationFromString(const std::string& operation);
+  static boost::optional<const MergeMethod&> mergeMethodFromString(const std::string& method_name);
 
 private:
-  static const std::unordered_map<std::string, const MergeMethod&> m_mapOperationNameToOperationFunction;
+  static const std::unordered_map<std::string, const MergeMethod&> m_mergeMethodByNameMap;
 };
 }  // namespace ow_dynamic_terrain
 
