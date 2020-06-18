@@ -56,7 +56,8 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image =
       TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, *merge_method);
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
+                        *merge_method);
 
   gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -102,13 +103,14 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
       TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
                             heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
 
-  if (msg->orientation != 0.0f)  // Avoid performing the rotation if orientation is exactly zero
+  if (ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
   {
     image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, *merge_method);
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
+                        *merge_method);
 
   gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -151,13 +153,14 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   }
 
   auto image = image_handle->image;
-  if (msg->orientation != 0.0f)  // Avoid performing the rotation if orientation is exactly zero
+  if (ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
   {
     image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, get_height_value, set_height_value, *merge_method);
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, false, get_height_value, set_height_value,
+                        *merge_method);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
@@ -190,7 +193,8 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   return image_handle;
 }
 
-void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias, const Mat& image,
+void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias,
+                                            const Mat& image, bool skip_zeros,
                                             const function<float(int, int)>& get_height_value,
                                             const function<void(int, int, float)>& set_height_value,
                                             const function<float(float, float)>& merge_method)
@@ -212,9 +216,10 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
   for (auto y = top; y <= bottom; ++y)
     for (auto x = left; x <= right; ++x)
     {
-      auto row = y - top;
-      auto col = x - left;
-      auto new_height = merge_method(get_height_value(x, y), image.at<float>(row, col) + z_bias);
+      auto pixel_value = image.at<float>(y - top, x - left);
+      if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
+        continue;
+      auto new_height = merge_method(get_height_value(x, y), pixel_value + z_bias);
       set_height_value(x, y, new_height);
     }
 }
