@@ -74,7 +74,7 @@ modify the terrain
 Then you may perform a terrain operation by submitting a rostopic message as follows:
 
 ```bash
-rostopic pub /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify_terrain_circle \
+rostopic pub --once /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain/modify_terrain_circle \
   "{position: {x: 0,  y: 0, z: 2},
     outer_radius: 0.1,
     inner_radius: 0.001,
@@ -91,7 +91,7 @@ The merge_method parameter decides how to merge generated values with height val
 You may perform a terrain operation by submitting a rostopic message as follows:
 
 ```bash
-rostopic pub /ow_dynamic_terrain/modify_terrain_ellipse ow_dynamic_terrain/modify_terrain_ellipse \
+rostopic pub --once /ow_dynamic_terrain/modify_terrain_ellipse ow_dynamic_terrain/modify_terrain_ellipse \
   "{position: {x: 0,  y: 0, z: 2},
     orientation: 30.0,
     outer_radius_a: 0.2,
