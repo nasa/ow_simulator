@@ -6,7 +6,7 @@ using std::string;
 using std::unordered_map;
 using namespace ow_dynamic_terrain;
 
-const unordered_map<string, const MergeMethods::MergeMethod &> MergeMethods::m_mergeMethodByNameMap = {
+const unordered_map<string, const MergeMethods::MergeMethod &> MergeMethods::m_merge_method_map = {
   { "keep", MergeMethods::keep }, { "replace", MergeMethods::replace }, { "add", MergeMethods::add },
   { "sub", MergeMethods::sub },   { "min", MergeMethods::min },         { "max", MergeMethods::max },
   { "avg", MergeMethods::avg }
@@ -38,8 +38,8 @@ const MergeMethods::MergeMethod MergeMethods::avg = [](float current_value, floa
 
 optional<const MergeMethods::MergeMethod &> MergeMethods::mergeMethodFromString(const string &method_name)
 {
-  auto it = m_mergeMethodByNameMap.find(method_name);
-  if (it == m_mergeMethodByNameMap.end())
+  auto it = m_merge_method_map.find(method_name);
+  if (it == m_merge_method_map.end())
     return optional<const MergeMethods::MergeMethod &>();
   return it->second;
 }

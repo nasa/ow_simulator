@@ -10,8 +10,8 @@ Mat OpenCV_Util::expandImage(const Mat& image)
   auto center = Point2f(0.5f * image.size().width, 0.5f * image.size().height);
   auto radius = sqrtf(center.x * center.x + center.y * center.y);
   radius = ceilf(radius);
-  auto h_add = int(radius - center.x);
-  auto v_add = int(radius - center.y);
+  auto h_add = static_cast<int>(radius - center.x);
+  auto v_add = static_cast<int>(radius - center.y);
   auto result = Mat(2 * radius, 2 * radius, image.type());
   copyMakeBorder(image, result, v_add, v_add, h_add, h_add, BORDER_CONSTANT, Scalar::all(0.0));
   return result;

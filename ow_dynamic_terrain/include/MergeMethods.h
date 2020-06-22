@@ -27,7 +27,7 @@ public:
   static boost::optional<const MergeMethod&> mergeMethodFromString(const std::string& method_name);
 
 private:
-  static const std::unordered_map<std::string, const MergeMethod&> m_mergeMethodByNameMap;
+  static const std::unordered_map<std::string, const MergeMethod&> m_merge_method_map;
 };
 }  // namespace ow_dynamic_terrain
 
