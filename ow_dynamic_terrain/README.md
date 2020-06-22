@@ -82,9 +82,14 @@ rostopic pub --once /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain
     merge_method: 'min' }"
 ```
 
+The values of x and y set the center of the circle, the z value defines the elevation of the operation.  
 Depending on the weight sign the operation will either raise or lower the terrain around the provided position.  
 The merge_method parameter decides how to merge generated values with height values of the terrain. Available choices:
 { keep, replace, add, sub, min, max, avg }. If not specified default is: add.  
+
+In the above example, with z value set to 2.0 and weight is -1.0 this would produce a hemisphere with lowest value of
+2.0 + (-1.0) = 1.0. Since merged_method is set to 'min', if current height values of the terrain at point (x = 0, y = 0)
+exceed 1.0 they will be replaced by 1.0. Consult the documentation for a more lengthy explanation.  
 
 ### Modify Terrain with Ellipse
 
