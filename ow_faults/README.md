@@ -18,7 +18,7 @@ the faults node such that a message is emitted on the `/faults/update_parameters
 topic and `rqt_reconfigure` is updated with your new value.
 
 ### rqt
-In rqt, look at the `faults` section in the `rqt_reconfigure` widget. There
+In rqt, look at the `faults` section in the `Dynamic Reconfigure` widget. There
 you can see and set all faults available in OceanWATERS.
 
 ### Command line
