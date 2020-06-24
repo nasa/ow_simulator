@@ -64,7 +64,7 @@ def handle_move_guarded(req):
     # Safe move, monitoring torques
     location = "move_guarded_traj_"
     bagname = location + currentDT
-    utils.start_traj_recording(args[1], bagname)
+    utils.start_traj_recording(False, bagname)
     result = activity_move_guarded.move_guarded(interface.move_arm,interface.move_limbs,args)
     utils.stop_traj_recording(result, bagname)
 
