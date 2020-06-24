@@ -1,4 +1,5 @@
 #include <cmath>
+#include <opencv2/opencv.hpp>
 #include "OpenCV_Util.h"
 
 using namespace std;
@@ -33,8 +34,8 @@ Mat OpenCV_Util::scaleImage_32FC1_To_8UC1(const Mat& image)
   minMaxLoc(image, &min_intensity, &max_intensity);
   auto result = Mat(image.size(), CV_8UC1);
   auto z_scale = 255.0 / (max_intensity - min_intensity);
-  
-  result.forEach<uchar>([&image, min_intensity, z_scale](uchar &pixel_value, const int pixel_index[]) {
+
+  result.forEach<uchar>([&image, min_intensity, z_scale](uchar& pixel_value, const int pixel_index[]) {
     pixel_value = lround(z_scale * (image.at<float>(pixel_index) - min_intensity));
   });
 
