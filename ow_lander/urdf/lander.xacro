@@ -159,7 +159,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" lower="-1.8" upper="1.8"/>
+    <limit effort="1000.0" velocity="0.2" lower="-1.8" upper="1.8"/>
   </joint>
   <transmission name="shou_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -235,7 +235,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" lower="0.05" upper="2.2"/>
+    <limit effort="1000.0" velocity="0.2" lower="0.05" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -311,7 +311,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="prox_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -387,7 +387,7 @@
     <axis
       xyz="0 0 1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="dist_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -475,7 +475,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="hand_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -579,7 +579,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="scoop_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -726,7 +726,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="ant_pan_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -802,7 +802,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="ant_tilt_transmission">
     <type>transmission_interface/SimpleTransmission</type>

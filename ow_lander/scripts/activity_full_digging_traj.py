@@ -238,3 +238,11 @@ def go_home(move_arm):
   joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
+
+
+def go_to_unstowed(move_arm):
+
+  change_joint_value(move_arm,constants.J_SHOU_YAW,0.0)
+  move_to_pre_trench_configuration(move_arm, 2.0, 0.0)
+        
+  return True

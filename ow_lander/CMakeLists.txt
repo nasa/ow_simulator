@@ -20,6 +20,7 @@ add_service_files(
   DigTrench.srv
   SampleDelivery.srv
   SawMotionPlanning.srv
+  MoveUnstowed.srv
 )
 
 generate_messages(
@@ -45,4 +46,3 @@ foreach(dir config launch meshes urdf)
         install(DIRECTORY ${dir}/
                 DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
 endforeach(dir)
-
