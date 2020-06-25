@@ -20,13 +20,15 @@ class ModifyTerrainPatch(unittest.TestCase):
         w = image.shape[1]
         for y in range(0, h):
             for x in range(0, w):
-                self.assertAlmostEqual(image[y, x], value, msg="pixel(x = %d, y = %d) = %d != %d" % (x, y, image[y, x], value))
+                self.assertAlmostEqual(image[y, x], value, msg="pixel(x = %d, y = %d) = %d != %d" % (
+                    x, y, image[y, x], value))
 
     def test_scale_image_intensities(self):
-        image = np.ones((3,3,1), np.float32)
+        image = np.ones((3, 3, 1), np.float32)
         self.check_image_equal_to_value(image, 1.0)
         scale_image_intensities(image, 2.0)
         self.check_image_equal_to_value(image, 2.0)
+
 
 if __name__ == '__main__':
     import rosunit
