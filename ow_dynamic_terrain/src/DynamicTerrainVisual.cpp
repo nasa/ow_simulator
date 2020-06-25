@@ -49,7 +49,7 @@ public:
 private:
   Heightmap* getHeightmap()
   {
-    auto scene = get_scene();
+    const auto& scene = get_scene();
     if (!scene)
     {
       gzerr << "DynamicTerrainVisual: Couldn't acquire scene!" << endl;

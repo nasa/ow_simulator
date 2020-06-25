@@ -10,9 +10,17 @@
 #include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
+#if GAZEBO_MAJOR_VERSION < 9 || (GAZEBO_MAJOR_VERSION == 9 && GAZEBO_MINOR_VERSION < 13)
+#error "Gazebo 9.13 or higher is required for this module"
+#endif
+
 using namespace std;
 using namespace gazebo;
 using namespace physics;
+
+// TODO (optimization): Instead of performing EnableAllModels, one could probably limit model enabling operation to the
+// the area affected by the terrain modify operation. For our purpose, performing EnableAllModels is not going to have
+// a pentality on our system as the number of scene objects is very low.
 
 namespace ow_dynamic_terrain
 {
@@ -52,7 +60,7 @@ public:
 private:
   rendering::Heightmap* getHeightmap()
   {
-    auto scene = rendering::get_scene();
+    const auto& scene = rendering::get_scene();
     if (!scene)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire scene!" << endl;
@@ -78,7 +86,7 @@ private:
       return nullptr;
     }
 
-    auto links = m_model->GetLinks();
+    auto& links = m_model->GetLinks();
 
     if (links.size() == 0)
     {
@@ -86,9 +94,9 @@ private:
       return nullptr;
     }
 
-    auto link0 = links[0];
+    auto& link0 = links[0];
 
-    auto collisions = link0->GetCollisions();
+    const auto& collisions = link0->GetCollisions();
 
     if (collisions.size() == 0)
     {
@@ -96,7 +104,7 @@ private:
       return nullptr;
     }
 
-    auto collision = collisions[0];
+    auto& collision = collisions[0];
     if (collision == nullptr)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << endl;
@@ -152,11 +160,11 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyCircle(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:
@@ -176,11 +184,11 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyEllipse(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:
@@ -200,11 +208,11 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyPatch(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:

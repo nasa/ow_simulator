@@ -256,4 +256,6 @@ if (CATKIN_ENABLE_TESTING)
 endif()
 
 ## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test DEPENDENCIES ${${PROJECT_NAME}_EXPORTED_TARGETS})
+endif()
