@@ -1,5 +1,5 @@
 #include <cmath>
-#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include "OpenCV_Util.h"
 
 using namespace std;
