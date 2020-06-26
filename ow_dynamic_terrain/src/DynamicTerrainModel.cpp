@@ -29,30 +29,32 @@ class DynamicTerrainModel : public ModelPlugin
 public:
   void Load(ModelPtr model, sdf::ElementPtr /*sdf*/) override
   {
+    GZ_ASSERT(model != nullptr, "DynamicTerrainModel: model can't be null!");
+
+    m_model = model;
+
     if (!ros::isInitialized())
     {
       gzerr << "DynamicTerrainModel: ROS not initilized!" << endl;
       return;
     }
 
-    m_model = model;
-
     m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
     m_ros_node->setCallbackQueue(&m_ros_queue);
 
     m_ros_subscriber_circle = m_ros_node->subscribe<modify_terrain_circle>(
         "/ow_dynamic_terrain/modify_terrain_circle", 10,
-        [this](const modify_terrain_circle::ConstPtr& msg){ this->onModifyTerrainCircleMsg(msg); });
+        [this](const modify_terrain_circle::ConstPtr& msg) { this->onModifyTerrainCircleMsg(msg); });
 
     m_ros_subscriber_ellipse = m_ros_node->subscribe<modify_terrain_ellipse>(
         "/ow_dynamic_terrain/modify_terrain_ellipse", 10,
-        [this](const modify_terrain_ellipse::ConstPtr& msg){ this->onModifyTerrainEllipseMsg(msg); });
+        [this](const modify_terrain_ellipse::ConstPtr& msg) { this->onModifyTerrainEllipseMsg(msg); });
 
     m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
         "/ow_dynamic_terrain/modify_terrain_patch", 10,
-        [this](const modify_terrain_patch::ConstPtr& msg){ this->onModifyTerrainPatchMsg(msg); });
+        [this](const modify_terrain_patch::ConstPtr& msg) { this->onModifyTerrainPatchMsg(msg); });
 
-    m_on_update_connection = event::Events::ConnectPostRender([this](){ this->onUpdate(); });
+    m_on_update_connection = event::Events::ConnectPostRender([this]() { this->onUpdate(); });
 
     gzlog << "DynamicTerrainModel: successfully loaded!" << endl;
   }
@@ -80,12 +82,6 @@ private:
 private:
   HeightmapShapePtr getHeightmapShape()
   {
-    if (m_model == nullptr)
-    {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << endl;
-      return nullptr;
-    }
-
     auto& links = m_model->GetLinks();
 
     if (links.size() == 0)
