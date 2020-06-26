@@ -130,18 +130,32 @@ rostopic pub --once /ow_dynamic_terrain/modify_terrain_ellipse ow_dynamic_terrai
     merge_method: 'min'}"
 ```
 
-The parameters used here are similar to the ones used in circle operation with the exception of *outer_radius_a*,
- *outer_radius_b*, *inner_radius_a*, *inner_radius_b*. These parameters correspond to the two radii of an ellipse (a, b).
- The weight is applied at 100% within the inner ellipse, 0% outside the outer ellipse, In the distance between the outer
- ellipse and inner one, the applied weight fades out quadratically.  
+The parameters used here are mostly the same as the ones described in [Modify Terrain with Circle](#modify-terrain-with-circle)
+ section with the exception of *outer_radius_a*, *outer_radius_b*, *inner_radius_a*, *inner_radius_b*. These parameters
+ correspond to the two radii of an ellipse (a, b). The weight is applied at 100% within the inner ellipse, 0% outside the
+ outer ellipse, In the distance between the outer ellipse and inner one, the applied weight fades out quadratically.  
 
 Additionally, an ellipse can have an orientation parameter (measured in degrees) that would rotate the ellipse around
  its center.
 
 ### Modify Terrain with Patch
 
-You may use the provide modify_terrain_patch helper utility to submit a tiff image to modify the terrain as shown below:
+You may use the provide modify_terrain_patch helper utility to submit a tiff image to modify the terrain as shown in the example below:
 
+```bash
+roscd ow_dynamic_terrain
+rosrun ow_dynamic_terrain modify_terrain_patch_pub.py misc/first_pass_heightmap.tif
+```
+The example adds the supplied first_pass_heightmap.tif example to the loaded terrain around the origin point.  
+  
+The following example applies only the height values of the image that exceeds the current elevation values of the terrain
+ which for the europa demo sets at ~1.5 near the center:
+```bash
+roscd ow_dynamic_terrain
+rosrun ow_dynamic_terrain modify_terrain_patch_pub.py --position_z 1.5 --merge_method max misc/first_pass_heightmap.tif
+```
+
+Full options of the modify_terrain_patch_pub program:
 ```bash
 rosrun ow_dynamic_terrain modify_terrain_patch_pub.py [-h]
                                    [--position_x POSITION_X]
@@ -152,8 +166,6 @@ rosrun ow_dynamic_terrain modify_terrain_patch_pub.py [-h]
                                    [--merge_method MERGE_METHOD]
                                    image
 ```
-
-
 
 The listing below explains used parameter:
 * *image* (required): accepts a path to a valid image file.
