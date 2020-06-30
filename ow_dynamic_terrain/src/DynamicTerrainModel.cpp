@@ -160,6 +160,7 @@ private:
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 
+    // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
   }
 
@@ -184,6 +185,7 @@ private:
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 
+    // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
   }
 
@@ -208,6 +210,7 @@ private:
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 
+    // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
   }
 

@@ -83,7 +83,7 @@ rostopic pub --once /ow_dynamic_terrain/modify_terrain_circle ow_dynamic_terrain
     merge_method: 'min' }"
 ```
 
-The listing below explains used parameter:
+The listing below explains the message parameters:
 
 * *position*: is in reference to gazebo world coordinates.
   * The x and y values of the position define the center of the circle.
@@ -91,9 +91,9 @@ The listing below explains used parameter:
   equivalent to (z + effective_weight).
 * *outer_radius*: The hard limit of the operation, beyond that the operation has no effect.
 * *inner_radius*: The inner radius is where the provided weight is full realized, beyond the inner radius the weight
-fades down up to the outer distance.
+fades down up to the outer distance at a quadratic rate. inner_radius value may not exceed outer_radius.
 * *weight*: Depending on the weight sign the operation will either raise or lower the terrain around the provided
-position (inner_radius may not be larger than outer_radius).
+ position.
 * *merge_method*: The merge_method parameter decides how to merge generated values with height values of the terrain; 
 available choices:
   * *keep*: current_height_value is left unchanged.
@@ -108,7 +108,7 @@ available choices:
 In most scenarios, you would want to set position.z parameter to zero when using either 'add' and 'sub' as a merge_method
  such that additions and subtractions and subtractions are applied as offsets to the current height of the terrain.
  Meanwhile, for 'min', 'max' and 'avg' you would want to set the z value of the position parameter to match the elevation
- of where you want to have the generated hemisphere position whihch will eventually intersect at that level with the terrain.
+ of where you want to have the generated hemisphere position which will eventually intersect at that level with the terrain.
 
 In the above example, with z value set to 2.0 and weight is -1.0 this would produce a hemisphere with lowest value of 
 2.0 + (-1.0) = 1.0. Since merged_method is set to 'min', if current height values of the terrain at point (x = 0, y = 0)
