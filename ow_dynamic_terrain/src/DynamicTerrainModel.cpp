@@ -10,9 +10,17 @@
 #include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
 
+#if GAZEBO_MAJOR_VERSION < 9 || (GAZEBO_MAJOR_VERSION == 9 && GAZEBO_MINOR_VERSION < 13)
+#error "Gazebo 9.13 or higher is required for this module"
+#endif
+
 using namespace std;
 using namespace gazebo;
 using namespace physics;
+
+// TODO (optimization): Instead of performing EnableAllModels, one could probably limit model enabling operation to the
+// the area affected by the terrain modify operation. For our purpose, performing EnableAllModels is not going to have
+// a pentality on our system as the number of scene objects is very low.
 
 namespace ow_dynamic_terrain
 {
@@ -21,30 +29,32 @@ class DynamicTerrainModel : public ModelPlugin
 public:
   void Load(ModelPtr model, sdf::ElementPtr /*sdf*/) override
   {
+    GZ_ASSERT(model != nullptr, "DynamicTerrainModel: model can't be null!");
+
+    m_model = model;
+
     if (!ros::isInitialized())
     {
       gzerr << "DynamicTerrainModel: ROS not initilized!" << endl;
       return;
     }
 
-    m_model = model;
-
     m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
     m_ros_node->setCallbackQueue(&m_ros_queue);
 
     m_ros_subscriber_circle = m_ros_node->subscribe<modify_terrain_circle>(
         "/ow_dynamic_terrain/modify_terrain_circle", 10,
-        boost::bind(&DynamicTerrainModel::onModifyTerrainCircleMsg, this, _1));
+        [this](const modify_terrain_circle::ConstPtr& msg) { this->onModifyTerrainCircleMsg(msg); });
 
     m_ros_subscriber_ellipse = m_ros_node->subscribe<modify_terrain_ellipse>(
         "/ow_dynamic_terrain/modify_terrain_ellipse", 10,
-        boost::bind(&DynamicTerrainModel::onModifyTerrainEllipseMsg, this, _1));
+        [this](const modify_terrain_ellipse::ConstPtr& msg) { this->onModifyTerrainEllipseMsg(msg); });
 
     m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
         "/ow_dynamic_terrain/modify_terrain_patch", 10,
-        boost::bind(&DynamicTerrainModel::onModifyTerrainPatchMsg, this, _1));
+        [this](const modify_terrain_patch::ConstPtr& msg) { this->onModifyTerrainPatchMsg(msg); });
 
-    m_on_update_connection = event::Events::ConnectPostRender(bind(&DynamicTerrainModel::onUpdate, this));
+    m_on_update_connection = event::Events::ConnectPostRender([this]() { this->onUpdate(); });
 
     gzlog << "DynamicTerrainModel: successfully loaded!" << endl;
   }
@@ -52,7 +62,7 @@ public:
 private:
   rendering::Heightmap* getHeightmap()
   {
-    auto scene = rendering::get_scene();
+    const auto& scene = rendering::get_scene();
     if (!scene)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire scene!" << endl;
@@ -72,13 +82,7 @@ private:
 private:
   HeightmapShapePtr getHeightmapShape()
   {
-    if (m_model == nullptr)
-    {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model!" << endl;
-      return nullptr;
-    }
-
-    auto links = m_model->GetLinks();
+    auto& links = m_model->GetLinks();
 
     if (links.size() == 0)
     {
@@ -86,9 +90,9 @@ private:
       return nullptr;
     }
 
-    auto link0 = links[0];
+    auto& link0 = links[0];
 
-    auto collisions = link0->GetCollisions();
+    const auto& collisions = link0->GetCollisions();
 
     if (collisions.size() == 0)
     {
@@ -96,7 +100,7 @@ private:
       return nullptr;
     }
 
-    auto collision = collisions[0];
+    auto& collision = collisions[0];
     if (collision == nullptr)
     {
       gzerr << "DynamicTerrainModel: Couldn't acquire heightmap model collision!" << endl;
@@ -152,11 +156,12 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyCircle(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    // Re-enable physics updates for models that may have entered a standstill state
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:
@@ -176,11 +181,12 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyEllipse(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    // Re-enable physics updates for models that may have entered a standstill state
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:
@@ -200,11 +206,12 @@ private:
       return;
     }
 
-#if GAZEBO_MAJOR_VERSION >= 9 && GAZEBO_MINOR_VERSION > 12
     TerrainModifier::modifyPatch(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-#endif
+
+    // Re-enable physics updates for models that may have entered a standstill state
+    m_model->GetWorld()->EnableAllModels();
   }
 
 private:
