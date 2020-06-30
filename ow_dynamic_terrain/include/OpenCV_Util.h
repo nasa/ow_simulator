@@ -1,7 +1,7 @@
 #ifndef OPENCV_UTIL_H
 #define OPENCV_UTIL_H
 
-#include <cv_bridge/cv_bridge.h>
+#include <opencv2/core/mat.hpp>
 
 // TODO (optimization): provide an optional parameter to rotateImage in which it speicifies if the rotation should not
 // lose details. In case this is selected the function can internally return an expanded image with the exact required
