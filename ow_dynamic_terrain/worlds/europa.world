@@ -44,7 +44,7 @@
 
     <include>
       <uri>model://small_box</uri>
-      <name>small_box_4</name>
+      <name>small_box_5</name>
       <pose>-1.0 -1.0 1.5 0 0 0</pose>
     </include>
 
