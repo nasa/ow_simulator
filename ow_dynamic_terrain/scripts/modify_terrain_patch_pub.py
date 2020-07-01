@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+
+# The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+# Research and Simulation can be found in README.md in the root directory of
+# this repository.
+
 import os, argparse, time
 import rospy, rospkg
 import cv2

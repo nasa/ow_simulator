@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
+
+<!-- The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+     Research and Simulation can be found in README.md in the root directory of
+     this repository. -->
+
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="stereo_camera">
 
   <xacro:property name="Camera01Name"       value="StereoCamera" /> 

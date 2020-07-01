@@ -1,3 +1,7 @@
+The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+Research and Simulation can be found in README.md in the root directory of
+this repository.
+
 ow_lander
 =========
 Contains the lander semantic and kinematic descriptions (SRDF and URDF), the

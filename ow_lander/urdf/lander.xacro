@@ -1,3 +1,9 @@
+<?xml version="1.0"?>
+
+<!-- The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+     Research and Simulation can be found in README.md in the root directory of
+     this repository. -->
+
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
   <!-- A non-standard bitmask to prevent the lander from rendering into the irradiance environment map -->
   <xacro:property name="vis_mask" value="0x00010000" />
