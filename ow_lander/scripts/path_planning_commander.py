@@ -203,7 +203,6 @@ def handle_unstowed(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(False, bagname)
-
     result = activity_full_digging_traj.go_to_unstowed(interface.move_arm)
     utils.stop_traj_recording(result, bagname)
 
