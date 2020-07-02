@@ -193,7 +193,7 @@ def handle_reset(req):
 
 
 # === SERVICE ACTIVITIES - Unstowed=============================
-def handle_unstowed(req):
+def handle_unstow(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Moving to unstowed configuration..."
@@ -203,7 +203,7 @@ def handle_unstowed(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(False, bagname)
-    result = activity_full_digging_traj.go_to_unstowed(interface.move_arm)
+    result = activity_full_digging_traj.unstow(interface.move_arm)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -259,8 +259,7 @@ def main():
   move_reset_srv = rospy.Service('start_reset_session', MoveReset, handle_reset)
   move_reset_srv = rospy.Service('start_sample_delivery', SampleDelivery, handle_sample_delivery)
   saw_motion_plan_srv = rospy.Service('start_saw_motion_planning',SawMotionPlanning, handle_saw_motion_planning)
-  move_unstowed_srv = rospy.Service('start_unstowed_session', MoveUnstowed, handle_unstowed)
-
+  unstow_srv = rospy.Service('start_unstow_session', Unstow, handle_unstow)
 
   rospy.spin()
 

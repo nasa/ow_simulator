@@ -20,7 +20,7 @@ add_service_files(
   DigTrench.srv
   SampleDelivery.srv
   SawMotionPlanning.srv
-  MoveUnstowed.srv
+  Unstow.srv
 )
 
 generate_messages(
