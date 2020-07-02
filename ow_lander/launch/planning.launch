@@ -2,12 +2,12 @@
 <launch>
 
   <!-- Stowed arm joint positions -->
-  <arg name="stowed_shou_yaw" default="-1.5" />
-  <arg name="stowed_shou_pitch" default="1.5708" />
-  <arg name="stowed_prox_pitch" default="-2.75" />
-  <arg name="stowed_dist_pitch" default="2.9" />
-  <arg name="stowed_hand_yaw" default="0.0" />
-  <arg name="stowed_scoop_yaw" default="0.0" />
+  <arg name="stowed_shou_yaw" default="0" />
+  <arg name="stowed_shou_pitch" default="0" />
+  <arg name="stowed_prox_pitch" default="0" />
+  <arg name="stowed_dist_pitch" default="0" />
+  <arg name="stowed_hand_yaw" default="0" />
+  <arg name="stowed_scoop_yaw" default="0" />
 
   <group ns="planning">
     <arg name="debug" default="false" />
