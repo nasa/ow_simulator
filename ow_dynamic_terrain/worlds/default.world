@@ -29,6 +29,24 @@
       <pose>310 -275 2 0 0 0</pose>
     </include>
 
+        <include>
+      <uri>model://small_box</uri>
+      <name>small_box_1</name>
+      <pose>310.0 -275.0 10.5 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_2</name>
+      <pose>310.5 -275.5 10.5 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://small_box</uri>
+      <name>small_box_3</name>
+      <pose>310.0 -275.0 10.5 0 0 0</pose>
+    </include>
+
   </world>
 
 </sdf>

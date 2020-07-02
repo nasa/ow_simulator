@@ -1,6 +1,10 @@
 #include <OgreVector3.h>
 #include <sensor_msgs/image_encodings.h>
+#include <gazebo/common/Assert.hh>
 #include <gazebo/common/Console.hh>
+#include "MergeMethods.h"
+#include "OpenCV_Util.h"
+#include "TerrainBrush.h"
 #include "TerrainModifier.h"
 
 using namespace std;
@@ -9,26 +13,19 @@ using namespace gazebo;
 using namespace rendering;
 using namespace geometry_msgs;
 using namespace sensor_msgs;
+using namespace cv;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
 void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
-                                   function<float(long, long)> get_height_value,
-                                   function<void(long, long, float)> set_height_value)
+                                   const function<float(int, int)>& get_height_value,
+                                   const function<void(int, int, float)>& set_height_value)
 {
-  if (msg->operation != "lower" && msg->operation != "raise")
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+
+  if (msg->outer_radius <= 0.0f)
   {
-    gzerr << "DynamicTerrain: Unknown terrain operation [" << msg->operation << "]" << endl;
-    return;
-  }
-
-  auto raise_operation = msg->operation == "raise";  // otherwise it is lower
-
-  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-
-  if (!terrain)
-  {
-    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    gzerr << "DynamicTerrain: outer_radius has to be a positive number!" << endl;
     return;
   }
 
@@ -38,45 +35,13 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
     return;
   }
 
-  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
-  Vector3 heightmap_position;
-  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+  auto merge_method = MergeMethods::mergeMethodFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  if (!merge_method)
+  {
+    gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
+    return;
+  }
 
-  auto size = static_cast<int>(terrain->getSize());
-  auto left = max(int((heightmap_position.x - msg->outer_radius) * size), 0);
-  auto top = max(int((heightmap_position.y - msg->outer_radius) * size), 0);
-  auto right = min(int((heightmap_position.x + msg->outer_radius) * size), size);
-  auto bottom = min(int((heightmap_position.y + msg->outer_radius) * size), size);
-
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
-    {
-      auto ts_x_dist = x / static_cast<double>(size) - heightmap_position.x;
-      auto ts_y_dist = y / static_cast<double>(size) - heightmap_position.y;
-      auto dist = sqrt(ts_y_dist * ts_y_dist + ts_x_dist * ts_x_dist);
-
-      auto inner_weight = 1.0;
-      if (dist > msg->inner_radius)
-      {
-        inner_weight =
-            ignition::math::clamp((dist - msg->inner_radius) / (msg->outer_radius - msg->inner_radius), 0.0, 1.0);
-        inner_weight = 1.0 - (inner_weight * inner_weight);
-      }
-
-      auto added_height = inner_weight * msg->weight;
-      auto new_height = get_height_value(x, y) + (raise_operation ? +added_height : -added_height);
-
-      set_height_value(x, y, new_height);
-    }
-
-  gzlog << "DynamicTerrain: circle " << msg->operation << " operation at (" << msg->position.x << ", "
-        << msg->position.y << ")" << endl;
-}
-
-void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
-                                  function<float(long, long)> get_height_value,
-                                  function<void(long, long, float)> set_height_value)
-{
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (!terrain)
@@ -85,11 +50,100 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     return;
   }
 
-  if (msg->patch.encoding != "32FC1" && msg->patch.encoding != "64FC1")
+  auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
+
+  auto heightmap_size = terrain->getSize();
+  auto image =
+      TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
+
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
+                        *merge_method);
+
+  gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+        << endl;
+}
+
+void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
+                                    const function<float(int, int)>& get_height_value,
+                                    const function<void(int, int, float)>& set_height_value)
+{
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+
+  if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
-    gzerr << "DynamicTerrain: Only {32FC1, 64FC1} formats are supported" << endl;
+    gzerr << "DynamicTerrain: outer_radius a & b has to be positive!" << endl;
     return;
   }
+
+  if (msg->inner_radius_a > msg->outer_radius_a || msg->inner_radius_b > msg->outer_radius_b)
+  {
+    gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
+    return;
+  }
+
+  auto merge_method = MergeMethods::mergeMethodFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  if (!merge_method)
+  {
+    gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
+    return;
+  }
+
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (!terrain)
+  {
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    return;
+  }
+
+  auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
+
+  auto heightmap_size = terrain->getSize();
+  auto image =
+      TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
+                            heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
+
+  if (!ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
+  {
+    image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
+    image = OpenCV_Util::rotateImage(image, msg->orientation);
+  }
+
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
+                        *merge_method);
+
+  gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+        << endl;
+}
+
+void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
+                                  const function<float(int, int)>& get_height_value,
+                                  const function<void(int, int, float)>& set_height_value)
+{
+  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+
+  auto merge_method = MergeMethods::mergeMethodFromString(msg->merge_method != "" ? msg->merge_method : "add");
+  if (!merge_method)
+  {
+    gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
+    return;
+  }
+
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (!terrain)
+  {
+    gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
+    return;
+  }
+
+  if (msg->patch.encoding != "32FC1")
+  {
+    gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
+    return;
+  }
+
+  auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
 
   auto image_handle = TerrainModifier::importImageToOpenCV(msg);
   if (image_handle == nullptr)
@@ -98,32 +152,32 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     return;
   }
 
-  auto _terrain_position = Vector3(msg->position.x, msg->position.y, 0);
-  Vector3 heightmap_position;
-  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+  auto image = image_handle->image;
+  if (!ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
+  {
+    image = OpenCV_Util::expandImage(image);  // expand the image to hold rotation output with no loss
+    image = OpenCV_Util::rotateImage(image, msg->orientation);
+  }
 
-  auto size = static_cast<int>(terrain->getSize());
-  auto left = max(int(heightmap_position.x * size), 0);
-  auto top = max(int(heightmap_position.y * size), 0);
-  auto right = min(left + static_cast<int>(msg->patch.width - 1), size);
-  auto bottom = min(top + static_cast<int>(msg->patch.height - 1), size);
-
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
-    {
-      auto row = y - top;
-      auto col = x - left;
-      auto diff_height = image_handle->image.at<float>(row, col);
-      auto new_height = get_height_value(x, y) + diff_height * msg->z_scale;
-      set_height_value(x, y, new_height);
-    }
+  applyImageToHeightmap(heightmap, center, msg->position.z, image, false, get_height_value, set_height_value,
+                        *merge_method);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
 
+Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point32& position)
+{
+  auto _terrain_position = Vector3(position.x, position.y, 0);
+  auto heightmap_position = Vector3();
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+  terrain->getTerrainPosition(_terrain_position, &heightmap_position);
+  auto heightmap_size = terrain->getSize();
+  return Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
+}
+
 CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch::ConstPtr& msg)
 {
-  CvImageConstPtr image_handle;
+  auto image_handle = CvImageConstPtr();
 
   try
   {
@@ -137,4 +191,35 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   }
 
   return image_handle;
+}
+
+void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias,
+                                            const Mat& image, bool skip_zeros,
+                                            const function<float(int, int)>& get_height_value,
+                                            const function<void(int, int, float)>& set_height_value,
+                                            const function<float(float, float)>& merge_method)
+{
+  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+
+  if (image.type() != CV_32FC1)
+  {
+    gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
+    return;
+  }
+
+  auto heightmap_size = static_cast<int>(terrain->getSize());
+  auto left = max(center.x - image.cols / 2, 0);
+  auto top = max(center.y - image.rows / 2, 0);
+  auto right = min(center.x - image.cols / 2 + image.cols - 1, heightmap_size);
+  auto bottom = min(center.y - image.rows / 2 + image.rows - 1, heightmap_size);
+
+  for (auto y = top; y <= bottom; ++y)
+    for (auto x = left; x <= right; ++x)
+    {
+      auto pixel_value = image.at<float>(y - top, x - left);
+      if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
+        continue;
+      auto new_height = merge_method(get_height_value(x, y), pixel_value + z_bias);
+      set_height_value(x, y, new_height);
+    }
 }

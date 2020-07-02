@@ -9,16 +9,16 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    message_generation
-    std_msgs
-    geometry_msgs
-    sensor_msgs
-    cv_bridge
+  roscpp
+  message_generation
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  cv_bridge
 )
 
 find_package(OpenCV 3 REQUIRED
-    core
+  core
 )
 
 include(FindPkgConfig)
@@ -29,19 +29,19 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 include_directories(
-    ${Boost_INCLUDE_DIR}
-    ${catkin_INCLUDE_DIRS}
-    ${GAZEBO_INCLUDE_DIRS}
-    ${OGRE-Terrain_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
+  ${catkin_INCLUDE_DIRS}
+  ${GAZEBO_INCLUDE_DIRS}
+  ${OGRE-Terrain_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 link_directories(
-    ${Boost_LIBRARY_DIR}
-    ${catkin_LIBRARY_DIRS}
-    ${GAZEBO_LIBRARY_DIRS}
-    ${OGRE-Terrain_LIBRARY_DIRS}
-    ${OpenCV_LIBRARY_DIRS}
+  ${Boost_LIBRARY_DIR}
+  ${catkin_LIBRARY_DIRS}
+  ${GAZEBO_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
+  ${OpenCV_LIBRARY_DIRS}
 )
 
 ## System dependencies are found with CMake's conventions
@@ -81,6 +81,7 @@ link_directories(
 add_message_files(
   FILES
   modify_terrain_circle.msg
+  modify_terrain_ellipse.msg
   modify_terrain_patch.msg
 )
 
@@ -138,8 +139,8 @@ catkin_add_env_hooks(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-    include
-    ${catkin_INCLUDE_DIRS}
+  include
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Add cmake target dependencies of the library
@@ -158,35 +159,53 @@ include_directories(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-## Model Plugin
-add_library(${PROJECT_NAME}_model
-  src/TerrainModifier.cpp src/DynamicTerrainModel.cpp
+## ow_dynamic_terrain_shared library
+
+add_library(${PROJECT_NAME}_shared SHARED
+  src/OpenCV_Util.cpp
+  src/TerrainBrush.cpp
+  src/MergeMethods.cpp
+  src/TerrainModifier.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_model
+add_dependencies(${PROJECT_NAME}_shared
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(${PROJECT_NAME}_shared
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
   ${OpenCV_LIBRARIES}
+)
+
+## ow_dynamic_terrain_model (Model Plugin)
+
+add_library(${PROJECT_NAME}_model
+  src/DynamicTerrainModel.cpp
 )
 
 add_dependencies(${PROJECT_NAME}_model
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
-## Visual Plugin
-add_library(${PROJECT_NAME}_visual
-  src/TerrainModifier.cpp src/DynamicTerrainVisual.cpp
+target_link_libraries(${PROJECT_NAME}_model
+  ${PROJECT_NAME}_shared
 )
 
-target_link_libraries(${PROJECT_NAME}_visual
-  ${catkin_LIBRARIES}
-  ${GAZEBO_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+## ow_dynamic_terrain_model (Visual Plugin)
+
+add_library(${PROJECT_NAME}_visual
+  src/DynamicTerrainVisual.cpp
 )
 
 add_dependencies(${PROJECT_NAME}_visual
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_visual
+  ${PROJECT_NAME}_shared
+)
 
 #############
 ## Install ##
@@ -231,10 +250,12 @@ install(DIRECTORY
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_dynamic_terrain.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}_test test/test_MergeMethods.cpp)
+  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME}_shared)
+endif()
 
 ## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test DEPENDENCIES ${${PROJECT_NAME}_EXPORTED_TARGETS})
+endif()
