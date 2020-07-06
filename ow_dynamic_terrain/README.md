@@ -1,3 +1,7 @@
+The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+Research and Simulation can be found in README.md in the root directory of
+this repository.
+
 # Dynamic Terrain
 
 - [Introduction](#introduction)
@@ -180,3 +184,4 @@ The choices are the same ones listed in the [Modify Terrain with Circle](#modify
 
 You may refer to the [documentation](https://babelfish.arc.nasa.gov/confluence/pages/viewpage.action?pageId=122756318)
  for more details.
+
