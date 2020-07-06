@@ -16,47 +16,34 @@ from shape_msgs.msg import SolidPrimitive
 
 def arg_parsing(req):
   if req.use_defaults :
-    # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
+    x_drop=1.5
+    y_drop=0
     delete_prev_traj=False
 
   else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
+    trench_x=req.x_drop
+    trench_y=req.y_drop
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
+  return [req.use_defaults,x_drop,y_drop,delete_prev_traj]
 
 
-def plan_cartesian_path(move_arm, move_limbs, scale):
+def discard(move_arm, x_drop, y_drop):
 
-    waypoints = []
-    wpose = move_limbs.get_current_pose().pose
-    wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
+  # move_arm.set_planner_id("RRTstar")
 
-    (plan, fraction) = move_arm.compute_cartesian_path(
-                                   waypoints,   # waypoints to follow
-                                   0.01,        # eef_step
-                                   0.0)         # jump_threshold
-    return plan, fraction
+  # x_drop, y_drop are coordinates
 
-def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
-
-  move_arm.set_planner_id("RRTstar")
-
+  # the beginning is like sample delivery
   mypi = 3.14159
   d2r = mypi/180
   r2d = 180/mypi
 
   goal_pose = move_arm.get_current_pose().pose
   #position was found from rviz tool
-  goal_pose.position.x = 0.55
-  goal_pose.position.y = -0.3
-  goal_pose.position.z = 0.82 # was .78
+  goal_pose.position.x = x_drop
+  goal_pose.position.y = y_drop
+  goal_pose.position.z = 0.2 # was .78
 
   r = -179
   p = -20

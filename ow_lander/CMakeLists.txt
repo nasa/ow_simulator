@@ -21,6 +21,7 @@ add_service_files(
   SampleDelivery.srv
   SawMotionPlanning.srv
   Unstow.srv
+  Discard.srv
 )
 
 generate_messages(

@@ -1,0 +1,7 @@
+bool use_defaults
+float32 x_drop
+float32 y_drop
+bool delete_prev_traj
+---
+bool success
+string message

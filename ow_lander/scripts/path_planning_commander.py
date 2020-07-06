@@ -25,6 +25,7 @@ import activity_full_digging_traj
 import activity_move_guarded
 import activity_sample_delivery
 import activity_saw_motion_planning
+import activity_discard
 #import activity_reset
 
 # === MAIN COMMANDER CLASS =============================
@@ -156,7 +157,7 @@ def handle_sample_delivery(req):
   except KeyboardInterrupt:
     return
 
-  print "Finished planning session for linear trenching succesfully..."
+  print "Finished planning sample delivery succesfully..."
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Reset=============================
@@ -213,6 +214,31 @@ def handle_unstow(req):
   return True, "Done"
 
 
+# === SERVICE ACTIVITIES - Unstowed=============================
+def handle_discard(req):
+  try:
+    interface = MoveGroupPythonInteface()
+    print "Planning sample discard..."
+    args = activity_discard.arg_parsing(req)
+
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "full_traj_"
+    bagname = location + currentDT
+
+    utils.start_traj_recording(args[3], bagname)
+    result = activity_discard.discard(interface.move_arm,args[1],args[2])
+    utils.stop_traj_recording(result, bagname)
+
+  except rospy.ROSInterruptException:
+    return
+  except KeyboardInterrupt:
+    return
+
+  print "Sample succesfully discarded..."
+  return True, "Done"
+
+
+
 
 
 
@@ -258,6 +284,7 @@ def main():
   move_reset_srv = rospy.Service('start_sample_delivery', SampleDelivery, handle_sample_delivery)
   saw_motion_plan_srv = rospy.Service('start_saw_motion_planning',SawMotionPlanning, handle_saw_motion_planning)
   unstow_srv = rospy.Service('start_unstow_session', Unstow, handle_unstow)
+  discard_srv = rospy.Service('start_discard_session', Discard, handle_discard)
 
   rospy.spin()
 
