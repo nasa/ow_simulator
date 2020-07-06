@@ -26,7 +26,7 @@ both these nodes, you need to call the appropriate services (note that PLEXIL
 will be calling these services in code):
 
 ### Full trajectory planning
-Call the StartPlanning service. Args:
+Call the DigCircular service. Args:
 ```
 bool use_defaults        # Set to true to use the defualt trench loc
 float32 trench_x         # Trench x location
@@ -35,8 +35,8 @@ float32 trench_d         # Trench depth
 bool delete_prev_traj    # Set to true to cleanup ~/.ros
 ```
 
-### move_guarded trajectory planning
-Call the MoveGuarded service. This creates two trajectories in .ros Args:
+### guarded_move trajectory planning
+Call the GuardedMove service. This creates two trajectories in .ros Args:
 ```
 bool use_defaults           # Set to true to use the default touch location
 bool delete_prev_traj       # Set to true for cleanup

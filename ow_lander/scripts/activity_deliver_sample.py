@@ -44,7 +44,7 @@ def plan_cartesian_path(move_arm, move_limbs, scale):
                                    0.0)         # jump_threshold
     return plan, fraction
 
-def sample_delivery(move_arm,move_limbs,x_tr, y_tr, depth):
+def deliver_sample(move_arm,move_limbs,x_tr, y_tr, depth):
 
   move_arm.set_planner_id("RRTstar")
   

@@ -67,7 +67,7 @@ def arg_parsing_circ(req):
 
   return [req.use_defaults,trench_x,trench_y,trench_d,radial,delete_prev_traj]
 
-def arg_parsing_reset(req):
+def arg_parsing_stow(req):
   if req.use_defaults :
     # Default trenching values
     trench_x=1.5
@@ -123,7 +123,7 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
                                0.0)         # jump threshold
   return plan, fraction
 
-def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
+def dig_linear(move_arm,move_limbs,x_tr, y_tr, depth, length):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
@@ -162,7 +162,7 @@ def dig_linear_trench(move_arm,move_limbs,x_tr, y_tr, depth, length):
   return True
 
 
-def dig_trench(move_arm,move_limbs,x_tr,y_tr,depth,radial):
+def dig_circular(move_arm,move_limbs,x_tr,y_tr,depth,radial):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:

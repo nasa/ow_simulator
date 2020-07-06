@@ -44,7 +44,7 @@ def check_for_contact(max_slope):
 # The talker runs once the publish service is called. It starts a publisher 
 # per joint controller, then reads teh trajectory csvs. 
 # If the traj csv is a move guarded, it reads both parts.
-# When publishing the safe (second) part of a move_guarded, it
+# When publishing the safe (second) part of a guarded_move, it
 # monitors the torque on /shou_pitch, and cuts off the publishing
 # if constants.GUARD_MAX_SLOPE_BEFORE_CONTACT is reached. The 
 # slope after averaging the last 10 values of /shou_pitch effort
@@ -61,7 +61,7 @@ def talker(req):
   nb_links = constants.NB_ARM_LINKS
   rows = [] 
   guard_rows = []
-  move_guarded_bool = False
+  guarded_move_bool = False
   max_slope = 0
 
   # === READ TRAJ FILE(S) ===============================
@@ -79,7 +79,7 @@ def talker(req):
     guard_filename = filename
     prefix = "pre_"
     filename = prefix + filename
-    move_guarded_bool = True
+    guarded_move_bool = True
 
   # Reading csv file 
   with open(filename, 'r') as csvfile: 
@@ -90,8 +90,8 @@ def talker(req):
     for row in csvreader: 
       rows.append(row) 
 
-  # If move_guarded, read the guarded motion traj csv
-  if move_guarded_bool :
+  # If guarded_move, read the guarded motion traj csv
+  if guarded_move_bool :
     with open(guard_filename, 'r') as csvfile: 
       # creating a csv reader object 
       csvreader = csv.reader(csvfile) 
@@ -108,7 +108,7 @@ def talker(req):
       print "Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
       rate.sleep()
 
-  if move_guarded_bool : # If the activity is a move_guarded
+  if guarded_move_bool : # If the activity is a guarded_move
     # Start subscriber for the joint_states
     rate = rospy.Rate(int(pub_rate/2)) # Hz
     rospy.Subscriber("/joint_states", JointState, joint_states_cb)
@@ -122,7 +122,7 @@ def talker(req):
         else:
           if check_for_contact(max_slope) == True :
             print "Found ground, stopped motion..."
-            return True, "Done publishing move_guarded"
+            return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
           pubs[x].publish(float("%14s\n"%row[12+x]))
