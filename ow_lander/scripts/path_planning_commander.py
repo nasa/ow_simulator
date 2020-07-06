@@ -181,6 +181,29 @@ def handle_stow(req):
   return True, "Done"
 
 
+# === SERVICE ACTIVITIES - Unstowed=============================
+def handle_unstow(req):
+  try:
+    interface = MoveGroupPythonInteface()
+    print "Moving to unstowed configuration..."
+
+    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    location = "full_traj_"
+    bagname = location + currentDT
+
+    utils.start_traj_recording(False, bagname)
+    result = activity_full_digging_traj.unstow(interface.move_arm)
+    utils.stop_traj_recording(result, bagname)
+
+  except rospy.ROSInterruptException:
+    return
+  except KeyboardInterrupt:
+    return
+
+  print "Moved to unstowed configuration succesfully..."
+  return True, "Done"
+
+
 
 
 
@@ -214,10 +237,6 @@ def handle_grind(req):
 
 
 
-
-
-
-
 # === MAIN ================================================
 def main():
   rospy.init_node('path_planning_commander', anonymous=True)
@@ -227,6 +246,7 @@ def main():
   dig_linear_srv = rospy.Service('arm/dig_linear', DigLinear, handle_dig_linear)
   guarded_move_srv = rospy.Service('arm/guarded_move', GuardedMove, handle_guarded_move)
   stow_srv = rospy.Service('arm/stow', Stow, handle_stow)
+  unstow_srv = rospy.Service('arm/unstow', Unstow, handle_unstow)
   deliver_sample_srv = rospy.Service('arm/deliver_sample', DeliverSample, handle_deliver_sample)
   grind_srv = rospy.Service('arm/grind', Grind, handle_grind)
 
