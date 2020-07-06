@@ -148,7 +148,7 @@ def handle_sample_delivery(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(args[4], bagname)
-    result = activity_sample_delivery.sample_delivery(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    result = activity_sample_delivery.sample_delivery(interface.move_arm,args[1],args[2],args[3])
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -156,7 +156,7 @@ def handle_sample_delivery(req):
   except KeyboardInterrupt:
     return
 
-  print "Finished planning session for linear trenching succesfully..."
+  print "Sample succesfully delivered..."
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Reset=============================
