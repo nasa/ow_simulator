@@ -61,7 +61,7 @@ string trajectory_filename  # The filename of the trajectory to run
 ### Manual Operations
 To run these services manually, find the 'rqt' window and select the Service
 Caller tab. Then, from the drop down menu, select the service you want
-(`/planning/start_planning_session` or `/planning/publish_trajectory`), set the
+(`/planning/arm/dig_circular` or `/planning/arm/publish_trajectory`), set the
 arguments (Careful, the bools have a capital first letter: `True`, `False`),
 then call the service.
 

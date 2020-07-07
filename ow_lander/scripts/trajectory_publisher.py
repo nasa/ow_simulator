@@ -134,5 +134,5 @@ def talker(req):
 
 if __name__ == '__main__':
   rospy.init_node('trajectory_publisher', anonymous=True)
-  start_srv = rospy.Service('publish_trajectory', PublishTrajectory, talker)
+  start_srv = rospy.Service('arm/publish_trajectory', PublishTrajectory, talker)
   rospy.spin()
