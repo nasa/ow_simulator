@@ -29,6 +29,7 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 include_directories(
+  include
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
@@ -138,10 +139,6 @@ catkin_add_env_hooks(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
