@@ -33,5 +33,5 @@ def callback(msg):
 
 if __name__ == '__main__':
     rospy.init_node("modify_terrain_patch_sub", anonymous=True)
-    pub = rospy.Subscriber('/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, callback)
+    sub = rospy.Subscriber('/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, callback)
     rospy.spin()
