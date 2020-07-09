@@ -28,6 +28,8 @@ if(PKG_CONFIG_FOUND)
   pkg_check_modules(OGRE-Terrain OGRE-Terrain)
 endif()
 
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
 include_directories(
   include
   ${Boost_INCLUDE_DIR}
@@ -136,9 +138,6 @@ catkin_add_env_hooks(
 ###########
 ## Build ##
 ###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
