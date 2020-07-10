@@ -41,11 +41,11 @@ class MoveGroupPythonInteface(object):
     self.move_arm = move_arm
     self.move_limbs = move_limbs
 
-# === SERVICE ACTIVITIES - MOVE GUARDED =============================
+# === SERVICE ACTIVITIES - guarded move =============================
 def handle_guarded_move(req):
   try:
     interface = MoveGroupPythonInteface()
-    print "Starting move guarded planning session"
+    print "Starting guarded move planning session"
     args = activity_guarded_move.arg_parsing(req)
 
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -69,10 +69,10 @@ def handle_guarded_move(req):
   except KeyboardInterrupt:
     return
 
-  print "Finished move guarded planning session succesfully..."
+  print "Finished guarded move planning session succesfully..."
   return True, "Done"
 
-# === SERVICE ACTIVITIES - FULL circular TRAJ =============================
+# === SERVICE ACTIVITIES - Dig circular trench =============================
 def handle_dig_circular(req):
   try:
     interface = MoveGroupPythonInteface()
@@ -126,7 +126,7 @@ def handle_dig_linear(req):
   print "Finished planning session for linear trenching succesfully..."
   return True, "Done"
 
-# === SERVICE ACTIVITIES - DeliverSample =============================
+# === SERVICE ACTIVITIES - deliver sample =============================
 def handle_deliver_sample(req):
   try:
     interface = MoveGroupPythonInteface()
@@ -181,7 +181,7 @@ def handle_stow(req):
   return True, "Done"
 
 
-# === SERVICE ACTIVITIES - Unstowed=============================
+# === SERVICE ACTIVITIES - Unstow =============================
 def handle_unstow(req):
   try:
     interface = MoveGroupPythonInteface()

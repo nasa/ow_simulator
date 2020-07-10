@@ -43,7 +43,7 @@ def check_for_contact(max_slope):
 
 # The talker runs once the publish service is called. It starts a publisher 
 # per joint controller, then reads teh trajectory csvs. 
-# If the traj csv is a move guarded, it reads both parts.
+# If the traj csv is a guarded move, it reads both parts.
 # When publishing the safe (second) part of a guarded_move, it
 # monitors the torque on /shou_pitch, and cuts off the publishing
 # if constants.GUARD_MAX_SLOPE_BEFORE_CONTACT is reached. The 
@@ -74,7 +74,8 @@ def talker(req):
   #TODO: Add file check on trajectory
   print "Start publishing trajectory with filename = %s"%(filename)
 
-  if filename[0] == 'm': # if traj is a move guarded
+  # Use two files instead of one if this is a guarded move
+  if filename.startswith('guarded_move_traj_'):
     # reading csv file 
     guard_filename = filename
     prefix = "pre_"
