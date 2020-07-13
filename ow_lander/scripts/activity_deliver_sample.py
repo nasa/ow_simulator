@@ -31,7 +31,7 @@ def arg_parsing(req):
   return [req.use_defaults,x_del,y_del,z_del,delete_prev_traj]
 
 
-def sample_delivery(move_arm, x_del, y_del, z_del):
+def deliver_sample(move_arm, x_del, y_del, z_del):
 
   move_arm.set_planner_id("RRTstar")
 
