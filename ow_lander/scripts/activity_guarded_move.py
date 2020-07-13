@@ -43,7 +43,7 @@ def arg_parsing(req):
           retract]
 
 # Approach
-def pre_move_guarded(move_arm,move_limbs,args):
+def pre_guarded_move(move_arm,move_limbs,args):
   targ_x = args[2]
   targ_y = args[3]
   targ_z = args[4]
@@ -101,10 +101,10 @@ def pre_move_guarded(move_arm,move_limbs,args):
   plan = move_limbs.go(wait=True)
   move_limbs.stop()
   move_limbs.clear_pose_targets()
-  print "Done planning approach of move_guarded"
+  print "Done planning approach of guarded_move"
   return True
 
-def move_guarded(move_arm,move_limbs,args):
+def guarded_move(move_arm,move_limbs,args):
   targ_x = args[2]
   targ_y = args[3]
   targ_z = args[4]
@@ -128,6 +128,6 @@ def move_guarded(move_arm,move_limbs,args):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   move_arm.clear_pose_targets()
-  print "Done planning safe part of move_guarded"
+  print "Done planning safe part of guarded_move"
   return True
 

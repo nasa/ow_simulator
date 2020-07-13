@@ -13,13 +13,13 @@ find_package(roslaunch)
 
 add_service_files(
   FILES
-  StartPlanning.srv
+  DeliverSample.srv
+  DigCircular.srv
+  DigLinear.srv
+  Grind.srv
+  GuardedMove.srv
   PublishTrajectory.srv
-  MoveGuarded.srv
-  MoveReset.srv
-  DigTrench.srv
-  SampleDelivery.srv
-  SawMotionPlanning.srv
+  Stow.srv
   Unstow.srv
 )
 
