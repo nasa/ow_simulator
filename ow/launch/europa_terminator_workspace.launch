@@ -5,7 +5,7 @@
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>
 
-  <include file="$(find ow)/launch/common.launch" >
+  <include file="$(find ow)/launch/common.launch">
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator_workspace.world"/>
     <arg name="init_x" value="0"/>
     <arg name="init_y" value="0"/>
@@ -18,5 +18,13 @@
     <arg name="gazebo" value="$(arg gazebo)"/>
     <arg name="gzclient" value="$(arg gzclient)"/>
   </include>
+
+  <!-- ==================== simulate changes to the terrain caused by the scoop   ==================== -->
+  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen">
+  </node>
+
+  <!-- ==================== simulate changes to the terrain caused by the grinder ==================== -->
+  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen">
+  </node>
 
 </launch>

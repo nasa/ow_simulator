@@ -6,6 +6,7 @@ this repository.
 
 - [Introduction](#introduction)
 - [Requirements](#requirements)
+  - [Compatibility](#compatibility)
 - [Usage](#usage)
 - [Demo](#demo)
   - [Modify Terrain with Circle](#modify-terrain-with-circle)
@@ -21,9 +22,9 @@ A package that adds the capability to update Gazebo terrains dynamically at run-
 ROS distro: melodic  
 Gazebo version 9.13 or later
 
-> **_NOTE:_** The DynamicTerrainModel plugin relies on a recently merged pull request
-https://bitbucket.org/osrf/gazebo/pull-requests/3210/add-setheight-method-to-heightmapshape.
-So make sure to link against that latest gazebo9 branch otherwise the plugin wouldn't function as expected.
+### Compatibility
+* The _IRGLinkTracksPlugin_ and _DynamicTerrainVisual_ plugin may conflict with each other as both affect the visual appearance of the terrain.
+* The _DynamicTerrainVisual_  is incompatible with the _HeightmapLODPlugin_.
 
 ## Usage
 
@@ -184,4 +185,3 @@ The choices are the same ones listed in the [Modify Terrain with Circle](#modify
 
 You may refer to the [documentation](https://babelfish.arc.nasa.gov/confluence/pages/viewpage.action?pageId=122756318)
  for more details.
-
