@@ -13,12 +13,14 @@ find_package(roslaunch)
 
 add_service_files(
   FILES
-  StartPlanning.srv
+  DeliverSample.srv
+  DigCircular.srv
+  DigLinear.srv
+  Grind.srv
+  GuardedMove.srv
   PublishTrajectory.srv
-  MoveGuarded.srv
-  MoveReset.srv
-  DigTrench.srv
-  SawMotionPlanning.srv
+  Stow.srv
+  Unstow.srv
 )
 
 generate_messages(
@@ -44,4 +46,3 @@ foreach(dir config launch meshes urdf)
         install(DIRECTORY ${dir}/
                 DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
 endforeach(dir)
-

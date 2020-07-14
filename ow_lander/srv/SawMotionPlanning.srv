@@ -1,8 +1,0 @@
-bool use_defaults
-float32 trench_x
-float32 trench_y
-float32 trench_d
-bool delete_prev_traj
----
-bool success
-string message

@@ -1,3 +1,9 @@
+<?xml version="1.0"?>
+
+<!-- The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+     Research and Simulation can be found in README.md in the root directory of
+     this repository. -->
+
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander">
   <!-- A non-standard bitmask to prevent the lander from rendering into the irradiance environment map -->
   <xacro:property name="vis_mask" value="0x00010000" />
@@ -11,6 +17,11 @@
   <xacro:include filename="$(find ow_lander)/urdf/lander_lights.xacro" />
   <xacro:lander_lights lander_lights_parent_link="l_ant_panel"
                      off_x="0.85" off_y="0.08" off_z="0.0" off_R="-${pi/2.0}" off_P="0.0" off_Y="0.0"
+                     vis_mask="${vis_mask}" />
+
+  <xacro:include filename="$(find ow_lander)/urdf/lander_sample_dock.xacro" />
+  <xacro:lander_sample_dock lander_sample_dock_parent_link="base_link"
+                     off_x="0.53" off_y="-0.35" off_z="0.32" off_R="-${pi/2.0}" off_P="0.0" off_Y="-${pi/2.0}"
                      vis_mask="${vis_mask}" />
 
   <xacro:arg name="freeze_base_link" default="false"/>
@@ -153,8 +164,8 @@
       link="l_shou" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" lower="-1.8" upper="1.8"/>
+    <dynamics damping="50.0" />
+    <limit effort="1000.0" velocity="0.15" lower="-1.8" upper="1.8"/>
   </joint>
   <transmission name="shou_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -229,8 +240,8 @@
       link="l_prox" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" lower="0.05" upper="2.2"/>
+    <dynamics damping="50.0" />
+    <limit effort="1000.0" velocity="0.2" lower="0.05" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -305,8 +316,8 @@
       link="l_dist" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <dynamics damping="50.0" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="prox_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -381,8 +392,8 @@
       link="l_wrist" />
     <axis
       xyz="0 0 1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <dynamics damping="50.0" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="dist_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -454,8 +465,8 @@
         </contact>
       </surface>
     </collision>
-    
-  </gazebo> 
+
+  </gazebo>
 
   <joint
     name="j_hand_yaw"
@@ -469,8 +480,8 @@
       link="l_hand" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <dynamics damping="50.0" />
+    <limit effort="1000.0" velocity="0.2" />
   </joint>
   <transmission name="hand_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -542,8 +553,8 @@
       </surface>
     </collision>
   </gazebo>
-  
-  <!-- link that we can reference in Gazebo to get altitude of tip 
+
+  <!-- link that we can reference in Gazebo to get altitude of tip
        of scoop above the terrain. Note that without an inertial
        tag, the link will not show up in the SDF/Gazebo at all -->
   <link name="l_scoop_tip">
@@ -560,7 +571,7 @@
   <gazebo reference="l_scoop_tip_joint">
     <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
-  
+
   <joint
     name="j_scoop_yaw"
     type="continuous">

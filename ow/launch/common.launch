@@ -69,10 +69,10 @@
   <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
 
   <!-- == start rviz ==================== -->
-  <group unless="$(arg arm_sim_enable)">
+  <!--group unless="$(arg arm_sim_enable)">
     <node name="rviz" pkg="rviz" type="rviz"
       args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
-  </group>
+  </group-->
 
   <!-- == start rqt ===================== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->

@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+
+<!-- The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+     Research and Simulation can be found in README.md in the root directory of
+     this repository. -->
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_sample_dock">
+
+  <xacro:include filename="$(find ow_lander)/urdf/material_script.xacro" />
+
+  <xacro:macro name="lander_sample_dock" params="lander_sample_dock_parent_link off_x off_y off_z off_R off_P off_Y vis_mask" >
+    <link name="lander_sample_dock_link" />
+
+    <joint name="lander_sample_dock_joint" type="fixed">
+      <parent link="${lander_sample_dock_parent_link}"/>
+      <child link="lander_sample_dock_link"/>
+      <origin xyz="${off_x} ${off_y} ${off_z}" rpy="${off_R} ${off_P} ${off_Y}" />
+      <axis xyz="0 1 0"/>
+    </joint>
+    <!-- NOTE: preserveFixedJoint tag required for sample_dock to survive URDF to SDF conversion -->
+    <gazebo reference='lander_sample_dock_joint'>
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
+    <xacro:lander_sample_dock_link suffix="0" roll="0" pitch="0" y="-0.33" />
+    <!--xacro:lander_sample_dock_link suffix="1" roll="0" pitch="0" y="0.33" /-->
+  </xacro:macro>
+
+  <xacro:property name="sample_dock_mass" value="0.2" />
+
+  <xacro:macro name="lander_sample_dock_link" params="suffix roll pitch y">
+    <link name="lander_sample_dock${suffix}">
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <geometry>
+          <box size="0.3 0.05 0.095"/>
+        </geometry>
+      </collision>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <geometry>
+          <box size="0.3 0.05 0.095"/>
+        </geometry>
+        <material name="">
+          <color rgba="0.7 0.7 0.7 1" />
+        </material>
+      </visual>
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0.05"/>
+        <mass value="0.01"/>
+        <inertia
+            ixx="${sample_dock_mass / 12.0 * (0.1*0.1 + 0.06*0.06)}" ixy="0.0" ixz="0.0"
+            iyy="${sample_dock_mass / 12.0 * (0.06*0.06 + 0.1*0.1)}" iyz="0.0"
+            izz="${sample_dock_mass / 12.0 * (0.06*0.06 + 0.06*0.06)}"/>
+      </inertial>
+    </link>
+
+    <joint name="lander_sample_dock_joint${suffix}" type="fixed">
+      <origin rpy="${roll} ${pitch} 0" xyz="0 ${y} 0"/>
+      <parent link="lander_sample_dock_link"/>
+      <child link="lander_sample_dock${suffix}"/>
+    </joint>
+    
+    
+    <gazebo reference="lander_sample_dock${suffix}">
+      <visual>
+        <material>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <xacro:material_script />
+        </material>
+        <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
+          <visibility_bitmask>${vis_mask}</visibility_bitmask>
+        </plugin>
+      </visual>
+
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>
+

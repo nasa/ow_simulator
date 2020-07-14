@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-# __BEGIN_LICENSE__
-# Copyright (c) 2018-2019, United States Government as represented by the
-# Administrator of the National Aeronautics and Space Administration. All
-# rights reserved.
-# __END_LICENSE__
+# The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+# Research and Simulation can be found in README.md in the root directory of
+# this repository.
 
 ## GLOBAL VARS ##
 J_SCOOP_YAW = 5
@@ -19,8 +17,9 @@ Y_SHOU = 0.175
 HAND_Y_OFFSET = 0.0249979319838
 GROUND_POSITION = -0.175
 SCOOP_OFFSET = 0.215
+SCOOP_HEIGHT = 0.076
 
-SAW_OFFSET = 0.8
+GRIND_OFFSET = 0.8
 
 X_DELIV = 0.2
 Y_DELIV = 0.2

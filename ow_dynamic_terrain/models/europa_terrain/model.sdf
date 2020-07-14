@@ -86,12 +86,6 @@
             <pos>0 0 8.853</pos>
           </heightmap>
         </geometry>
-        <!--
-        <plugin name="lod" filename="libHeightmapLODPlugin.so">
-          <lod>3</lod>
-          <skirt_length>0.1</skirt_length>
-        </plugin>
-        -->
       </visual>
     </link>
   </model>
