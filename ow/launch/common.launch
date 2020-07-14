@@ -3,8 +3,8 @@
 
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
-  <arg name="gazebo" default="true"/>
-  <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
+  <arg name="gazebo" default="false"/>
+  <arg name="gzclient" default="false"/>  <!-- Only has effect if gazebo = true -->
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />

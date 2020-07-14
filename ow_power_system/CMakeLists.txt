@@ -201,3 +201,5 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_subdirectory(src)
+
+configure_file(src/Voltage_Profile1.csv ${CATKIN_PACKAGE_SHARE_DESTINATION} COPYONLY)
