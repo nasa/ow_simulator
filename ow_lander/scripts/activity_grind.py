@@ -25,7 +25,7 @@ def plan_cartesian_path_lin(move_arm, length):
                                0.0)         # jump threshold
   return plan, fraction
 
-def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
+def grind(move_arm, move_limbs, x_tr, y_tr, depth, length):
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:
@@ -38,13 +38,13 @@ def saw_motion_planning(move_arm, move_limbs, x_tr, y_tr, depth, length):
   z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
   go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
 
-  # sawing ice - along +X
+  # grinding ice - along +X
   cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
   move_limbs.execute(cartesian_plan, wait=True)
   move_limbs.stop()
 
   # exiting terrain - along +Z
-  z_tr = constants.GROUND_POSITION + constants.SAW_OFFSET - depth
+  z_tr = constants.GROUND_POSITION + constants.GRIND_OFFSET - depth
   go_to_Z_coordinate(move_arm,x_tr,y_tr,z_tr)
 
 
