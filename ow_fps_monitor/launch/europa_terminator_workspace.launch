@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="gzclient" default="true"/>
+
+  <include file="$(find ow_fps_monitor)/launch/common.launch">
+    <arg name="world_name" value="$(find ow_europa)/worlds/terminator_workspace.world"/>
+    <arg name="init_x" value="0"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="-7.19"/>
+    <arg name="init_R" value="-0.105"/>
+    <arg name="init_P" value="0.008"/>
+    <arg name="init_Y" value="0"/>
+    <arg name="freeze_base_link" value="true"/>
+    <arg name="gzclient" value="$(arg gzclient)"/>
+  </include>
+
+</launch>
