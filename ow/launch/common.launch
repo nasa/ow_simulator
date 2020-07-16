@@ -63,7 +63,7 @@
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen"/>
 
   <!-- Start faults node -->
   <node name="faults" pkg="ow_faults" type="faults" output="screen"/>

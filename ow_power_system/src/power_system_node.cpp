@@ -46,7 +46,10 @@ int main(int argc, char* argv[]) {
   double timestamp = 0.0;
 
   //Load power values csv
-  vector<vector<double>> power_csv = loadCSV("Voltage_Profile1.csv");
+  string csv_path;
+  csv_path = ros::package::getPath("ow_power_system");
+  csv_path += "/data/Voltage_Profile1.csv";
+  vector<vector<double>> power_csv = loadCSV(csv_path);
   cout << "I loaded!";
   double t = 0;
   int voltage_i = 2;
@@ -82,7 +85,7 @@ vector<vector<double>> loadCSV(const string& filename){
   //power_csv.open(filename,std::ios::in);
   if (power_csv.fail()) {
     cout << "Unable to open data file" << endl;
-    cerr << "Unable to open data file" << endl;
+    //cerr << "Unable to open data file" << endl;
   }
   vector<vector<double>> values;
 
