@@ -25,7 +25,12 @@ def plan_cartesian_path_lin(move_arm, length):
                                0.0)         # jump threshold
   return plan, fraction
 
-def grind(move_arm, move_limbs, x_tr, y_tr, depth, length):
+def grind(move_arm, move_limbs, args):
+
+  x_tr = args[1]
+  y_tr = args[2]
+  depth = args[3]
+  length = args[4]
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
   if pre_move_complete == False:

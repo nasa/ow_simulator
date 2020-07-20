@@ -32,9 +32,13 @@ def arg_parsing(req):
 
 
 
-def deliver_sample(move_arm, x_del, y_del, z_del):
+def deliver_sample(move_arm, args):
 
   move_arm.set_planner_id("RRTstar")
+
+  x_del = args[1]
+  y_del = args[2]
+  z_del = args[3]
 
   # after sample collect
   mypi = 3.14159
