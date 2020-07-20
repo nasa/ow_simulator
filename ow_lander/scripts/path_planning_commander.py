@@ -142,7 +142,7 @@ def handle_deliver_sample(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(args[4], bagname)
-    result = activity_deliver_sample.deliver_sample(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
+    result = activity_deliver_sample.deliver_sample(interface.move_arm,args[1],args[2],args[3])
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
