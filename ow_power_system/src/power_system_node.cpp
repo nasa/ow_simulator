@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   csv_path = ros::package::getPath("ow_power_system");
   csv_path += "/data/1HzVoltageProfile.csv";
   vector<vector<double>> power_csv = loadCSV(csv_path);
-  cout << "I loaded!";
+  cout << "Power system CSV loaded!";
 
   int voltage_i = 1; //index of voltage column
   int minutes_to_skip = 30; //enables us to skip first 30 minutes with no power being drawn
