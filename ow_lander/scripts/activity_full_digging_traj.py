@@ -12,11 +12,11 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 
 
-def go_to_Z_coordinate(move_group,x_tr,y_tr,z_tr):
+def go_to_Z_coordinate(move_group,x_start,y_start,z_start):
   goal_pose = move_group.get_current_pose().pose
-  goal_pose.position.x = x_tr
-  goal_pose.position.y = y_tr
-  goal_pose.position.z = z_tr
+  goal_pose.position.x = x_start
+  goal_pose.position.y = y_start
+  goal_pose.position.z = z_start
   move_group.set_pose_target(goal_pose)
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
@@ -83,10 +83,10 @@ def arg_parsing_stow(req):
 
   return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
 
-def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
+def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   # Compute shoulder yaw angle to trench
-  alpha = math.atan2(y_tr-constants.Y_SHOU, x_tr-constants.X_SHOU)
-  h = math.sqrt( pow(y_tr-constants.Y_SHOU,2) + pow(x_tr-constants.X_SHOU,2) )
+  alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
+  h = math.sqrt( pow(y_start-constants.Y_SHOU,2) + pow(x_start-constants.X_SHOU,2) )
   l = constants.Y_SHOU - constants.HAND_Y_OFFSET
   beta = math.asin (l/h)
     # Move to pre trench position, align shoulder yaw
@@ -125,12 +125,12 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
 
 def dig_linear(move_arm,move_limbs,args):
 
-  x_tr = args[1]
-  y_tr = args[2]
+  x_start = args[1]
+  y_start = args[2]
   depth = args[3]
   length = args[4]
 
-  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
@@ -144,8 +144,8 @@ def dig_linear(move_arm,move_limbs,args):
   change_joint_value(move_arm,constants.J_DIST_PITCH,-math.pi/2)
 
   ## Once aligned to trench goal, place hand above trench middle point
-  z_tr = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
+  z_start = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
 
   #  rotate to dig in the ground
   change_joint_value(move_arm,constants.J_DIST_PITCH,55.0/180.0*math.pi)
@@ -169,20 +169,20 @@ def dig_linear(move_arm,move_limbs,args):
 
 def dig_circular(move_arm,move_limbs,args):
 
-  x_tr = args[1]
-  y_tr = args[2]
+  x_start = args[1]
+  y_start = args[2]
   depth = args[3]
   radial = args[4]
 
-  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
   if radial==False:
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
-    go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
+    z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
 
     # Rotate hand perpendicular to radial direction
     change_joint_value(move_arm,constants.J_HAND_YAW,-math.pi/2.2)
@@ -198,8 +198,8 @@ def dig_circular(move_arm,move_limbs,args):
     change_joint_value(move_arm,constants.J_DIST_PITCH,-19.0/54.0*math.pi)
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
-    go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
+    z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
 
     # Rotate dist to dig
     joint_goal = move_arm.get_current_joint_values()
