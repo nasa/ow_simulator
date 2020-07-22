@@ -13,8 +13,8 @@
 #include <limits>
 #include <unordered_map>
 
-#define MEGABYTES_TO_BYTES 1048576
 #define KILOBYTES_TO_BYTES 1024
+#define MEGABYTES_TO_BYTES KILOBYTES_TO_BYTES * KILOBYTES_TO_BYTES
 
 using namespace std;
 using namespace rosbag::compression;
@@ -97,21 +97,22 @@ bool get_recorder_options(rosbag::RecorderOptions &out_options)
 {
   try
   {   
+    out_options.name          = get_option("/bag_recorder_node/options/name",          out_options.name);
+    out_options.node          = get_option("/bag_recorder_node/options/node",          out_options.node);
+    out_options.prefix        = get_option("/bag_recorder_node/options/prefix",        out_options.prefix);
+    out_options.append_date   = get_option("/bag_recorder_node/options/append_date",   out_options.append_date);
+    out_options.publish       = get_option("/bag_recorder_node/options/publish",       out_options.publish);
+    out_options.verbose       = get_option("/bag_recorder_node/options/verbose",       out_options.verbose);
+    out_options.quiet         = get_option("/bag_recorder_node/options/quiet",         out_options.quiet);
     out_options.record_all    = get_option("/bag_recorder_node/options/record_all",    out_options.record_all);
     out_options.regex         = get_option("/bag_recorder_node/options/regex",         out_options.regex);
-    out_options.quiet         = get_option("/bag_recorder_node/options/quiet",         out_options.quiet);
-    out_options.append_date   = get_option("/bag_recorder_node/options/append_date",   out_options.append_date);
-    out_options.verbose       = get_option("/bag_recorder_node/options/verbose",       out_options.verbose);
-    out_options.publish       = get_option("/bag_recorder_node/options/publish",       out_options.publish);
-    out_options.compression   = get_option("/bag_recorder_node/options/compression",   out_options.compression);
-    out_options.prefix        = get_option("/bag_recorder_node/options/prefix",        out_options.prefix);
-    out_options.name          = get_option("/bag_recorder_node/options/name",          out_options.name);
     out_options.exclude_regex = get_option("/bag_recorder_node/options/exclude_regex", out_options.exclude_regex);
     out_options.split         = get_option("/bag_recorder_node/options/split",         out_options.split);
-    out_options.max_size      = get_option("/bag_recorder_node/options/max_size",      out_options.max_size);
     out_options.max_splits    = get_option("/bag_recorder_node/options/max_splits",    out_options.max_splits);
+    out_options.max_size      = get_option("/bag_recorder_node/options/max_size",      out_options.max_size);
     out_options.max_duration  = get_option("/bag_recorder_node/options/max_duration",  out_options.max_duration);
-    out_options.node          = get_option("/bag_recorder_node/options/node",          out_options.node);
+    out_options.limit         = get_option("/bag_recorder_node/options/limit",         out_options.limit);
+    out_options.compression   = get_option("/bag_recorder_node/options/compression",   out_options.compression);
     
     // We accept megabytes for buffer_size and kilobytes for chunk_size in the 
     // YAML, but RecorderOptions uses bytes for both, so both have to be 
@@ -126,11 +127,10 @@ bool get_recorder_options(rosbag::RecorderOptions &out_options)
     // are not officially supporting them
     // out_options.trigger       = get_option("/bag_recorder_node/options/trigger",       out_options.trigger);
     // out_options.snapshot      = get_option("/bag_recorder_node/options/snapshot",      out_options.snapshot);
-    // out_options.limit         = get_option("/bag_recorder_node/options/limit",         out_options.limit);
     // out_options.min_space_str = get_option("/bag_recorder_node/options/min_space_str", out_options.min_space_str);
     // out_options.min_space     = get_option("/bag_recorder_node/options/min_space",     out_options.min_space);
   }
-  catch (ros::InvalidParameterException except) 
+  catch (const ros::InvalidParameterException &except) 
   {
     ROS_ERROR("%s", except.what());
     return false;
