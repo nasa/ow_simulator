@@ -34,54 +34,38 @@ def change_joint_value(move_group,joint_name,target_value):
 def arg_parsing_lin(req):
   if req.use_defaults :
     # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.01
+    x_start=1.5
+    y_start=0
+    depth=0.01
     length=0.3
     delete_prev_traj=False
 
   else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
     length=req.length
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,trench_x,trench_y,trench_d,length,delete_prev_traj]
+  return [req.use_defaults,x_start,y_start,depth,length,delete_prev_traj]
 
 def arg_parsing_circ(req):
   if req.use_defaults :
     # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
+    x_start=1.5
+    y_start=0
+    depth=0.02
     radial=False
     delete_prev_traj=False
 
   else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
     radial=req.radial
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,trench_x,trench_y,trench_d,radial,delete_prev_traj]
-
-def arg_parsing_stow(req):
-  if req.use_defaults :
-    # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
-    delete_prev_traj=False
-
-  else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
-    delete_prev_traj=req.delete_prev_traj
-
-  return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
+  return [req.use_defaults,x_start,y_start,depth,radial,delete_prev_traj]
 
 def move_to_pre_trench_configuration(move_arm, x_tr, y_tr):
   # Compute shoulder yaw angle to trench
@@ -196,34 +180,8 @@ def dig_circular(move_arm,move_limbs,x_tr,y_tr,depth,radial):
     dist_now = joint_goal[3]
     change_joint_value(move_arm,constants.J_DIST_PITCH,dist_now + 2*math.pi/3)
 
-
-  # # Go back to safe position and align yaw to deliver
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_DIST_PITCH] = 0
-  # joint_goal[constants.J_HAND_YAW] = -math.pi/2
-  # joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  # joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  # joint_goal[constants.J_SHOU_YAW] = constants.SHOU_YAW_DELIV
-  # joint_goal[constants.J_SCOOP_YAW]= 0
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # Go to deliver position
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
-  # joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # Deliver (high amplitude)
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_HAND_YAW] = -math.pi
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-  # joint_goal[constants.J_HAND_YAW] = math.pi/2
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
   return True
+
 
 def go_home(move_arm):
   # Move to home position

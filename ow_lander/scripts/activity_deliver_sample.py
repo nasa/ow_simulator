@@ -17,22 +17,22 @@ from shape_msgs.msg import SolidPrimitive
 def arg_parsing(req):
   if req.use_defaults :
     # Default trenching values
-    x_del=0.55
-    y_del=-0.3
-    z_del=0.82 # was .78
+    x_delivery=0.55
+    y_delivery=-0.3
+    z_delivery=0.82 # was .78
     delete_prev_traj=False
 
   else :
-    x_del=req.x_del
-    y_del=req.y_del
-    z_del=req.z_del
+    x_delivery=req.x
+    y_delivery=req.y
+    z_delivery=req.z
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,x_del,y_del,z_del,delete_prev_traj]
+  return [req.use_defaults,x_delivery,y_delivery,z_delivery,delete_prev_traj]
 
 
 
-def deliver_sample(move_arm, x_del, y_del, z_del):
+def deliver_sample(move_arm, x_delivery, y_delivery, z_delivery):
 
   move_arm.set_planner_id("RRTstar")
 
@@ -43,9 +43,9 @@ def deliver_sample(move_arm, x_del, y_del, z_del):
 
   goal_pose = move_arm.get_current_pose().pose
   #position was found from rviz tool
-  goal_pose.position.x = x_del
-  goal_pose.position.y = y_del
-  goal_pose.position.z = z_del
+  goal_pose.position.x = x_delivery
+  goal_pose.position.y = y_delivery
+  goal_pose.position.z = z_delivery
 
   r = -179
   p = -20

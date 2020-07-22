@@ -158,18 +158,13 @@ def handle_stow(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_stow(req)
-
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      return
 
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[4], bagname)
-    result = activity_full_digging_traj.go_home(interface.move_arm)#,interface.move_limbs,args[1],args[2],args[3])
+    utils.start_traj_recording(req.delete_prev_traj, bagname)
+    result = activity_full_digging_traj.go_home(interface.move_arm)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -191,7 +186,7 @@ def handle_unstow(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(False, bagname)
+    utils.start_traj_recording(req.delete_prev_traj, bagname)
     result = activity_full_digging_traj.unstow(interface.move_arm)
     utils.stop_traj_recording(result, bagname)
 

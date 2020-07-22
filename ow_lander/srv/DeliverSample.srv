@@ -1,7 +1,7 @@
 bool use_defaults
-float32 x_del # Delivery location coordinates
-float32 y_del
-float32 z_del
+float32 x
+float32 y
+float32 z
 bool delete_prev_traj
 ---
 bool success
