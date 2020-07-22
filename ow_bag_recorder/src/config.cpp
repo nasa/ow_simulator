@@ -13,8 +13,8 @@
 #include <limits>
 #include <unordered_map>
 
-#define KILOBYTES_TO_BYTES 1024
-#define MEGABYTES_TO_BYTES KILOBYTES_TO_BYTES * KILOBYTES_TO_BYTES
+static const int KILOBYTES_TO_BYTES = 1024;
+static const int MEGABYTES_TO_BYTES = KILOBYTES_TO_BYTES * KILOBYTES_TO_BYTES;
 
 using namespace std;
 using namespace rosbag::compression;

@@ -6,7 +6,7 @@ options:
   publish:             false
   verbose:             false
   quiet:               false
-  record_all:          true
+  record_all:          false
   regex:               false
   exclude_regex:       ''
   split:               false
