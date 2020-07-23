@@ -19,14 +19,17 @@ effort_arr = [0] * constants.GUARD_FILTER_AV_WIDTH # Used to store efforts for f
 previous_effort = 0
 array_index = 0
 slope = 0
+vel = 0.0
 
 def joint_states_cb(data):
   global effort_arr
   global array_index
   global previous_effort
   global slope  
+  global vel
   effort_arr[array_index] = data.effort[6]
   array_index = (array_index+1)%constants.GUARD_FILTER_AV_WIDTH
+  vel = data.velocity[6]
 
   new_effort = mean(effort_arr)
   slope = abs(new_effort - previous_effort)
@@ -121,7 +124,8 @@ def talker(req):
           start_guard_delay_acc += 1
           max_slope = slope
         else:
-          if check_for_contact(max_slope) == True :
+          #if check_for_contact(max_slope) == True :
+          if vel > 0.001:     
             print "Found ground, stopped motion..."
             return True, "Done publishing guarded_move"
 
