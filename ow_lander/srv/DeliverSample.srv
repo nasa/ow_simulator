@@ -1,8 +1,8 @@
 bool use_defaults
-float32 trench_x
-float32 trench_y
-float32 trench_d
+float32 x_del # Delivery location coordinates
+float32 y_del
+float32 z_del
 bool delete_prev_traj
 ---
 bool success
-string message 
+string message

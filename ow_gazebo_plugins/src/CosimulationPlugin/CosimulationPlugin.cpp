@@ -4,14 +4,12 @@
 
 // TODO:
 //    1) Add in discrete element domain relaxation step before cosimulation
-//       begins.
-//    2) Transform force and torque to Gazebo's reference frame (if needed)
+//       begins (if needed).
+//    2) Transform force and torque to Gazebo's reference frame (if needed).
 //    3) Interpolate between consecutive scoop poses before each call to 
 //       Cosimulator::update to ensure smooth movement.
 //    4) Implement CropHeightmap
-//    5) Decide on proper error handling (gzerr or something else?)
-//    6) Improve on clarity of SDF parameters when external simulator has
-//       been selected.
+//    5) Read in parameters in a more OceanWATERS-like way (i.e rosparam yaml?)
 
 #include "CosimulationPlugin.h"
 
@@ -98,6 +96,7 @@ void CosimulationPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     // Cosimulation timestep parameter
     m_timestep = parseElement<double>(sdf, "timestep");
   } catch (common::Exception err) {
+    // TODO: print this exception to gzerr
     return;
   }
 
@@ -162,6 +161,7 @@ void CosimulationPlugin::OnUpdate(void)
   // track total cosimulation time for all loops
   double elapsed = 0.0;
   // catch cosimulation up to Gazebo simulation
+  // FIXME: m_starttime should be used in here for comparing cosim time and gz_time
   while(m_cosim.getSimTime() <= gz_time) {
     // cosim update function output variables
     ignition::math::Vector3d out_force;
