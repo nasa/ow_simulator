@@ -12,7 +12,7 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 
 
-def go_to_Z_coordinate(move_group,x_start,y_start,z_start):
+def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   goal_pose = move_group.get_current_pose().pose
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
@@ -25,7 +25,7 @@ def go_to_Z_coordinate(move_group,x_start,y_start,z_start):
   move_group.stop()
   move_group.clear_pose_targets()
 
-def change_joint_value(move_group,joint_name,target_value):
+def change_joint_value(move_group, joint_name, target_value):
   joint_goal = move_group.get_current_joint_values()
   joint_goal[joint_name] = target_value
   move_group.go(joint_goal, wait=True)
@@ -34,54 +34,38 @@ def change_joint_value(move_group,joint_name,target_value):
 def arg_parsing_lin(req):
   if req.use_defaults :
     # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.01
+    x_start=1.5
+    y_start=0
+    depth=0.01
     length=0.3
     delete_prev_traj=False
 
   else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
     length=req.length
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,trench_x,trench_y,trench_d,length,delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, length, delete_prev_traj]
 
 def arg_parsing_circ(req):
   if req.use_defaults :
     # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
+    x_start=1.5
+    y_start=0
+    depth=0.02
     radial=False
     delete_prev_traj=False
 
   else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
     radial=req.radial
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,trench_x,trench_y,trench_d,radial,delete_prev_traj]
-
-def arg_parsing_stow(req):
-  if req.use_defaults :
-    # Default trenching values
-    trench_x=1.5
-    trench_y=0
-    trench_d=0.02
-    delete_prev_traj=False
-
-  else :
-    trench_x=req.trench_x
-    trench_y=req.trench_y
-    trench_d=req.trench_d
-    delete_prev_traj=req.delete_prev_traj
-
-  return [req.use_defaults,trench_x,trench_y,trench_d,delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, radial, delete_prev_traj]
 
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   # Compute shoulder yaw angle to trench
@@ -135,24 +119,24 @@ def dig_linear(move_arm,move_limbs,args):
     return False
 
   ## Rotate hand yaw to dig in
-  change_joint_value(move_arm,constants.J_HAND_YAW,0.0)
+  change_joint_value(move_arm, constants.J_HAND_YAW, 0.0)
 
   #rotate scoop
-  change_joint_value(move_arm,constants.J_SCOOP_YAW,math.pi/2)
+  change_joint_value(move_arm, constants.J_SCOOP_YAW, math.pi/2)
 
   #rotate dist pith to pre-trenching position.
-  change_joint_value(move_arm,constants.J_DIST_PITCH,-math.pi/2)
+  change_joint_value(move_arm, constants.J_DIST_PITCH, -math.pi/2)
 
   ## Once aligned to trench goal, place hand above trench middle point
   z_start = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
-  go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
+  go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
   #  rotate to dig in the ground
-  change_joint_value(move_arm,constants.J_DIST_PITCH,55.0/180.0*math.pi)
+  change_joint_value(move_arm, constants.J_DIST_PITCH, 55.0/180.0*math.pi)
 
   # determine linear trenching direction (alpha)
   current_pose = move_arm.get_current_pose().pose
-  quaternion = [current_pose.orientation.x,current_pose.orientation.y,current_pose.orientation.z,current_pose.orientation.w]
+  quaternion = [current_pose.orientation.x, current_pose.orientation.y, current_pose.orientation.z, current_pose.orientation.w]
   current_euler = euler_from_quaternion(quaternion)
   alpha = current_euler[2]
 
@@ -167,7 +151,7 @@ def dig_linear(move_arm,move_limbs,args):
   return True
 
 
-def dig_circular(move_arm,move_limbs,args):
+def dig_circular(move_arm, move_limbs, args):
 
   x_start = args[1]
   y_start = args[2]
@@ -182,58 +166,32 @@ def dig_circular(move_arm,move_limbs,args):
 
     # Once aligned to trench goal, place hand above trench middle point
     z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
-    go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
+    go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate hand perpendicular to radial direction
-    change_joint_value(move_arm,constants.J_HAND_YAW,-math.pi/2.2)
+    change_joint_value(move_arm, constants.J_HAND_YAW, -math.pi/2.2)
 
   else:
     # Rotate hand so scoop is in middle point
-    change_joint_value(move_arm,constants.J_HAND_YAW,0.0)
+    change_joint_value(move_arm, constants.J_HAND_YAW, 0.0)
 
     # Rotate scoop
-    change_joint_value(move_arm,constants.J_SCOOP_YAW, math.pi/2)
+    change_joint_value(move_arm, constants.J_SCOOP_YAW, math.pi/2)
 
     # Rotate dist so scoop is back
-    change_joint_value(move_arm,constants.J_DIST_PITCH,-19.0/54.0*math.pi)
+    change_joint_value(move_arm, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
 
     # Once aligned to trench goal, place hand above trench middle point
     z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
-    go_to_Z_coordinate(move_limbs,x_start,y_start,z_start)
+    go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate dist to dig
     joint_goal = move_arm.get_current_joint_values()
     dist_now = joint_goal[3]
-    change_joint_value(move_arm,constants.J_DIST_PITCH,dist_now + 2*math.pi/3)
+    change_joint_value(move_arm, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
 
-
-  # # Go back to safe position and align yaw to deliver
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_DIST_PITCH] = 0
-  # joint_goal[constants.J_HAND_YAW] = -math.pi/2
-  # joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  # joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  # joint_goal[constants.J_SHOU_YAW] = constants.SHOU_YAW_DELIV
-  # joint_goal[constants.J_SCOOP_YAW]= 0
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # Go to deliver position
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_PROX_PITCH]= math.pi/2 - 0.1
-  # joint_goal[constants.J_SCOOP_YAW]= math.pi - 0.05
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-
-  # # Deliver (high amplitude)
-  # joint_goal = move_arm.get_current_joint_values()
-  # joint_goal[constants.J_HAND_YAW] = -math.pi
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
-  # joint_goal[constants.J_HAND_YAW] = math.pi/2
-  # move_arm.go(joint_goal, wait=True)
-  # move_arm.stop()
   return True
+
 
 def go_home(move_arm):
   # Move to home position
@@ -250,7 +208,7 @@ def go_home(move_arm):
 
 def unstow(move_arm):
 
-  change_joint_value(move_arm,constants.J_SHOU_YAW,0.0)
+  change_joint_value(move_arm,constants.J_SHOU_YAW, 0.0)
   move_to_pre_trench_configuration(move_arm, 2.0, 0.0)
 
   return True

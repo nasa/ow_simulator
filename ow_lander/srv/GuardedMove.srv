@@ -1,14 +1,12 @@
 bool use_defaults
 bool delete_prev_traj
-float32 target_x
-float32 target_y
-float32 target_z
+float32 x
+float32 y
 float32 surface_normal_x
 float32 surface_normal_y
 float32 surface_normal_z
 float32 offset_distance
-float32 overdrive_distance
-float32 retract
+float32 overdrive_distance 
 ---
 bool success
 string message
