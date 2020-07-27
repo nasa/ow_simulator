@@ -46,22 +46,22 @@ def handle_guarded_move(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting guarded move planning session"
-    args = activity_guarded_move.arg_parsing(req)
+    guarded_move_args = activity_guarded_move.arg_parsing(req)
 
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     location = "pre_guarded_move_traj_"
     bagname = location + currentDT
 
     # Approach
-    utils.start_traj_recording(args[1], bagname)
-    result = activity_guarded_move.pre_guarded_move(interface.move_arm,interface.move_limbs,args)
+    utils.start_traj_recording(guarded_move_args[1], bagname)
+    result = activity_guarded_move.pre_guarded_move(interface.move_arm, interface.move_limbs, guarded_move_args)
     utils.stop_traj_recording(result, bagname)
 
     # Safe move, monitoring torques
     location = "guarded_move_traj_"
     bagname = location + currentDT
     utils.start_traj_recording(False, bagname)
-    result = activity_guarded_move.guarded_move(interface.move_arm,interface.move_limbs,args)
+    result = activity_guarded_move.guarded_move(interface.move_arm, interface.move_limbs, guarded_move_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -77,9 +77,9 @@ def handle_dig_circular(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_circ(req)
+    dig_circular_args = activity_full_digging_traj.arg_parsing_circ(req)
 
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
+    if utils.check_arguments(dig_circular_args[1], dig_circular_args[2], dig_circular_args[3]) != True:
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
       return
 
@@ -87,8 +87,8 @@ def handle_dig_circular(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_full_digging_traj.dig_circular(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
+    utils.start_traj_recording(dig_circular_args[5], bagname)
+    result = activity_full_digging_traj.dig_circular(interface.move_arm, interface.move_limbs, dig_circular_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -104,9 +104,9 @@ def handle_dig_linear(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_lin(req)
+    dig_linear_args = activity_full_digging_traj.arg_parsing_lin(req)
 
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
+    if utils.check_arguments(dig_linear_args[1], dig_linear_args[2], dig_linear_args[3]) != True:
       print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
       return
 
@@ -114,8 +114,8 @@ def handle_dig_linear(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_full_digging_traj.dig_linear(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
+    utils.start_traj_recording(dig_linear_args[5], bagname)
+    result = activity_full_digging_traj.dig_linear(interface.move_arm, interface.move_limbs, dig_linear_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -131,9 +131,9 @@ def handle_deliver_sample(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting sample delivery session"
-    args = activity_deliver_sample.arg_parsing(req)
+    deliver_sample_args = activity_deliver_sample.arg_parsing(req)
 
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
+    if utils.check_arguments(deliver_sample_args[1], deliver_sample_args[2], deliver_sample_args[3]) != True:
       print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
       return
 
@@ -141,8 +141,8 @@ def handle_deliver_sample(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[4], bagname)
-    result = activity_deliver_sample.deliver_sample(interface.move_arm,args[1],args[2],args[3])
+    utils.start_traj_recording(deliver_sample_args[4], bagname)
+    result = activity_deliver_sample.deliver_sample(interface.move_arm, deliver_sample_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
@@ -208,9 +208,9 @@ def handle_grind(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting grinder planning session"
-    args = activity_full_digging_traj.arg_parsing_lin(req)
+    grind_args = activity_full_digging_traj.arg_parsing_lin(req)
 
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
+    if utils.check_arguments(grind_args[1], grind_args[2], grind_args[3]) != True:
       print "[ERROR] Invalid grinder trajectory input arguments. Exiting path_planning_commander..."
       return
 
@@ -218,8 +218,8 @@ def handle_grind(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_grind.grind(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
+    utils.start_traj_recording(grind_args[5], bagname)
+    result = activity_grind.grind(interface.move_arm, interface.move_limbs, grind_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:

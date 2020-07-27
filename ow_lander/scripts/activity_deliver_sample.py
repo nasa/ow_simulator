@@ -28,13 +28,17 @@ def arg_parsing(req):
     z_delivery=req.z
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults,x_delivery,y_delivery,z_delivery,delete_prev_traj]
+  return [req.use_defaults, x_delivery, y_delivery, z_delivery, delete_prev_traj]
 
 
 
-def deliver_sample(move_arm, x_delivery, y_delivery, z_delivery):
+def deliver_sample(move_arm, args):
 
   move_arm.set_planner_id("RRTstar")
+
+  x_delivery = args[1]
+  y_delivery = args[2]
+  z_delivery = args[3]
 
   # after sample collect
   mypi = 3.14159

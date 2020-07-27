@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_bag_recorder</name>
+  <version>0.1.0</version>
+  <description>The ow_bag_recorder package. Allows recording of data transfered through ROS topics. Data is recorded and saved into bag files using the rosbag API. Topics to record are specified by a YAML configuration file, and rosbag record options are specified by separate YAML configuration file.</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per --> 
+  <maintainer email="thomas.stucky@nasa.gov">Thomas Stucky</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>NASA Internal - OpenSourcing is TODO</license>
+
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <author email="thomas.stucky@nasa.gov">Thomas Stucky</author>
+
+  <!-- The *depend tags are used to specify dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rosbag</build_depend>
+
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>rosbag</build_export_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rosbag</exec_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+</package>
