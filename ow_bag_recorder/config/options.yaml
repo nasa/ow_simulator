@@ -1,0 +1,19 @@
+options:
+  name:                ''    # DO NOT USE. rosbag API crashes when assigned
+  node:                ''
+  prefix:              'ow_bag'
+  append_date:         true
+  publish:             false
+  verbose:             false
+  quiet:               false
+  record_all:          false
+  regex:               false
+  exclude_regex:       ''
+  split:               false
+  max_splits:          0      # 0 allows inifite splits
+  max_size:            0      # in megabytes, 0 allows bagfile grow without restraint
+  max_duration:        -1.0   # in seconds, -1 allows inifite duration
+  limit:               0      # 0 allows infinite messages to be recorded
+  compression:         'uncompressed' # uncompressed | bz2 | lz4
+  buffer_size:         256    # in megabytes, 0 allows inifite buffer size
+  chunk_size:          768    # in kilobytes

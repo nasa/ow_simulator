@@ -25,18 +25,23 @@ def plan_cartesian_path_lin(move_arm, length):
                                0.0)         # jump threshold
   return plan, fraction
 
-def grind(move_arm, move_limbs, x_tr, y_tr, depth, length):
+def grind(move_arm, move_limbs, args):
 
-  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_tr, y_tr)
+  x_start = args[1]
+  y_start = args[2]
+  depth = args[3]
+  length = args[4]
+
+  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
   # rotate hand
-  change_joint_value(move_arm,constants.J_HAND_YAW, -2*math.pi/3)
+  change_joint_value(move_arm, constants.J_HAND_YAW, -2*math.pi/3)
 
   # approaching and entering terrain - along -Z
-  z_tr = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
-  go_to_Z_coordinate(move_limbs,x_tr,y_tr,z_tr)
+  z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+  go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
   # grinding ice - along +X
   cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length)
@@ -44,8 +49,8 @@ def grind(move_arm, move_limbs, x_tr, y_tr, depth, length):
   move_limbs.stop()
 
   # exiting terrain - along +Z
-  z_tr = constants.GROUND_POSITION + constants.GRIND_OFFSET - depth
-  go_to_Z_coordinate(move_arm,x_tr,y_tr,z_tr)
+  z_start = constants.GROUND_POSITION + constants.GRIND_OFFSET - depth
+  go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
 
 
   return True
