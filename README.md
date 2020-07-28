@@ -31,7 +31,11 @@ MATTER SHALL BE THE IMMEDIATE, UNILATERAL TERMINATION OF THIS AGREEMENT.
 
 ow_simulator
 ============
-Primarily contains ROS/Gazebo packages related to visual and
-physical simulation for OceanWATERS.
-
+[ow_simulator](https://github.com/nasa/ow_simulator) is the top level repository
+for OCEANWATERS. It primarily contains ROS/Gazebo packages related to visual and
+physical simulation for OceanWATERS. It also contains workspace files for
+setting up the rest of the OceanWATERS repositories:
+- [ow_autonomy](https://github.com/nasa/ow_autonomy)
+- [ow_europa](https://github.com/nasa/ow_europa)
+- [irg_open](https://github.com/nasa/irg_open)
 

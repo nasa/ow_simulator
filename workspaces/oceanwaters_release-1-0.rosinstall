@@ -1,0 +1,14 @@
+## Top level repo
+- git: { local-name: oceanwaters,     uri: 'https://babelfish.arc.nasa.gov/git/oceanwaters', version: releases/release-1-0 }
+
+## ROS/Gazebo packages
+- git: { local-name: ow_simulator,    uri: 'https://babelfish.arc.nasa.gov/git/ow_simulator', version: releases/release-1-0 }
+
+# Gazebo world files and the big data that accompanies them
+- git: { local-name: ow_enceladus,    uri: 'https://babelfish.arc.nasa.gov/git/ow_enceladus'                      }
+- git: { local-name: ow_europa,       uri: 'https://babelfish.arc.nasa.gov/git/ow_europa', version: releases/release-1-0 }
+
+## misc
+- git: { local-name: irg_open,        uri: 'https://babelfish.arc.nasa.gov/git/irg_open', version: releases/release-1-0 }
+#- git: { local-name: urdf_parser_py,  uri: 'https://github.com/ros/urdf_parser_py.git',     version: indigo-devel }
+
