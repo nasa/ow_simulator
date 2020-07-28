@@ -36,13 +36,13 @@ Call the GuardedMove service. This creates two trajectories in .ros. Args:
 ```
 bool use_defaults           # Set to true to use the default touch location
 bool delete_prev_traj       # Set to true for cleanup
-float32 target_x            # Touch x,y,z
-float32 target_y
-float32 surface_normal_x    # Normal vector (for approach direction)
-float32 surface_normal_y
-float32 surface_normal_z
-float32 offset_distance     # Start offset dist along normal vector
-float32 overdrive_distance  # How deep after expected ground do we go
+float32 x                   # x,y,z coordinates of guarded move starting point
+float32 y
+float32 z
+float32 direction_x         # x,y,z coordinates of the vector normal to the
+float32 direction_y         # surface to be approached (direction of approach)
+float32 direction_z
+float32 search_distance     # How deep along normal vector the scoop moves
 ```
 
 ### Grind trajectory planning
