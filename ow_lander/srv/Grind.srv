@@ -3,6 +3,7 @@ float32 x
 float32 y
 float32 depth
 float32 length
+float32 ground_position
 bool delete_prev_traj
 ---
 bool success
