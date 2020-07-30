@@ -111,7 +111,7 @@ def handle_dig_linear(req):
       return
 
     currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"target_
+    location = "full_traj_"
     bagname = location + currentDT
 
     utils.start_traj_recording(dig_linear_args[5], bagname)
