@@ -31,7 +31,7 @@ git clone https://github.com/nasa/ow_simulator
 * Symlink the .rosinstall you're interested in into the src directory and run
 wstool. This will check out all the repos necessary to build the workspace.
 ```
-ln -s oceanwaters/workspaces/oceanwaters_v1.rosinstall .rosinstall
+ln -s ow_simulator/oceanwaters/workspaces/oceanwaters_v1.rosinstall .rosinstall
 wstool up
 ```
 * To build the workspace, cd back up to the workspace directory, source the ROS
