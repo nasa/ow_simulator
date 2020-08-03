@@ -1,12 +1,12 @@
-bool use_defaults
-bool delete_prev_traj
-float32 x
+bool use_defaults           # Set to true to use the default touch location
+bool delete_prev_traj       # Set to true to cleanup ~/.ros
+float32 x                   # Touch x,y
 float32 y
-float32 surface_normal_x
+float32 surface_normal_x    # Normal vector (for approach direction)
 float32 surface_normal_y
 float32 surface_normal_z
-float32 offset_distance
-float32 overdrive_distance 
+float32 offset_distance     # Start offset dist along normal vector
+float32 overdrive_distance  # How deep after expected ground do we go
 ---
 bool success
 string message

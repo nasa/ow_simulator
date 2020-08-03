@@ -38,7 +38,7 @@ def arg_parsing_lin(req):
     y_start=0
     depth=0.01
     length=0.3
-    ground_position=-0.175
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
   else :
@@ -58,7 +58,7 @@ def arg_parsing_circ(req):
     y_start=0
     depth=0.02
     radial=False
-    ground_position=-0.175
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
   else :

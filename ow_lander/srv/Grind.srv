@@ -1,10 +1,10 @@
-bool use_defaults
-float32 x
-float32 y
-float32 depth
-float32 length
-float32 ground_position
-bool delete_prev_traj
+bool use_defaults       # Set to true to use the default grinding location
+float32 x               # X coordinate of grinding starting point
+float32 y               # Y coordinate of grinding starting point
+float32 depth           # Desired depth
+float32 length          # Desired length
+float32 ground_position # Z coordinate of ground level in base_link frame
+bool delete_prev_traj   # Set to true to cleanup ~/.ros
 ---
 bool success
 string message
