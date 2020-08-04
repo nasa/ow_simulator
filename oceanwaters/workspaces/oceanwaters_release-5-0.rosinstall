@@ -1,0 +1,13 @@
+## Top-level repo and ROS/Gazebo packages
+- git: { local-name: ow_simulator,    uri: 'https://github.com/nasa/ow_simulator' version: releases/release-5-0 }
+
+## Gazebo world files and the big data that accompanies them
+- git: { local-name: ow_europa,       uri: 'https://github.com/nasa/ow_europa'    version: releases/release-5-0 }
+
+## Autonomy
+- git: { local-name: ow_autonomy,     uri: 'https://github.com/nasa/ow_autonomy', version: releases/release-5-0 }
+- git: { local-name: owatb_interface, uri: 'https://github.com/hiroono/owatb_interface', version: 7c3ff42cd244992cf90ee40fd4d161a8d9355f41 }
+
+## misc
+- git: { local-name: irg_open,        uri: 'https://github.com/nasa/irg_open',    version: releases/release-5-0 }
+
