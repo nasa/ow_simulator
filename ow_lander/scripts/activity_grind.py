@@ -31,6 +31,7 @@ def grind(move_arm, move_limbs, args):
   y_start = args[2]
   depth = args[3]
   length = args[4]
+  ground_position = args[5]
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
@@ -40,7 +41,8 @@ def grind(move_arm, move_limbs, args):
   change_joint_value(move_arm, constants.J_HAND_YAW, -2*math.pi/3)
 
   # approaching and entering terrain - along -Z
-  z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+
+  z_start = ground_position + constants.GRINDER_HEIGHT - depth
   go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
   # grinding ice - along +X
@@ -49,7 +51,7 @@ def grind(move_arm, move_limbs, args):
   move_limbs.stop()
 
   # exiting terrain - along +Z
-  z_start = constants.GROUND_POSITION + constants.GRIND_OFFSET - depth
+  z_start = ground_position + constants.GRINDER_OFFSET - depth
   go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
 
 

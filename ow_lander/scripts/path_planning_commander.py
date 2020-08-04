@@ -87,7 +87,7 @@ def handle_dig_circular(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(dig_circular_args[5], bagname)
+    utils.start_traj_recording(dig_circular_args[6], bagname)
     result = activity_full_digging_traj.dig_circular(interface.move_arm, interface.move_limbs, dig_circular_args)
     utils.stop_traj_recording(result, bagname)
 
@@ -114,7 +114,7 @@ def handle_dig_linear(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(dig_linear_args[5], bagname)
+    utils.start_traj_recording(dig_linear_args[6], bagname)
     result = activity_full_digging_traj.dig_linear(interface.move_arm, interface.move_limbs, dig_linear_args)
     utils.stop_traj_recording(result, bagname)
 
@@ -218,7 +218,7 @@ def handle_grind(req):
     location = "full_traj_"
     bagname = location + currentDT
 
-    utils.start_traj_recording(grind_args[5], bagname)
+    utils.start_traj_recording(grind_args[6], bagname)
     result = activity_grind.grind(interface.move_arm, interface.move_limbs, grind_args)
     utils.stop_traj_recording(result, bagname)
 
