@@ -1,7 +1,9 @@
 Requirements
 ============
+
 Hardware
 --------
+
 The minimum recommended hardware features are as follows:
 * 2.0 GHz quad core x86-64 CPU
 * 16 GB memory
@@ -9,6 +11,7 @@ The minimum recommended hardware features are as follows:
 
 Software
 --------
+
 The following software is required to build and run OceanWATERS:
 * Operating System: Linux Ubuntu 18.04 (bionic) specifically. (Even slightly
 newer versions such as 18.10 may not work.)
@@ -17,15 +20,17 @@ newer versions such as 18.10 may not work.)
 * Gazebo simulator 9.13
 * catkin build system
 * PLEXIL plan language and executive (http://plexil.sourceforge.net).
-NOTE: if you wish to use OceanWATERS without its provided autonomy package
-ow_autonomy, this installation may be omitted.
-Note on Virtual Machines: These work to some degree, but tend to not support the
+
+Note on virtual machines (e.g. VMWare, Parallels, VirtualBox, Windows Subsystem
+for Linux): These have all worked to some degree, but tend to not support the
 Gazebo simulator very well or at all. They are not recommended for OceanWATERS.
 
 Development Environment Setup
 =================
+
 ROS and Gazebo
 ------------
+
 * Install ROS (Melodic version) by following the
 [instructions](http://wiki.ros.org/melodic/Installation/Ubuntu). Select the
 ros-melodic-desktop-full package when you get to that step.
@@ -83,6 +88,7 @@ sudo apt install git \
 
 PLEXIL
 ------
+
 PLEXIL is hosted on sourceforge.net, which provides both source code and binary
 distributions. Because a variety of machines are used in this project, it is
 best built from the source code, which must be checked out of its git
@@ -112,7 +118,6 @@ sudo apt install make \
 plexil in the first line:
 ```
 export PLEXIL_HOME=/home/<username>/plexil
-export PATH=$PLEXIL_HOME/scripts:$PATH
 source $PLEXIL_HOME/scripts/plexil-setup.sh
 ```
 
@@ -126,7 +131,7 @@ source ~/.bashrc
 cd $PLEXIL_HOME
 make src/configure
 cd src
-./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc --enable-gantt --enable-udp
+./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc
 ```
 
 * Build it.

@@ -2,8 +2,10 @@ If you have not yet done so, [set up your development environment](setup_dev_env
 
 Setup OceanWATERS
 =================
+
 ROS Workspaces
 --------------
+
 ROS uses custom tools called Catkin and wstool to manage workspaces. Catkin is a
 build system that sits on top of CMake, and wstool is a meta-vcs tool that
 allows you to manage multiple source repositories. Reading
@@ -18,6 +20,7 @@ repositories at once.
 
 Create OceanWATERS Workspace
 ----------------------------
+
 * Create your workspace
 ```
 mkdir -p oceanwaters_ws/src
@@ -57,4 +60,3 @@ source devel/setup.bash
 ```
 roslaunch ow europa_terminator_workspace.launch
 ```
-
