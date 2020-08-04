@@ -38,6 +38,7 @@ def arg_parsing_lin(req):
     y_start=0
     depth=0.01
     length=0.3
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
   else :
@@ -45,9 +46,10 @@ def arg_parsing_lin(req):
     y_start=req.y
     depth=req.depth
     length=req.length
+    ground_position=req.ground_position
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, length, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, length, ground_position, delete_prev_traj]
 
 def arg_parsing_circ(req):
   if req.use_defaults :
@@ -56,6 +58,7 @@ def arg_parsing_circ(req):
     y_start=0
     depth=0.02
     radial=False
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
   else :
@@ -63,9 +66,10 @@ def arg_parsing_circ(req):
     y_start=req.y
     depth=req.depth
     radial=req.radial
+    ground_position=req.ground_position
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, radial, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, radial, ground_position, delete_prev_traj]
 
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   # Compute shoulder yaw angle to trench
@@ -113,6 +117,7 @@ def dig_linear(move_arm,move_limbs,args):
   y_start = args[2]
   depth = args[3]
   length = args[4]
+  ground_position = args[5]
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
@@ -128,7 +133,7 @@ def dig_linear(move_arm,move_limbs,args):
   change_joint_value(move_arm, constants.J_DIST_PITCH, -math.pi/2)
 
   ## Once aligned to trench goal, place hand above trench middle point
-  z_start = constants.GROUND_POSITION + constants.SCOOP_OFFSET - depth
+  z_start = ground_position + constants.SCOOP_OFFSET - depth
   go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
   #  rotate to dig in the ground
@@ -157,6 +162,7 @@ def dig_circular(move_arm, move_limbs, args):
   y_start = args[2]
   depth = args[3]
   radial = args[4]
+  ground_position = args[5]
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
@@ -165,7 +171,7 @@ def dig_circular(move_arm, move_limbs, args):
   if radial==False:
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    z_start = ground_position + constants.GRINDER_HEIGHT - depth
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate hand perpendicular to radial direction
@@ -182,7 +188,7 @@ def dig_circular(move_arm, move_limbs, args):
     change_joint_value(move_arm, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_start = constants.GROUND_POSITION + 3*constants.SCOOP_HEIGHT - depth
+    z_start = ground_position + constants.GRINDER_HEIGHT - depth
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate dist to dig

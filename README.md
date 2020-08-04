@@ -29,9 +29,29 @@ RECIPIENT, TO THE EXTENT PERMITTED BY LAW.  RECIPIENT'S SOLE REMEDY FOR ANY SUCH
 MATTER SHALL BE THE IMMEDIATE, UNILATERAL TERMINATION OF THIS AGREEMENT.
 
 
+Introduction
+============
+Ocean Worlds Autonomy Testbed for Exploration Research & Simulation (OceanWATERS)
+is a physical and visual simulation of a lander on Europa. It is intended as a
+testbed to aid in producing software that could fly on lander missions to ocean
+worlds, such as Europa and Enceladus.
+
+OceanWATERS is open source software licensed under the
+[NASA Open Source Agreement version 1.3](LICENSE.txt).
+
 ow_simulator
 ============
-Primarily contains ROS/Gazebo packages related to visual and
-physical simulation for OceanWATERS.
+[ow_simulator](https://github.com/nasa/ow_simulator) is the top level repository
+for OceanWATERS. It primarily contains ROS/Gazebo packages related to visual and
+physical simulation for OceanWATERS. It also contains workspace files for
+setting up the rest of the OceanWATERS repositories:
+- [ow_autonomy](https://github.com/nasa/ow_autonomy)
+- [ow_europa](https://github.com/nasa/ow_europa)
+- [irg_open](https://github.com/nasa/irg_open)
 
+Getting Started
+===============
+- [Setup your development environment](oceanwaters/doc/setup_dev_env.md)
+- [Download and build OceanWATERS](oceanwaters/doc/setup_oceanwaters.md)
+- [User Guide](todo)
 
