@@ -35,6 +35,7 @@ setting up the rest of the OceanWATERS repositories:
 Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues) before submitting a new one.
 
 If you wish to contribute code or a bug fix please follow our [Contribution Guidlines](todo).  
+
 ## Citation
 Coming soon
 
