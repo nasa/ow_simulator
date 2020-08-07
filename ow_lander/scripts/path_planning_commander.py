@@ -54,14 +54,14 @@ def handle_guarded_move(req):
 
     # Approach
     utils.start_traj_recording(guarded_move_args[1], bagname)
-    result = activity_guarded_move.pre_guarded_move(interface.move_arm, interface.move_limbs, guarded_move_args)
+    result = activity_guarded_move.pre_guarded_move(interface.move_arm, guarded_move_args)
     utils.stop_traj_recording(result, bagname)
 
     # Safe move, monitoring torques
     location = "guarded_move_traj_"
     bagname = location + currentDT
     utils.start_traj_recording(False, bagname)
-    result = activity_guarded_move.guarded_move(interface.move_arm, interface.move_limbs, guarded_move_args)
+    result = activity_guarded_move.guarded_move(interface.move_arm, guarded_move_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
