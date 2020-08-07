@@ -4,17 +4,13 @@
 [Code Organization](#code-Organization) |
 [Getting Started](#getting-started) |
 [Contributing](#contributing) |
-[Disclaimers](#disclaimers)
-
-[![NASA Licensed](https://img.shields.io/badge/license-NASA-blue)](https://github.com/nasa/ow_simulator/blob/master/LICENSE.txt)  
+[License](#license)
 
 ## Overview
 OceanWATERS is a physical and visual simulation of a lander on Europa. It is intended as a
 testbed to aid in producing software that could fly on lander missions to ocean
 worlds, such as Europa and Enceladus.
 
-OceanWATERS is open source software licensed under the
-[NASA Open Source Agreement version 1.3](LICENSE.txt).
 
 <p align="center"><img width="80%" src="oceanwaters/doc/lander_europa.jpg" /></p>
 
@@ -39,9 +35,12 @@ setting up the rest of the OceanWATERS repositories:
 Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues) before submitting a new one.
 
 If you wish to contribute code or a bug fix please follow our [Contribution Guidlines](todo).  
-
 ## Citation
 Coming soon
+
+## License
+OceanWATERS is open source software licensed under the
+[NASA Open Source Agreement version 1.3](LICENSE.txt).
 
 ## Notices
 Copyright © 2020 United States Government as represented by the Administrator of
