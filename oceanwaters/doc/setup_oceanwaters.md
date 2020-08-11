@@ -20,13 +20,6 @@ repositories at once.
 
 Create OceanWATERS Workspace
 ----------------------------
-* Optional: GitHub will require a username and password for every repository
-that is cloned. Since you will clone multiple repositories next and update them
-occasionally, make your life easier by temporarily caching your username and
-password using git-crendential-cache.
-```
-git config --global credential.helper cache
-```
 * Create your workspace directory
 ```
 mkdir -p oceanwaters_ws/src
