@@ -1,9 +1,10 @@
-bool use_defaults
-float32 x 
-float32 y
-float32 depth
-float32 length
-bool delete_prev_traj
+bool use_defaults       # Set to true to use the default trench location
+float32 x               # Trench starting point - X coordinate
+float32 y               # Trench starting point - Y coordinate
+float32 depth           # Desired depth
+float32 length          # Desired length
+float32 ground_position # Z coordinate of ground level in base_link frame
+bool delete_prev_traj   # Set to true to cleanup ~/.ros
 ---
 bool success
 string message

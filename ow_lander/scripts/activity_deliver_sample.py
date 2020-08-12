@@ -4,7 +4,6 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler
