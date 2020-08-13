@@ -1,4 +1,4 @@
-
+bool delete_prev_traj # Set to true to cleanup ~/.ros
 ---
 bool success
 string message

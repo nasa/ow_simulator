@@ -5,6 +5,7 @@
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
+  <arg name="record_bag" default="false"/>
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -78,6 +79,13 @@
   <!-- Starting without a .perspective file will reload the last used configuration. -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
-      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
+
+  <!-- == start bag_recorder_node =========== -->
+  <node if="$(arg record_bag)" name="bag_recorder_node" 
+      pkg="ow_bag_recorder" type="bag_recorder_node" output="screen">
+    <rosparam file="$(find ow_bag_recorder)/config/options.yaml"/>
+    <rosparam file="$(find ow_bag_recorder)/config/topics.yaml"/>
+  </node>
 
 </launch>

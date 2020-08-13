@@ -23,40 +23,39 @@ To run along with Gazebo:
 
 This will start Gazebo, as well as the planning and feeding nodes. Now to run
 both these nodes, you need to call the appropriate services (note that PLEXIL
-will be calling these services in code):
+will be calling these services in code).
 
-### Full trajectory planning
-Call the DigCircular service. Args:
-```
-bool use_defaults        # Set to true to use the defualt trench loc
-float32 trench_x         # Trench x location
-float32 trench_y         # Trench Y location
-float32 trench_d         # Trench depth
-bool delete_prev_traj    # Set to true to cleanup ~/.ros
-```
+### Unstow trajectory planning
+Call the Unstow service.
 
-### guarded_move trajectory planning
-Call the GuardedMove service. This creates two trajectories in .ros Args:
-```
-bool use_defaults           # Set to true to use the default touch location
-bool delete_prev_traj       # Set to true for cleanup
-float32 target_x            # Touch x,y,z
-float32 target_y
-float32 target_z
-float32 surface_normal_x    # Normal vector (for approach direction)
-float32 surface_normal_y
-float32 surface_normal_z
-float32 offset_distance     # Start offset dist along normal vector
-float32 overdrive_distance  # How deep after expected ground do we go
-float32 retract             # TODO, unused as of now
-```
+### Guarded move trajectory planning
+Call the GuardedMove service. This creates two trajectories in .ros.
+
+### Grind trajectory planning
+Call the Grind service.
+
+### Circular trenching trajectory planning
+Call the DigCircular service.
+
+### Linear trenching trajectory planning
+Call the DigLinear service.
+
+### Deliver sample trajectory planning
+Call the DeliverSample service.
+
+### Stow trajectory planning
+Call the Stow service.
 
 ### Trajectory feeding
-Call the PublishTrajectory service. Args:
+Call the PublishTrajectory service.
+
+For more info on the message type of each of the services above, please refer to
+the message declaration in the .srv files. Alternatively, info can be displayed
+directly from terminal typing the following command:
 ```
-bool use_latest             # Set to true to use the latest trajectory 
-string trajectory_filename  # The filename of the trajectory to run
+$ rossrv show -r foo
 ```
+replacing "foo" with the desired service name (for instance, foo=DigCircular).
 
 ### Manual Operations
 To run these services manually, find the 'rqt' window and select the Service
@@ -78,7 +77,7 @@ config/ros_controllers.yaml
 launch/
 launch/gazebo.launch
 launch/move_group.launch
-launch/ompl_planning_pipeline.launch 
+launch/ompl_planning_pipeline.launch
 launch/planning_context.launch
 launch/planning_pipeline.launch
 launch/ros_controllers.launch
