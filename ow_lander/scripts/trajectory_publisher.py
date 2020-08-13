@@ -13,41 +13,63 @@ import time
 import glob
 import os
 import constants
-from numpy import mean 
+import numpy as np
+import pylab
 
-effort_arr = [0] * constants.GUARD_FILTER_AV_WIDTH # Used to store efforts for filtering
-previous_effort = 0
-array_index = 0
-slope = 0
+
+velocity_array = np.array([0.0] *1)
+
+
+def thresholding_algo(y, lag, threshold, influence):
+    ground_found = 0
+    if (len(y) < lag):
+        return 
+    filteredY = np.array(y)
+    avgFilter = [0]*len(y)
+    stdFilter = [0]*len(y)
+    avgFilter[lag - 1] = np.mean(y[0:lag])
+    stdFilter[lag - 1] = np.std(y[0:lag])
+    for i in range(lag, len(y)):
+        if abs(y[i] - avgFilter[i-1]) > threshold * stdFilter [i-1]:
+            if y[i] > avgFilter[i-1]:
+                ground_found = 1
+            filteredY[i] = influence * y[i] + (1 - influence) * filteredY[i-1]
+            avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
+            stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
+        else:
+            filteredY[i] = y[i]
+            avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
+            stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
+
+    return ground_found
+
+def check_for_contact(y):
+  # lag, threshold and innfluence can be tuned to detect contact with the ground. These numbers were tested with
+  #different planning algorithms to check for ground. If these number doesnot work for your particular configuration, 
+  #you can re-tune the numbers. Save velocity array (uncomment line 60 np.savetxt ....), and run   peak_detect.py. see 
+  #peak_detect.py for more information. 
+  lag = 100
+  threshold = 20
+  influence = 1.0 
+  # Run algo with settings from above
+  result = thresholding_algo(y, lag=lag, threshold=threshold, influence=influence)
+  return result
 
 def joint_states_cb(data):
-  global effort_arr
-  global array_index
-  global previous_effort
-  global slope  
-  effort_arr[array_index] = data.effort[6]
-  array_index = (array_index+1)%constants.GUARD_FILTER_AV_WIDTH
 
-  new_effort = mean(effort_arr)
-  slope = abs(new_effort - previous_effort)
-  previous_effort = new_effort
-
-# Returns True if a torque spike is detected in j_shou_pitch
-def check_for_contact(max_slope):
-  global slope
-  print slope
-  print max_slope
-  if slope > max_slope * constants.GUARD_MAX_SLOPE_BEFORE_CONTACT_COEFF:
-    return True
-  return False 
+  global velocity_array
+  velocity_array  = np.append(velocity_array , data.velocity[6])
+  #c = np.savetxt('velocity_array.txt', velocity_array)  # save the velocity_array to tune the ground detection
+  
 
 # The talker runs once the publish service is called. It starts a publisher 
-# per joint controller, then reads teh trajectory csvs. 
+# per joint controller, then reads the trajectory csvs. 
 # If the traj csv is a guarded move, it reads both parts.
 # When publishing the safe (second) part of a guarded_move, it
-# monitors the torque on /shou_pitch, and cuts off the publishing
-# if constants.GUARD_MAX_SLOPE_BEFORE_CONTACT is reached. The 
-# slope after averaging the last 10 values of /shou_pitch effort
+# monitors the velocity, and cuts off the publishing after is ground is detected. 
+#The ground is detected after the peak_detection algorithm detects a spike in the velocity data
+
+
 def talker(req):
   pubs = []
   pubs.append(rospy.Publisher('/shou_yaw_position_controller/command', Float64, queue_size=40))
@@ -62,7 +84,7 @@ def talker(req):
   rows = [] 
   guard_rows = []
   guarded_move_bool = False
-  max_slope = 0
+
 
   # === READ TRAJ FILE(S) ===============================
   if req.use_latest :
@@ -109,6 +131,7 @@ def talker(req):
       print "Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
       rate.sleep()
 
+        
   if guarded_move_bool : # If the activity is a guarded_move
     # Start subscriber for the joint_states
     rate = rospy.Rate(int(pub_rate/2)) # Hz
@@ -117,18 +140,15 @@ def talker(req):
     start_guard_delay_acc = 0 
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
-        if start_guard_delay_acc < constants.GUARD_FILTER_AV_WIDTH:
-          start_guard_delay_acc += 1
-          max_slope = slope
-        else:
-          if check_for_contact(max_slope) == True :
+        ground = check_for_contact(velocity_array)  
+        if (ground == 1):     
             print "Found ground, stopped motion..."
             return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
           pubs[x].publish(float("%14s\n"%row[12+x]))
         print "Guarded. Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
-        rate.sleep()
+        rate.sleep()        
 
   return True, "Done publishing trajectory"
 
