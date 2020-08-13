@@ -5,7 +5,7 @@
 #algorithm signals and influence = the influence (between 0 and 1) of new signals on the mean and standard
 #deviation. This file can be used to change (tune) these numbers on the saved velocity_array for offline
 #peak detection. Once you are satified with the peak detection save the numbers and use them in trajectory 
-publisher.  
+#publisher.  
 
 # Implementation of algorithm from http://stackoverflow.com/a/22640362/6029703
 # Original conde can be found at https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/43512887#43512887
