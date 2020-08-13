@@ -13,7 +13,6 @@ import time
 import glob
 import os
 import constants
-from numpy import mean 
 import numpy as np
 import pylab
 
@@ -45,7 +44,10 @@ def thresholding_algo(y, lag, threshold, influence):
     return ground_found
 
 def check_for_contact(y):
-  # lag, threshold and innfluence can be tuned to detect contact with the ground. These numbers were tested with different planning algorithms to check for ground. If these number doesnot work for your particular configuration,  you can re-tune the numbers. Save velocity array (uncomment line 60 np.savetxt ....), and run   peak_detect.py. see peak_detect.py for more information. 
+  # lag, threshold and innfluence can be tuned to detect contact with the ground. These numbers were tested with
+  #different planning algorithms to check for ground. If these number doesnot work for your particular configuration, 
+  #you can re-tune the numbers. Save velocity array (uncomment line 60 np.savetxt ....), and run   peak_detect.py. see 
+  #peak_detect.py for more information. 
   lag = 100
   threshold = 20
   influence = 1.0 
