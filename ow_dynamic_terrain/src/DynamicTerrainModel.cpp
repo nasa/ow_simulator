@@ -46,17 +46,35 @@ public:
     m_ros_node.reset(new ros::NodeHandle("dynamic_terrain_model"));
     m_ros_node->setCallbackQueue(&m_ros_queue);
 
-    m_ros_subscriber_circle = m_ros_node->subscribe<modify_terrain_circle>(
-        "/ow_dynamic_terrain/modify_terrain_circle", 10,
-        [this](const modify_terrain_circle::ConstPtr& msg) { this->onModifyTerrainCircleMsg(msg); });
+    auto on_modify_terrain_circle = [this](const modify_terrain_circle::ConstPtr& msg) {
+      this->onModifyTerrainCircleMsg(msg);
+    };
 
-    m_ros_subscriber_ellipse = m_ros_node->subscribe<modify_terrain_ellipse>(
-        "/ow_dynamic_terrain/modify_terrain_ellipse", 10,
-        [this](const modify_terrain_ellipse::ConstPtr& msg) { this->onModifyTerrainEllipseMsg(msg); });
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_circle>(
+        "/ow_dynamic_terrain/modify_terrain_circle", 10, on_modify_terrain_circle));
 
-    m_ros_subscriber_patch = m_ros_node->subscribe<modify_terrain_patch>(
-        "/ow_dynamic_terrain/modify_terrain_patch", 10,
-        [this](const modify_terrain_patch::ConstPtr& msg) { this->onModifyTerrainPatchMsg(msg); });
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_circle>(
+        "/ow_dynamic_terrain/modify_terrain_circle/collision", 10, on_modify_terrain_circle));
+
+    auto on_modify_terrain_ellipse = [this](const modify_terrain_ellipse::ConstPtr& msg) {
+      this->onModifyTerrainEllipseMsg(msg);
+    };
+
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_ellipse>(
+        "/ow_dynamic_terrain/modify_terrain_ellipse", 10, on_modify_terrain_ellipse));
+
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_ellipse>(
+        "/ow_dynamic_terrain/modify_terrain_ellipse/collision", 10, on_modify_terrain_ellipse));
+
+    auto on_modify_terrain_patch = [this](const modify_terrain_patch::ConstPtr& msg) {
+      this->onModifyTerrainPatchMsg(msg);
+    };
+
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_patch>(
+        "/ow_dynamic_terrain/modify_terrain_patch", 10, on_modify_terrain_patch));
+
+    m_ros_subscribers.push_back(m_ros_node->subscribe<modify_terrain_patch>(
+        "/ow_dynamic_terrain/modify_terrain_patch/collision", 10, on_modify_terrain_patch));
 
     m_on_update_connection = event::Events::ConnectPostRender([this]() { this->onUpdate(); });
 
@@ -231,13 +249,7 @@ private:
   ros::CallbackQueue m_ros_queue;
 
 private:
-  ros::Subscriber m_ros_subscriber_circle;
-
-private:
-  ros::Subscriber m_ros_subscriber_ellipse;
-
-private:
-  ros::Subscriber m_ros_subscriber_patch;
+  vector<ros::Subscriber> m_ros_subscribers;
 };
 
 // Register this plugin with the simulator
