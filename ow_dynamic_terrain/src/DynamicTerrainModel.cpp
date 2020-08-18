@@ -94,7 +94,8 @@ private:
   }
 
 private:
-  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
+  template <typename T, typename M>
+  void onModifyTerrainMsg(T msg, M modify_method)
   {
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
@@ -110,62 +111,30 @@ private:
       return;
     }
 
-    TerrainModifier::modifyCircle(
-        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
-        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
+    modify_method(
+      heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
+      [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 
     // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
+  }
+
+private:
+  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
+  {
+    onModifyTerrainMsg(msg, TerrainModifier::modifyCircle);
   }
 
 private:
   void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) override
   {
-    auto heightmap = getHeightmap(get_scene());
-    if (heightmap == nullptr)
-    {
-      gzerr << m_plugin_name << ": Couldn't acquire heightmap!" << endl;
-      return;
-    }
-
-    auto heightmap_shape = getHeightmapShape();
-    if (heightmap_shape == nullptr)
-    {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << endl;
-      return;
-    }
-
-    TerrainModifier::modifyEllipse(
-        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
-        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-
-    // Re-enable physics updates for models that may have entered a standstill state
-    m_model->GetWorld()->EnableAllModels();
+    onModifyTerrainMsg(msg, TerrainModifier::modifyEllipse);
   }
 
 private:
   void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) override
   {
-    auto heightmap = getHeightmap(get_scene());
-    if (heightmap == nullptr)
-    {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap!" << endl;
-      return;
-    }
-
-    auto heightmap_shape = getHeightmapShape();
-    if (heightmap_shape == nullptr)
-    {
-      gzerr << "DynamicTerrainModel: Couldn't acquire heightmap shape!" << endl;
-      return;
-    }
-
-    TerrainModifier::modifyPatch(
-        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
-        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
-
-    // Re-enable physics updates for models that may have entered a standstill state
-    m_model->GetWorld()->EnableAllModels();
+    onModifyTerrainMsg(msg, TerrainModifier::modifyPatch);
   }
 
 private:

@@ -27,7 +27,7 @@ protected:
   void Initialize(const std::string& topic_extension);
 
 private:
-  template <class T>
+  template <typename T>
   void subscribe(const std::string& topic,
     const boost::function<void (const boost::shared_ptr<T const>&)>& callback);
 

@@ -41,7 +41,8 @@ private:
   }
 
 private:
-  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
+  template <typename T, typename M>
+  void onModifyTerrainMsg(T msg, M modify_method)
   {
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
@@ -51,50 +52,30 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyCircle(
+    modify_method(
         heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
         [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
+  }
+
+private:
+  void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
+  {
+    onModifyTerrainMsg(msg, TerrainModifier::modifyCircle);
   }
 
 private:
   void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) override
   {
-    auto heightmap = getHeightmap(get_scene());
-    if (heightmap == nullptr)
-    {
-      gzerr << m_plugin_name << ": Couldn't acquire heightmap!" << endl;
-      return;
-    }
-
-    auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyEllipse(
-        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
-        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
-
-    terrain->updateGeometry();
-    terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
+    onModifyTerrainMsg(msg, TerrainModifier::modifyEllipse);
   }
 
 private:
   void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) override
   {
-    auto heightmap = getHeightmap(get_scene());
-    if (heightmap == nullptr)
-    {
-      gzerr << m_plugin_name << ": Couldn't acquire heightmap!" << endl;
-      return;
-    }
-
-    auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    TerrainModifier::modifyPatch(
-        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
-        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
-
-    terrain->updateGeometry();
-    terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
+    onModifyTerrainMsg(msg, TerrainModifier::modifyPatch);
   }
 };
 

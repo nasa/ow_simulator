@@ -8,11 +8,10 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
 {
     if (!ros::isInitialized())
     {
-        gzerr << m_plugin_name + ": ROS not initilized!" << endl;
+        gzerr << m_plugin_name + ": ROS not initilized! The plugin won't load" << endl;
         return;
     }
 
-    // m_node_handle.reset(new ros::NodeHandle(m_plugin_name));
     m_node_handle = make_unique<ros::NodeHandle>(m_plugin_name);
     m_node_handle->setCallbackQueue(&m_callback_queue);
 
@@ -42,7 +41,7 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
     gzlog << m_plugin_name << ": successfully loaded!" << endl;
 }
 
-template <class T>
+template <typename T>
 void DynamicTerrainBase::subscribe(const std::string& topic,
     const boost::function<void (const boost::shared_ptr<T const>&)>& callback)
 {
