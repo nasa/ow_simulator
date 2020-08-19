@@ -2,8 +2,8 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "TerrainModifier.h"
 #include "DynamicTerrainBase.h"
+#include "TerrainModifier.h"
 
 using namespace std;
 using namespace gazebo;
@@ -14,8 +14,7 @@ namespace ow_dynamic_terrain
 class DynamicTerrainVisual : public VisualPlugin, public DynamicTerrainBase
 {
 public:
-  DynamicTerrainVisual() :
-    DynamicTerrainBase{ "ow_dynamic_terrain", "DynamicTerrainVisual" }
+  DynamicTerrainVisual() : DynamicTerrainBase{ "ow_dynamic_terrain", "DynamicTerrainVisual" }
   {
   }
 
@@ -52,9 +51,8 @@ private:
     }
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    modify_method(
-        heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
-        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
+    modify_method(heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
+                  [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); });
 
     terrain->updateGeometry();
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);

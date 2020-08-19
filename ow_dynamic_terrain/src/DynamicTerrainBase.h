@@ -17,19 +17,18 @@ namespace ow_dynamic_terrain
 class DynamicTerrainBase
 {
 protected:
-    DynamicTerrainBase(const std::string& package_name, const std::string& plugin_name) :
-        m_package_name{package_name},
-        m_plugin_name{plugin_name}
-    {
-    }
+  DynamicTerrainBase(const std::string& package_name, const std::string& plugin_name) :
+    m_package_name{ package_name },
+    m_plugin_name{ plugin_name }
+  {
+  }
 
 protected:
   void Initialize(const std::string& topic_extension);
 
 private:
   template <typename T>
-  void subscribe(const std::string& topic,
-    const boost::function<void (const boost::shared_ptr<T const>&)>& callback);
+  void subscribe(const std::string& topic, const boost::function<void(const boost::shared_ptr<T const>&)>& callback);
 
 protected:
   gazebo::rendering::Heightmap* getHeightmap(gazebo::rendering::ScenePtr scene);
@@ -44,10 +43,10 @@ protected:
   virtual void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) = 0;
 
 protected:
-    std::string m_package_name;
+  std::string m_package_name;
 
 protected:
-    std::string m_plugin_name;
+  std::string m_plugin_name;
 
 protected:
   gazebo::event::ConnectionPtr m_on_update_connection;

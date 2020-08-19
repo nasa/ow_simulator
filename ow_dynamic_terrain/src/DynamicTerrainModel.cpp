@@ -4,7 +4,6 @@
 
 #include <gazebo/physics/physics.hh>
 #include "TerrainModifier.h"
-
 #include "DynamicTerrainBase.h"
 
 #if GAZEBO_MAJOR_VERSION < 9 || (GAZEBO_MAJOR_VERSION == 9 && GAZEBO_MINOR_VERSION < 13)
@@ -25,8 +24,7 @@ namespace ow_dynamic_terrain
 class DynamicTerrainModel : public ModelPlugin, public DynamicTerrainBase
 {
 public:
-  DynamicTerrainModel() :
-    DynamicTerrainBase{ "ow_dynamic_terrain", "DynamicTerrainModel" }
+  DynamicTerrainModel() : DynamicTerrainBase{ "ow_dynamic_terrain", "DynamicTerrainModel" }
   {
   }
 
@@ -112,8 +110,8 @@ private:
     }
 
     modify_method(
-      heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
-      [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
+        heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
+        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
 
     // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
