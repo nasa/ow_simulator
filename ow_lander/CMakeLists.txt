@@ -23,6 +23,11 @@ add_service_files(
   Unstow.srv
 )
 
+add_message_files(
+  FILES
+  GuardedMoveResult.msg
+)
+
 generate_messages(
   DEPENDENCIES
   std_msgs
@@ -30,6 +35,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
+  CATKIN_DEPENDS message_runtime
 )
 
 catkin_add_env_hooks(
