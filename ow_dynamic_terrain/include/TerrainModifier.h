@@ -22,13 +22,11 @@ public:
                            const std::function<float(int, int)>& get_height_value,
                            const std::function<void(int, int, float)>& set_height_value);
 
-public:
   static void modifyEllipse(gazebo::rendering::Heightmap* heightmap,
                             const ow_dynamic_terrain::modify_terrain_ellipse::ConstPtr& msg,
                             const std::function<float(int, int)>& get_height_value,
                             const std::function<void(int, int, float)>& set_height_value);
 
-public:
   static void modifyPatch(gazebo::rendering::Heightmap* heightmap,
                           const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg,
                           const std::function<float(int, int)>& get_height_value,
@@ -41,11 +39,9 @@ private:
   static cv::Point2i getHeightmapPosition(gazebo::rendering::Heightmap* heightmap,
                                           const geometry_msgs::Point32& position);
 
-private:
   // Imports an OpenCV Matrix object from a sensor_msgs::Image object through cv_bridge
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
-private:
   // Applies the an OpenCV image to a heightmap at a given position
   // param heightmap: heightmap to merge the image with
   // param center: absolute position within the heightmap where the image will be applied

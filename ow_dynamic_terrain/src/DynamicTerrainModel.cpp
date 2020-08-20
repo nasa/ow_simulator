@@ -28,7 +28,6 @@ public:
   {
   }
 
-public:
   void Load(ModelPtr model, sdf::ElementPtr /*sdf*/) override
   {
     GZ_ASSERT(model != nullptr, "DynamicTerrainModel: model can't be null!");
@@ -76,7 +75,6 @@ private:
     return shape;
   }
 
-private:
   static inline float getHeightInWorldCoords(const HeightmapShapePtr& heightmap_shape, int x, int y)
   {
     auto value = heightmap_shape->GetHeight(x, heightmap_shape->VertexCount().Y() - y - 1);
@@ -84,14 +82,12 @@ private:
     return value;
   }
 
-private:
   static inline void setHeightFromWorldCoords(const HeightmapShapePtr& heightmap_shape, int x, int y, float value)
   {
     value -= heightmap_shape->Pos().Z();
     heightmap_shape->SetHeight(x, heightmap_shape->VertexCount().Y() - y - 1, value);
   }
 
-private:
   template <typename T, typename M>
   void onModifyTerrainMsg(T msg, M modify_method)
   {
@@ -117,19 +113,16 @@ private:
     m_model->GetWorld()->EnableAllModels();
   }
 
-private:
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyCircle);
   }
 
-private:
   void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyEllipse);
   }
 
-private:
   void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyPatch);

@@ -23,41 +23,26 @@ protected:
   {
   }
 
-protected:
   void Initialize(const std::string& topic_extension);
 
-private:
+  virtual void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) = 0;
+
+  virtual void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) = 0;
+
+  virtual void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) = 0;
+
+protected:
+  gazebo::rendering::Heightmap* getHeightmap(gazebo::rendering::ScenePtr scene);
+  
   template <typename T>
   void subscribe(const std::string& topic, const boost::function<void(const boost::shared_ptr<T const>&)>& callback);
 
 protected:
-  gazebo::rendering::Heightmap* getHeightmap(gazebo::rendering::ScenePtr scene);
-
-protected:
-  virtual void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) = 0;
-
-protected:
-  virtual void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) = 0;
-
-protected:
-  virtual void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) = 0;
-
-protected:
   std::string m_package_name;
-
-protected:
   std::string m_plugin_name;
-
-protected:
   gazebo::event::ConnectionPtr m_on_update_connection;
-
-protected:
   std::unique_ptr<ros::NodeHandle> m_node_handle;
-
-protected:
   ros::CallbackQueue m_callback_queue;
-
-protected:
   std::vector<ros::Subscriber> m_subscribers;
 };
 

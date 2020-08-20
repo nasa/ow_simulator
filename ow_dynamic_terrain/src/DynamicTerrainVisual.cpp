@@ -18,7 +18,6 @@ public:
   {
   }
 
-public:
   void Load(VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/) override
   {
     Initialize("visual");
@@ -32,14 +31,12 @@ private:
     return value;
   }
 
-private:
   static inline void setHeightFromWorldCoords(Ogre::Terrain* terrain, int x, int y, float value)
   {
     value -= terrain->getPosition().z;
     terrain->setHeightAtPoint(x, y, value);
   }
 
-private:
   template <typename T, typename M>
   void onModifyTerrainMsg(T msg, M modify_method)
   {
@@ -58,19 +55,16 @@ private:
     terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
   }
 
-private:
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyCircle);
   }
 
-private:
   void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyEllipse);
   }
 
-private:
   void onModifyTerrainPatchMsg(const modify_terrain_patch::ConstPtr& msg) override
   {
     onModifyTerrainMsg(msg, TerrainModifier::modifyPatch);

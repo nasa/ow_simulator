@@ -28,6 +28,15 @@ class ModifyTerrainScoop:
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
   def compose_modify_terrain_ellipse_message(self, position, orientation, scale=1.0):
+    """ Composes a modify_terrain_ellipse that matches the tip of scoop end effector
+    when it is positioned for scopping. The scoop has a wide tip hence an ellipse
+    is used to approximate its changes to the terrain.
+
+    Parameters:
+      position: Corresponds to the center of the modify_terrain_ellipse operation
+      orientation: The angle of scoop in world frame
+      scale: A value that uniformaly scales the generated modify_terrain_ellipse message
+    """
     return modify_terrain_ellipse(position=Point(position.x, position.y, position.z),
                                   orientation=orientation,
                                   outer_radius_a=0.002*scale, outer_radius_b=0.005*scale,

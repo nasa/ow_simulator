@@ -639,6 +639,13 @@
       </plugin>
     </visual>
     <selfCollide>1</selfCollide>
+    <collision>
+      <surface>
+        <contact>
+          <collide_bitmask>0x0002</collide_bitmask>
+        </contact>
+      </surface>
+    </collision>
   </gazebo>
   <joint name="j_grinder" type="fixed">
     <origin xyz="-0.075 -0.129903811 0" rpy="0 0 ${-pi*2/3}" />

@@ -29,6 +29,15 @@ class ModifyTerrainGrinder:
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
   def compose_modify_terrain_circle_message(self, position, scale=1.0):
+    """ Composes a modify_terrain_circle that matches the grinder end effector
+    it is positioned downwards ready for digging. When the grinder is position
+    downward for digging the shape it projects on the terrain as a circle.
+
+    Parameters:
+      position: Corresponds to the center of the modify_terrain_circle operation
+      scale: A value that uniformaly scales the generated modify_terrain_circle
+        message
+    """
     return modify_terrain_circle(position=Point(position.x, position.y, position.z),
                                  outer_radius=0.008*scale, inner_radius=0.001*scale,
                                  weight=-0.2*scale, merge_method="min")
