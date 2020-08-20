@@ -137,7 +137,7 @@ def talker(req):
   if guarded_move_bool : # If the activity is a guarded_move
 
     # Start publisher for guarded_move result message
-    pubs.append(rospy.Publisher('/GUARDED_MOVE_RESULT_W0OOOOHHHHHHHH', GuardedMoveResult, queue_size=10))
+    pubs.append(rospy.Publisher('/guarded_move_result', GuardedMoveResult, queue_size=10))
 
     # Start subscriber for the joint_states
     rate = rospy.Rate(int(pub_rate/2)) # Hz
