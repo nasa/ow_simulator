@@ -5,7 +5,7 @@
 # this repository.
 
 import rospy
-import tf
+import tf2
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from ow_lander.srv import *
@@ -23,27 +23,27 @@ velocity_array = np.array([0.0] *1)
 
 
 def thresholding_algo(y, lag, threshold, influence):
-    ground_found = 0
-    if (len(y) < lag):
-        return
-    filteredY = np.array(y)
-    avgFilter = [0]*len(y)
-    stdFilter = [0]*len(y)
-    avgFilter[lag - 1] = np.mean(y[0:lag])
-    stdFilter[lag - 1] = np.std(y[0:lag])
-    for i in range(lag, len(y)):
-        if abs(y[i] - avgFilter[i-1]) > threshold * stdFilter [i-1]:
-            if y[i] > avgFilter[i-1]:
-                ground_found = 1
-            filteredY[i] = influence * y[i] + (1 - influence) * filteredY[i-1]
-            avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
-            stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
-        else:
-            filteredY[i] = y[i]
-            avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
-            stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
+  ground_found = 0
+  if (len(y) < lag):
+    return
+  filteredY = np.array(y)
+  avgFilter = [0]*len(y)
+  stdFilter = [0]*len(y)
+  avgFilter[lag - 1] = np.mean(y[0:lag])
+  stdFilter[lag - 1] = np.std(y[0:lag])
+  for i in range(lag, len(y)):
+    if abs(y[i] - avgFilter[i-1]) > threshold * stdFilter [i-1]:
+      if y[i] > avgFilter[i-1]:
+        ground_found = 1
+      filteredY[i] = influence * y[i] + (1 - influence) * filteredY[i-1]
+      avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
+      stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
+    else:
+      filteredY[i] = y[i]
+      avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
+      stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
 
-    return ground_found
+  return ground_found
 
 def check_for_contact(y):
   # lag, threshold and innfluence can be tuned to detect contact with the ground. These numbers were tested with
@@ -148,24 +148,24 @@ def talker(req):
       if row[0][0] == '1' : # If the row is a command
         ground = check_for_contact(velocity_array)
         if (ground == 1):
-            print "Found ground, stopped motion..."
+          print "Found ground, stopped motion..."
 
-            listener = tf.TransformListener()
-            listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-            (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
-            pubs[6].publish(ground, trans[0], trans[1], trans[2], 'base_link')
+          listener = tf.TransformListener()
+          listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
+          (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
+          pubs[6].publish(ground, trans[0], trans[1], trans[2], 'base_link')
 
-            # msg = GuardedMoveResult()
-            # msg.success = ground
-            # msg.X = trans[0]
-            # msg.Y = trans[1]
-            # msg.Z = trans[2]
-            # msg.frame = 'base_link'
-            # print(trans)
-            # print(msg)
-            # print(GuardedMoveResult)
+          # msg = GuardedMoveResult()
+          # msg.success = ground
+          # msg.X = trans[0]
+          # msg.Y = trans[1]
+          # msg.Z = trans[2]
+          # msg.frame = 'base_link'
+          # print(trans)
+          # print(msg)
+          # print(GuardedMoveResult)
 
-            return True, "Done publishing guarded_move"
+          return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
           pubs[x].publish(float("%14s\n"%row[12+x]))
@@ -173,10 +173,10 @@ def talker(req):
         rate.sleep()
 
     if (ground != 1):
-        listener = tf.TransformListener()
-        listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-        (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
-        pubs[6].publish(ground, 0.0, 0.0, 0.0, 'base_link')
+      listener = tf.TransformListener()
+      listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
+      (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
+      pubs[6].publish(ground, 0.0, 0.0, 0.0, 'base_link')
 
   return True, "Done publishing trajectory"
 
