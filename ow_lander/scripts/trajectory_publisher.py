@@ -5,8 +5,9 @@
 # this repository.
 
 import rospy
-import tf2
+import tf2_ros
 from std_msgs.msg import Float64
+from geometry_msgs.msg import Point
 from sensor_msgs.msg import JointState
 from ow_lander.srv import *
 import csv
@@ -137,33 +138,25 @@ def talker(req):
   if guarded_move_bool : # If the activity is a guarded_move
 
     # Start publisher for guarded_move result message
-    pubs.append(rospy.Publisher('/guarded_move_result', GuardedMoveResult, queue_size=10))
+    guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveResult, queue_size=10)
 
     # Start subscriber for the joint_states
     rate = rospy.Rate(int(pub_rate/2)) # Hz
     rospy.Subscriber("/joint_states", JointState, joint_states_cb)
     time.sleep(2)
-    start_guard_delay_acc = 0
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
         ground = check_for_contact(velocity_array)
         if (ground == 1):
           print "Found ground, stopped motion..."
 
-          listener = tf.TransformListener()
-          listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-          (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
-          pubs[6].publish(ground, trans[0], trans[1], trans[2], 'base_link')
-
-          # msg = GuardedMoveResult()
-          # msg.success = ground
-          # msg.X = trans[0]
-          # msg.Y = trans[1]
-          # msg.Z = trans[2]
-          # msg.frame = 'base_link'
-          # print(trans)
-          # print(msg)
-          # print(GuardedMoveResult)
+          tfBuffer = tf2_ros.Buffer()
+          listener = tf2_ros.TransformListener(tfBuffer)
+          trans = tfBuffer.lookup_transform("base_link", "l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
+          Point_X = trans.transform.translation.x
+          Point_Y = trans.transform.translation.y
+          Point_Z = trans.transform.translation.z
+          guarded_move_pub.publish(ground, Point(Point_X, Point_Y, Point_Z), 'base_link')
 
           return True, "Done publishing guarded_move"
 
@@ -172,11 +165,7 @@ def talker(req):
         print "Guarded. Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
         rate.sleep()
 
-    if (ground != 1):
-      listener = tf.TransformListener()
-      listener.waitForTransform("/base_link", "/l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-      (trans,rot) = listener.lookupTransform("base_link", "l_scoop_tip", rospy.Time(0))
-      pubs[6].publish(ground, 0.0, 0.0, 0.0, 'base_link')
+    guarded_move_pub.publish(ground, Point(0.0, 0.0, 0.0), 'base_link')
 
   return True, "Done publishing trajectory"
 
