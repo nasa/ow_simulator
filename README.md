@@ -40,9 +40,13 @@ license or copyright restrictions. See our [license](LICENSE.txt) for more
 details.
 
 If you wish to contribute code or a bug fix please:
-- fork this repository,
-- make changes to your fork, and
-- create a pull request against this repository.
+- Create your own fork of this repository. In the upper-right corner of the
+[ow_simulator front page](https://github.com/nasa/ow_simulator) click `Fork`.
+Your fork will be called `<your_username>/ow_simulator`.
+- In your newly forked repository, create a branch with an appropriate name for
+your feature or bug fix.
+- Make changes to your new branch.
+- Create a pull request against the `master` branch of `nasa/ow_simulator`.
 
 ## Citation
 Coming soon
