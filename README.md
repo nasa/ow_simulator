@@ -31,10 +31,18 @@ setting up the rest of the OceanWATERS repositories:
 - [User Guide](todo)
 
 ## Contributing
+Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues)
+before submitting a new one. If we are unable to accomodate your request and you
+want to contribute to this project yourself, follow these instructions:
 
-Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues) before submitting a new one.
+Contributions must be the original work of the contributor with no conflicting
+license or copyright restrictions. See our [license](LICENSE.txt) for more
+details.
 
-If you wish to contribute code or a bug fix please follow our [Contribution Guidlines](todo).  
+If you wish to contribute code or a bug fix please:
+- fork this repository,
+- make changes to your fork, and
+- create a pull request against this repository.
 
 ## Citation
 Coming soon
