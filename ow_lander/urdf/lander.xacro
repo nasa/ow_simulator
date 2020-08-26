@@ -455,8 +455,8 @@
       </plugin>
     </visual>
     <selfCollide>1</selfCollide>
-    <!-- Turn off collisions with the terrain so scoop can go underground. For
-         this to work, the terrain must use a different collide_bitmask.-->
+    <!-- Keep the collision between the terrain and the hand turned off as it
+         results in a slower simulation and worse physics. -->
 
     <collision>
       <surface>

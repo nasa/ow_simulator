@@ -49,7 +49,7 @@ template <typename T>
 void DynamicTerrainBase::subscribe(const std::string& topic,
                                    const boost::function<void(const boost::shared_ptr<T const>&)>& callback)
 {
-  auto topic_fqn = "/" + m_package_name + "/" + topic;
+  string topic_fqn = "/" + m_package_name + "/" + topic;
   m_subscribers.push_back(m_node_handle->subscribe<T>(topic_fqn, 10, callback));
 }
 
@@ -61,7 +61,7 @@ gazebo::rendering::Heightmap* DynamicTerrainBase::getHeightmap(gazebo::rendering
     return nullptr;
   }
 
-  auto heightmap = scene->GetHeightmap();
+  gazebo::rendering::Heightmap* heightmap = scene->GetHeightmap();
   if (heightmap == nullptr)
   {
     gzerr << m_plugin_name << ": scene has no heightmap!" << endl;
