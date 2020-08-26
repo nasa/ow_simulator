@@ -4,11 +4,12 @@ this repository.
 
 # Dynamic Terrain
 
-- [Introduction](#introduction)
-- [Requirements](#requirements)
+* [Introduction](#introduction)
+* [Requirements](#requirements)
   - [Compatibility](#compatibility)
-- [Usage](#usage)
-- [Demo](#demo)
+* [Usage](#usage)
+  - [Control Visual and Physical Aspects of the Terrain Individually](#control-visual-and-physical-aspects-of-the-terrain-individually)
+* [Demo](#demo)
   - [Modify Terrain with Circle](#modify-terrain-with-circle)
   - [Modify Terrain with Ellipse](#modify-terrain-with-ellipse)
   - [Modify Terrain with Patch](#modify-terrain-with-patch)
@@ -19,12 +20,14 @@ A package that adds the capability to update Gazebo terrains dynamically at run-
 
 ## Requirements
 
-ROS distro: melodic  
-Gazebo version 9.13 or later
+* This package was developed and tested against `ROS melodic` distrbution.
+* One of the plugins included in this package _DynamicTerrainModel_ requires `Gazebo` version 9.13 or later.
 
 ### Compatibility
-* The _IRGLinkTracksPlugin_ and _DynamicTerrainVisual_ plugin may conflict with each other as both affect the visual appearance of the terrain.
-* The _DynamicTerrainVisual_  is incompatible with the _HeightmapLODPlugin_.
+* The _IRGLinkTracksPlugin_ and _DynamicTerrainVisual_ plugin may conflict with each other as both affect the visual
+appearance of the terrain.
+* The _DynamicTerrainVisual_  is incompatible with the _HeightmapLODPlugin_; Either disable the plugin or configure it
+to always use the highest LOD level.
 
 ## Usage
 
@@ -69,6 +72,30 @@ The following excerpt shows how to apply the two plugins towards a DEM object:
   </model>
 </sdf>
 ```
+
+Once these plugins have been configured for a heightmap object, the user can then modify the terrain by composing and
+submitting an appropriate ros message to the following three topics/methods:
+- */ow_dynamic_terrain/modify_terrain_circle*
+- */ow_dynamic_terrain/modify_terrain_ellipse*
+- */ow_dynamic_terrain/modify_terrain_patch*
+
+See [Demo](#demo) for additional details on each method.
+
+## Control Visual and Physical Aspects of the Terrain Individually
+
+In certain situations it may be desirable to only modify one of the two terrain aspects: the visual part and the
+physical. This certainly can be achieved by enabling one of the two plugins for the model. However, in other cases the
+user may want to alter each aspect slightly different than the other. To handle such use case, the two plugins
+_DynamicTerrainVisual_ and _DynamicTerrainModel_ both add an extension to the three topics listed above that correspond
+to their aspect. i.e. The _DynamicTerrainVisual_ plugin has the following three additional topics that it subscribes to:
+- */ow_dynamic_terrain/modify_terrain_circle/visual*
+- */ow_dynamic_terrain/modify_terrain_ellipse/visual*
+- */ow_dynamic_terrain/modify_terrain_patch/visual*
+
+Meanwhile, the _DynamicTerrainModel_ plugin adds the following three topics:
+- */ow_dynamic_terrain/modify_terrain_circle/collision*
+- */ow_dynamic_terrain/modify_terrain_ellipse/collision*
+- */ow_dynamic_terrain/modify_terrain_patch/collision*
 
 ## Demo
 
@@ -183,5 +210,4 @@ The choices are the same ones listed in the [Modify Terrain with Circle](#modify
 
 > **_NOTE:_** Currently only single channel 32 float image formats are supported.
 
-You may refer to the [documentation](https://babelfish.arc.nasa.gov/confluence/pages/viewpage.action?pageId=122756318)
- for more details.
+You may refer to the project [wiki](https://github.com/nasa/ow_simulator/wiki) for more details.

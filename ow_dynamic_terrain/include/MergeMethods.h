@@ -27,7 +27,6 @@ public:
   static const MergeMethod max;
   static const MergeMethod avg;
 
-public:
   static boost::optional<const MergeMethod&> mergeMethodFromString(const std::string& method_name);
 
 private:
