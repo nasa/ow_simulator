@@ -143,6 +143,8 @@ def talker(req):
     # Start subscriber for the joint_states
     rate = rospy.Rate(int(pub_rate/2)) # Hz
     rospy.Subscriber("/joint_states", JointState, joint_states_cb)
+    tfBuffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tfBuffer)
     time.sleep(2)
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
@@ -150,13 +152,8 @@ def talker(req):
         if (ground == 1):
           print "Found ground, stopped motion..."
 
-          tfBuffer = tf2_ros.Buffer()
-          listener = tf2_ros.TransformListener(tfBuffer)
           trans = tfBuffer.lookup_transform("base_link", "l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-          Point_X = trans.transform.translation.x
-          Point_Y = trans.transform.translation.y
-          Point_Z = trans.transform.translation.z
-          guarded_move_pub.publish(ground, Point(Point_X, Point_Y, Point_Z), 'base_link')
+          guarded_move_pub.publish(ground, trans.transform.translation, 'base_link')
 
           return True, "Done publishing guarded_move"
 
