@@ -1,8 +1,8 @@
-bool use_defaults
-float32 trench_x
-float32 trench_y
-float32 trench_d
-bool delete_prev_traj
+bool use_defaults     # Set to true to use the default trench location
+float32 x             # X coordinate of sample delivery location
+float32 y             # Y coordinate of sample delivery location
+float32 z             # Z coordinate of sample delivery location
+bool delete_prev_traj # Set to true to cleanup ~/.ros
 ---
 bool success
-string message 
+string message

@@ -4,21 +4,19 @@
   <arg name="arm_sim_enable" default="false"/>
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>
-  <arg name="record_bag" default="false"/>
 
   <include file="$(find ow)/launch/common.launch" >
-    <arg name="world_name" value="$(find ow_europa)/worlds/test_dem.world"/>
-    <arg name="init_x" value="20"/>
-    <arg name="init_y" value="-15"/>
-    <arg name="init_z" value="2.25"/>
-    <arg name="init_R" value="0.191"/>
-    <arg name="init_P" value="0.097"/>
-    <arg name="init_Y" value="0.035"/>
+    <arg name="world_name" value="$(find ow_europa)/worlds/atacama_y1a.world"/>
+    <arg name="init_x" value="0"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="1"/>
+    <arg name="init_R" value="-0.105"/>
+    <arg name="init_P" value="0.008"/>
+    <arg name="init_Y" value="0"/>
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
     <arg name="gazebo" value="$(arg gazebo)"/>
     <arg name="gzclient" value="$(arg gzclient)"/>
-    <arg name="record_bag" value="$(arg record_bag)"/>
   </include>
 
 </launch>
