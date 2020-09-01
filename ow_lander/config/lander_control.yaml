@@ -1,25 +1,25 @@
 # Publish all joint states -----------------------------------
 joint_state_controller:
   type: joint_state_controller/JointStateController
-  publish_rate: 50
+  publish_rate: 100
 
 # Position Controllers ---------------------------------------
 shou_yaw_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_shou_yaw
-  pid: {p: 400.0, i: 10.0, d: 100.0}
+  pid: {p: 1000.0, i: 10.0, d: 300.0}
 shou_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_shou_pitch
-  pid: {p: 500.0, i: 0.2, d: 15.0}
+  pid: {p: 2000.0, i: 0.2, d: 1500.0}
 prox_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_prox_pitch
-  pid: {p: 2000.0, i: 0.2, d: 100.0}
+  pid: {p: 1100.0, i: 2.0, d: 100.0}
 dist_pitch_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_dist_pitch
-  pid: {p: 200.0, i: 0.06, d: 10.0}
+  pid: {p: 700.0, i: 0.06, d: 20.0}
 hand_yaw_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_hand_yaw
