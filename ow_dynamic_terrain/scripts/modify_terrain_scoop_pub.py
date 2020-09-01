@@ -15,23 +15,33 @@ from gazebo_msgs.msg import LinkStates
 from tf.transformations import euler_from_quaternion
 from ow_dynamic_terrain.msg import modify_terrain_ellipse
 
-
 class ModifyTerrainScoop:
 
   def __init__(self, *args):
     rospy.init_node("modify_terrain_scoop_pub", anonymous=True)
     self.last_translation = np.zeros(3)
-    self.pub = rospy.Publisher(
-        'ow_dynamic_terrain/modify_terrain_ellipse', modify_terrain_ellipse, queue_size=1)
+    self.visual_pub = rospy.Publisher(
+        'ow_dynamic_terrain/modify_terrain_ellipse/visual', modify_terrain_ellipse, queue_size=1)
+    self.collision_pub = rospy.Publisher(
+        'ow_dynamic_terrain/modify_terrain_ellipse/collision', modify_terrain_ellipse, queue_size=1)
     self.states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
-  def compose_modify_terrain_ellipse_message(self, position, orientation):
+  def compose_modify_terrain_ellipse_message(self, position, orientation, scale=1.0):
+    """ Composes a modify_terrain_ellipse that matches the tip of scoop end effector
+    when it is positioned for scopping. The scoop has a wide tip hence an ellipse
+    is used to approximate its changes to the terrain.
+
+    Parameters:
+      position: Corresponds to the center of the modify_terrain_ellipse operation
+      orientation: The angle of scoop in world frame
+      scale: A value that uniformaly scales the generated modify_terrain_ellipse message
+    """
     return modify_terrain_ellipse(position=Point(position.x, position.y, position.z),
                                   orientation=orientation,
-                                  outer_radius_a=0.002, outer_radius_b=0.005,
-                                  inner_radius_a=0.001, inner_radius_b=0.001,
-                                  weight=-0.025, merge_method="min")
+                                  outer_radius_a=0.002*scale, outer_radius_b=0.005*scale,
+                                  inner_radius_a=0.001*scale, inner_radius_b=0.001*scale,
+                                  weight=-0.025*scale, merge_method="min")
 
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
@@ -46,7 +56,9 @@ class ModifyTerrainScoop:
         quaternion=(new_rotation.x, new_rotation.y, new_rotation.z, new_rotation.w))
 
     msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw))
-    self.pub.publish(msg)
+    self.visual_pub.publish(msg)
+    msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw), scale=1.5)
+    self.collision_pub.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_scoop message:\n" + str(msg))
 
