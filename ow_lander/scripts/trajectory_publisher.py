@@ -14,10 +14,9 @@ import glob
 import os
 import constants
 import numpy as np
-import pylab
 
 
-velocity_array = np.array([0.0] *1)
+from peak_detection_real_time import PeakDetectionRT
 
 
 def thresholding_algo(y, lag, threshold, influence):
@@ -41,25 +40,25 @@ def thresholding_algo(y, lag, threshold, influence):
             avgFilter[i] = np.mean(filteredY[(i-lag+1):i+1])
             stdFilter[i] = np.std(filteredY[(i-lag+1):i+1])
 
-    return ground_found
+lag = 80
+threshold = 6.3
+influence = 0.5
+peak_detection = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+ground_detected = 0
 
 def check_for_contact(y):
-  # lag, threshold and innfluence can be tuned to detect contact with the ground. These numbers were tested with
-  #different planning algorithms to check for ground. If these number doesnot work for your particular configuration, 
-  #you can re-tune the numbers. Save velocity array (uncomment line 60 np.savetxt ....), and run   peak_detect.py. see 
-  #peak_detect.py for more information. 
-  lag = 100
-  threshold = 20
-  influence = 1.0 
-  # Run algo with settings from above
-  result = thresholding_algo(y, lag=lag, threshold=threshold, influence=influence)
-  return result
+
+  global ground_detected, peak_detection
+
+  if ground_detected == 0:
+    result = peak_detection.detect(y)
+
+    if result != 0:
+      ground_detected = result
 
 def joint_states_cb(data):
 
-  global velocity_array
-  velocity_array  = np.append(velocity_array , data.velocity[6])
-  #c = np.savetxt('velocity_array.txt', velocity_array)  # save the velocity_array to tune the ground detection
+  check_for_contact(data.velocity[6])
   
 
 # The talker runs once the publish service is called. It starts a publisher 
@@ -134,21 +133,21 @@ def talker(req):
         
   if guarded_move_bool : # If the activity is a guarded_move
     # Start subscriber for the joint_states
+    time.sleep(2) # subscribe right after coming from sleep .. this way we maintain values when moving downwards
+    global ground_detected, peak_detection
+    ground_detected = 0
+    peak_detection.reset()
     rate = rospy.Rate(int(pub_rate/2)) # Hz
     rospy.Subscriber("/joint_states", JointState, joint_states_cb)
-    time.sleep(2)
-    start_guard_delay_acc = 0 
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
-        ground = check_for_contact(velocity_array)  
-        if (ground == 1):     
+        if ground_detected != 0:
             print "Found ground, stopped motion..."
             return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
           pubs[x].publish(float("%14s\n"%row[12+x]))
-        print "Guarded. Sent %s on joint[0] publisher"%(float("%14s\n"%row[12+0]))
-        rate.sleep()        
+        rate.sleep()
 
   return True, "Done publishing trajectory"
 
