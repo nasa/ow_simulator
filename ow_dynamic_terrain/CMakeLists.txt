@@ -162,6 +162,7 @@ add_library(${PROJECT_NAME}_shared SHARED
   src/TerrainBrush.cpp
   src/MergeMethods.cpp
   src/TerrainModifier.cpp
+  src/DynamicTerrainBase.cpp
 )
 
 add_dependencies(${PROJECT_NAME}_shared
