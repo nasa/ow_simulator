@@ -81,10 +81,12 @@
       args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
   </group-->
 
-  <!-- == start rqt ===================== -->
+  <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
-  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
 
   <!-- == start bag_recorder_node =========== -->
