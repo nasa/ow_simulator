@@ -117,6 +117,7 @@ def talker(req):
 
     # Start subscriber for the joint_states
     time.sleep(2) # subscribe right after coming from sleep .. this way we maintain values when moving downwards
+    # begin tracking velocity values as soon as the scoop moves downward 
     global ground_detected, peak_detection
     ground_detected = 0
     peak_detection.reset()
