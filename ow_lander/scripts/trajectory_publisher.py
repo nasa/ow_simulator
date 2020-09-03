@@ -116,7 +116,7 @@ def talker(req):
     guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveResult, queue_size=10)
 
     # Start subscriber for the joint_states
-    time.sleep(2) # subscribe right after coming from sleep .. this way we maintain values when moving downwards
+    time.sleep(2) # wait for 2 seconds till the arm settles
     # begin tracking velocity values as soon as the scoop moves downward 
     global ground_detected, peak_detection
     ground_detected = 0

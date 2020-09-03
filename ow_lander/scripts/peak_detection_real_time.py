@@ -56,10 +56,10 @@ class PeakDetectionRT:
 
 
   def _warmup(self):
-  """
-  accumulate enough samples (determined by lag) before performing detection 
-  :return: always returns zero. i.e. no peak or anomaly.
-  """
+    """
+    accumulate enough samples (determined by lag) before performing detection 
+    :return: always returns zero. i.e. no peak or anomaly.
+    """
     self.y_filtered = self.y_raw
     self.avg_filter.append(self.y_filtered)
     self.std_filter.append(self.y_filtered)
