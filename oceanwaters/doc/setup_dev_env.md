@@ -100,6 +100,8 @@ installation.
 git clone https://git.code.sf.net/p/plexil/git plexil
 ```
 
+NOTE: the default branch is releases/plexil-4, which is the latest stable version of PLEXIL.
+
 * Install any of the following build prerequisites needed. If you're not sure,
 try the build, see where it breaks, and install new packages as you go. All of
 the following may be installed with: `sudo apt install <package-name>`

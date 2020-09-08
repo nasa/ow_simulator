@@ -21,12 +21,4 @@
     <arg name="record_bag" value="$(arg record_bag)"/>
   </include>
 
-  <!-- ==================== simulate changes to the terrain caused by the scoop   ==================== -->
-  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen">
-  </node>
-
-  <!-- ==================== simulate changes to the terrain caused by the grinder ==================== -->
-  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen">
-  </node>
-
 </launch>
