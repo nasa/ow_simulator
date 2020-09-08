@@ -1,5 +1,7 @@
+rate: 2.5 
 controller_list:
   - name: fake_arm_controller
+    type: interpolate
     joints:
       - j_shou_yaw
       - j_shou_pitch
