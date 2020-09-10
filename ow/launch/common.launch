@@ -69,16 +69,24 @@
   <!-- Start faults node -->
   <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
 
+  <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
+  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
+
+  <!-- ====== simulate changes to the terrain caused by the grinder ======= -->
+  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
+
   <!-- == start rviz ==================== -->
   <!--group unless="$(arg arm_sim_enable)">
     <node name="rviz" pkg="rviz" type="rviz"
       args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
   </group-->
 
-  <!-- == start rqt ===================== -->
+  <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
-  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
 
   <!-- == start bag_recorder_node =========== -->
