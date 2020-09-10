@@ -10,6 +10,7 @@ project(ow_power_system)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  roslib
 )
 find_package(roslaunch)
 
