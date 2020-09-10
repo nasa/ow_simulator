@@ -543,6 +543,13 @@
       </plugin>
     </visual>
     <selfCollide>1</selfCollide>
+    <collision>
+      <surface>
+        <contact>
+          <collide_bitmask>0x0001</collide_bitmask>
+        </contact>
+      </surface>
+    </collision>
   </gazebo>
 
   <!-- link that we can reference in Gazebo to get altitude of tip
@@ -642,7 +649,7 @@
     <collision>
       <surface>
         <contact>
-          <collide_bitmask>0x0002</collide_bitmask>
+          <collide_bitmask>0x0001</collide_bitmask>
         </contact>
       </surface>
     </collision>
