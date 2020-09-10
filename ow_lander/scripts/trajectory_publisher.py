@@ -20,25 +20,45 @@ from ow_lander.msg import GuardedMoveResult
 
 from peak_detection_real_time import PeakDetectionRT
 
-lag = 80
+lag = 100
 threshold = 6.3
 influence = 0.5
-peak_detection = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+peak_detectors = []
 ground_detected = 0
 
-def check_for_contact(y):
 
-  global ground_detected, peak_detection
+def check_for_contact_combined():
+
+  global ground_detected, peak_detectors
+
+  chosen_joints = ["j_dist_pitch_effort.csv", "j_prox_pitch_effort.csv", "j_shou_pitch_effort.csv"]
 
   if ground_detected == 0:
-    result = peak_detection.detect(y)
 
-    if result != 0:
-      ground_detected = result
+    result = True
+    for i in range(len(peak_detectors)):
+      if peak_detectors[i].filename in chosen_joints:
+        result = result and (peak_detectors[i].signal != 0)
+
+    if result:
+      ground_detected = 1
 
 def joint_states_cb(data):
 
-  check_for_contact(data.velocity[6])
+  global peak_detectors
+  
+  if peak_detectors:
+    for i in range(len(data.velocity)):
+      peak_detectors[2 * i + 0].detect(data.velocity[i])
+      peak_detectors[2 * i + 1].detect(data.effort[i])
+  else:
+    for i in range(len(data.velocity)):
+      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+      peak_detectors.append(pd)
+      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+      peak_detectors.append(pd)
+
+  check_for_contact_combined()
   
 
 # The talker runs once the publish service is called. It starts a publisher
@@ -118,9 +138,11 @@ def talker(req):
     # Start subscriber for the joint_states
     time.sleep(2) # wait for 2 seconds till the arm settles
     # begin tracking velocity values as soon as the scoop moves downward 
-    global ground_detected, peak_detection
+    global ground_detected, peak_detectors
     ground_detected = 0
-    peak_detection.reset()
+    for i in range(len(peak_detectors)):
+      peak_detectors[i].reset()
+    peak_detectors = []
     rate = rospy.Rate(int(pub_rate/2)) # Hz
     rospy.Subscriber("/joint_states", JointState, joint_states_cb)
     tfBuffer = tf2_ros.Buffer()
