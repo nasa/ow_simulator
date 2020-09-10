@@ -133,8 +133,8 @@ def dig_linear(move_arm,move_limbs,args):
   change_joint_value(move_arm, constants.J_DIST_PITCH, -math.pi/2)
 
   ## Once aligned to trench goal, place hand above the desired start point
-  alpha = math.atan2(constants.WRIST_SCOOP_PARAL,constants.WRIST_SCOOP_PERP)
-  distance_from_ground = constants.ROT_RADIUS*(math.cos(alpha)-math.sin(alpha))
+  alpha = math.atan2(constants.WRIST_SCOOP_PARAL, constants.WRIST_SCOOP_PERP)
+  distance_from_ground = constants.ROT_RADIUS*(math.cos(alpha) - math.sin(alpha))
   z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
   go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
 
@@ -153,7 +153,7 @@ def dig_linear(move_arm,move_limbs,args):
   move_arm.stop()
 
   #  rotate to dig out
-  change_joint_value(move_arm,constants.J_DIST_PITCH,math.pi/2)
+  change_joint_value(move_arm,constants.J_DIST_PITCH, math.pi/2)
 
   return True
 
