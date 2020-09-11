@@ -31,13 +31,17 @@ def check_for_contact_combined():
 
   global ground_detected, peak_detectors
 
-  chosen_joints = ["j_dist_pitch_effort.csv", "j_prox_pitch_effort.csv", "j_shou_pitch_effort.csv"]
+  chosen_joints = [
+    "j_dist_pitch_effort",
+    "j_prox_pitch_effort",
+    "j_shou_pitch_effort",
+    "j_shou_pitch_velocity"]
 
   if ground_detected == 0:
 
     result = True
     for i in range(len(peak_detectors)):
-      if peak_detectors[i].filename in chosen_joints:
+      if peak_detectors[i].joint_reading in chosen_joints:
         result = result and (peak_detectors[i].signal != 0)
 
     if result:
@@ -52,10 +56,10 @@ def joint_states_cb(data):
       peak_detectors[2 * i + 0].detect(data.velocity[i])
       peak_detectors[2 * i + 1].detect(data.effort[i])
   else:
-    for i in range(len(data.velocity)):
-      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+    for name in data.name:
+      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence, joint_reading=name+"_velocity")
       peak_detectors.append(pd)
-      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
+      pd = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence, joint_reading=name+"_effort")
       peak_detectors.append(pd)
 
   check_for_contact_combined()

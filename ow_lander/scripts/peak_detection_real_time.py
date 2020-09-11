@@ -37,10 +37,12 @@ class PeakDetectionRT:
   into an array.
   """
 
-  def __init__(self, lag, threshold, influence):
+  def __init__(self, lag, threshold, influence, joint_reading):
     self.lag = lag
     self.threshold = threshold
     self.influence = influence
+
+    self.joint_reading = joint_reading
 
     self.reset()
 
