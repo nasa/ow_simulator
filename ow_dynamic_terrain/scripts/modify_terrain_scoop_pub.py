@@ -39,8 +39,8 @@ class ModifyTerrainScoop:
     """
     return modify_terrain_ellipse(position=Point(position.x, position.y, position.z),
                                   orientation=orientation,
-                                  outer_radius_a=0.002*scale, outer_radius_b=0.005*scale,
-                                  inner_radius_a=0.001*scale, inner_radius_b=0.001*scale,
+                                  outer_radius_a=0.02*scale, outer_radius_b=0.05*scale,
+                                  inner_radius_a=0.01*scale, inner_radius_b=0.01*scale,
                                   weight=-0.025*scale, merge_method="min")
 
   def check_and_submit(self, new_position, new_rotation):
@@ -57,8 +57,6 @@ class ModifyTerrainScoop:
 
     msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw))
     self.visual_pub.publish(msg)
-    msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw), scale=1.5)
-    self.collision_pub.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_scoop message:\n" + str(msg))
 
