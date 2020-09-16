@@ -28,7 +28,7 @@ class ModifyTerrainGrinder:
     self.states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
-  def compose_modify_terrain_circle_message(self, position, scale=1.0):
+  def compose_modify_terrain_circle_message(self, position, depth, scale=1.0):
     """ Composes a modify_terrain_circle that matches the grinder end effector
     it is positioned downwards ready for digging. When the grinder is position
     downward for digging the shape it projects on the terrain as a circle.
@@ -39,8 +39,8 @@ class ModifyTerrainGrinder:
         message
     """
     return modify_terrain_circle(position=Point(position.x, position.y, position.z),
-                                 outer_radius=0.008*scale, inner_radius=0.001*scale,
-                                 weight=-0.2*scale, merge_method="min")
+                                 outer_radius=0.08*scale, inner_radius=0.04*scale,
+                                 weight=depth*scale, merge_method="min")
 
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
@@ -59,10 +59,10 @@ class ModifyTerrainGrinder:
 
     self.last_translation = current_translation
 
-    msg = self.compose_modify_terrain_circle_message(new_position)
-    self.pub_visual.publish(msg)
-    msg = self.compose_modify_terrain_circle_message(new_position, scale=2.0)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=2.0)
     self.pub_collision.publish(msg)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.06, scale=1.0)
+    self.pub_visual.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_grinder message:\n" + str(msg))
 
