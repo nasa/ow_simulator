@@ -21,7 +21,7 @@ GRINDER_OFFSET = 0.8
 
 # Distance between scoop center of mass and lower blade
 SCOOP_HEIGHT = 0.076
-GRINDER_HEIGHT = 3*SCOOP_HEIGHT
+GRINDER_HEIGHT = 0.31
 
 DEFAULT_GROUND_HEIGHT = -0.135
 

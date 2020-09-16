@@ -208,7 +208,7 @@ def handle_grind(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting grinder planning session"
-    grind_args = activity_full_digging_traj.arg_parsing_lin(req)
+    grind_args = activity_grind.arg_parsing(req)
 
     if utils.check_arguments(grind_args[1], grind_args[2], grind_args[3]) != True:
       print "[ERROR] Invalid grinder trajectory input arguments. Exiting path_planning_commander..."
