@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #This file can be used to tune the three parameters lag, threshold and influence for peak determination.
 #The algorithm takes 3 inputs: lag = the lag of the moving window, threshold = the z-score at which the 
