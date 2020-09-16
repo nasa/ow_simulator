@@ -16,9 +16,6 @@
 using namespace std;
 
 vector<vector<double>> loadCSV(const string& filename);
-//void computeSOC(const std_msgs::Float64& power){} // placeholder for calculating SOC with battery model
-//double getSampleValue(double timestamp, vector<vector<double>> &power_csv); //output for testing with precalculated csv data
-//std::vector<std::vector<std::double>>> loadCSV(string csvName);
 
 int main(int argc, char* argv[]) {
 
@@ -37,21 +34,31 @@ int main(int argc, char* argv[]) {
 
   //Construct our State of Charge (SOC) publisher
   ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
-
-  //Define our publication rate and initialize our time to 0
-  double power_update_rate = 1.0;  // 1 Hz, tailor as needed
-  double timestamp = 0.0;
-
+  ros::Publisher RUL_pub = n.advertise<std_msgs::Float64>("remaining_useful_life",1000);
+  
   //Load power values csv
-  string csv_path;
+  string csv_path,csv_file;
+  csv_file = "/data/onewatt.csv";
+  //FILE OPTIONS: onewatt.csv, eightwatt.csv, sixteenwatt.csv
   csv_path = ros::package::getPath("ow_power_system");
-  csv_path += "/data/1HzVoltageProfile.csv";
+  csv_path += csv_file;
+  
   vector<vector<double>> power_csv = loadCSV(csv_path);
   cout << "Power system CSV loaded!";
+  
+  //Define our publication rate and initialize our time to 0
+  double power_update_rate;  
+  if (csv_file=="/data/onewatt.csv"){
+    power_update_rate = 0.10; //csv is at 10Hz intervals
+  } else {
+    power_update_rate = 1.0; // 1 Hz default
+  }
+  int t_step= 1;//starting at 1 not zero to skip csv headings
 
+  //set our indices
+  int time_i = 0;
   int voltage_i = 1; //index of voltage column
-  int minutes_to_skip = 30; //enables us to skip first 30 minutes with no power being drawn
-  int t = minutes_to_skip * 60;
+  int rul_i = 2;
   
   // ROS Loop. Note that once this loop starts,
   // this function (and node) is terminated with an interrupt.
@@ -59,17 +66,23 @@ int main(int argc, char* argv[]) {
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
+  std_msgs::Float64 rul_msg;
   ROS_INFO ("Power system node running");
-  
-  while (ros::ok()) {
 
-    soc_msg.data=power_csv[t][voltage_i];
+  int power_lifetime = power_csv.size();
+  while (ros::ok()) {
+    if (t_step < power_lifetime) {
+      soc_msg.data=power_csv[t_step][voltage_i];
+      rul_msg.data=power_csv[t_step][rul_i];
+    } //should keep publishing last voltage value if sim time exceeds the length of the csv
+    
     //soc_msg.data=t;
     //soc_msg.data=getSampleValue(timestamp, power_csv); //zero for testing purposes, will be calculated later
 
     //publish current SOC
     SOC_pub.publish(soc_msg);
-    t += 1.0;
+    RUL_pub.publish(rul_msg);
+    t_step+=1;
     
     ros::spinOnce();
     rate.sleep();
@@ -90,13 +103,20 @@ vector<vector<double>> loadCSV(const string& filename){
   }
   vector<vector<double>> values;
 
-  int numColumns = 3;//timestamp, voltage, current for 1HzVoltageProfile.csv
-  //power_csv.ignore(numeric_limits<streamsize>::max(),'\n'); //throw away first line if column headings are present
+  int numColumns = 3;
+  //timestamp, voltage, rul for ####watt.csv
+  //timestamp, voltage, current for 1HzVoltageProfile.csv
   
   string line,value_string;
   
   double myval;
-  vector<double> vec_row; 
+  vector<double> vec_row;
+
+  //clear first line (header)
+  if (power_csv.good()){
+    getline(power_csv,line);
+  }
+  
   // Iterate and grab the values that we want
   while(power_csv.good()){
     vec_row.clear();
