@@ -14,10 +14,30 @@ from gazebo_msgs.msg import LinkStates
 # more robust against an arm physics configuration where the end effector doesn't
 #  bounce off the ground at all.
 
-GROUND_DETECTION_THRESHOLD = 0.0001 # TODO: tune this value further to improve
+GROUND_DETECTION_THRESHOLD = 0.0006 # TODO: tune this value further to improve
                                     # detection.
                                     # Need to  choose a value that works for the
                                     # majority of configurations
+
+# class SlidingWindow:
+#   """
+#   A class that maintains a sliding window over a stream of samples in FIFO order
+#   """
+
+#   def __init__(self, size, method):
+#     self.que = deque()
+#     self.size = size
+#     self.method = method
+
+#   def append(self, val):
+#     if len(self.que) >= self.size:
+#       self.que.pop()
+#     self.que.appendleft(val)
+
+#   @property
+#   def value(self):
+#     # TODO: consider caching the value to speed up query
+#     return self.method(self.que)
 
 class GroundDetector:
   """
@@ -52,7 +72,7 @@ class GroundDetector:
     delta_d = current_position.z - self._last_position.z
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
-    return delta_d * delta_t > GROUND_DETECTION_THRESHOLD
+    return delta_d / delta_t > GROUND_DETECTION_THRESHOLD
 
   def _handle_link_states(self, data):
     # if ground is found ignore further readings until the detector has been reset
@@ -62,7 +82,7 @@ class GroundDetector:
     try:
       idx = data.name.index("lander::l_scoop_tip")
     except ValueError:
-      rospy.logerr_throttle(1, "lander::l_scoop_tip not found in link_states")
+      rospy.logerr_throttle(1, "GroundDetector: lander::l_scoop_tip not found in link_states")
       return
 
     self._ground_detected = self._check_condition(data.pose[idx].position)
@@ -75,7 +95,7 @@ class GroundDetector:
       t = self._buffer.lookup_transform(
           "base_link", "l_scoop_tip", rospy.Time(), timeout)
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-      rospy.logwarn("tf2 raised an exception")
+      rospy.logwarn("GroundDetector: tf2 raised an exception")
       return None
     return t.transform.translation
 
