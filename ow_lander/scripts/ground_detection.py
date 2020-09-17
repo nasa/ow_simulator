@@ -72,7 +72,6 @@ class GroundDetector:
     delta_d = current_position.z - self._last_position.z
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
-    print(delta_d / delta_t)
     return delta_d / delta_t > GROUND_DETECTION_THRESHOLD
 
   def _handle_link_states(self, data):
