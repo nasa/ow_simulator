@@ -4,17 +4,17 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+import time
 import rospy
 import tf2_ros
 from gazebo_msgs.msg import LinkStates
-import numpy as np
 
 # TODO: rather than basing the decision on a single value we can take the trend
 # over a short term of position z value it would probably make the implementation
 # more robust against an arm physics configuration where the end effector doesn't
 #  bounce off the ground at all.
 
-GROUND_DETECTION_THRESHOLD = 0.001  # TODO: tune this value further to improve
+GROUND_DETECTION_THRESHOLD = 0.0001 # TODO: tune this value further to improve
                                     # detection.
                                     # Need to  choose a value that works for the
                                     # majority of configurations
@@ -33,24 +33,26 @@ class GroundDetector:
     self.reset()
     self._check_ground_method = self._tf_2_method
 
-    if self._check_ground_method == self._link_states_method:
+    if self._check_ground_method == self._gazebo_link_states_method:
       rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
       self._query_ground_position_method = lambda: self._tf_lookup_position(rospy.Duration(10))
     else:
       self._query_ground_position_method = lambda: self._last_position
 
   def reset(self):
-    self._last_position = None
+    """ Reset the state of the ground detector for another round """
+    self._last_position, self._last_time = None, None
     self._ground_detected = False
 
   def _check_condition(self, new_position):
     if self._last_position is None:
-      self._last_position = new_position
+      self._last_position, self._last_time = new_position, time.time()
       return False
-    current_position = new_position
-    delta = current_position.z - self._last_position.z
-    self._last_position = current_position
-    return delta > GROUND_DETECTION_THRESHOLD
+    current_position, current_time = new_position, time.time()
+    delta_d = current_position.z - self._last_position.z
+    delta_t = current_time - self._last_time
+    self._last_position, self._last_time = current_position, current_time
+    return delta_d * delta_t > GROUND_DETECTION_THRESHOLD
 
   def _handle_link_states(self, data):
     # if ground is found ignore further readings until the detector has been reset
