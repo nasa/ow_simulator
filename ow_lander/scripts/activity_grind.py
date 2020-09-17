@@ -54,8 +54,10 @@ def plan_cartesian_path(move_arm, length, alpha, radial):
 
 def grind(move_arm, move_limbs, args):
 
-  x_start = args[1]
-  y_start = args[2] 
+  move_arm.set_planner_id('RRTstar')
+
+  x_start = 0.9*args[1]
+  y_start = 0.9*args[2] 
   depth = args[3]
   length = args[4]
   radial = args[5]
@@ -73,7 +75,8 @@ def grind(move_arm, move_limbs, args):
   joint_goal[constants.J_PROX_PITCH] = -math.pi/2
   joint_goal[constants.J_SHOU_PITCH] = math.pi/3
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  alpha = alpha+beta-0.06
+  alpha = alpha+beta-0.09
+
 
   # If out of joint range, abort
   if (is_shou_yaw_goal_in_range(joint_goal) == False):
@@ -92,8 +95,7 @@ def grind(move_arm, move_limbs, args):
   move_arm.stop()
 
   joint_goal = move_arm.get_current_joint_values()
-
-  change_joint_value(move_arm, constants.J_SHOU_YAW, joint_goal[0]+0.06)
+  change_joint_value(move_arm, constants.J_SHOU_YAW, joint_goal[0]+0.08)
 
   # grinding ice backwards
   cartesian_plan, fraction = plan_cartesian_path(move_arm, -length, alpha, radial)
@@ -102,8 +104,9 @@ def grind(move_arm, move_limbs, args):
 
 
   # exiting terrain
-  z_end = ground_position + 0.3 
-  go_to_Z_coordinate(move_limbs, x_start, y_start, z_end)
+  joint_goal = move_arm.get_current_joint_values()
+  change_joint_value(move_arm, constants.J_SHOU_PITCH, joint_goal[1]+0.6)
 
+  move_arm.set_planner_id('RRTconnect')
 
   return True
