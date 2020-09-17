@@ -5,55 +5,18 @@
 # this repository.
 
 import rospy
-import tf2_ros
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
-from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
 from ow_lander.srv import *
 import csv
 import time
 import glob
 import os
 import constants
-import numpy as np
 from ow_lander.msg import GuardedMoveResult
+from ground_detection import GroundDetector
 
-# TODO: rather than basing the decision on a single value we can take the trend
-# over a short term of position z value it would probably make the implementation
-# more robust against an arm physics configuration where the end effector doesn't
-#  bounce off the ground at all.
-
-# constanst
-GROUND_DETECTION_THRESHOLD = 0.001  # TODO: tune this value further to improve the detection
-                                    # .. need to test with various configurations too
-ground_detected = 0
-last_scoop_tip_pos_z = None
-
-def handle_link_states(data):
-  global ground_detected, last_scoop_tip_pos_z
-
-  if ground_detected:
-    return
-
-  try:
-    idx = data.name.index("lander::l_scoop_tip")
-  except ValueError:
-    rospy.logerr_throttle(1, "lander::l_scoop_tip not found in link_states")
-    return
-
-  if last_scoop_tip_pos_z is None:
-    last_scoop_tip_pos_z = data.pose[idx].position.z
-    return
-
-  current_scoop_tip_z = data.pose[idx].position.z
-  delta = current_scoop_tip_z - last_scoop_tip_pos_z
-  last_scoop_tip_pos_z = current_scoop_tip_z
-
-  if delta > GROUND_DETECTION_THRESHOLD:
-    ground_detected = 1
-  
-
+ground_detector = None
 # The talker runs once the publish service is called. It starts a publisher
 # per joint controller, then reads the trajectory csvs.
 # If the traj csv is a guarded move, it reads both parts.
@@ -131,22 +94,15 @@ def talker(req):
     # Start subscriber for the joint_states
     time.sleep(2) # wait for 2 seconds till the arm settles
     # begin tracking velocity values as soon as the scoop moves downward 
-    global ground_detected, last_scoop_tip_pos_z
-    ground_detected = 0
-    last_scoop_tip_pos_z = None
+    global ground_detector
+    ground_detector.reset()
     rate = rospy.Rate(int(pub_rate/2)) # Hz
-    rospy.Subscriber("/gazebo/link_states", LinkStates, handle_link_states)
-    tfBuffer = tf2_ros.Buffer()
-    _ = tf2_ros.TransformListener(tfBuffer)
 
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
-        if ground_detected != 0:
-          print "Found ground, stopped motion..."
-
-          trans = tfBuffer.lookup_transform("base_link", "l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-          guarded_move_pub.publish(True, trans.transform.translation, 'base_link')
-
+        if ground_detector.detect():
+          print "Ground found! Motion stopped!"
+          guarded_move_pub.publish(True, ground_detector.ground_position, 'base_link')
           return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
@@ -159,6 +115,8 @@ def talker(req):
 
 
 if __name__ == '__main__':
+  global ground_detector
   rospy.init_node('trajectory_publisher', anonymous=True)
+  ground_detector = GroundDetector()
   start_srv = rospy.Service('arm/publish_trajectory', PublishTrajectory, talker)
   rospy.spin()
