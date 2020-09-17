@@ -31,7 +31,7 @@ class GroundDetector:
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
     self.reset()
-    self._check_ground_method = self._gazebo_link_states_method
+    self._check_ground_method = self._tf_2_method
 
     if self._check_ground_method == self._link_states_method:
       rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
@@ -77,7 +77,7 @@ class GroundDetector:
       return None
     return t.transform.translation
 
-  def _tf_method(self):
+  def _tf_2_method(self):
     return self._check_condition(self._tf_lookup_position())
 
   @property
