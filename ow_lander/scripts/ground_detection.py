@@ -14,7 +14,7 @@ from gazebo_msgs.msg import LinkStates
 # more robust against an arm physics configuration where the end effector doesn't
 #  bounce off the ground at all.
 
-GROUND_DETECTION_THRESHOLD = 0.0006 # TODO: tune this value further to improve
+GROUND_DETECTION_THRESHOLD = 0.0009 # TODO: tune this value further to improve
                                     # detection.
                                     # Need to  choose a value that works for the
                                     # majority of configurations
@@ -72,6 +72,7 @@ class GroundDetector:
     delta_d = current_position.z - self._last_position.z
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
+    print(delta_d / delta_t)
     return delta_d / delta_t > GROUND_DETECTION_THRESHOLD
 
   def _handle_link_states(self, data):
