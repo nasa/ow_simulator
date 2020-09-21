@@ -1,4 +1,19 @@
-;; This buffer is for text that is not saved, and for Lisp evaluation.
-;; To create a file, visit it with C-x C-f and enter text in its buffer.
-
 //PowerCSV.h
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream>
+
+using namespace std;
+
+class PowerCSV {
+  public:
+    vector<vector<double>> load(const string& filename);
+    int getTimeIndex;
+    int getVoltageIndex;
+
+  private:
+    int time_i;
+
+}

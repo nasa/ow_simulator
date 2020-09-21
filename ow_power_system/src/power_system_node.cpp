@@ -18,22 +18,17 @@ using namespace std;
 vector<vector<double>> loadCSV(const string& filename);
 
 int main(int argc, char* argv[]) {
-
-  //bool useSampleValues = true;
-  
-  // if (useSampleValues){
-  // }
   
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle n ("power_system_node");
 
   //Construct our power draw listener
   //TODO: Check out latching
-  
   //ros::Subscriber power_listener = n.subscribe("power_draw", 1000, computeSOC);
 
-  //Construct our State of Charge (SOC) publisher
+  //Construct our State of Charge (SOC) publisher (Volts)
   ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
+  //Construct our Remaining Useful Life (RUL) publisher (Seconds)
   ros::Publisher RUL_pub = n.advertise<std_msgs::Float64>("remaining_useful_life",1000);
   
   //Load power values csv
@@ -43,7 +38,7 @@ int main(int argc, char* argv[]) {
   csv_path = ros::package::getPath("ow_power_system");
   csv_path += csv_file;
   
-  vector<vector<double>> power_csv = loadCSV(csv_path);
+  auto power_csv = loadCSV(csv_path);
   cout << "Power system CSV loaded!";
   
   //Define our publication rate and initialize our time to 0
@@ -138,14 +133,4 @@ vector<vector<double>> loadCSV(const string& filename){
   return values;
 }
 
-// convert timestamp (seconds) to closest value from preloaded power csv, return power value
-/*double getSampleValue(double timestamp, vector<vector<double>> &power_csv){
-  
-  //convert power node time stamp to correct value
-  double csv_timestep = 0.003;
-  
-  //grab SOC (voltage) from csv
-  //
 
-  return 0.0;
-  }*/
