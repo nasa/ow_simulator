@@ -1,4 +1,19 @@
-;; This buffer is for text that is not saved, and for Lisp evaluation.
-;; To create a file, visit it with C-x C-f and enter text in its buffer.
-
 //PowerCSV.h
+
+/*The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+Research and Simulation can be found in README.md in the root directory of
+this repository.*/
+
+#ifndef POWERCSV_H
+#define POWERCSV_H
+
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+namespace powerCSV {
+  std::vector<std::vector<double>> loadCSV(const std::string& filename);
+}
+
+#endif
