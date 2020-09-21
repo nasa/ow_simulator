@@ -5,46 +5,45 @@
 # this repository.
 
 import time
+import numpy as np
 import rospy
 import tf2_ros
+from collections import deque
 from gazebo_msgs.msg import LinkStates
 
-# TODO: rather than basing the decision on a single value we can take the trend
-# over a short term of position z value it would probably make the implementation
-# more robust against an arm physics configuration where the end effector doesn't
-#  bounce off the ground at all.
 
-GROUND_DETECTION_THRESHOLD = 0.0009 # TODO: tune this value further to improve
-                                    # detection.
-                                    # Need to  choose a value that works for the
-                                    # majority of configurations
+GROUND_DETECTION_THRESHOLD = -0.005
 
-# class SlidingWindow:
-#   """
-#   A class that maintains a sliding window over a stream of samples in FIFO order
-#   """
+class SlidingWindow:
+  """
+  A class that maintains a sliding window over a stream of samples in FIFO order
+  """
 
-#   def __init__(self, size, method):
-#     self.que = deque()
-#     self.size = size
-#     self.method = method
+  def __init__(self, size, method):
+    self._que = deque()
+    self._size = size
+    self._method = method
 
-#   def append(self, val):
-#     if len(self.que) >= self.size:
-#       self.que.pop()
-#     self.que.appendleft(val)
+  def append(self, val):
+    if len(self._que) >= self._size:
+      self._que.pop()
+    self._que.appendleft(val)
 
-#   @property
-#   def value(self):
-#     # TODO: consider caching the value to speed up query
-#     return self.method(self.que)
+  @property
+  def valid(self):
+    return len(self._que) == self._size
+
+  @property
+  def value(self):
+    # TODO: consider caching the value to speed up query
+    return self._method(self._que)
 
 class GroundDetector:
   """
   GroundDetector uses readings of the link states obtained either directly from
   the simulator via the gazebo/link_states topic or computed through TF2 package
   and implements ground detection by observing a change in movement of the lander
-  arm as it descends to touch the ground.    
+  arm as it descends to touch the ground.
   """
 
   def __init__(self):
@@ -63,16 +62,20 @@ class GroundDetector:
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
+    self._trending_velocity = SlidingWindow(3, np.mean)
 
   def _check_condition(self, new_position):
     if self._last_position is None:
-      self._last_position, self._last_time = new_position, time.time()
+      self._last_position = np.array([new_position.x, new_position.y, new_position.z])
+      self._last_time = time.time()
       return False
-    current_position, current_time = new_position, time.time()
-    delta_d = current_position.z - self._last_position.z
+    current_position = np.array([new_position.x, new_position.y, new_position.z])
+    current_time = time.time()
+    delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
-    return delta_d / delta_t > GROUND_DETECTION_THRESHOLD
+    self._trending_velocity.append(delta_d[2] / delta_t)
+    return self._trending_velocity.value > GROUND_DETECTION_THRESHOLD if self._trending_velocity.valid else False
 
   def _handle_link_states(self, data):
     # if ground is found ignore further readings until the detector has been reset
