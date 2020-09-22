@@ -4,12 +4,13 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /MotionPlanning_ArmPlanner1
         - /MotionPlanning_ArmPlanner1/Scene Robot1
         - /MotionPlanning_ArmPlanner1/Planning Request1
         - /MotionPlanning_ArmPlanner1/Planning Metrics1
         - /MotionPlanning_ArmPlanner1/Planned Path1
       Splitter Ratio: 0.8389830589294434
-    Tree Height: 276
+    Tree Height: 345
   - Class: rviz/Help
     Name: Help
   - Class: rviz/Views
@@ -125,6 +126,11 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -140,6 +146,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_scoop_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_shou:
             Alpha: 1
             Show Axes: false
@@ -161,6 +171,15 @@ Visualization Manager:
             Show Trail: false
             Value: true
           lander_lights_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          lander_sample_dock0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          lander_sample_dock_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -258,6 +277,11 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -273,6 +297,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_scoop_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_shou:
             Alpha: 1
             Show Axes: false
@@ -294,6 +322,15 @@ Visualization Manager:
             Show Trail: false
             Value: true
           lander_lights_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          lander_sample_dock0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          lander_sample_dock_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -361,6 +398,11 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        l_grinder:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         l_hand:
           Alpha: 1
           Show Axes: false
@@ -376,6 +418,10 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        l_scoop_tip:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         l_shou:
           Alpha: 1
           Show Axes: false
@@ -400,6 +446,15 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+        lander_sample_dock0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lander_sample_dock_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotState_LanderTelemetry
       Robot Description: robot_description
       TF Prefix: ""
@@ -418,45 +473,46 @@ Visualization Manager:
       Hide Inactive Objects: true
     - Class: rviz/MoveCamera
     - Class: rviz/Select
+    - Class: rviz/Measure
   Value: true
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 4.0197038650512695
+      Distance: 4.126826763153076
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.268538236618042
-        Y: -1.3246526718139648
-        Z: 2.2351800055275817e-7
+        X: 0.7921347618103027
+        Y: 0.06179898977279663
+        Z: 1.043086967911222e-7
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3447973430156708
+      Pitch: -0.18520261347293854
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 5.6699419021606445
+      Yaw: 4.799912452697754
     Saved: ~
 Window Geometry:
-  "&Displays":
+  Displays:
     collapsed: false
-  "&MotionPlanning_ArmPlanner":
-    collapsed: false
-  Height: 1021
+  Height: 1043
   Help:
     collapsed: false
-  Hide Left Dock: false
+  Hide Left Dock: true
   Hide Right Dock: false
-  MotionPlanning_ArmPlanner - Slider:
+  MotionPlanning_ArmPlanner:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000001000000000000027500000392fc0200000008fb000000100044006900730070006c0061007900730100000044000001b5000000f701000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000d001000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000032004d006f00740069006f006e0050006c0061006e006e0069006e0067005f00410072006d0050006c0061006e006e0065007201000001fa000001dc000001d101000003fb0000005400610072006d005f0070006c0061006e006e00650064005f007400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000002200000022000001460000039200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  MotionPlanning_ArmPlanner - Trajectory Slider:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000100000000000002cb0000039afc0200000009fb000000100044006900730070006c006100790073000000004c0000016d000000fd01000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000dc01000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000032004d006f00740069006f006e0050006c0061006e006e0069006e0067005f00410072006d0050006c0061006e006e0065007200000001ba0000022c0000020b01000003fb0000005400610072006d005f0070006c0061006e006e00650064005f007400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000005a004d006f00740069006f006e0050006c0061006e006e0069006e0067005f00410072006d0050006c0061006e006e006500720020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005601000003000007800000039a00000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
-  Width: 956
-  X: 944
+  Width: 1920
+  X: 1919
   Y: 0

@@ -18,6 +18,7 @@
   <arg name="stowed_dist_pitch" default="2.9" />
   <arg name="stowed_hand_yaw" default="0.0" />
   <arg name="stowed_scoop_yaw" default="0.0" />
+  <arg name="stowed_grinder_yaw" default="0.0" />
 
   <!-- Make params from stowed arm joint positions so executables can grab them -->
   <param name="stowed_shou_yaw" value="$(arg stowed_shou_yaw)" />
@@ -26,6 +27,7 @@
   <param name="stowed_dist_pitch" value="$(arg stowed_dist_pitch)" />
   <param name="stowed_hand_yaw" value="$(arg stowed_hand_yaw)" />
   <param name="stowed_scoop_yaw" value="$(arg stowed_scoop_yaw)" />
+  <param name="stowed_grinder_yaw" value="$(arg stowed_grinder_yaw)" />
 
   <!-- Load lander urdf -->
   <param name="robot_description"
@@ -41,7 +43,9 @@
     shou_yaw_position_controller shou_pitch_position_controller
     prox_pitch_position_controller dist_pitch_position_controller
     hand_yaw_position_controller scoop_yaw_position_controller
-    ant_pan_position_controller ant_tilt_position_controller"/>
+    ant_pan_position_controller ant_tilt_position_controller
+     grinder_yaw_position_controller"/> 
+   
 
   <!-- Convert joint states from Gazebo to tf-tree for rviz -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
@@ -64,6 +68,7 @@
     -J j_dist_pitch $(arg stowed_dist_pitch)
     -J j_hand_yaw $(arg stowed_hand_yaw)
     -J j_scoop_yaw $(arg stowed_scoop_yaw)
+    -J j_grinder $(arg stowed_grinder_yaw)
     -unpause" />
 
   <!-- Convert stereo images to point clouds -->
@@ -81,6 +86,7 @@
     <arg name="stowed_dist_pitch" value="$(arg stowed_dist_pitch)" />
     <arg name="stowed_hand_yaw" value="$(arg stowed_hand_yaw)" />
     <arg name="stowed_scoop_yaw" value="$(arg stowed_scoop_yaw)" />
+    <arg name="stowed_grinder_yaw" value="$(arg stowed_grinder_yaw)" />
   </include>
 
 </launch>

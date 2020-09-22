@@ -33,6 +33,7 @@ def talker(req):
   pubs.append(rospy.Publisher('/dist_pitch_position_controller/command', Float64, queue_size=40))
   pubs.append(rospy.Publisher('/hand_yaw_position_controller/command', Float64, queue_size=40))
   pubs.append(rospy.Publisher('/scoop_yaw_position_controller/command', Float64, queue_size=40))
+  pubs.append(rospy.Publisher('/grinder_yaw_position_controller/command', Float64, queue_size=40))
   pub_rate = constants.TRAJ_PUB_RATE # Hz
   rate = rospy.Rate(pub_rate) # Hz
   nb_links = constants.NB_ARM_LINKS
@@ -82,7 +83,7 @@ def talker(req):
   for row in rows[1:]: # Cycles on all the rows except header
     if row[0][0] == '1' : # If the row is a command
       for x in range(nb_links):
-        pubs[x].publish(float("%14s\n"%row[12+x]))
+        pubs[x].publish(float("%14s\n"%row[13+x]))
       rate.sleep()
 
 
@@ -106,7 +107,7 @@ def talker(req):
           return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
-          pubs[x].publish(float("%14s\n"%row[12+x]))
+          pubs[x].publish(float("%14s\n"%row[13+x]))
         rate.sleep()
 
     guarded_move_pub.publish(False, Point(0.0, 0.0, 0.0), 'base_link')

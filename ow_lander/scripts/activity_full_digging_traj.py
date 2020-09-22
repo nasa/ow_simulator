@@ -36,7 +36,7 @@ def arg_parsing_lin(req):
     # Default trenching values
     x_start=1.5
     y_start=0
-    depth=0.01
+    depth=0.05
     length=0.3
     ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
@@ -54,10 +54,10 @@ def arg_parsing_lin(req):
 def arg_parsing_circ(req):
   if req.use_defaults :
     # Default trenching values
-    x_start=1.5
+    x_start=1.65
     y_start=0
-    depth=0.02
-    radial=False
+    depth=0.01
+    parallel=True
     ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
@@ -65,11 +65,11 @@ def arg_parsing_circ(req):
     x_start=req.x
     y_start=req.y
     depth=req.depth
-    radial=req.radial
+    parallel=req.parallel
     ground_position=req.ground_position
     delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, radial, ground_position, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, parallel, ground_position, delete_prev_traj]
 
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   # Compute shoulder yaw angle to trench
@@ -163,20 +163,20 @@ def dig_circular(move_arm, move_limbs, args):
   x_start = args[1]
   y_start = args[2]
   depth = args[3]
-  radial = args[4]
+  parallel = args[4]
   ground_position = args[5]
 
   pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
-  if radial==False:
+  if parallel==False:
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_start = ground_position + constants.GRINDER_HEIGHT - depth
+    z_start = ground_position + constants.R_PARALLEL_FALSE - depth
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
-    # Rotate hand perpendicular to radial direction
+    # Rotate hand perpendicular to arm direction
     change_joint_value(move_arm, constants.J_HAND_YAW, -0.29*math.pi)
 
   else:
@@ -190,7 +190,7 @@ def dig_circular(move_arm, move_limbs, args):
     change_joint_value(move_arm, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
 
     # Once aligned to trench goal, place hand above trench middle point
-    z_start = ground_position + constants.GRINDER_HEIGHT - depth
+    z_start = ground_position + constants.R_PARALLEL_FALSE - depth
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate dist to dig
@@ -210,6 +210,7 @@ def go_home(move_arm):
   joint_goal[constants.J_DIST_PITCH] = rospy.get_param('/stowed_dist_pitch', default=0)
   joint_goal[constants.J_HAND_YAW] = rospy.get_param('/stowed_hand_yaw', default=0)
   joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
+  joint_goal[constants.J_GRINDER_YAW] = rospy.get_param('/stowed_grinder_yaw', default=0)
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
 

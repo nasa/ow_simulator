@@ -35,11 +35,13 @@ class MoveGroupPythonInteface(object):
 
     move_arm = moveit_commander.MoveGroupCommander("arm")
     move_limbs = moveit_commander.MoveGroupCommander("limbs")
+    move_grinder = moveit_commander.MoveGroupCommander("grinder")
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
     self.move_arm = move_arm
     self.move_limbs = move_limbs
+    self.move_grinder = move_grinder
 
 # === SERVICE ACTIVITIES - guarded move =============================
 def handle_guarded_move(req):
@@ -219,7 +221,7 @@ def handle_grind(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(grind_args[6], bagname)
-    result = activity_grind.grind(interface.move_arm, interface.move_limbs, grind_args)
+    result = activity_grind.grind(interface.move_arm, interface.move_limbs, interface.move_grinder, grind_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
