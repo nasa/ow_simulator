@@ -54,7 +54,8 @@ class GroundDetector:
 
     if self._check_ground_method == self._gazebo_link_states_method:
       rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
-      self._query_ground_position_method = lambda: self._tf_lookup_position(rospy.Duration(10))
+      self._query_ground_position_method = lambda: self._tf_lookup_position(
+          rospy.Duration(10))
     else:
       self._query_ground_position_method = lambda: self._last_position
 
@@ -66,10 +67,12 @@ class GroundDetector:
 
   def _check_condition(self, new_position):
     if self._last_position is None:
-      self._last_position = np.array([new_position.x, new_position.y, new_position.z])
+      self._last_position = np.array(
+          [new_position.x, new_position.y, new_position.z])
       self._last_time = time.time()
       return False
-    current_position = np.array([new_position.x, new_position.y, new_position.z])
+    current_position = np.array(
+        [new_position.x, new_position.y, new_position.z])
     current_time = time.time()
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
@@ -85,7 +88,8 @@ class GroundDetector:
     try:
       idx = data.name.index("lander::l_scoop_tip")
     except ValueError:
-      rospy.logerr_throttle(1, "GroundDetector: lander::l_scoop_tip not found in link_states")
+      rospy.logerr_throttle(
+          1, "GroundDetector: lander::l_scoop_tip not found in link_states")
       return
 
     self._ground_detected = self._check_condition(data.pose[idx].position)
