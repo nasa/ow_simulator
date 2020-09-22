@@ -23,10 +23,6 @@ int main(int argc, char* argv[]) {
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle n ("power_system_node");
 
-  //Construct our power draw listener
-  //TODO: Check out latching
-  //ros::Subscriber power_listener = n.subscribe("power_draw", 1000, computeSOC);
-
   //Construct our State of Charge (SOC) publisher (Volts)
   ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
   //Construct our Remaining Useful Life (RUL) publisher (Seconds)
@@ -48,7 +44,7 @@ int main(int argc, char* argv[]) {
   } else {
     power_update_rate = 1.0; // 1 Hz default
   }
-  int t_step= 1;//starting at 1 not zero to skip csv headings
+  int t_step= 1;//skips csv headings in row 0
 
   //set our indices
   int time_i = 0;
@@ -69,10 +65,7 @@ int main(int argc, char* argv[]) {
     if (t_step < power_lifetime) {
       soc_msg.data=power_csv[t_step][voltage_i];
       rul_msg.data=power_csv[t_step][rul_i];
-    } //should keep publishing last voltage value if sim time exceeds the length of the csv
-    
-    //soc_msg.data=t;
-    //soc_msg.data=getSampleValue(timestamp, power_csv); //zero for testing purposes, will be calculated later
+    } //publishes last voltage value if sim time exceeds the length of the csv
 
     //publish current SOC
     SOC_pub.publish(soc_msg);
@@ -130,6 +123,7 @@ vector<vector<double>> loadCSV(const std::string& filename){
       getline(line_stream,value_string,',');
       myval = stod(value_string);
       vec_row.push_back(myval);
+	
     }
     values.push_back(vec_row);
   }
