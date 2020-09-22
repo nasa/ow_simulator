@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   } else {
     power_update_rate = 1.0; // 1 Hz default
   }
-  int t_step= 1;//skips csv headings in row 0
+  int t_step= 0;
 
   //set our indices
   int time_i = 0;
@@ -90,7 +90,6 @@ vector<vector<double>> loadCSV(const std::string& filename){
     ROS_WARN("Loading power csv file has failed. power_system_node will publish zeros.");
     vector<double> zero_row = {0.0,0.0,0.0};
     vector<vector<double>> zeros;
-    zeros.push_back(zero_row);
     zeros.push_back(zero_row);
     return zeros;
   }
