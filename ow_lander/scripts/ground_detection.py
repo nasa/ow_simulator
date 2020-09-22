@@ -10,6 +10,7 @@ import rospy
 import tf2_ros
 from collections import deque
 from gazebo_msgs.msg import LinkStates
+from geometry_msgs.msg import Point
 
 
 GROUND_DETECTION_THRESHOLD = -0.005
@@ -115,7 +116,8 @@ class GroundDetector:
     Use this method right after ground has been detected to get ground position
     with reference to the base_link
     """
-    return self._query_ground_position_method()
+    position = self._query_ground_position_method()
+    return Point(position[0], position[1], position[2])
 
   def detect(self):
     """
