@@ -16,9 +16,9 @@ typedef enum {
   J_DIST_PITCH,
   J_HAND_YAW,
   J_SCOOP_YAW,
+  J_GRINDER,
   J_ANT_PAN,
   J_ANT_TILT,
-  J_GRINDER,
   NUM_JOINTS  
 } joint_t;
 
@@ -27,13 +27,13 @@ typedef enum {
 // Joint names used in lander.xacro. These are often used in ROS topics, such as joint_states
 const std::vector<std::string> joint_names {
   "j_shou_yaw", "j_shou_pitch", "j_prox_pitch", "j_dist_pitch", "j_hand_yaw", "j_scoop_yaw",
-  "j_ant_pan", "j_ant_tilt", "j_grinder"
+  "j_grinder", "j_ant_pan", "j_ant_tilt"
 };
 
 // These names are good for displaying to humans
 const std::vector<std::string> joint_display_names {
   "Shoulder Yaw", "Shoulder Pitch", "Proximal Pitch", "Distal Pitch", "Hand Yaw", "Scoop Yaw",
-  "Antenna Pan", "Antenna Tilt", "Grinder Yaw"
+  "Grinder Yaw", "Antenna Pan", "Antenna Tilt"
 };
 
 
