@@ -88,6 +88,9 @@
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
+  <!-- == launch the mechanical power publishing node ========= -->
+  <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen">
+    </node>
 
   <!-- == start bag_recorder_node =========== -->
   <node if="$(arg record_bag)" name="bag_recorder_node" 

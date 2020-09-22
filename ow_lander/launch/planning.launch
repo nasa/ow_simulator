@@ -49,9 +49,7 @@
     <!-- == launch the trajectory publishing node ========= -->
     <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen">
     </node>
-    <!-- == launch the mechanical power publishing node ========= -->
-    <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen">
-    </node>
+
   </group>
 
 </launch>
