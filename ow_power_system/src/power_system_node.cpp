@@ -7,6 +7,7 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <ros/console.h>
 #include <std_msgs/Float64.h>
 //CSV handling
 #include <vector>
@@ -15,7 +16,7 @@
 #include <sstream>
 
 using namespace std;
-std::vector<std::vector<double>> loadCSV(const std::string& filename);
+vector<vector<double>> loadCSV(const std::string& filename);
 
 int main(int argc, char* argv[]) {
   
@@ -39,7 +40,6 @@ int main(int argc, char* argv[]) {
   csv_path += csv_file;
 
   auto power_csv = loadCSV(csv_path);
-  cout << "Power system CSV loaded!";
   
   //Define our publication rate and initialize our time to 0
   double power_update_rate;  
@@ -91,10 +91,15 @@ int main(int argc, char* argv[]) {
 /* Function to load pre-generated values as a vector of vectors of doubles
  * Returns std::vector<std::vector<std::double>>
  */
-std::vector<std::vector<double>> loadCSV(const std::string& filename){
+vector<vector<double>> loadCSV(const std::string& filename){
   ifstream power_csv(filename);
   if (power_csv.fail()) {
-    cout << "Unable to open data file" << endl;
+    ROS_WARN("Loading power csv file has failed. power_system_node will publish zeros.");
+    vector<double> zero_row = {0.0,0.0,0.0};
+    vector<vector<double>> zeros;
+    zeros.push_back(zero_row);
+    zeros.push_back(zero_row);
+    return zeros;
   }
   vector<vector<double>> values;
 
@@ -130,6 +135,7 @@ std::vector<std::vector<double>> loadCSV(const std::string& filename){
   }
 
   power_csv.close();
+  ROS_DEBUG("Power csv loaded successfully");
   return values;
 }
 
