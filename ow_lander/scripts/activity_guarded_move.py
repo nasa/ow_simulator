@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -104,7 +104,6 @@ def guarded_move(move_arm, args):
   goal_pose.position.x -= direction_x*search_distance
   goal_pose.position.y -= direction_y*search_distance
   goal_pose.position.z -= direction_z*search_distance
-  move_arm.set_max_velocity_scaling_factor(0.1) # Limit speed for approach
   move_arm.set_pose_target(goal_pose)
   plan = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort

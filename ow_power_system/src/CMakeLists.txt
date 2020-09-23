@@ -10,3 +10,4 @@ target_link_libraries(power_system_node
 
 install(TARGETS power_system_node
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+

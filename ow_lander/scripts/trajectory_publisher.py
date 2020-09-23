@@ -1,46 +1,22 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
 import rospy
-import tf2_ros
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
-from sensor_msgs.msg import JointState
 from ow_lander.srv import *
 import csv
 import time
 import glob
 import os
 import constants
-import numpy as np
 from ow_lander.msg import GuardedMoveResult
+from ground_detection import GroundDetector
 
-from peak_detection_real_time import PeakDetectionRT
-
-lag = 80
-threshold = 6.3
-influence = 0.5
-peak_detection = PeakDetectionRT(lag=lag, threshold=threshold, influence=influence)
-ground_detected = 0
-
-def check_for_contact(y):
-
-  global ground_detected, peak_detection
-
-  if ground_detected == 0:
-    result = peak_detection.detect(y)
-
-    if result != 0:
-      ground_detected = result
-
-def joint_states_cb(data):
-
-  check_for_contact(data.velocity[6])
-  
-
+ground_detector = None
 # The talker runs once the publish service is called. It starts a publisher
 # per joint controller, then reads the trajectory csvs.
 # If the traj csv is a guarded move, it reads both parts.
@@ -66,7 +42,7 @@ def talker(req):
 
 
   # === READ TRAJ FILE(S) ===============================
-  if req.use_latest :
+  if req.use_latest:
     files = glob.glob('*.csv')
     filename = max(files, key=os.path.getctime)
   else :
@@ -118,22 +94,15 @@ def talker(req):
     # Start subscriber for the joint_states
     time.sleep(2) # wait for 2 seconds till the arm settles
     # begin tracking velocity values as soon as the scoop moves downward 
-    global ground_detected, peak_detection
-    ground_detected = 0
-    peak_detection.reset()
+    global ground_detector
+    ground_detector.reset()
     rate = rospy.Rate(int(pub_rate/2)) # Hz
-    rospy.Subscriber("/joint_states", JointState, joint_states_cb)
-    tfBuffer = tf2_ros.Buffer()
-    listener = tf2_ros.TransformListener(tfBuffer)
 
     for row in guard_rows[1:]: # Cycles on all the rows except header
       if row[0][0] == '1' : # If the row is a command
-        if ground_detected != 0:
-          print "Found ground, stopped motion..."
-
-          trans = tfBuffer.lookup_transform("base_link", "l_scoop_tip", rospy.Time(0), rospy.Duration(10.0))
-          guarded_move_pub.publish(True, trans.transform.translation, 'base_link')
-
+        if ground_detector.detect():
+          print "Ground found! Motion stopped!"
+          guarded_move_pub.publish(True, ground_detector.ground_position, 'base_link')
           return True, "Done publishing guarded_move"
 
         for x in range(nb_links):
@@ -146,6 +115,8 @@ def talker(req):
 
 
 if __name__ == '__main__':
+  global ground_detector
   rospy.init_node('trajectory_publisher', anonymous=True)
+  ground_detector = GroundDetector()
   start_srv = rospy.Service('arm/publish_trajectory', PublishTrajectory, talker)
   rospy.spin()
