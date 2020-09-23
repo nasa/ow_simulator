@@ -210,7 +210,6 @@ def go_home(move_arm):
   joint_goal[constants.J_DIST_PITCH] = rospy.get_param('/stowed_dist_pitch', default=0)
   joint_goal[constants.J_HAND_YAW] = rospy.get_param('/stowed_hand_yaw', default=0)
   joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
-  joint_goal[constants.J_GRINDER_YAW] = rospy.get_param('/stowed_grinder_yaw', default=0)
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
 
