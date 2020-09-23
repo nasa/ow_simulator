@@ -49,6 +49,7 @@
     <!-- == launch the trajectory publishing node ========= -->
     <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen">
     </node>
+
   </group>
 
 </launch>
