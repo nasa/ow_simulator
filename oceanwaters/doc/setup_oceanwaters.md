@@ -28,7 +28,7 @@ cd oceanwaters_ws/src
 * Next, check out the top level oceanwaters repo which contains the default
 .rosinstall workspaces
 ```
-git clone https://github.com/nasa/ow_simulator
+git clone https://github.com/nasa/ow_simulator.git
 ```
 * Symlink the .rosinstall you're interested in into the src directory and run
 wstool. This will check out all the repos necessary to build the workspace.
