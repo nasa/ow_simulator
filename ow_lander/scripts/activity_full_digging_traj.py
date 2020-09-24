@@ -34,10 +34,10 @@ def change_joint_value(move_group, joint_name, target_value):
 def arg_parsing_lin(req):
   if req.use_defaults :
     # Default trenching values
-    x_start=1.5
+    x_start=1.46
     y_start=0
-    depth=0.05
-    length=0.3
+    depth=0.01
+    length=0.1
     ground_position=constants.DEFAULT_GROUND_HEIGHT
     delete_prev_traj=False
 
