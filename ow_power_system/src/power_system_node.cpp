@@ -29,22 +29,41 @@ int main(int argc, char* argv[]) {
   ros::Publisher RUL_pub = n.advertise<std_msgs::Float64>("remaining_useful_life",1000);
   
   //Load power values csv
-  string csv_path,csv_file;
-  csv_file = "/data/onewatt.csv";
-  //FILE OPTIONS: onewatt.csv, eightwatt.csv, sixteenwatt.csv
-  csv_path = ros::package::getPath("ow_power_system");
-  csv_path += csv_file;
+  string csv_path;
+  auto csv_path_param_exist = n.param("power_draw_csv_path", csv_path,
+    ros::package::getPath("ow_power_system") + "/data/onewatt.csv");
+
+  if (!csv_path_param_exist)
+  {
+    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: onewatt.csv");
+  }
 
   auto power_csv = loadCSV(csv_path);
-  
-  //Define our publication rate and initialize our time to 0
-  double power_update_rate;  
-  if (csv_file=="/data/onewatt.csv"){
-    power_update_rate = 0.10; //csv is at 10Hz intervals
-  } else {
-    power_update_rate = 1.0; // 1 Hz default
+
+  // Retrieve our publication rate expressed in Hz
+  double power_update_rate;
+  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate, 10.0);
+
+  if (!update_rate_param_exist)
+  {
+    ROS_WARN_NAMED("power_system_node", "power_update_rate param was not set! Using default value: 10 Hz");
   }
-  int t_step= 0;
+  else
+  {
+    // Validated the parameter
+    if (power_update_rate == 0)
+    {
+      power_update_rate = 10;
+      ROS_WARN_NAMED("power_system_node", "power_update_rate param was set to zero! Using default value: 10 Hz");
+    }
+    else
+    {
+      ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
+    }
+  }
+  
+  // Initialize time step to 0
+  int t_step = 0;
 
   //set our indices
   int time_i = 0;
@@ -54,7 +73,7 @@ int main(int argc, char* argv[]) {
   // ROS Loop. Note that once this loop starts,
   // this function (and node) is terminated with an interrupt.
   
-  ros::Rate rate(power_update_rate);
+  ros::Rate rate(1.0 / power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
   std_msgs::Float64 rul_msg;

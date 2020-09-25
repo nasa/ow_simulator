@@ -15,22 +15,30 @@ The SOC value will fluctuate realistically, but the RUL value currently outputs 
 Once the publisher hits the end of the csv, it continues to publish the final voltage value indefinitely.
 
 This node can be launched using the format:
-`<node name="power_system_node" pkg="ow_power_system" type="power_system_node" args=""/>`
+```xml
+<arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
+<arg name="power_update_rate" default="0"/>  <!-- Use 10 Hz for onewatt.csv, 1 Hz for the two other options -->
 
-There are three options for power draw levels: 1W (low power consumption), 8W (moderate power consumption), and 16W (high power consumption, intended to indicate a fault). To select which to use, the csv_file variable must be altered to `/data/onewatt.csv`, `/data/eightwatt.csv`, or `/data/sixteenwatt.csv`. 
+<node name="power_system_node" pkg="ow_power_system" type="power_system_node">
+    <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
+    <param name="power_update_rate" value="$(arg power_update_rate)"/>
+</node>
+```
 
-SPECS:
-onewatt.csv
-Voltage range: 4.192V to 2.616V
-Update interval: 10 seconds
-Useful life: 28550s
-
-eightwatt.csv
-Voltage range: 4.192V to 2.588V
-Update interval: 1 second
-Useful life: 3142s
-
-sixteenwatt.csv
-Voltage range: 4.192V to 2.587V
-Update interval: 1s
-Useful life: 1330s
+There are three options for power draw levels: 1W (low power consumption), 8W (moderate power consumption), and 16W (high power consumption, intended to indicate a fault). To select which to use, the `power_draw_csv_file` argument can be altered to `onewatt.csv`, `eightwatt.csv`, or `sixteenwatt.csv`.  
+  
+**SPECS:**  
+onewatt.csv  
+Voltage range: 4.192V to 2.616V  
+Update interval: 0.1 seconds  
+Useful life: 28550s  
+  
+eightwatt.csv  
+Voltage range: 4.192V to 2.588V  
+Update interval: 1 second  
+Useful life: 3142s  
+  
+sixteenwatt.csv  
+Voltage range: 4.192V to 2.587V  
+Update interval: 1s  
+Useful life: 1330s  
