@@ -27,6 +27,7 @@ import activity_grind
 
 # === MAIN COMMANDER CLASS =============================
 class MoveGroupPythonInteface(object):
+  
   def __init__(self):
     super(MoveGroupPythonInteface, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
@@ -44,7 +45,8 @@ class MoveGroupPythonInteface(object):
     self.move_grinder = move_grinder
 
 # === SERVICE ACTIVITIES - guarded move =============================
-def handle_guarded_move(req):
+def handle_guarded_move(req):     # type: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting guarded move planning session"
@@ -72,10 +74,12 @@ def handle_guarded_move(req):
     return
 
   print "Finished guarded move planning session succesfully..."
+
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Dig circular trench =============================
-def handle_dig_circular(req):
+def handle_dig_circular(req):      # type: class 'ow_lander.srv._DigCircular.DigCircularRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -99,10 +103,12 @@ def handle_dig_circular(req):
     return
 
   print "Finished planning session succesfully..."
+
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Dig Linear Trench =============================
-def handle_dig_linear(req):
+def handle_dig_linear(req):      # type: class 'ow_lander.srv._DigLinear.DigLinearRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -126,10 +132,12 @@ def handle_dig_linear(req):
     return
 
   print "Finished planning session for linear trenching succesfully..."
+
   return True, "Done"
 
 # === SERVICE ACTIVITIES - deliver sample =============================
-def handle_deliver_sample(req):
+def handle_deliver_sample(req):      # type: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting sample delivery session"
@@ -153,10 +161,12 @@ def handle_deliver_sample(req):
     return
 
   print "Sample succesfully delivered..."
+
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Stow =============================
-def handle_stow(req):
+def handle_stow(req):     # type: class 'ow_lander.srv._Stow.StowRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -175,11 +185,12 @@ def handle_stow(req):
     return
 
   print "Finished planning stow succesfully..."
+
   return True, "Done"
 
-
 # === SERVICE ACTIVITIES - Unstow =============================
-def handle_unstow(req):
+def handle_unstow(req):      # class 'ow_lander.srv._Unstow.UnstowRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Moving to unstowed configuration..."
@@ -198,15 +209,12 @@ def handle_unstow(req):
     return
 
   print "Moved to unstowed configuration succesfully..."
+
   return True, "Done"
 
-
-
-
-
-
   # === SERVICE ACTIVITIES - Grind =============================
-def handle_grind(req):
+def handle_grind(req):     # type: class 'ow_lander.srv._Grind.GrindRequest'
+
   try:
     interface = MoveGroupPythonInteface()
     print "Starting grinder planning session"
@@ -230,9 +238,8 @@ def handle_grind(req):
     return
 
   print "Grinder planning succesfully finished..."
+
   return True, "Done"
-
-
 
 # === MAIN ================================================
 def main():

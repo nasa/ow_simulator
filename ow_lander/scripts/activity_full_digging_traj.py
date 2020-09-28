@@ -91,7 +91,7 @@ def move_to_pre_trench_configuration(move_arm,       # type: class 'moveit_comma
   beta = math.asin (l/h)
     # Move to pre trench position, align shoulder yaw
   joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
+  joint_goal[constants.J_DIST_PITCH] = 0.0
   joint_goal[constants.J_HAND_YAW] = math.pi/2.2
   joint_goal[constants.J_PROX_PITCH] = -math.pi/2
   joint_goal[constants.J_SHOU_PITCH] = math.pi/2
