@@ -22,7 +22,12 @@ class MechanicalPower:
     rate = rospy.Rate(100)    
             
 
-  def _moving_average(self, msg):
+  def _moving_average(self, 
+                      msg):      # type: 
+
+    print "moving_average"
+    print type(msg)
+
     #global history
     self.history.append(msg)
     if len(self.history) > 10:
@@ -33,7 +38,12 @@ class MechanicalPower:
         average = msg
     return average    
         
-  def callback(self, ros_data):
+  def callback(self, 
+               ros_data):       # type:
+
+    print "callback"
+    print type(ros_data)    
+
     self._value = len(ros_data.name)
     num_joints = len(ros_data.name)
     power = 0
@@ -46,16 +56,20 @@ class MechanicalPower:
     self.power_pub.publish(power)
     self.power_pub_a.publish(power_avg)
 
-def main(args):
-    '''Initializes and cleanup ros node'''
-    rospy.init_node('mechanical_power_arm', anonymous=True)
-    mp = MechanicalPower()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        print "Shutting down mechanical_power module"
+def main(args):      # type: 
+
+  print "main"
+  print type(args)
+
+  '''Initializes and cleanup ros node'''
+  rospy.init_node('mechanical_power_arm', anonymous=True)
+  mp = MechanicalPower()
+  try:
+    rospy.spin()
+  except KeyboardInterrupt:
+    print "Shutting down mechanical_power module"
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+  main(sys.argv)
  

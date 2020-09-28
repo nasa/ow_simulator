@@ -152,7 +152,7 @@ def handle_deliver_sample(req):
   except KeyboardInterrupt:
     return
 
-  print "Finished planning session for linear trenching succesfully..."
+  print "Sample succesfully delivered..."
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Stow =============================

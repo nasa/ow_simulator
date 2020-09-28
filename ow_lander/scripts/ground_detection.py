@@ -20,22 +20,29 @@ class SlidingWindow:
   A class that maintains a sliding window over a stream of samples in FIFO order
   """
 
-  def __init__(self, size, method):
+  def __init__(self, 
+               size,         # type: int
+               method):      # type: function
+
     self._que = deque()
     self._size = size
     self._method = method
 
-  def append(self, val):
+  def append(self, 
+             val):      # type: numpy.float64
+
     if len(self._que) >= self._size:
       self._que.pop()
     self._que.appendleft(val)
 
   @property
   def valid(self):
+
     return len(self._que) == self._size
 
   @property
   def value(self):
+    
     # TODO: consider caching the value to speed up query
     return self._method(self._que)
 
@@ -48,6 +55,7 @@ class GroundDetector:
   """
 
   def __init__(self):
+
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
     self.reset()
@@ -61,12 +69,15 @@ class GroundDetector:
       self._query_ground_position_method = lambda: self._last_position
 
   def reset(self):
+
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
     self._trending_velocity = SlidingWindow(3, np.mean)
 
-  def _check_condition(self, new_position):
+  def _check_condition(self, 
+                       new_position):  # type: class 'geometry_msgs.msg._Vector3.Vector3'
+
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
@@ -81,7 +92,9 @@ class GroundDetector:
     self._trending_velocity.append(delta_d[2] / delta_t)
     return self._trending_velocity.value > GROUND_DETECTION_THRESHOLD if self._trending_velocity.valid else False
 
-  def _handle_link_states(self, data):
+  def _handle_link_states(self, 
+                          data):  # type: class 'gazebo_msgs.msg._LinkStates.LinkStates'
+
     # if ground is found ignore further readings until the detector has been reset
     if self._ground_detected:
       return
@@ -96,9 +109,12 @@ class GroundDetector:
     self._ground_detected = self._check_condition(data.pose[idx].position)
 
   def _gazebo_link_states_method(self):
+
     return self._ground_detected
 
-  def _tf_lookup_position(self, timeout=rospy.Duration(0.0)):
+  def _tf_lookup_position(self, 
+                          timeout=rospy.Duration(0.0)):      # type: class 'rospy.rostime.Duration'
+
     try:
       t = self._buffer.lookup_transform(
           "base_link", "l_scoop_tip", rospy.Time(), timeout)
@@ -108,10 +124,12 @@ class GroundDetector:
     return t.transform.translation
 
   def _tf_2_method(self):
+
     return self._check_condition(self._tf_lookup_position())
 
   @property
   def ground_position(self):
+
     """
     Use this method right after ground has been detected to get ground position
     with reference to the base_link
@@ -120,6 +138,7 @@ class GroundDetector:
     return Point(position[0], position[1], position[2])
 
   def detect(self):
+
     """
     Checks if the robot arm has hit the ground
     :returns: True if ground was detected, False otherwise

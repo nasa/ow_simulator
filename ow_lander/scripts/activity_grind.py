@@ -10,7 +10,8 @@ import copy
 from utils import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
-def arg_parsing(req):
+def arg_parsing(req):     # type: class 'ow_lander.srv._Grind.GrindRequest'
+
   if req.use_defaults :
     # Default trenching values
     x_start = 1.65
@@ -32,8 +33,10 @@ def arg_parsing(req):
 
   return [req.use_defaults, x_start, y_start, depth, length, parallel, ground_position, delete_prev_traj]
 
-
-def plan_cartesian_path(move_group, length, alpha, parallel):
+def plan_cartesian_path(move_group,     # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                        length,         # float
+                        alpha,          # float 
+                        parallel):      # bool
 
   if parallel==False:
     alpha = alpha - math.pi/2
@@ -51,7 +54,10 @@ def plan_cartesian_path(move_group, length, alpha, parallel):
 
   return plan, fraction
 
-def grind(move_arm, move_limbs, move_grinder, args):
+def grind(move_arm,        # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          move_limbs,      # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          move_grinder,    # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          args):           # type: List[bool, float, float, float, float, bool, float, bool]
 
   x_start = args[1]
   y_start = args[2] 

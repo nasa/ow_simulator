@@ -13,7 +13,8 @@ from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import Vector3
 from shape_msgs.msg import SolidPrimitive
 
-def arg_parsing(req):
+def arg_parsing(req):         # type: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+
   if req.use_defaults :
     # Default trenching values
     x_delivery=0.55
@@ -31,7 +32,8 @@ def arg_parsing(req):
 
 
 
-def deliver_sample(move_arm, args):
+def deliver_sample(move_arm,   # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                   args):      # type: List[bool, float, float, float, bool]
 
   move_arm.set_planner_id("RRTstar")
 

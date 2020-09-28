@@ -12,7 +12,11 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 
 
-def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
+def go_to_Z_coordinate(move_group,    # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                       x_start,       # type: float
+                       y_start,       # type: float
+                       z_start):      # type: float
+
   goal_pose = move_group.get_current_pose().pose
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
@@ -25,13 +29,17 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   move_group.stop()
   move_group.clear_pose_targets()
 
-def change_joint_value(move_group, joint_name, target_value):
+def change_joint_value(move_group,      # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+                       joint_name,      # type: int
+                       target_value):   # type: float
+
   joint_goal = move_group.get_current_joint_values()
   joint_goal[joint_name] = target_value
   move_group.go(joint_goal, wait=True)
   move_group.stop()
 
-def arg_parsing_lin(req):
+def arg_parsing_lin(req):      # type: class 'ow_lander.srv._DigLinear.DigLinearRequest'
+
   if req.use_defaults :
     # Default trenching values
     x_start=1.5
@@ -51,7 +59,8 @@ def arg_parsing_lin(req):
 
   return [req.use_defaults, x_start, y_start, depth, length, ground_position, delete_prev_traj]
 
-def arg_parsing_circ(req):
+def arg_parsing_circ(req):     # type: class 'ow_lander.srv._DigCircular.DigCircularRequest' 
+
   if req.use_defaults :
     # Default trenching values
     x_start=1.65
@@ -71,7 +80,10 @@ def arg_parsing_circ(req):
 
   return [req.use_defaults, x_start, y_start, depth, parallel, ground_position, delete_prev_traj]
 
-def move_to_pre_trench_configuration(move_arm, x_start, y_start):
+def move_to_pre_trench_configuration(move_arm,       # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                                     x_start,        # type: float
+                                     y_start):       # type: float
+
   # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
   h = math.sqrt( pow(y_start-constants.Y_SHOU,2) + pow(x_start-constants.X_SHOU,2) )
@@ -92,10 +104,12 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
+
   return True
 
-
-def plan_cartesian_path_lin(move_arm, length, alpha):
+def plan_cartesian_path_lin(move_arm,       # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                            length,         # type: float
+                            alpha):         # type: float
 
   waypoints = []
   wpose = move_arm.get_current_pose().pose
@@ -109,9 +123,12 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
                                waypoints,   # waypoints to follow
                                0.01,        # end effector follow step (meters)
                                0.0)         # jump threshold
+
   return plan, fraction
 
-def dig_linear(move_arm,move_limbs,args):
+def dig_linear(move_arm,       # type: class 'moveit_commander.move_group.MoveGroupCommander'
+               move_limbs,     # type: class 'moveit_commander.move_group.MoveGroupCommander'
+               args):          # type: List[bool, float, int, float, float, float, bool]
 
   x_start = args[1]
   y_start = args[2]
@@ -157,8 +174,9 @@ def dig_linear(move_arm,move_limbs,args):
 
   return True
 
-
-def dig_circular(move_arm, move_limbs, args):
+def dig_circular(move_arm,     # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                 move_limbs,   # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+                 args):        # type: List[bool, float, int, float, bool, float, bool]
 
   x_start = args[1]
   y_start = args[2]
@@ -200,8 +218,8 @@ def dig_circular(move_arm, move_limbs, args):
 
   return True
 
+def go_home(move_arm):     # type: class 'moveit_commander.move_group.MoveGroupCommander'
 
-def go_home(move_arm):
   # Move to home position
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_SHOU_YAW] = rospy.get_param('/stowed_shou_yaw', default=0)
@@ -210,12 +228,12 @@ def go_home(move_arm):
   joint_goal[constants.J_DIST_PITCH] = rospy.get_param('/stowed_dist_pitch', default=0)
   joint_goal[constants.J_HAND_YAW] = rospy.get_param('/stowed_hand_yaw', default=0)
   joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
-  joint_goal[constants.J_GRINDER_YAW] = rospy.get_param('/stowed_grinder_yaw', default=0)
   move_arm.go(joint_goal, wait=True)
   move_arm.stop()
 
+  return True
 
-def unstow(move_arm):
+def unstow(move_arm):     # type: class 'moveit_commander.move_group.MoveGroupCommander'
 
   change_joint_value(move_arm,constants.J_SHOU_YAW, 0.0)
   move_to_pre_trench_configuration(move_arm, 2.0, 0.0)
