@@ -41,10 +41,6 @@ def start_traj_recording(delete_prev_traj,      # type: bool
 def stop_traj_recording(result,       # type: bool
                         bagname):     # type: str
 
-  print "utils>stop_traj_recording"
-  print type(result)
-  print type(bagname)
-
   time.sleep(1)
   # Stop rosbag recording (TODO: clean process)
   os.system("killall -s SIGINT record")
