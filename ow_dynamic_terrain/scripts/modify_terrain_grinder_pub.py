@@ -61,7 +61,7 @@ class ModifyTerrainGrinder:
 
     msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=2.0)
     self.pub_collision.publish(msg)
-    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=1.0)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.06, scale=1.0)
     self.pub_visual.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_grinder message:\n" + str(msg))
