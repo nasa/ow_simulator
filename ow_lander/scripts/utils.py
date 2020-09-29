@@ -41,10 +41,6 @@ def start_traj_recording(delete_prev_traj,      # type: bool
 def stop_traj_recording(result,       # type: bool
                         bagname):     # type: str
 
-  print "utils>stop_traj_recording"
-  print type(result)
-  print type(bagname)
-
   time.sleep(1)
   # Stop rosbag recording (TODO: clean process)
   os.system("killall -s SIGINT record")
@@ -69,11 +65,6 @@ def stop_traj_recording(result,       # type: bool
   os.system(command)
 
 def is_shou_yaw_goal_in_range(joint_goal):      # type: List[float, float, float, float, float, float]
-  
-  print "utils>is_shou_yaw_goal_in_range"
-  print type(joint_goal)
-  for i in joint_goal:
-    print type(i)
   
   # If shoulder yaw goal angle is out of joint range, abort
   upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper

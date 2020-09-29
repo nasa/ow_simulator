@@ -100,11 +100,6 @@ def pre_guarded_move(move_arm,     # type: class 'moveit_commander.move_group.Mo
 def guarded_move(move_arm,     # type: class 'moveit_commander.move_group.MoveGroupCommander' 
                  args):        # type: List[bool, bool, float, float, float, float, float, float, float] 
 
-  print "guarded_move"
-  print type(args)
-  for i in args:
-    print type(i)
-
   direction_x = args[5]
   direction_y = args[6]
   direction_z = args[7]
