@@ -2,6 +2,8 @@
 <launch>
 
   <arg name="gui" default="true"/>
+  <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
+  <arg name="power_update_rate" default="0.1"/>  <!-- Use 0.1 Hz for onewatt.csv, 1 Hz for the two other options -->
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/test_dem.world"/>
@@ -14,6 +16,8 @@
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_enable" value="true"/>
     <arg name="gui" value="$(arg gui)"/>
+    <arg name="power_draw_csv_file" default="$(arg power_draw_csv_file)"/>
+    <arg name="power_update_rate" default="$(arg power_update_rate)"/>
   </include>
 
 
