@@ -42,19 +42,19 @@ int main(int argc, char* argv[]) {
 
   // Retrieve our publication rate expressed in Hz
   double power_update_rate;
-  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate, 10.0);
+  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate, 0.1);
 
   if (!update_rate_param_exist)
   {
-    ROS_WARN_NAMED("power_system_node", "power_update_rate param was not set! Using default value: 10 Hz");
+    ROS_WARN_NAMED("power_system_node", "power_update_rate param was not set! Using default value: 0.1 Hz");
   }
   else
   {
     // Validated the parameter
     if (power_update_rate == 0)
     {
-      power_update_rate = 10;
-      ROS_WARN_NAMED("power_system_node", "power_update_rate param was set to zero! Using default value: 10 Hz");
+      power_update_rate = 0.1;
+      ROS_WARN_NAMED("power_system_node", "power_update_rate param was set to zero! Using default value: 0.1 Hz");
     }
     else
     {
