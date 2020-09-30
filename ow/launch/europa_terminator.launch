@@ -6,7 +6,6 @@
   <arg name="gzclient" default="true"/>
   <arg name="record_bag" default="false"/>
   <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
-  <arg name="power_update_rate" default="0.1"/>  <!-- Use 0.1 Hz for onewatt.csv, 1 Hz for the two other options -->
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
@@ -22,7 +21,6 @@
     <arg name="gzclient" value="$(arg gzclient)"/>
     <arg name="record_bag" value="$(arg record_bag)"/>
     <arg name="power_draw_csv_file" default="$(arg power_draw_csv_file)"/>
-    <arg name="power_update_rate" default="$(arg power_update_rate)"/>
   </include>
 
 </launch>

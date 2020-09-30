@@ -17,11 +17,9 @@ Once the publisher hits the end of the csv, it continues to publish the final vo
 This node can be launched using the format:
 ```xml
 <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
-<arg name="power_update_rate" default="0.1"/>  <!-- Use 0.1 Hz for onewatt.csv, 1 Hz for the two other options -->
 
 <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
     <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
-    <param name="power_update_rate" value="$(arg power_update_rate)"/>
 </node>
 ```
 

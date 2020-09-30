@@ -38,29 +38,30 @@ int main(int argc, char* argv[]) {
     ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: onewatt.csv");
   }
 
+  ROS_INFO_STREAM_NAMED("power_system_node", "power_draw_csv_path is set to: " << csv_path);
+
   auto power_csv = loadCSV(csv_path);
 
   // Retrieve our publication rate expressed in Hz
-  double power_update_rate;
-  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate, 0.1);
+  double power_update_rate = csv_path.find("onewatt") != string::npos ? 0.1 : 1;  // if onewatt default to 0.1 Hz otherwise 1 Hz
+  double power_update_rate_override;  // allow the user to override it
+  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate_override, 0.1);
 
-  if (!update_rate_param_exist)
+  if (update_rate_param_exist)
   {
-    ROS_WARN_NAMED("power_system_node", "power_update_rate param was not set! Using default value: 0.1 Hz");
-  }
-  else
-  {
+    ROS_WARN_NAMED("power_system_node", "Overriding the default power_update_rate!");
     // Validated the parameter
     if (power_update_rate == 0)
     {
-      power_update_rate = 0.1;
-      ROS_WARN_NAMED("power_system_node", "power_update_rate param was set to zero! Using default value: 0.1 Hz");
+      ROS_ERROR_NAMED("power_system_node", "power_update_rate param was set to zero! passed value ignored.");
     }
     else
     {
-      ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
+      power_update_rate = power_update_rate_override;
     }
   }
+
+  ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
   
   // Initialize time step to 0
   int t_step = 0;
