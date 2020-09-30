@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
   // ROS Loop. Note that once this loop starts,
   // this function (and node) is terminated with an interrupt.
   
-  ros::Rate rate(1.0 / power_update_rate);
+  ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
   std_msgs::Float64 rul_msg;
