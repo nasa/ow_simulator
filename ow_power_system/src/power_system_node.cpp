@@ -21,30 +21,50 @@ vector<vector<double>> loadCSV(const std::string& filename);
 int main(int argc, char* argv[]) {
   
   ros::init(argc,argv,"power_system_node");
-  ros::NodeHandle n ("power_system_node");
+  ros::NodeHandle nh ("power_system_node");
 
   //Construct our State of Charge (SOC) publisher (Volts)
-  ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
+  ros::Publisher SOC_pub = nh.advertise<std_msgs::Float64>("state_of_charge",1000);
   //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-  ros::Publisher RUL_pub = n.advertise<std_msgs::Float64>("remaining_useful_life",1000);
+  ros::Publisher RUL_pub = nh.advertise<std_msgs::Float64>("remaining_useful_life",1000);
   
   //Load power values csv
-  string csv_path,csv_file;
-  csv_file = "/data/onewatt.csv";
-  //FILE OPTIONS: onewatt.csv, eightwatt.csv, sixteenwatt.csv
-  csv_path = ros::package::getPath("ow_power_system");
-  csv_path += csv_file;
+  string csv_path;
+  auto csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
+    ros::package::getPath("ow_power_system") + "/data/onewatt.csv");
+
+  if (!csv_path_param_exist)
+  {
+    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: onewatt.csv");
+  }
+
+  ROS_INFO_STREAM_NAMED("power_system_node", "power_draw_csv_path is set to: " << csv_path);
 
   auto power_csv = loadCSV(csv_path);
-  
-  //Define our publication rate and initialize our time to 0
-  double power_update_rate;  
-  if (csv_file=="/data/onewatt.csv"){
-    power_update_rate = 0.10; //csv is at 10Hz intervals
-  } else {
-    power_update_rate = 1.0; // 1 Hz default
+
+  // Retrieve our publication rate expressed in Hz
+  double power_update_rate = csv_path.find("onewatt") != string::npos ? 0.1 : 1;  // if onewatt default to 0.1 Hz otherwise 1 Hz
+  double power_update_rate_override;  // allow the user to override it
+  auto update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
+
+  if (update_rate_param_exist)
+  {
+    ROS_WARN_NAMED("power_system_node", "Overriding the default power_update_rate!");
+    // Validated the parameter
+    if (power_update_rate == 0)
+    {
+      ROS_ERROR_NAMED("power_system_node", "power_update_rate param was set to zero! passed value ignored.");
+    }
+    else
+    {
+      power_update_rate = power_update_rate_override;
+    }
   }
-  int t_step= 0;
+
+  ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
+  
+  // Initialize time step to 0
+  int t_step = 0;
 
   //set our indices
   int time_i = 0;
