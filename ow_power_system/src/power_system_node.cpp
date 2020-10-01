@@ -21,16 +21,16 @@ vector<vector<double>> loadCSV(const std::string& filename);
 int main(int argc, char* argv[]) {
   
   ros::init(argc,argv,"power_system_node");
-  ros::NodeHandle n ("power_system_node");
+  ros::NodeHandle nh ("power_system_node");
 
   //Construct our State of Charge (SOC) publisher (Volts)
-  ros::Publisher SOC_pub = n.advertise<std_msgs::Float64>("state_of_charge",1000);
+  ros::Publisher SOC_pub = nh.advertise<std_msgs::Float64>("state_of_charge",1000);
   //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-  ros::Publisher RUL_pub = n.advertise<std_msgs::Float64>("remaining_useful_life",1000);
+  ros::Publisher RUL_pub = nh.advertise<std_msgs::Float64>("remaining_useful_life",1000);
   
   //Load power values csv
   string csv_path;
-  auto csv_path_param_exist = n.param("power_draw_csv_path", csv_path,
+  auto csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
     ros::package::getPath("ow_power_system") + "/data/onewatt.csv");
 
   if (!csv_path_param_exist)
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
   // Retrieve our publication rate expressed in Hz
   double power_update_rate = csv_path.find("onewatt") != string::npos ? 0.1 : 1;  // if onewatt default to 0.1 Hz otherwise 1 Hz
   double power_update_rate_override;  // allow the user to override it
-  auto update_rate_param_exist = n.param("power_update_rate", power_update_rate_override, 0.1);
+  auto update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
 
   if (update_rate_param_exist)
   {
