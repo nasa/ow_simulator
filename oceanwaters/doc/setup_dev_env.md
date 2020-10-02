@@ -37,7 +37,7 @@ ros-melodic-desktop-full package when you get to that step.
 
 * Install Gazebo 9.13+. ROS melodic ships with Gazebo 9.0 which does not satisfy
 OceanWATERS requirements. To get the latest stable version of Gazebo available
-to ROS melodic follow these steps: 
+to ROS melodic follow these steps:
 
   * First run `gazebo --version` and check the version that is currently installed,
 if you have 9.13 or higher installed then you may skip this Gazebo upgrade.
@@ -100,7 +100,18 @@ installation.
 git clone https://git.code.sf.net/p/plexil/git plexil
 ```
 
-NOTE: the default branch is releases/plexil-4, which is the latest stable version of PLEXIL.
+The default git branch is releases/plexil-4, which is the latest stable version
+of PLEXIL.  On rare occasions the latest version of this branch won't be
+compatible with OceanWATERS and you will need to check out a particular commit.
+We plan to simplify the workflow needed to keep these two software systems compatible.
+
+* UNTIL FURTHER NOTICE (i.e. the absence of this step), check out an older
+  commit of PLEXIL that supports OceanWATERS.  The newest version of the
+  releases/plexil-4 branch will not work.
+
+```
+git checkout 51813f1
+```
 
 * Install any of the following build prerequisites needed. If you're not sure,
 try the build, see where it breaks, and install new packages as you go. All of
@@ -144,4 +155,3 @@ make
 
 * If you have problems, see additional build information
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
-

@@ -5,6 +5,7 @@
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>
   <arg name="record_bag" default="false"/>
+  <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/test_dem.world"/>
@@ -19,6 +20,7 @@
     <arg name="gazebo" value="$(arg gazebo)"/>
     <arg name="gzclient" value="$(arg gzclient)"/>
     <arg name="record_bag" value="$(arg record_bag)"/>
+    <arg name="power_draw_csv_file" default="$(arg power_draw_csv_file)"/>
   </include>
 
 </launch>
