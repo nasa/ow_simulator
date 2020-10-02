@@ -3,6 +3,7 @@ float32 x               # X coordinate of grinding starting point
 float32 y               # Y coordinate of grinding starting point
 float32 depth           # Desired depth
 float32 length          # Desired length
+bool parallel           # If True, resulting trench is parallel to arm. If False, perpendicular to arm
 float32 ground_position # Z coordinate of ground level in base_link frame
 bool delete_prev_traj   # Set to true to cleanup ~/.ros
 ---

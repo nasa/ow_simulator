@@ -655,14 +655,25 @@
       </surface>
     </collision>
   </gazebo>
-  <joint name="j_grinder" type="fixed">
+  <joint 
+    name="j_grinder" 
+    type="revolute">
     <origin xyz="-0.075 -0.129903811 0" rpy="0 0 ${-pi*2/3}" />
     <parent link="l_hand" />
     <child link="l_grinder" />
+    <axis xyz="-1 0 0" />
+    <dynamics damping="1" />
+    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="0.1" />
   </joint>
-  <gazebo reference="j_grinder">
-    <preserveFixedJoint>true</preserveFixedJoint>
-  </gazebo>
+  <transmission name="grinder_yaw_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j_grinder">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="grinder_yaw_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
 
   <link name="l_ant_foot">
     <inertial>
@@ -828,10 +839,5 @@
        j_hand_yaw, j_scoop_yaw, j_ant_pan, j_ant_tilt</jointName>
       <updateRate>10</updateRate>
     </plugin-->
-
-    <plugin name="LinkForce" filename="libLinkForcePlugin.so">
-      <link>l_scoop</link>
-      <lookupTable>$(find ow_gazebo_plugins)/data/scoop_force_circular.csv</lookupTable>
-    </plugin>
   </gazebo>
 </robot>

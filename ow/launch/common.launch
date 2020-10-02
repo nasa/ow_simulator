@@ -6,6 +6,7 @@
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
+  <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -64,7 +65,9 @@
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
+    <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
+  </node>
 
   <!-- Start faults node -->
   <node name="faults" pkg="ow_faults" type="faults" output="screen"/>

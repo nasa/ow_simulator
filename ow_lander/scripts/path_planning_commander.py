@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -35,11 +35,13 @@ class MoveGroupPythonInteface(object):
 
     move_arm = moveit_commander.MoveGroupCommander("arm")
     move_limbs = moveit_commander.MoveGroupCommander("limbs")
+    move_grinder = moveit_commander.MoveGroupCommander("grinder")
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
     self.move_arm = move_arm
     self.move_limbs = move_limbs
+    self.move_grinder = move_grinder
 
 # === SERVICE ACTIVITIES - guarded move =============================
 def handle_guarded_move(req):
@@ -208,7 +210,7 @@ def handle_grind(req):
   try:
     interface = MoveGroupPythonInteface()
     print "Starting grinder planning session"
-    grind_args = activity_full_digging_traj.arg_parsing_lin(req)
+    grind_args = activity_grind.arg_parsing(req)
 
     if utils.check_arguments(grind_args[1], grind_args[2], grind_args[3]) != True:
       print "[ERROR] Invalid grinder trajectory input arguments. Exiting path_planning_commander..."
@@ -219,7 +221,7 @@ def handle_grind(req):
     bagname = location + currentDT
 
     utils.start_traj_recording(grind_args[6], bagname)
-    result = activity_grind.grind(interface.move_arm, interface.move_limbs, grind_args)
+    result = activity_grind.grind(interface.move_arm, interface.move_limbs, interface.move_grinder, grind_args)
     utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
