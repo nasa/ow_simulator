@@ -78,8 +78,10 @@ class GroundDetector:
     self._dynamic_threshold = None
     self._threshold_tolerance = 0.015 # TODO: infer tolerance dynamically
 
-  def _check_condition(self, 
-                       new_position):  # type: class 'geometry_msgs.msg._Vector3.Vector3'
+  def _check_condition(self, new_position):
+    """
+    :type new_position: class 'geometry_msgs.msg._Vector3.Vector3
+    """
 
     if self._last_position is None:
       self._last_position = np.array(
@@ -101,8 +103,10 @@ class GroundDetector:
     else:
       return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance
 
-  def _handle_link_states(self, 
-                          data):  # type: class 'gazebo_msgs.msg._LinkStates.LinkStates'
+  def _handle_link_states(self, data):
+    """
+    :type data: gazebo_msgs.msg._LinkStates.LinkStates
+    """
 
     # if ground is found ignore further readings until the detector has been reset
     if self._ground_detected:
@@ -121,8 +125,10 @@ class GroundDetector:
 
     return self._ground_detected
 
-  def _tf_lookup_position(self, 
-                          timeout=rospy.Duration(0.0)):      # type: class 'rospy.rostime.Duration'
+  def _tf_lookup_position(self, timeout=rospy.Duration(0.0)):
+    """
+    :type timeout: rospy.rostime.Duration
+    """
 
     try:
       t = self._buffer.lookup_transform(
