@@ -76,7 +76,7 @@ class GroundDetector:
     self._ground_detected = False
     self._trending_velocity = SlidingWindow(5, np.mean)
     self._dynamic_threshold = None
-    self._threshold_tolerance = 0.015 # TODO: infer tolerance dynamically
+    self._threshold_tolerance = None
 
   def _check_condition(self, new_position):
     """
@@ -99,6 +99,7 @@ class GroundDetector:
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._dynamic_threshold = self._trending_velocity.value
+        self._threshold_tolerance = np.std(self._trending_velocity._que)
         return False
     else:
       return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance
