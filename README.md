@@ -26,9 +26,8 @@ setting up the rest of the OceanWATERS repositories:
 - [irg_open](https://github.com/nasa/irg_open)
 
 ## Getting Started
-- [Setup your development environment](oceanwaters/doc/setup_dev_env.md)
-- [Download and build OceanWATERS](oceanwaters/doc/setup_oceanwaters.md)
-- [User Guide](https://github.com/nasa/ow_simulator/wiki/Using-OceanWATERS)
+
+See the [project wiki](https://github.com/nasa/ow_simulator/wiki)
 
 ## Contributing
 Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues)
