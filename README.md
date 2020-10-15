@@ -27,7 +27,7 @@ setting up the rest of the OceanWATERS repositories:
 
 ## Getting Started
 
-See the [project wiki](https://github.com/nasa/ow_simulator/wiki)
+See the [User Guide (project wiki)](https://github.com/nasa/ow_simulator/wiki)
 
 ## Contributing
 Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues)
