@@ -56,7 +56,6 @@ class GroundDetector:
   """
 
   def __init__(self):
-
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
     self.reset()
@@ -70,7 +69,6 @@ class GroundDetector:
       self._query_ground_position_method = lambda: self._last_position
 
   def reset(self):
-
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
@@ -82,7 +80,6 @@ class GroundDetector:
     """
     :type new_position: class 'geometry_msgs.msg._Vector3.Vector3
     """
-
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
@@ -145,7 +142,6 @@ class GroundDetector:
 
   @property
   def ground_position(self):
-
     """
     Use this method right after ground has been detected to get ground position
     with reference to the base_link
@@ -154,7 +150,6 @@ class GroundDetector:
     return Point(position[0], position[1], position[2])
 
   def detect(self):
-
     """
     Checks if the robot arm has hit the ground
     :returns: True if ground was detected, False otherwise
