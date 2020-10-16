@@ -78,7 +78,7 @@ class GroundDetector:
 
   def _check_condition(self, new_position):
     """
-    :type new_position: class 'geometry_msgs.msg._Vector3.Vector3
+    :type new_position: geometry_msgs.msg._Vector3.Vector3
     """
     if self._last_position is None:
       self._last_position = np.array(
