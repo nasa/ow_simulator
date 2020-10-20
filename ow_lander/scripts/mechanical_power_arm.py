@@ -11,7 +11,7 @@ VERBOSE=True
 
 class MechanicalPower:
   def __init__(self):
-    '''Initialize ros publisher, ros subscriber'''
+    """Initialize ros publisher, ros subscriber"""
     # topic where we publish
     self.power_pub = rospy.Publisher('/mechanical_power/raw', Float64, queue_size = 10)
     self.power_pub_a = rospy.Publisher('/mechanical_power/average', Float64, queue_size = 10)
@@ -21,9 +21,10 @@ class MechanicalPower:
     rate = rospy.Rate(100)    
             
 
-  def _moving_average(self, 
-                      msg):      # type: float
-
+  def _moving_average(self, msg):  
+    """
+    :type msg: float
+    """
     #global history
     self.history.append(msg)
     if len(self.history) > 10:
@@ -35,9 +36,10 @@ class MechanicalPower:
 
     return average    
         
-  def callback(self, 
-               ros_data):       # type: class 'sensor_msgs.msg._JointState.JointState'
-
+  def callback(self, ros_data): 
+    """
+    :type ros_data: class 'sensor_msgs.msg._JointState.JointState'
+    """
     self._value = len(ros_data.name)
     num_joints = len(ros_data.name)
     power = 0
@@ -50,9 +52,11 @@ class MechanicalPower:
     self.power_pub.publish(power)
     self.power_pub_a.publish(power_avg)
 
-def main(args):      # type: List[str, str, str]
-
-  '''Initializes and cleanup ros node'''
+def main(args): 
+  """
+  Initializes and cleanup ros node
+  :type args: List[str, str, str]
+  """
   rospy.init_node('mechanical_power_arm', anonymous=True)
   mp = MechanicalPower()
   try:
