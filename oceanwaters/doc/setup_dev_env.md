@@ -1,0 +1,179 @@
+These instructions cover system requirements, and the installation of
+prerequisite software (PLEXIL, ROS), for OceanWATERS.  Familiarity with
+Unix/Linux and the Bash shell command line is assumed.
+
+System Requirements
+-------------------
+
+### Hardware
+
+The minimum recommended hardware configuration is as follows:
+
+-   2.0 GHz quad core x86-64 CPU
+-   16 GB memory
+-   Nvidia graphics card. GeForce GTX 750-Ti, GeForce GTX 960M, Quadro M1200, or
+    better.
+
+### Software
+
+The following minimum software set is required to build and run OceanWATERS
+(version numbers and identifiers are listed where specific versions are
+required):
+
+-   The Ubuntu 18.04 (Bionic) Linux operating system, with:
+    -   The Bash command shell
+    -   The git version control system
+-   The Robot Operating System (ROS), Melodic Morenia distribution, with:
+    -   Gazebo 9.13
+    -   The Catkin build system
+- PLEXIL plan language and executive (http://plexil.sourceforge.net).
+
+Note on virtual machines (e.g. VMWare, Parallels, VirtualBox, Windows Subsystem
+for Linux): These have all worked to some degree, but tend to not support the
+Gazebo simulator very well or at all. They are not recommended for OceanWATERS.
+
+
+Prerequisites
+-------------
+
+OceanWATERS requires PLEXIL and ROS with Gazebo.
+In the following instructions, we assume the default command shell is Bash.
+
+### PLEXIL
+
+The OceanWATERS distribution includes an autonomy module (ow_autonomy) that at present
+depends on PLEXIL, an open-source plan authoring language and autonomy executive (see
+[*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).  PLEXIL must be installed
+*prior* to building OceanWATERS.
+
+PLEXIL is hosted on sourceforge.net, which provides both source code and binary
+distributions. Because OceanWATERS requires a specific version of PLEXIL, PLEXIL
+should be built from source code.
+
+* Check out the source code:
+```
+git clone https://git.code.sf.net/p/plexil/git plexil
+```
+
+The default git branch is releases/plexil-4, which is the latest stable version
+of PLEXIL.  On rare occasions the latest version of this branch won't be
+compatible with OceanWATERS and you will need to check out a particular commit.
+We plan to simplify the workflow needed to keep these two software systems compatible.
+
+* UNTIL FURTHER NOTICE (i.e. the absence of this step), check out an older
+  commit of PLEXIL that supports OceanWATERS.  The newest version of the
+  releases/plexil-4 branch will not work.
+
+```
+git checkout 51813f1
+```
+
+* Install any of the following build prerequisites needed. If you're not sure,
+try the build, see where it breaks, and install new packages as you go. All of
+the following may be installed with: `sudo apt install <package-name>`
+```
+sudo apt install make \
+                 autotools-dev \
+                 autoconf \
+                 libtool \
+                 g++ \
+                 ant \
+                 gperf \
+                 openjdk-8-jdk
+```
+
+* Add the following lines to your ~/.bashrc file, using your actual location of
+plexil in the first line:
+```
+export PLEXIL_HOME=/home/<username>/plexil
+source $PLEXIL_HOME/scripts/plexil-setup.sh
+```
+
+* Source your shell init file.
+```
+source ~/.bashrc
+```
+
+* Configure for the build as needed for OceanWATERS.
+```
+cd $PLEXIL_HOME
+make src/configure
+cd src
+./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc
+```
+
+* Build it.
+```
+cd $PLEXIL_HOME
+make
+```
+
+* If you have problems, see additional build information
+[here](http://plexil.sourceforge.net/wiki/index.php/Installation).
+
+
+### ROS and Gazebo
+
+Installation of OceanWATERS requires prior installation of ROS Melodic. ROS
+binary downloads for Ubuntu Linux are available at
+[http://wiki.ros.org/ROS/Installation](http://wiki.ros.org/ROS/Installation),
+and instructions for installing ROS are available at
+[http://wiki.ros.org/melodic/Installation/Ubuntu](http://wiki.ros.org/melodic/Installation/Ubuntu).
+
+* Install ROS (Melodic version) by following
+[these instructions](http://wiki.ros.org/melodic/Installation/Ubuntu). Select the
+ros-melodic-desktop-full package when you get to that step.
+
+* Install Gazebo 9.13+. ROS melodic ships with Gazebo 9.0 which does not satisfy
+OceanWATERS requirements. To get the latest stable version of Gazebo available
+to ROS melodic follow these steps:
+
+  * First run `gazebo --version` and check the version that is currently installed,
+if you have 9.13 or higher installed then you may skip this Gazebo upgrade.
+
+  * Add OSRF gazebo repositories to your linux enviroment:
+```
+sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+```
+
+  * Update and upgrade the packages (confirm the upgrade when you get prompted):
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+  * Run `gazebo --version` and verify that you have a version of 9.13 or higher
+
+* In addition to the above OceanWATERS requires the following list of packages:
+```
+sudo apt install git \
+                 python-wstool \
+                 python-catkin-tools \
+                 ros-melodic-tf2-ros \
+                 ros-melodic-robot-state-publisher \
+                 ros-melodic-joint-state-publisher \
+                 ros-melodic-joint-state-controller \
+                 ros-melodic-effort-controllers \
+                 ros-melodic-dynamic-reconfigure \
+                 ros-melodic-nodelet \
+                 ros-melodic-nodelet-topic-tools \
+                 ros-melodic-camera-info-manager \
+                 ros-melodic-tf2-geometry-msgs \
+                 ros-melodic-gazebo-ros-control \
+                 ros-melodic-xacro ros-melodic-rviz-visual-tools \
+                 ros-melodic-rqt-plot ros-melodic-rqt-rviz \
+                 ros-melodic-rqt-image-view \
+                 ros-melodic-rqt-common-plugins \
+                 ros-melodic-gazebo-plugins \
+                 ros-melodic-moveit \
+                 ros-melodic-moveit-ros-visualization \
+                 ros-melodic-geometry-msgs \
+                 ros-melodic-cmake-modules \
+                 ros-melodic-stereo-msgs \
+                 ros-melodic-stereo-image-proc \
+                 libgtk2.0-dev \
+                 libglew-dev
+```
+
+By default, ROS is installed in `/opt/ros/release`. In the remainder of this document,
+we assume that ROS is installed in `/opt/ros/melodic`.
