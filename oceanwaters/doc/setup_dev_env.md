@@ -24,8 +24,8 @@ required):
     -   The Bash command shell
     -   The git version control system
 -   The Robot Operating System (ROS), Melodic Morenia distribution, with:
-    -   Gazebo 9.13
     -   The Catkin build system
+-   Gazebo 9.13
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
 
 Note on virtual machines (e.g. VMWare, Parallels, VirtualBox, Windows Subsystem
@@ -36,7 +36,7 @@ Gazebo simulator very well or at all. They are not recommended for OceanWATERS.
 Prerequisites
 -------------
 
-OceanWATERS requires PLEXIL and ROS with Gazebo.
+OceanWATERS requires PLEXIL, ROS, and Gazebo.
 In the following instructions, we assume the default command shell is Bash.
 
 ### PLEXIL
@@ -112,7 +112,7 @@ make
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
 
 
-### ROS and Gazebo
+### ROS
 
 Installation of OceanWATERS requires prior installation of ROS Melodic. ROS
 binary downloads for Ubuntu Linux are available at
@@ -123,6 +123,11 @@ and instructions for installing ROS are available at
 * Install ROS (Melodic version) by following
 [these instructions](http://wiki.ros.org/melodic/Installation/Ubuntu). Select the
 ros-melodic-desktop-full package when you get to that step.
+
+By default, ROS is installed in `/opt/ros/release`. In the remainder of this document,
+we assume that ROS is installed in `/opt/ros/melodic`.
+
+### Gazebo
 
 * Install Gazebo 9.13+. ROS melodic ships with Gazebo 9.0 which does not satisfy
 OceanWATERS requirements. To get the latest stable version of Gazebo available
@@ -144,7 +149,9 @@ sudo apt-get upgrade
 ```
   * Run `gazebo --version` and verify that you have a version of 9.13 or higher
 
-* In addition to the above OceanWATERS requires the following list of packages:
+### Additional Packages
+
+* In addition to the above, OceanWATERS requires the following list of packages:
 ```
 sudo apt install git \
                  python-wstool \
@@ -174,6 +181,3 @@ sudo apt install git \
                  libgtk2.0-dev \
                  libglew-dev
 ```
-
-By default, ROS is installed in `/opt/ros/release`. In the remainder of this document,
-we assume that ROS is installed in `/opt/ros/melodic`.

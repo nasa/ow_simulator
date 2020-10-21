@@ -74,11 +74,6 @@ cd ..
 catkin build
 ```
 
-NOTE: if catkin is not found, it was somehow left out of your ROS install.  Try:
-```
-sudo apt-get install python-catkin-tools
-```
-
 The first build of OceanWATERS will take an extra long time as the build process downloads
 around 2 GB of 3rd party code and data. The code and data will be cached in the src/ tree,
 so subsequent builds should be much faster.
@@ -93,5 +88,16 @@ source oceanwaters_ws/devel/setup.bash
 At this point you should see Gazebo related variables such as
 `GAZEBO_MODEL_PATH` set in your environment.  You may wish to add the line above to your
 .bashrc file.
+
+Launch the simulator to make sure that the build was successful:
+
+```
+roslaunch ow europa_terminator_workspace.launch
+```
+
+Many windows will appear, as well as many messages in the terminal (including
+some warnings and errors) which at this time are expected.  But when startup
+finishes, you should see the RViz window showing a 3D model of the lander, and
+the Gazebo window also showing the terrain.
 
 Congratulations, your OceanWATERS installation and setup is complete!
