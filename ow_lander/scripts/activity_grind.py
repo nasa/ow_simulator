@@ -10,7 +10,8 @@ import copy
 from utils import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
-def arg_parsing(req):
+def arg_parsing(req):     # type: class 'ow_lander.srv._Grind.GrindRequest'
+
   if req.use_defaults :
     # Default trenching values
     x_start = 1.65
@@ -32,8 +33,10 @@ def arg_parsing(req):
 
   return [req.use_defaults, x_start, y_start, depth, length, parallel, ground_position, delete_prev_traj]
 
-
-def plan_cartesian_path(move_group, length, alpha, parallel):
+def plan_cartesian_path(move_group,     # type: class 'moveit_commander.move_group.MoveGroupCommander'
+                        length,         # float
+                        alpha,          # float 
+                        parallel):      # bool
 
   if parallel==False:
     alpha = alpha - math.pi/2
@@ -51,7 +54,10 @@ def plan_cartesian_path(move_group, length, alpha, parallel):
 
   return plan, fraction
 
-def grind(move_arm, move_limbs, move_grinder, args):
+def grind(move_arm,        # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          move_limbs,      # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          move_grinder,    # type: class 'moveit_commander.move_group.MoveGroupCommander' 
+          args):           # type: List[bool, float, float, float, float, bool, float, bool]
 
   x_start = args[1]
   y_start = args[2] 
@@ -65,19 +71,6 @@ def grind(move_arm, move_limbs, move_grinder, args):
   h = math.sqrt( pow(y_start-constants.Y_SHOU,2) + pow(x_start-constants.X_SHOU,2) )
   l = constants.Y_SHOU - constants.HAND_Y_OFFSET
   beta = math.asin (l/h)
-
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
-  joint_goal[constants.J_HAND_YAW] = 4*math.pi/3
-  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-  joint_goal[constants.J_SHOU_YAW] = alpha + beta
-  # If out of joint range, abort
-  if (is_shou_yaw_goal_in_range(joint_goal)==False):
-    return False
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
-
   alpha = alpha+beta
   
   if parallel:
@@ -93,12 +86,16 @@ def grind(move_arm, move_limbs, move_grinder, args):
     x_start = 0.97*(x_start - dx) # Move starting point back to avoid scoop-terrain collision
     y_start = 0.97*(y_start + dy)   
 
-  # Place the grinder placed above the desired starting point, at
+  # Place the grinder vertical, above the desired starting point, at
   # an altitude of 0.25 meters in the base_link frame. 
   goal_pose = move_grinder.get_current_pose().pose
   goal_pose.position.x = x_start # Position
   goal_pose.position.y = y_start
   goal_pose.position.z = 0.25 
+  goal_pose.orientation.x = 0.70616885803 # Orientation
+  goal_pose.orientation.y = 0.0303977418722
+  goal_pose.orientation.z = -0.706723318474
+  goal_pose.orientation.w = 0.0307192507001
   move_grinder.set_pose_target(goal_pose)
   plan = move_grinder.plan()
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort

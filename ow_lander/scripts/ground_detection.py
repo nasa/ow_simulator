@@ -13,29 +13,37 @@ from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
 
 
-GROUND_DETECTION_THRESHOLD = -0.005
-
 class SlidingWindow:
   """
   A class that maintains a sliding window over a stream of samples in FIFO order
   """
 
   def __init__(self, size, method):
+    """
+    :type size: int
+    :param method: summarization method. e.g: mean, stddev, ..
+    :type method: funtion
+    """
     self._que = deque()
     self._size = size
     self._method = method
 
   def append(self, val):
+    """
+    :type val: number
+    """
     if len(self._que) >= self._size:
       self._que.pop()
     self._que.appendleft(val)
 
   @property
   def valid(self):
+    """ indicates that the metric value has been established """
     return len(self._que) == self._size
 
   @property
   def value(self):
+    """ metric value depends on the provided summarization method """
     # TODO: consider caching the value to speed up query
     return self._method(self._que)
 
@@ -64,9 +72,14 @@ class GroundDetector:
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
-    self._trending_velocity = SlidingWindow(3, np.mean)
+    self._trending_velocity = SlidingWindow(5, np.mean)
+    self._dynamic_threshold = None
+    self._threshold_tolerance = None
 
   def _check_condition(self, new_position):
+    """
+    :type new_position: geometry_msgs.msg._Vector3.Vector3
+    """
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
@@ -78,10 +91,21 @@ class GroundDetector:
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
-    self._trending_velocity.append(delta_d[2] / delta_t)
-    return self._trending_velocity.value > GROUND_DETECTION_THRESHOLD if self._trending_velocity.valid else False
+    velocity_z = delta_d[2] / delta_t
+    self._trending_velocity.append(velocity_z)
+    if self._dynamic_threshold is None:
+      if self._trending_velocity.valid:
+        self._dynamic_threshold = self._trending_velocity.value
+        self._threshold_tolerance = np.std(self._trending_velocity._que)
+        return False
+    else:
+      return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance
 
   def _handle_link_states(self, data):
+    """
+    :type data: gazebo_msgs.msg._LinkStates.LinkStates
+    """
+
     # if ground is found ignore further readings until the detector has been reset
     if self._ground_detected:
       return
@@ -96,9 +120,14 @@ class GroundDetector:
     self._ground_detected = self._check_condition(data.pose[idx].position)
 
   def _gazebo_link_states_method(self):
+
     return self._ground_detected
 
   def _tf_lookup_position(self, timeout=rospy.Duration(0.0)):
+    """
+    :type timeout: rospy.rostime.Duration
+    """
+
     try:
       t = self._buffer.lookup_transform(
           "base_link", "l_scoop_tip", rospy.Time(), timeout)
@@ -108,6 +137,7 @@ class GroundDetector:
     return t.transform.translation
 
   def _tf_2_method(self):
+
     return self._check_condition(self._tf_lookup_position())
 
   @property
