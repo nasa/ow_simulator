@@ -31,9 +31,6 @@ provided in the ROS installation to set required ROS environment variables:
 source /opt/ros/melodic/setup.bash
 ```
 
-For convenience users may want to add the above command to their ~/.bashrc
-file.
-
 Next create a workspace directory for OceanWATERS with a src subdirectory, and
 go to the src subdirectory:
 
@@ -86,8 +83,7 @@ source oceanwaters_ws/devel/setup.bash
 ```
 
 At this point you should see Gazebo related variables such as
-`GAZEBO_MODEL_PATH` set in your environment.  You may wish to add the line above to your
-.bashrc file.
+`GAZEBO_MODEL_PATH` set in your environment.
 
 Launch the simulator to make sure that the build was successful:
 
