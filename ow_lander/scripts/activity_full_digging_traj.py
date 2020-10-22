@@ -31,15 +31,14 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   move_group.stop()
   move_group.clear_pose_targets()
 
-def change_joint_value(move_group, joint_name, target_value):
+def change_joint_value(move_group, joint_index, target_value):
   """
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander' 
-  :type joint_name: int
+  :type joint_index: int
   :type target_value: float
   """
-
   joint_goal = move_group.get_current_joint_values()
-  joint_goal[joint_name] = target_value
+  joint_goal[joint_index] = target_value
   move_group.go(joint_goal, wait=True)
   move_group.stop()
 
