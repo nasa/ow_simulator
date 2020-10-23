@@ -45,8 +45,10 @@ class MoveGroupPythonInteface(object):
     self.move_grinder = move_grinder
 
 # === SERVICE ACTIVITIES - guarded move =============================
-def handle_guarded_move(req):     # type: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
-
+def handle_guarded_move(req): 
+  """
+  :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting guarded move planning session"
@@ -78,8 +80,10 @@ def handle_guarded_move(req):     # type: class 'ow_lander.srv._GuardedMove.Guar
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Dig circular trench =============================
-def handle_dig_circular(req):      # type: class 'ow_lander.srv._DigCircular.DigCircularRequest'
-
+def handle_dig_circular(req): 
+  """
+  :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -107,8 +111,10 @@ def handle_dig_circular(req):      # type: class 'ow_lander.srv._DigCircular.Dig
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Dig Linear Trench =============================
-def handle_dig_linear(req):      # type: class 'ow_lander.srv._DigLinear.DigLinearRequest'
-
+def handle_dig_linear(req):
+  """
+  :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -136,8 +142,10 @@ def handle_dig_linear(req):      # type: class 'ow_lander.srv._DigLinear.DigLine
   return True, "Done"
 
 # === SERVICE ACTIVITIES - deliver sample =============================
-def handle_deliver_sample(req):      # type: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
-
+def handle_deliver_sample(req): 
+  """
+  :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting sample delivery session"
@@ -165,8 +173,10 @@ def handle_deliver_sample(req):      # type: class 'ow_lander.srv._DeliverSample
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Stow =============================
-def handle_stow(req):     # type: class 'ow_lander.srv._Stow.StowRequest'
-
+def handle_stow(req): 
+  """
+  :type req: class 'ow_lander.srv._Stow.StowRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting full traj planning session"
@@ -189,8 +199,10 @@ def handle_stow(req):     # type: class 'ow_lander.srv._Stow.StowRequest'
   return True, "Done"
 
 # === SERVICE ACTIVITIES - Unstow =============================
-def handle_unstow(req):      # class 'ow_lander.srv._Unstow.UnstowRequest'
-
+def handle_unstow(req):
+  """
+  :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Moving to unstowed configuration..."
@@ -213,8 +225,10 @@ def handle_unstow(req):      # class 'ow_lander.srv._Unstow.UnstowRequest'
   return True, "Done"
 
   # === SERVICE ACTIVITIES - Grind =============================
-def handle_grind(req):     # type: class 'ow_lander.srv._Grind.GrindRequest'
-
+def handle_grind(req): 
+  """
+  :type req: class 'ow_lander.srv._Grind.GrindRequest'
+  """
   try:
     interface = MoveGroupPythonInteface()
     print "Starting grinder planning session"

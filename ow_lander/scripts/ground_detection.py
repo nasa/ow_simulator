@@ -22,7 +22,7 @@ class SlidingWindow:
     """
     :type size: int
     :param method: summarization method. e.g: mean, stddev, ..
-    :type method: funtion
+    :type method: function
     """
     self._que = deque()
     self._size = size
