@@ -164,7 +164,7 @@
       link="l_shou" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="9.0" friction="2.6"/>
+    <dynamics damping="50.0" friction="2.6"/>
     <limit effort="70.9" velocity="0.15" lower="-1.8" upper="1.8"/>
   </joint>
   <transmission name="shou_yaw_transmission">
@@ -240,7 +240,7 @@
       link="l_prox" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="9.0" friction="4.6"/>
+    <dynamics damping="50.0" friction="4.6"/>
     <limit effort="101.0" velocity="0.2" lower="0.05" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
@@ -316,7 +316,7 @@
       link="l_dist" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="9.0" friction="2.7"/>
+    <dynamics damping="50.0" friction="2.7"/>
     <limit effort="73.0" velocity="0.2"/>
   </joint>
   <transmission name="prox_pitch_transmission">
@@ -392,7 +392,7 @@
       link="l_wrist" />
     <axis
       xyz="0 0 1" />
-    <dynamics damping="9.0" friction="0.3"/>
+    <dynamics damping="50.0" friction="0.3"/>
     <limit effort="25.7" velocity="0.2" />
   </joint>
   <transmission name="dist_pitch_transmission">
@@ -480,7 +480,7 @@
       link="l_hand" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="9.0" friction="0.3"/>
+    <dynamics damping="50.0" friction="0.3"/>
     <limit effort="25.7" velocity="0.2" />
   </joint>
   <transmission name="hand_yaw_transmission">
@@ -586,7 +586,7 @@
       link="l_scoop" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="9.0" friction="0.5"/>
+    <dynamics damping="50.0" friction="0.5"/>
     <limit effort="20.0" velocity="0.2" />
   </joint>
   <transmission name="scoop_yaw_transmission">
