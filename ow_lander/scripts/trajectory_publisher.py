@@ -15,8 +15,37 @@ import os
 import constants
 from ow_lander.msg import GuardedMoveResult
 from ground_detection import GroundDetector
+from moveit_msgs.msg import RobotTrajectory
+from trajectory_msgs.msg import JointTrajectory
+import time 
+import numpy as np
+import pylab
+import yaml
 
 ground_detector = None
+
+velocity_array = np.array([0.0] *1)
+current_position=  np.array([0.0] * 6)
+
+
+def joint_states_cb(data):
+
+  global velocity_array
+  global current_position
+  velocity_array  = np.append(velocity_array , data.velocity[6])
+  j_dist_pitch    = data.position[2]
+  j_hand_yaw      = data.position[3]
+  j_prox_pitch    = data.position[4]
+  j_scoop_yaw     = data.position[5]
+  j_shou_pitch    = data.position[6]
+  j_shou_yaw      = data.position[7]
+  
+  current_position[0] = j_shou_yaw 
+  current_position[1] = j_shou_pitch 
+  current_position[2] = j_prox_pitch
+  current_position[3] = j_dist_pitch 
+  current_position[4] = j_hand_yaw 
+  current_position[5] = j_scoop_yaw 
 # The talker runs once the publish service is called. It starts a publisher
 # per joint controller, then reads the trajectory csvs.
 # If the traj csv is a guarded move, it reads both parts.
@@ -39,8 +68,33 @@ def talker(req):
   rows = []
   guard_rows = []
   guarded_move_bool = False
+  
+  #rospy.Subscriber("/joint_states", JointState, joint_states_cb)
+  
+  file_path = os.path.join(os.path.expanduser('~'), 'saved_trajectories', 'plan.yaml')
+  
+  #with open(file_path, 'w') as file_save:
+    #yaml.dump(plan, file_save, default_flow_style=True)
 
+  with open(file_path, 'r') as file_open:
+    loaded_plan = yaml.load(file_open)
+  print loaded_plan  
+  
+  for index in range(len(loaded_plan.joint_trajectory.points)):
+    for ind in range (len(loaded_plan.joint_trajectory.joint_names)):
+      #print loaded_plan.joint_trajectory.joint_names[ind] , loaded_plan.joint_trajectory.points[index].positions[ind]
+      #for x in range(nb_links):
+      #pubs[x].publish(float("%14s\n"%row[12+x]))
+      
+      pubs[ind].publish(float("%14s\n"%loaded_plan.joint_trajectory.points[index].positions[ind]))     # this works
+      
+      #desired_pos = loaded_plan.joint_trajectory.points[index].positions[ind]
+      #print ind
+      #print index
+      ###current_pos = 
+      #error = desired_pos - current_position[ind]
 
+  '''
   # === READ TRAJ FILE(S) ===============================
   if req.use_latest:
     files = glob.glob('*.csv')
@@ -110,7 +164,7 @@ def talker(req):
         rate.sleep()
 
     guarded_move_pub.publish(False, Point(0.0, 0.0, 0.0), 'base_link')
-
+  '''
   return True, "Done publishing trajectory"
 
 

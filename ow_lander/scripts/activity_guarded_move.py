@@ -10,6 +10,8 @@ import datetime
 import time
 import rospy
 from utils import is_shou_yaw_goal_in_range
+import yaml
+import os
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -72,23 +74,37 @@ def pre_guarded_move(move_arm, args):
      return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
+  #move_arm.go(joint_goal, wait=True)
+  #move_arm.stop()
+  
+  plan = move_arm.plan(joint_goal)
+  #move_arm.execute(plan, wait=True)
+  #print plan
+  #move_arm.go(joint_goal, wait=True)
+  #move_arm.stop()
+  print (type(plan))
+  print (type(move_arm.get_current_joint_values()))
+  print (len(plan.joint_trajectory.points))
+  
+  file_path = os.path.join(os.path.expanduser('~'), 'saved_trajectories', 'plan.yaml')
+  with open(file_path, 'w') as file_save:
+    #yaml.dump(plan, file_save, default_flow_style=True)
+    yaml.dump(plan, file_save, default_flow_style=True)
 
   # Once aligned to move goal and offset, place scoop tip at surface target offset
-  goal_pose = move_arm.get_current_pose().pose
-  goal_pose.position.x = targ_x
-  goal_pose.position.y = targ_y
-  goal_pose.position.z = targ_z
-  move_arm.set_pose_target(goal_pose)
-  move_arm.set_max_velocity_scaling_factor(0.5)
-  plan = move_arm.plan()
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-     return False
+  #goal_pose = move_arm.get_current_pose().pose
+  #goal_pose.position.x = targ_x
+  #goal_pose.position.y = targ_y
+  #goal_pose.position.z = targ_z
+  #move_arm.set_pose_target(goal_pose)
+  #move_arm.set_max_velocity_scaling_factor(0.5)
+  #plan = move_arm.plan()
+  #if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+     #return False
 
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
+  #plan = move_arm.go(wait=True)
+  #move_arm.stop()
+  #move_arm.clear_pose_targets()
   print "Done planning approach of guarded_move"
   return True
 

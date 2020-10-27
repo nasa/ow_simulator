@@ -48,21 +48,21 @@ def handle_guarded_move(req):
     print "Starting guarded move planning session"
     guarded_move_args = activity_guarded_move.arg_parsing(req)
 
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "pre_guarded_move_traj_"
-    bagname = location + currentDT
+    #currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    #location = "pre_guarded_move_traj_"
+    #bagname = location + currentDT
 
     # Approach
-    utils.start_traj_recording(guarded_move_args[1], bagname)
+    #utils.start_traj_recording(guarded_move_args[1], bagname)
     result = activity_guarded_move.pre_guarded_move(interface.move_arm, guarded_move_args)
-    utils.stop_traj_recording(result, bagname)
+    #utils.stop_traj_recording(result, bagname)
 
     # Safe move, monitoring torques
-    location = "guarded_move_traj_"
-    bagname = location + currentDT
-    utils.start_traj_recording(False, bagname)
-    result = activity_guarded_move.guarded_move(interface.move_arm, guarded_move_args)
-    utils.stop_traj_recording(result, bagname)
+    #location = "guarded_move_traj_"
+    #bagname = location + currentDT
+    #utils.start_traj_recording(False, bagname)
+    #result = activity_guarded_move.guarded_move(interface.move_arm, guarded_move_args)
+    #utils.stop_traj_recording(result, bagname)
 
   except rospy.ROSInterruptException:
     return
