@@ -40,6 +40,7 @@ class MoveGroupPythonInteface(object):
                                                    queue_size=20)
     self.move_arm = move_arm
     self.move_limbs = move_limbs
+    self.robot = robot
 
 # === SERVICE ACTIVITIES - guarded move =============================
 def handle_guarded_move(req):
@@ -54,7 +55,7 @@ def handle_guarded_move(req):
 
     # Approach
     #utils.start_traj_recording(guarded_move_args[1], bagname)
-    result = activity_guarded_move.pre_guarded_move(interface.move_arm, guarded_move_args)
+    result = activity_guarded_move.pre_guarded_move(interface.move_arm, guarded_move_args, interface.robot)
     #utils.stop_traj_recording(result, bagname)
 
     # Safe move, monitoring torques
