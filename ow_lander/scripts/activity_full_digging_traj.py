@@ -211,7 +211,7 @@ def dig_circular(move_arm, move_limbs, args):
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
 
     # Rotate hand perpendicular to arm direction
-    change_joint_value(move_arm, constants.J_HAND_YAW, -0.29*math.pi)
+    change_joint_value(move_arm, constants.J_HAND_YAW, -0.23*math.pi)
 
   else:
     # Rotate hand so scoop is in middle point
