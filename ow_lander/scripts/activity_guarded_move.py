@@ -11,7 +11,10 @@ import time
 import rospy
 from utils import is_shou_yaw_goal_in_range
 
-def arg_parsing(req):
+def arg_parsing(req): 
+  """
+  :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
+  """
   if req.use_defaults :
     # Default trenching values
     delete_prev_traj=False
@@ -37,7 +40,11 @@ def arg_parsing(req):
           direction_x, direction_y, direction_z, search_distance]
 
 # Approach
-def pre_guarded_move(move_arm, args):
+def pre_guarded_move(move_arm, args): 
+  """
+  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type args: List[bool, bool, float, float, float, float, float, float, float]
+  """
   targ_x = args[2]
   targ_y = args[3]
   targ_z = args[4]
@@ -89,11 +96,16 @@ def pre_guarded_move(move_arm, args):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   move_arm.clear_pose_targets()
+
   print "Done planning approach of guarded_move"
+
   return True
 
-def guarded_move(move_arm, args):
-
+def guarded_move(move_arm, args):       
+  """
+  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type args: List[bool, bool, float, float, float, float, float, float, float]
+  """
   direction_x = args[5]
   direction_y = args[6]
   direction_z = args[7]
@@ -112,5 +124,7 @@ def guarded_move(move_arm, args):
   plan = move_arm.go(wait=True)
   move_arm.stop()
   move_arm.clear_pose_targets()
+
   print "Done planning safe part of guarded_move"
+
   return True

@@ -25,7 +25,10 @@ ground_detector = None
 #The ground is detected after the peak_detection algorithm detects a spike in the velocity data
 
 
-def talker(req):
+def talker(req):     
+  """
+  :type req: class 'ow_lander.srv._PublishTrajectory.PublishTrajectoryRequest'
+  """
   pubs = []
   pubs.append(rospy.Publisher('/shou_yaw_position_controller/command', Float64, queue_size=40))
   pubs.append(rospy.Publisher('/shou_pitch_position_controller/command', Float64, queue_size=40))
