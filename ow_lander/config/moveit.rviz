@@ -4,12 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /MotionPlanning_ArmPlanner1/Scene Robot1
-        - /MotionPlanning_ArmPlanner1/Planning Request1
-        - /MotionPlanning_ArmPlanner1/Planning Metrics1
-        - /MotionPlanning_ArmPlanner1/Planned Path1
-      Splitter Ratio: 0.8389830589294434
-    Tree Height: 276
+        - /MotionPlanning1
+      Splitter Ratio: 0.7425600290298462
+    Tree Height: 245
   - Class: rviz/Help
     Name: Help
   - Class: rviz/Views
@@ -53,7 +50,7 @@ Visualization Manager:
       MoveIt_Goal_Tolerance: 0
       MoveIt_Planning_Attempts: 10
       MoveIt_Planning_Time: 5
-      MoveIt_Use_Cartesian_Path: true
+      MoveIt_Use_Cartesian_Path: false
       MoveIt_Use_Constraint_Aware_IK: true
       MoveIt_Warehouse_Host: 127.0.0.1
       MoveIt_Warehouse_Port: 33829
@@ -66,7 +63,7 @@ Visualization Manager:
           X: 2
           Y: 2
           Z: 2
-      Name: MotionPlanning_ArmPlanner
+      Name: MotionPlanning
       Planned Path:
         Color Enabled: false
         Interrupt Display: false
@@ -125,6 +122,11 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -140,6 +142,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_scoop_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_shou:
             Alpha: 1
             Show Axes: false
@@ -164,11 +170,20 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-        Loop Animation: false
-        Robot Alpha: 0.05000000074505806
+          lander_sample_dock0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          lander_sample_dock_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+        Loop Animation: true
+        Robot Alpha: 0.5
         Robot Color: 150; 50; 150
         Show Robot Collision: false
-        Show Robot Visual: false
+        Show Robot Visual: true
         Show Trail: false
         State Display Time: 0.05 s
         Trail Step Size: 1
@@ -187,7 +202,7 @@ Visualization Manager:
         Interactive Marker Size: 0
         Joint Violation Color: 255; 0; 255
         Planning Group: arm
-        Query Goal State: false
+        Query Goal State: true
         Query Start State: false
         Show Workspace: false
         Start State Alpha: 1
@@ -197,7 +212,7 @@ Visualization Manager:
       Scene Geometry:
         Scene Alpha: 1
         Scene Color: 50; 230; 50
-        Scene Display Time: 0.009999999776482582
+        Scene Display Time: 0.20000000298023224
         Show Scene Geometry: true
         Voxel Coloring: Z-Axis
         Voxel Rendering: Occupied Voxels
@@ -258,6 +273,11 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -273,6 +293,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_scoop_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_shou:
             Alpha: 1
             Show Axes: false
@@ -297,115 +321,20 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          lander_sample_dock0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          lander_sample_dock_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
         Robot Alpha: 0.5
         Show Robot Collision: false
         Show Robot Visual: true
       Value: true
       Velocity_Scaling_Factor: 1
-    - Alpha: 1
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-        StereoCameraCenter_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCameraCenter_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCameraLeft_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCameraLeft_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCameraRight_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCameraRight_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        StereoCamera_head_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_ant_foot:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_ant_panel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_dist:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_hand:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_prox:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_scoop:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_shou:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_wrist:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        lander_light0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        lander_light1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        lander_lights_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-      Name: RobotState_LanderTelemetry
-      Robot Description: robot_description
-      TF Prefix: ""
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -422,41 +351,41 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 4.0197038650512695
+      Distance: 3.707279682159424
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.268538236618042
-        Y: -1.3246526718139648
-        Z: 2.2351800055275817e-7
+        X: 0.7524149417877197
+        Y: -0.31379616260528564
+        Z: -1.4900592759659048e-8
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3447973430156708
+      Pitch: 0.5097969770431519
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 5.6699419021606445
+      Yaw: 5.659949779510498
     Saved: ~
 Window Geometry:
   "&Displays":
     collapsed: false
-  "&MotionPlanning_ArmPlanner":
+  "&MotionPlanning":
     collapsed: false
-  Height: 1021
+  Height: 1011
   Help:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
-  MotionPlanning_ArmPlanner - Slider:
+  MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000001000000000000027500000392fc0200000008fb000000100044006900730070006c0061007900730100000044000001b5000000f701000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000d001000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000032004d006f00740069006f006e0050006c0061006e006e0069006e0067005f00410072006d0050006c0061006e006e0065007201000001fa000001dc000001d101000003fb0000005400610072006d005f0070006c0061006e006e00650064005f007400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000002200000022000001460000039200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000002a200000384fc0200000007fb000000100044006900730070006c006100790073010000004600000198000000f901000003fb0000000800480065006c00700000000342000000bb0000008201000003fb0000000a0056006900650077007300000003b0000000b0000000d401000003fb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005201000003fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e006701000001df000001eb000001df01000003000004810000038400000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
-  Width: 956
-  X: 944
+  Width: 1828
+  X: 84
   Y: 0
