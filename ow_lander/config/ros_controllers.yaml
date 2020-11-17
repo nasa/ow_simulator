@@ -1,8 +1,8 @@
-# MoveIt-specific simulation settings
+# Simulation settings for using moveit_sim_controllers
 moveit_sim_hw_interface:
-  joint_model_group: controllers_initial_group_
-  joint_model_group_pose: controllers_initial_pose_
-# Settings for ros_control control loop
+  joint_model_group: arm
+  joint_model_group_pose: default_pose
+# Settings for ros_control_boilerplate control loop
 generic_hw_control_loop:
   loop_hz: 300
   cycle_time_error_threshold: 0.01
@@ -16,8 +16,8 @@ hardware_interface:
     - j_prox_pitch
     - j_dist_pitch
     - j_hand_yaw
-    - j_scoop_yaw
     - j_grinder
+    - j_scoop_yaw
   sim_control_mode: 1  # 0: position, 1: velocity
 # Publish all joint states
 # Creates the /joint_states topic necessary in ROS
@@ -27,15 +27,15 @@ joint_state_controller:
 controller_list:
   - name: antenna_controller
     action_ns: follow_joint_trajectory
-    default: True
     type: FollowJointTrajectory
+    default: true
     joints:
       - j_ant_pan
       - j_ant_tilt
   - name: arm_controller
     action_ns: follow_joint_trajectory
-    default: True
     type: FollowJointTrajectory
+    default: true
     joints:
       - j_shou_yaw
       - j_shou_pitch
@@ -43,14 +43,123 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
-  - name: grinder_controller
-    action_ns: follow_joint_trajectory
-    default: True
-    type: FollowJointTrajectory
-    joints:
-      - j_shou_yaw
-      - j_shou_pitch
-      - j_prox_pitch
-      - j_dist_pitch
-      - j_hand_yaw
-      - j_grinder
+  # TODO: We probably need to move the grinder_controller to another file to
+  # ease the process of controller switching
+  # - name: grinder_controller
+  #   action_ns: follow_joint_trajectory
+  #   type: FollowJointTrajectory
+  #   joints:
+  #     - j_shou_yaw
+  #     - j_shou_pitch
+  #     - j_prox_pitch
+  #     - j_dist_pitch
+  #     - j_hand_yaw
+  #     - j_grinder
+antenna_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_ant_pan
+    - j_ant_tilt
+  gains:
+    j_ant_pan:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    j_ant_tilt:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+arm_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+    - j_scoop_yaw
+  gains:
+    j_shou_yaw: 
+      p: &kp_default 16000
+      d: &kd_default 5.0
+      i: &ki_default 2
+      i_clamp: &ki_clamp_default 2
+    j_shou_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: 1
+    j_dist_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: 1
+    j_hand_yaw:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: 1
+    j_scoop_yaw:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: 1
+    constraints:
+      goal_time: &goal_time_constraint 4.0
+      stopped_velocity_tolerance: 0
+      j_shou_yaw: {trajectory: &goal_pos_constraint 0.5, goal: &trajectory_pos_constraint 1.0}
+      j_shou_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_prox_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_dist_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_hand_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_scoop_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+    stop_trajectory_duration: 1.0
+# TODO: Same as above .. We may need to move the grinder_controller to another file to
+# ease the process of controller switching
+# grinder_controller:
+#   type: effort_controllers/JointTrajectoryController
+#   joints:
+#     - j_shou_yaw
+#     - j_shou_pitch
+#     - j_prox_pitch
+#     - j_dist_pitch
+#     - j_hand_yaw
+#     - j_grinder
+#   gains:
+#     j_shou_yaw:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
+#     j_shou_pitch:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
+#     j_prox_pitch:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
+#     j_dist_pitch:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
+#     j_hand_yaw:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
+#     j_grinder:
+#       p: 100
+#       d: 1
+#       i: 1
+#       i_clamp: 1
