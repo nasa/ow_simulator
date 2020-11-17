@@ -63,7 +63,7 @@ def talker(req):
   pubs.append(rospy.Publisher('/hand_yaw_position_controller/command', Float64, queue_size=40))
   pubs.append(rospy.Publisher('/scoop_yaw_position_controller/command', Float64, queue_size=40))
   pub_rate = constants.TRAJ_PUB_RATE # Hz
-  rate = rospy.Rate(pub_rate) # Hz
+  rate = rospy.Rate(pub_rate/10) # Hz
   nb_links = constants.NB_ARM_LINKS
   rows = []
   guard_rows = []
@@ -78,7 +78,7 @@ def talker(req):
 
   with open(file_path, 'r') as file_open:
     loaded_plan = yaml.load(file_open)
-  print loaded_plan  
+  #print loaded_plan  
   
   for index in range(len(loaded_plan.joint_trajectory.points)):
     for ind in range (len(loaded_plan.joint_trajectory.joint_names)):

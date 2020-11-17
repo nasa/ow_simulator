@@ -12,6 +12,57 @@ import rospy
 from utils import is_shou_yaw_goal_in_range
 import yaml
 import os
+from moveit_msgs.msg import RobotTrajectory
+from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectoryPoint
+
+guarded_move_traj = RobotTrajectory()
+
+ 
+def cascade_plans (plan1, plan2):
+     # Create a new trajectory object
+    new_traj = RobotTrajectory()
+    # Initialize the new trajectory to be the same as the planned trajectory
+    traj_msg = JointTrajectory()
+    # Get the number of joints involved
+    n_joints1 = len(plan1.joint_trajectory.joint_names)
+    n_joints2 = len(plan2.joint_trajectory.joint_names)
+    # Get the number of points on the trajectory
+    n_points1 = len(plan1.joint_trajectory.points)
+    n_points2 = len(plan2.joint_trajectory.points)
+    # Store the trajectory points
+    points1 = list(plan1.joint_trajectory.points)
+
+    points2 = list(plan2.joint_trajectory.points)
+    end_time = plan1.joint_trajectory.points[n_points1-1].time_from_start
+    start_time =  plan1.joint_trajectory.points[0].time_from_start
+    duration =  end_time - start_time
+
+    for i in range(n_points1):
+        point = JointTrajectoryPoint()
+        point.time_from_start = plan1.joint_trajectory.points[i].time_from_start
+        point.velocities = list(plan1.joint_trajectory.points[i].velocities)
+        point.accelerations = list(plan1.joint_trajectory.points[i].accelerations)
+        point.positions = plan1.joint_trajectory.points[i].positions
+        points1[i] = point
+        traj_msg.points.append(point)
+        end_time = plan1.joint_trajectory.points[i].time_from_start
+        
+    for i in range(n_points2):
+        point = JointTrajectoryPoint()
+        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + end_time
+        point.velocities = list(plan2.joint_trajectory.points[i].velocities)
+        point.accelerations = list(plan2.joint_trajectory.points[i].accelerations)
+        point.positions = plan2.joint_trajectory.points[i].positions
+        points1[i] = point
+        traj_msg.points.append(point)
+    
+    traj_msg.joint_names = plan1.joint_trajectory.joint_names
+    traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
+    new_traj.joint_trajectory = traj_msg
+    return new_traj   
+    
+
 
 def arg_parsing(req):
   if req.use_defaults :
@@ -78,46 +129,48 @@ def pre_guarded_move(move_arm, args,robot):
   #move_arm.stop()
   
   plan = move_arm.plan(joint_goal)
-  #move_arm.execute(plan, wait=True)
-  #print plan
-  #move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-  #print (type(plan))
-  #print (type(move_arm.get_current_joint_values()))
-  #print (len(plan.joint_trajectory.points))
-  #set the start state of the next plan to the final point of the the last plan.
-  start_state = list( plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions)
-  print (type(start_state))
-  print(type(move_arm.get_current_joint_values()))
-  print (start_state)
-  print (move_arm.get_current_joint_values())
-  print (robot.get_current_state())
-  #for index in range(len(plan.joint_trajectory.points)):
-    #for ind in range (len(plan.joint_trajectory.joint_names)):
-      #balcher = plan.joint_trajectory.points[index].positions[ind]
-  
-  file_path = os.path.join(os.path.expanduser('~'), 'saved_trajectories', 'plan.yaml')
-  with open(file_path, 'w') as file_save:
-    #yaml.dump(plan, file_save, default_flow_style=True)
-    yaml.dump(plan, file_save, default_flow_style=True)
+
+  start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions
+
+  cs = robot.get_current_state()
+  new_value = (0,0) + start_state # adding antenna state to the robot states.
+  cs.joint_state.position = new_value # modify current state of robot to the end state of tje plan
+
 
   # Once aligned to move goal and offset, place scoop tip at surface target offset
   #move_arm.set_start_state(start_state)
-  move_arm.set_start_state(robot.get_current_state())
+  #move_arm.set_start_state(robot.get_current_state())
+  move_arm.set_start_state(cs)
   goal_pose = move_arm.get_current_pose().pose
+  
+  #orinetation solution obtained from rviz
+  goal_pose.orientation.x = -0.69980734388
+  goal_pose.orientation.y = 0.71433163078
+  goal_pose.orientation.z = 0.0
+  goal_pose.orientation.w = 0.0
+
   goal_pose.position.x = targ_x
   goal_pose.position.y = targ_y
   goal_pose.position.z = targ_z
+  
   move_arm.set_pose_target(goal_pose)
   move_arm.set_max_velocity_scaling_factor(0.5)
   #plan = move_arm.plan()
-  plan = move_arm.plan(goal_pose)
+  plan2 = move_arm.plan(goal_pose)
+
+
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
      return False
+  
+  guarded_move_traj =  cascade_plans (plan, plan2)
+  
+  file_path = os.path.join(os.path.expanduser('~'), 'saved_trajectories', 'plan.yaml')
+  with open(file_path, 'w') as file_save:
+    yaml.dump(guarded_move_traj, file_save, default_flow_style=True)
+  
+  #move_arm.execute(guarded_move_traj, wait=True)
 
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
+  
   print "Done planning approach of guarded_move"
   return True
 
@@ -130,6 +183,11 @@ def guarded_move(move_arm, args):
 
   # Drive scoop tip along norm vector, distance is search_distance
   goal_pose = move_arm.get_current_pose().pose
+  goal_pose.orientation.x = -0.69980734388
+  goal_pose.orientation.y = 0.71433163078
+  goal_pose.orientation.z = 0.0
+  goal_pose.orientation.w = 0.0
+  
   goal_pose.position.x -= direction_x*search_distance
   goal_pose.position.y -= direction_y*search_distance
   goal_pose.position.z -= direction_z*search_distance
@@ -138,7 +196,15 @@ def guarded_move(move_arm, args):
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
     return False
 
-  plan = move_arm.go(wait=True)
+  plan3 = move_arm.go(wait=True)
+  
+  guarded_move_traj =  cascade_plans (guarded_move_traj, plan3)
+  
+  file_path = os.path.join(os.path.expanduser('~'), 'saved_trajectories', 'plan.yaml')
+  with open(file_path, 'w') as file_save:
+    yaml.dump(guarded_move_traj, file_save, default_flow_style=True)
+    
+    
   move_arm.stop()
   move_arm.clear_pose_targets()
   print "Done planning safe part of guarded_move"
