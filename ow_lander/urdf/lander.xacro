@@ -777,8 +777,8 @@
       link="l_ant_foot" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <dynamics damping="10.0" />
+    <limit effort="80.0" velocity="0.2" />
   </joint>
   <transmission name="ant_pan_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -853,8 +853,8 @@
       link="l_ant_panel" />
     <axis
       xyz="0 0 -1" />
-    <dynamics damping="50" />
-    <limit effort="1000.0" velocity="0.4" />
+    <dynamics damping="10.0" />
+    <limit effort="100.0" velocity="0.2" />
   </joint>
   <transmission name="ant_tilt_transmission">
     <type>transmission_interface/SimpleTransmission</type>
