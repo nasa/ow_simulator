@@ -544,12 +544,11 @@
     </visual>
     <selfCollide>1</selfCollide>
     <collision>
-      <max_contacts>1</max_contacts>
       <surface>
         <contact>
           <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
           <ode>
-            <kd>5e11</kd>
+            <kd>1e12</kd>
           </ode>
         </contact>
       </surface>
