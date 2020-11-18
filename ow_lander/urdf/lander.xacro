@@ -623,18 +623,49 @@
           filename="package://ow_lander/meshes/l_grinder.STL" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.6 0.6 0.6 1" />
-      </material>
+       name="">
+       <color
+         rgba="0.6 0.6 0.6 1" />
+     </material>
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+        xyz="0.08 0 0"
+        rpy="1.57 1.57 1.57" />
       <geometry>
-        <mesh
-          filename="package://ow_lander/meshes/l_grinder.STL" />
+        <cylinder radius="0.04" length="0.16"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin
+        xyz="0.06 0 0"
+        rpy="1.57 1.57 1.57" />
+      <geometry>
+        <cylinder radius="0.05" length="0.12"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin
+        xyz="0.04 0 0"
+        rpy="1.57 1.57 1.57" />
+      <geometry>
+        <cylinder radius="0.06" length="0.08"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin
+        xyz="0.02 0 0"
+        rpy="1.57 1.57 1.57" />
+      <geometry>
+        <cylinder radius="0.07" length="0.04"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin
+        xyz="0.005 0 0"
+        rpy="1.57 1.57 1.57" />
+      <geometry>
+        <cylinder radius="0.075" length="0.01"/>
       </geometry>
     </collision>
   </link>
@@ -654,6 +685,10 @@
       <surface>
         <contact>
           <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
+          <ode>
+            <kp>1e+10</kp>
+            <kd>1e+10</kd>
+          </ode>
         </contact>
       </surface>
     </collision>
