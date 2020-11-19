@@ -17,7 +17,6 @@ def arg_parsing(req):
   """
   if req.use_defaults :
     # Default trenching values
-    delete_prev_traj=False
     target_x=2.0
     target_y=0.0
     target_z=0.3
@@ -26,8 +25,7 @@ def arg_parsing(req):
     direction_z=1.0
     search_distance = 0.5
 
-  else :
-    delete_prev_traj = req.delete_prev_traj
+  else:
     target_x = req.x
     target_y = req.y
     target_z = req.z

@@ -22,13 +22,10 @@ def arg_parsing(req):
     x_delivery=0.55
     y_delivery=-0.3
     z_delivery=0.82 # was .78
-    delete_prev_traj=False
-
   else :
     x_delivery=req.x
     y_delivery=req.y
     z_delivery=req.z
-    delete_prev_traj=req.delete_prev_traj
 
   return [req.use_defaults, x_delivery, y_delivery, z_delivery, delete_prev_traj]
 

@@ -48,8 +48,8 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
-    stowed_goal = self.arm_move_group.get_named_target_values("arm_stowed")
-    self.arm_move_group.go(stowed_goal, wait=True)
+    goal = self.arm_move_group.get_named_target_values("arm_stowed")
+    self.arm_move_group.go(goal, wait=True)
     self.arm_move_group.stop()
     return True, "Done"
 
@@ -58,8 +58,8 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
     """
-    stowed_goal = self.arm_move_group.get_named_target_values("arm_unstowed")
-    self.arm_move_group.go(stowed_goal, wait=True)
+    goal = self.arm_move_group.get_named_target_values("arm_unstowed")
+    self.arm_move_group.go(goal, wait=True)
     self.arm_move_group.stop()
     return True, "Done"
 
