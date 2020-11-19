@@ -48,10 +48,9 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
-    move_group = self.arm_move_group
-    stowed_goal = move_group.get_named_target_values("arm_stowed")
-    move_group.go(stowed_goal, wait=True)
-    move_group.stop()
+    stowed_goal = self.arm_move_group.get_named_target_values("arm_stowed")
+    self.arm_move_group.go(stowed_goal, wait=True)
+    self.arm_move_group.stop()
     return True, "Done"
 
   # === SERVICE ACTIVITIES - Unstow =============================
@@ -59,53 +58,48 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
     """
-    move_group = self.arm_move_group
-    stowed_goal = move_group.get_named_target_values("arm_unstowed")
-    move_group.go(stowed_goal, wait=True)
-    move_group.stop()
+    stowed_goal = self.arm_move_group.get_named_target_values("arm_unstowed")
+    self.arm_move_group.go(stowed_goal, wait=True)
+    self.arm_move_group.stop()
+    return True, "Done"
+
+  # === SERVICE ACTIVITIES - guarded move =============================
+  def handle_guarded_move(self, req): 
+    """
+    :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
+    """
+    print "Starting guarded move planning session"
+    guarded_move_args = activity_guarded_move.arg_parsing(req)
+    activity_guarded_move.pre_guarded_move(self.arm_move_group, guarded_move_args)
+    activity_guarded_move.guarded_move(self.arm_move_group, guarded_move_args)
+    print "Finished guarded move planning session succesfully..."
+    return True, "Done"
+
+  # === SERVICE ACTIVITIES - deliver sample =============================
+  def handle_deliver_sample(self, req):
+    """
+    :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+    """
+    print "Starting sample delivery session"
+    deliver_sample_args = activity_deliver_sample.arg_parsing(req)
+    if utils.check_arguments(deliver_sample_args[1], deliver_sample_args[2], deliver_sample_args[3]) != True:
+      print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
+      return
+    activity_deliver_sample.deliver_sample(self.arm_move_group, deliver_sample_args)
+    print "Sample succesfully delivered..."
     return True, "Done"
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
     self.stow_srv = rospy.Service('arm/stow', Stow, self.handle_stow)
     self.unstow_srv = rospy.Service('arm/unstow', Unstow, self.handle_unstow)
+    # self.dig_circular_srv = rospy.Service('arm/dig_circular', DigCircular, self.handle_dig_circular)
+    # dig_linear_srv = rospy.Service('arm/dig_linear', DigLinear, handle_dig_linear)
+    self.guarded_move_srv = rospy.Service('arm/guarded_move', GuardedMove, self.handle_guarded_move)
+    self.deliver_sample_srv = rospy.Service('arm/deliver_sample', DeliverSample, self.handle_deliver_sample)
+    # grind_srv = rospy.Service('arm/grind', Grind, handle_grind)
+    print("path_planning_commander has started!")
     rospy.spin()
-
-
-# === SERVICE ACTIVITIES - guarded move =============================
-def handle_guarded_move(req): 
-  """
-  :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
-  """
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting guarded move planning session"
-    guarded_move_args = activity_guarded_move.arg_parsing(req)
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "pre_guarded_move_traj_"
-    bagname = location + currentDT
-
-    # Approach
-    utils.start_traj_recording(guarded_move_args[1], bagname)
-    result = activity_guarded_move.pre_guarded_move(interface.move_arm, guarded_move_args)
-    utils.stop_traj_recording(result, bagname)
-
-    # Safe move, monitoring torques
-    location = "guarded_move_traj_"
-    bagname = location + currentDT
-    utils.start_traj_recording(False, bagname)
-    result = activity_guarded_move.guarded_move(interface.move_arm, guarded_move_args)
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished guarded move planning session succesfully..."
-
-  return True, "Done"
 
 # === SERVICE ACTIVITIES - Dig circular trench =============================
 def handle_dig_circular(req): 
@@ -169,37 +163,6 @@ def handle_dig_linear(req):
 
   return True, "Done"
 
-# === SERVICE ACTIVITIES - deliver sample =============================
-def handle_deliver_sample(req): 
-  """
-  :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
-  """
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting sample delivery session"
-    deliver_sample_args = activity_deliver_sample.arg_parsing(req)
-
-    if utils.check_arguments(deliver_sample_args[1], deliver_sample_args[2], deliver_sample_args[3]) != True:
-      print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
-      return
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
-
-    utils.start_traj_recording(deliver_sample_args[4], bagname)
-    result = activity_deliver_sample.deliver_sample(interface.move_arm, deliver_sample_args)
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Sample succesfully delivered..."
-
-  return True, "Done"
-
   # === SERVICE ACTIVITIES - Grind =============================
 def handle_grind(req): 
   """
@@ -230,16 +193,6 @@ def handle_grind(req):
   print "Grinder planning succesfully finished..."
 
   return True, "Done"
-
-# === MAIN ================================================
-def main():
-
-  # Setup planner triggering service
-  # dig_circular_srv = rospy.Service('arm/dig_circular', DigCircular, handle_dig_circular)
-  # dig_linear_srv = rospy.Service('arm/dig_linear', DigLinear, handle_dig_linear)
-  # guarded_move_srv = rospy.Service('arm/guarded_move', GuardedMove, handle_guarded_move)
-  # deliver_sample_srv = rospy.Service('arm/deliver_sample', DeliverSample, handle_deliver_sample)
-  # grind_srv = rospy.Service('arm/grind', Grind, handle_grind)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()
