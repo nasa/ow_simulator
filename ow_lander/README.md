@@ -2,14 +2,16 @@ The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 Research and Simulation can be found in README.md in the root directory of
 this repository.
 
-ow_lander
-=========
+# ow_lander
 Contains the lander semantic and kinematic descriptions (SRDF and URDF), the
 moveit path planner and the gazebo trajectory feeder, and common code related
 to the lander.
 
-Common Code
------------
+## requirements
+* ros-melodic-destkop-full
+* ros-melodic-joint-trajectory-controller
+
+## Common Code
 `include/ow_lander/lander_joints.h` contains joint names as they appear in the
 URDF and related code. Please prefer this header over writing similar code
 yourself to keep all our code consistent. If the lander is modified to change

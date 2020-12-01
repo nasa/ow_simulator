@@ -44,6 +44,7 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>xacro</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
 
   <export>
     <architecture_independent />
