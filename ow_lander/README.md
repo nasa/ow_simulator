@@ -67,12 +67,12 @@ arguments (Careful, the bools have a capital first letter: `True`, `False`),
 then call the service.
 
 ### MoveIt Setup Assistant
-The moveit setup assistant can now be easily run using the command:
+The moveit setup assistant can now be easily launched using the command:
 ```bash
 roslaunch ow_lander setup_assistant.launch
 ``` 
 
-There are different reasons why would you may want to re-run the setup assistant:
+There are different reasons why you may need to re-run the setup assistant:
 * Update the links collision matrix: this should be reconfigured again whenever
  links count, their shape or size changes or there was a change in the number of
  joints or their types.
