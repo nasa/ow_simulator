@@ -34,22 +34,22 @@ def arg_parsing(req):
     direction_z = req.direction_z
     search_distance = req.search_distance
 
-  return [req.use_defaults, delete_prev_traj, target_x, target_y, target_z,
+  return [req.use_defaults, target_x, target_y, target_z,
           direction_x, direction_y, direction_z, search_distance]
 
 # Approach
 def pre_guarded_move(move_arm, args): 
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, bool, float, float, float, float, float, float, float]
+  :type args: List[bool, float, float, float, float, float, float, float]
   """
-  targ_x = args[2]
-  targ_y = args[3]
-  targ_z = args[4]
-  direction_x = args[5]
-  direction_y = args[6]
-  direction_z = args[7]
-  search_distance = args[8]
+  targ_x = args[1]
+  targ_y = args[2]
+  targ_z = args[3]
+  direction_x = args[4]
+  direction_y = args[5]
+  direction_z = args[6]
+  search_distance = args[7]
 
   # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
   targ_elevation = -0.2
@@ -102,12 +102,12 @@ def pre_guarded_move(move_arm, args):
 def guarded_move(move_arm, args):       
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, bool, float, float, float, float, float, float, float]
+  :type args: List[bool, float, float, float, float, float, float, float]
   """
-  direction_x = args[5]
-  direction_y = args[6]
-  direction_z = args[7]
-  search_distance = args[8]
+  direction_x = args[4]
+  direction_y = args[5]
+  direction_z = args[6]
+  search_distance = args[7]
 
   # Drive scoop tip along norm vector, distance is search_distance
   goal_pose = move_arm.get_current_pose().pose

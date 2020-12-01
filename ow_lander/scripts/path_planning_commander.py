@@ -82,9 +82,6 @@ class PathPlanningCommander(object):
     """
     print "Starting sample delivery session"
     deliver_sample_args = activity_deliver_sample.arg_parsing(req)
-    if utils.check_arguments(deliver_sample_args[1], deliver_sample_args[2], deliver_sample_args[3]) != True:
-      print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
-      return
     activity_deliver_sample.deliver_sample(self.arm_move_group, deliver_sample_args)
     print "Sample succesfully delivered..."
     return True, "Done"

@@ -27,14 +27,14 @@ def arg_parsing(req):
     y_delivery=req.y
     z_delivery=req.z
 
-  return [req.use_defaults, x_delivery, y_delivery, z_delivery, delete_prev_traj]
+  return [req.use_defaults, x_delivery, y_delivery, z_delivery]
 
 
 
 def deliver_sample(move_arm, args):      
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, float, float, float, bool]
+  :type args: List[bool, float, float, float]
   """
   move_arm.set_planner_id("RRTstar")
 
