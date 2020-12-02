@@ -233,29 +233,4 @@ def dig_circular(move_arm, move_limbs, args):
     change_joint_value(move_arm, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
 
   return True
-
-def go_home(move_arm): 
-  """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  """
-  # Move to home position
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_SHOU_YAW] = rospy.get_param('/stowed_shou_yaw', default=0)
-  joint_goal[constants.J_SHOU_PITCH] = rospy.get_param('/stowed_shou_pitch', default=0)
-  joint_goal[constants.J_PROX_PITCH] = rospy.get_param('/stowed_prox_pitch', default=0)
-  joint_goal[constants.J_DIST_PITCH] = rospy.get_param('/stowed_dist_pitch', default=0)
-  joint_goal[constants.J_HAND_YAW] = rospy.get_param('/stowed_hand_yaw', default=0)
-  joint_goal[constants.J_SCOOP_YAW] = rospy.get_param('/stowed_scoop_yaw', default=0)
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
-
-  return True
-
-def unstow(move_arm):
-  """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  """
-  change_joint_value(move_arm,constants.J_SHOU_YAW, 0.0)
-  move_to_pre_trench_configuration(move_arm, 2.0, 0.0)
-
-  return True
+  
