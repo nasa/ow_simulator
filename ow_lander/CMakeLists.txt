@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(roslaunch)
 
+find_package(catkin REQUIRED COMPONENTS actionlib_msgs)
+
 add_service_files(
   FILES
   DeliverSample.srv
@@ -23,15 +25,30 @@ add_service_files(
   Unstow.srv
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES Unstow.action
+)
+
+
 add_message_files(
   FILES
   GuardedMoveResult.msg
 )
 
+
+
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  actionlib_msgs
+  
+)
+
+
+catkin_package(
+  CATKIN_DEPENDS actionlib_msgs
 )
 
 catkin_package(
