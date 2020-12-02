@@ -14,6 +14,13 @@ from moveit_commander.conversions import pose_to_list
 import math
 import constants
 
+import constants
+import utils
+import activity_full_digging_traj
+import activity_guarded_move
+import activity_deliver_sample
+import activity_grind
+
 def unstow_move(move_arm): 
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -106,7 +113,7 @@ class UnstowActionServer(object):
         self._feedback.sequence.append(1)
         
         # publish info to the console for the user
-        rospy.loginfo('%s: Executing, creating fibonacci sequence of order %i with seeds %i, %i' % (self._action_name, goal.order, self._feedback.sequence[0], self._feedback.sequence[1]))
+        rospy.loginfo('%s: Executing, creating UnstowActionServer %i with seeds %i, %i' % (self._action_name, goal.order, self._feedback.sequence[0], self._feedback.sequence[1]))
         interface = LanderInteface()
         unstow_move(interface.move_arm)
         # start executing the action
