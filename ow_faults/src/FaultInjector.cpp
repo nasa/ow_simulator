@@ -12,8 +12,12 @@ using namespace ow_lander;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
-  m_joint_state_sub = node_handle.subscribe("/joint_states", 10, &FaultInjector::jointStateCb, this);
+  m_joint_state_sub = node_handle.subscribe("/faults/joint_states", 10, &FaultInjector::jointStateCb, this);
   m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/faults/joint_states", 10);
+
+  test_sub = node_handle.subscribe("/faults/joint_states", 10, &FaultInjector::testFxn, this);
+  test_pub = node_handle.advertise<sensor_msgs::JointState>("/faults/should_be_faults", 10);
+
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -25,6 +29,13 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
+void FaultInjector::testFxn(const sensor_msgs::JointStateConstPtr& msg)
+{
+
+  sensor_msgs::JointState output(*msg);
+  test_pub.publish(output);
+
+}
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   // Populate the map once here.

@@ -32,6 +32,7 @@ private:
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
+  void testFxn(const sensor_msgs::JointStateConstPtr& msg);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -46,6 +47,9 @@ private:
 
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
+
+  ros::Subscriber test_sub;
+  ros::Publisher test_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
