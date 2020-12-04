@@ -4,6 +4,7 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
+  <arg name="extra_gazebo_args" value="joint_states:=/og_joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
   <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
@@ -26,6 +27,7 @@
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
+    <arg name="extra_gazebo_args" value="joint_states:=/og_joint_states"/>
   </include>
 
   <!-- == publish celestial body frames ==================== -->
@@ -70,7 +72,7 @@
   </node>
 
   <!-- Start faults node -->
-  <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+  <node name="faults" pkg="ow_faults" type="faults" output="screen" />
 
   <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
   <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
@@ -92,8 +94,7 @@
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
   <!-- == launch the mechanical power publishing node ========= -->
-  <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen">
-    </node>
+  <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen" />
 
   <!-- == start bag_recorder_node =========== -->
   <node if="$(arg record_bag)" name="bag_recorder_node" 

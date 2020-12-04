@@ -44,7 +44,7 @@
     prox_pitch_position_controller dist_pitch_position_controller
     hand_yaw_position_controller scoop_yaw_position_controller
     ant_pan_position_controller ant_tilt_position_controller
-     grinder_yaw_position_controller"/> 
+     grinder_yaw_position_controller" /> 
    
 
   <!-- Convert joint states from Gazebo to tf-tree for rviz -->

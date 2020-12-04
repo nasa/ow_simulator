@@ -7,9 +7,6 @@
   <arg name="record_bag" default="false"/>
   <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
 
-  <!-- <remap from="/joint_states" to="/faults/joint_states"/> -->
-  <!-- <remap from="/faults/joint_states" to="/joint_states" /> -->
-
   <include file="$(find ow)/launch/common.launch" >
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
     <arg name="init_x" value="0"/>
