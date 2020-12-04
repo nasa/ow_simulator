@@ -13,7 +13,7 @@ def unstow_client():
 
     client.wait_for_server()
 
-    goal = ow_lander.msg.UnstowGoal(order=20)
+    goal = ow_lander.msg.UnstowGoal(goal=20)
 
     # Sends the goal to the action server.
     client.send_goal(goal)

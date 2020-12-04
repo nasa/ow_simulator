@@ -10,91 +10,20 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 from math import pi
 from std_msgs.msg import String
+from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
 import math
 import constants
 
-import constants
 import utils
 import activity_full_digging_traj
-import activity_guarded_move
-import activity_deliver_sample
-import activity_grind
 
-def unstow_move(move_arm): 
-  """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, bool, float, float, float, float, float, float, float]
-  """
-  target_x=2.0
-  target_y=0.0
-  target_z=0.3
-  direction_x=0.0
-  direction_y=0.0
-  direction_z=1.0
-  search_distance = 0.5
-
-  targ_x = target_x
-  targ_y = target_y
-  targ_z = target_z
-
-  # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
-  targ_elevation = -0.2
-  if (targ_z+targ_elevation)==0:
-    offset = search_distance
-  else:
-    offset = (targ_z*search_distance)/(targ_z+targ_elevation)
-
-  # Compute shoulder yaw angle to target
-  alpha = math.atan2( (targ_y+direction_y*offset)-constants.Y_SHOU, (targ_x+direction_x*offset)-constants.X_SHOU)
-  h = math.sqrt(pow( (targ_y+direction_y*offset)-constants.Y_SHOU,2) + pow( (targ_x+direction_x*offset)-constants.X_SHOU,2) )
-  l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
-
-  # Move to pre move position, align shoulder yaw
-  joint_goal = move_arm.get_current_joint_values()
-  joint_goal[constants.J_DIST_PITCH] = 0
-  joint_goal[constants.J_HAND_YAW] = 0
-  joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal  [constants.J_SHOU_PITCH] = math.pi/2
-  joint_goal[constants.J_SHOU_YAW] = alpha + beta
-
-  # If out of joint range, abort
-  #if (is_shou_yaw_goal_in_range(joint_goal) == False):
-  #   return False
-
-  joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
-  move_arm.stop()
-
-  print "Done planning approach of guarded_move"
-
-  return True
-
-class LanderInteface(object):
-  
-  def __init__(self):
-    super(LanderInteface, self).__init__()
-    moveit_commander.roscpp_initialize(sys.argv)
-    robot = moveit_commander.RobotCommander()
-    scene = moveit_commander.PlanningSceneInterface()
-
-    move_arm = moveit_commander.MoveGroupCommander("arm")
-    move_limbs = moveit_commander.MoveGroupCommander("limbs")
-    move_grinder = moveit_commander.MoveGroupCommander("grinder")
-    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
-                                                   moveit_msgs.msg.DisplayTrajectory,
-                                                   queue_size=20)
-    self.move_arm = move_arm
-    self.move_limbs = move_limbs
-    self.move_grinder = move_grinder
+from LanderInterface import MoveItInterface
+from LanderInterface import JointStateSubscriber
 
 
 class UnstowActionServer(object):
     
-    #interface = LanderInteface()
-    
-    #activity_guarded_move.pre_guarded_move(interface.move_arm)
     _feedback = ow_lander.msg.UnstowFeedback()
     _result = ow_lander.msg.UnstowResult()
     
@@ -102,36 +31,53 @@ class UnstowActionServer(object):
         self._action_name = name
         self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.UnstowAction, execute_cb=self.on_unstow_action, auto_start = False)
         self._server.start()
+        # Action Feedback/Result
+        self._fdbk = ow_lander.msg.UnstowFeedback()
+        self._result = ow_lander.msg.UnstowResult()
+        self._current_state = JointStateSubscriber()
+        self._interface = MoveItInterface()
+        self._timeout = 5.0
+        
+    
+    def _check_state(self):
+        self._xc = self._current_state.get_value()
+        print (self._xc)
+        
+    def _update_feedback(self):
+        self._fdbk.current_x = self._xc
+        self._fdbk.current_y = self._xc
+        self._fdbk.current_z = self._xc
+        self._result = self._fdbk
+        self._server.publish_feedback(self._fdbk)
         
     def on_unstow_action(self,goal):
         
+        # Record start time
+        start_time = rospy.get_time()
+
+        def now_from_start(start):
+            return rospy.get_time() - start
+        
         r = rospy.Rate(1)
         success = True
-                # append the seeds for the fibonacci sequence
-        self._feedback.sequence = []
-        self._feedback.sequence.append(0)
-        self._feedback.sequence.append(1)
-        
-        # publish info to the console for the user
-        rospy.loginfo('%s: Executing, creating UnstowActionServer %i with seeds %i, %i' % (self._action_name, goal.order, self._feedback.sequence[0], self._feedback.sequence[1]))
-        interface = LanderInteface()
-        unstow_move(interface.move_arm)
-        # start executing the action
-        for i in range(1, goal.order):
-            # check that preempt has not been requested by the client
+
+        while ((now_from_start(start_time) < self._timeout)):# and not      rospy.is_shutdown()):
+            # start executing the action
             if self._server.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._server.set_preempted()
                 success = False
                 break
-            self._feedback.sequence.append(self._feedback.sequence[i] + self._feedback.sequence[i-1])
-            # publish the feedback
-            self._server.publish_feedback(self._feedback)
-            # this step is not necessary, the sequence is computed at 1 Hz for demonstration purposes
-            r.sleep()
+            
+            self._check_state()
+            self._update_feedback()
+            activity_full_digging_traj.unstow(self._interface.move_arm)
+
           
         if success:
-            self._result.sequence = self._feedback.sequence
+            self._result.final_x = self._fdbk.current_x
+            self._result.final_y = self._fdbk.current_y
+            self._result.final_z = self._fdbk.current_z
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     

@@ -1,8 +1,12 @@
 #goal definition
-int32 order
+float32 goal
 ---
 #result definition
-int32[] sequence
+float32 final_x
+float32 final_y
+float32 final_z
 ---
 #feedback
-int32[] sequence 
+float32 current_x
+float32 current_y
+float32 current_z
