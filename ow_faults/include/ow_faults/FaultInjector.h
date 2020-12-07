@@ -32,7 +32,6 @@ private:
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
-  void testFxn(const sensor_msgs::JointStateConstPtr& msg);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
