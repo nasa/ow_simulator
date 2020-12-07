@@ -4,7 +4,7 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
-  <arg name="extra_gazebo_args" value="joint_states:=/og_joint_states" />
+  <arg name="extra_gazebo_args" value="joint_states:=/orig_joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
   <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
@@ -27,7 +27,7 @@
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
-    <arg name="extra_gazebo_args" value="joint_states:=/og_joint_states"/>
+    <arg name="extra_gazebo_args" value="joint_states:=/orig_joint_states"/>
   </include>
 
   <!-- == publish celestial body frames ==================== -->

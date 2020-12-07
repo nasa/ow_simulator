@@ -48,14 +48,6 @@ private:
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-  ros::Subscriber test_sub;
-  ros::Publisher test_pub;
-
-  ros::Subscriber test_sub1;
-  ros::Publisher test_pub1;
-
-  ros::Subscriber test_sub2;
-  ros::Publisher test_pub2;
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
 };
