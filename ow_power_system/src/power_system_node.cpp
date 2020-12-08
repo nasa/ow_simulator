@@ -19,7 +19,7 @@ using namespace std;
 vector<vector<double>> loadCSV(const std::string& filename);
 
 int main(int argc, char* argv[]) {
-  
+  ros::param::set("use_sim_time", true) ;
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle nh ("power_system_node");
 

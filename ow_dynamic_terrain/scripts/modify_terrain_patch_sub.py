@@ -32,6 +32,7 @@ def callback(msg):
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
+    rospy.set_param('gazebo/use_sim_time', True)
     rospy.init_node("modify_terrain_patch_sub", anonymous=True)
     sub = rospy.Subscriber('/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, callback)
     rospy.spin()

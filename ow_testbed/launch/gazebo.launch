@@ -1,5 +1,5 @@
 <launch>
-
+  <arg name="use_sim_time" value="true"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch" />
 
   <!-- Load urdf -->

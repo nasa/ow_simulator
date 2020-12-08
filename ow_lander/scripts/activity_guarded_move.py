@@ -6,8 +6,8 @@
 
 import constants
 import math
-import datetime
-import time
+# import datetime
+# import time
 import rospy
 from utils import is_shou_yaw_goal_in_range
 
@@ -45,6 +45,7 @@ def pre_guarded_move(move_arm, args):
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, bool, float, float, float, float, float, float, float]
   """
+  rospy.set_param('gazebo/use_sim_time', True)
   targ_x = args[2]
   targ_y = args[3]
   targ_z = args[4]
@@ -106,6 +107,7 @@ def guarded_move(move_arm, args):
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, bool, float, float, float, float, float, float, float]
   """
+  rospy.set_param('gazebo/use_sim_time', True)
   direction_x = args[5]
   direction_y = args[6]
   direction_z = args[7]

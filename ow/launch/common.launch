@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-
+  <arg name="use_sim_time" value="true"/>
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
@@ -65,18 +65,18 @@
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
+  <!-- <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
     <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
-  </node>
+  </node> -->
 
   <!-- Start faults node -->
-  <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+  <!-- <node name="faults" pkg="ow_faults" type="faults" output="screen"/> -->
 
   <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
-  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
+  <!-- <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/> -->
 
   <!-- ====== simulate changes to the terrain caused by the grinder ======= -->
-  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
+  <!-- <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/> -->
 
   <!-- == start rviz ==================== -->
   <!--group unless="$(arg arm_sim_enable)">

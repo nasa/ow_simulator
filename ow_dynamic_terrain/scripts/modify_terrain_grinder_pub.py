@@ -7,7 +7,6 @@ and issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
 import rospy
-import time
 from math import degrees
 import numpy as np
 from geometry_msgs.msg import Point
@@ -19,6 +18,7 @@ from ow_dynamic_terrain.msg import modify_terrain_circle
 class ModifyTerrainGrinder:
 
   def __init__(self, *args):
+    rospy.set_param('gazebo/use_sim_time', True)
     rospy.init_node("modify_terrain_grinder_pub", anonymous=True)
     self.last_translation = np.zeros(3)
     self.pub_visual = rospy.Publisher(

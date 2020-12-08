@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-
+  <arg name="use_sim_time" value="true"/>
   <include file="$(find ow_dynamic_terrain)/launch/default.launch" >
     <arg name="world_name" value="europa.world"/>
 

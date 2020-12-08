@@ -16,7 +16,6 @@ from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
 from ow_lander.srv import *
 import datetime
-import time
 
 import constants
 import utils
@@ -29,6 +28,7 @@ import activity_grind
 class MoveGroupPythonInteface(object):
   
   def __init__(self):
+    rospy.set_param('gazebo/use_sim_time', True)
     super(MoveGroupPythonInteface, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
     robot = moveit_commander.RobotCommander()
@@ -50,6 +50,7 @@ def handle_guarded_move(req):
   :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
   """
   try:
+    rospy.set_param('gazebo/use_sim_time', True)
     interface = MoveGroupPythonInteface()
     print "Starting guarded move planning session"
     guarded_move_args = activity_guarded_move.arg_parsing(req)
@@ -257,6 +258,7 @@ def handle_grind(req):
 
 # === MAIN ================================================
 def main():
+  rospy.set_param('use_sim_time', True)
   rospy.init_node('path_planning_commander', anonymous=True)
 
   # Setup planner triggering service

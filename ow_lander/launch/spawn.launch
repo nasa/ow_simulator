@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="use_sim_time" value="true"/>
+
   <!-- Initial lander pose arguments -->
   <arg name="init_x" default="0" />
   <arg name="init_y" default="0" />

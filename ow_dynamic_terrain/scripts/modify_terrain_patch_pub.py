@@ -7,7 +7,7 @@
 
 import os
 import argparse
-import time
+# import time
 import rospy
 import rospkg
 
@@ -61,6 +61,7 @@ def compose_modify_terrain_patch_message(image_path, position_x, position_y, pos
 
 
 def publish_image(args):
+    rospy.set_param('gazebo/use_sim_time', True)
     rospy.init_node("modify_terrain_patch_pub", anonymous=True)
     pub = rospy.Publisher(
         '/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, queue_size=1)
@@ -75,7 +76,7 @@ def publish_image(args):
                 pub.publish(msg)
                 rospy.loginfo("modify_terrain_patch message sent")
                 break
-            time.sleep(0.1)
+            rospy.sleep(0.1)
     except rospy.ROSInterruptException, e:
         raise e
 

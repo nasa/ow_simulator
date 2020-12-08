@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-
+  <arg name="use_sim_time" value="true"/>
   <!-- Load joint controller configurations from YAML file to parameter server -->
   <rosparam file="$(find ow_lander)/config/ros_controllers.yaml" command="load"/>
 

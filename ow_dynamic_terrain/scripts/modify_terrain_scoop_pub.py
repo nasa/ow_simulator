@@ -6,7 +6,7 @@ movement. It accomplishes this by subscribing to link poses of the scoop and
 issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
-import time
+# import time
 from math import degrees
 import rospy
 import numpy as np
@@ -18,6 +18,7 @@ from ow_dynamic_terrain.msg import modify_terrain_ellipse
 class ModifyTerrainScoop:
 
   def __init__(self, *args):
+    rospy.set_param('gazebo/use_sim_time', True) 
     rospy.init_node("modify_terrain_scoop_pub", anonymous=True)
     self.last_translation = np.zeros(3)
     self.visual_pub = rospy.Publisher(

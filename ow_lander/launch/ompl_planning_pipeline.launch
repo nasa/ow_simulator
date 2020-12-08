@@ -1,5 +1,7 @@
 <launch>
 
+  <arg name="use_sim_time" value="true"/>
+
   <!-- OMPL Plugin for MoveIt! -->
   <arg name="planning_plugin" value="ompl_interface/OMPLPlanner" />
 

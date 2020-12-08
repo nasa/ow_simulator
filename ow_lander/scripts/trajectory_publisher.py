@@ -9,7 +9,7 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 from ow_lander.srv import *
 import csv
-import time
+# import time
 import glob
 import os
 import constants
@@ -93,18 +93,21 @@ def talker(req):
   if guarded_move_bool : # If the activity is a guarded_move
 
     # Start publisher for guarded_move result message
+    rospy.set_param('use_sim_time', True)
     guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveResult, queue_size=10)
 
     # Start subscriber for the joint_states
-    time.sleep(2) # wait for 2 seconds till the arm settles
+    rospy.sleep(2) # wait for 2 seconds till the arm settles
     # begin tracking velocity values as soon as the scoop moves downward 
     global ground_detector
     ground_detector.reset()
     rate = rospy.Rate(int(pub_rate/2)) # Hz
 
     for row in guard_rows[1:]: # Cycles on all the rows except header
+      current_time = rospy.get_time()
+      # print (current_time)
       if row[0][0] == '1' : # If the row is a command
-        if ground_detector.detect():
+        if ground_detector.detect(): #here is call for ground detection, which I suspect is as often in 3 and 1
           print "Ground found! Motion stopped!"
           guarded_move_pub.publish(True, ground_detector.ground_position, 'base_link')
           return True, "Done publishing guarded_move"
@@ -120,6 +123,7 @@ def talker(req):
 
 if __name__ == '__main__':
   global ground_detector
+  rospy.set_param('gazebo/use_sim_time', True)
   rospy.init_node('trajectory_publisher', anonymous=True)
   ground_detector = GroundDetector()
   start_srv = rospy.Service('arm/publish_trajectory', PublishTrajectory, talker)

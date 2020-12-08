@@ -9,6 +9,7 @@ import math
 import copy
 from utils import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
+import rospy
 
 def arg_parsing(req):     
   """
@@ -65,6 +66,8 @@ def grind(move_arm, move_limbs, move_grinder, args):
   :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, bool, float, bool]
   """
+  rospy.set_param('gazebo/use_sim_time', True)
+
   x_start = args[1]
   y_start = args[2] 
   depth = args[3]

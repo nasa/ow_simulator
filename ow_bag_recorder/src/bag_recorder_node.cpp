@@ -14,6 +14,7 @@
 
 int main(int argc, char* argv[]) 
 {
+  ros::param::set("use_sim_time", true) ;
   ros::init(argc, argv, "bag_recorder_node");
   ros::NodeHandle nh("bag_recorder_node");
 

@@ -10,6 +10,7 @@ using namespace std;
 
 
 int main(int argc, char **argv) {
+  ros::param::set("use_sim_time", true) ;
   ros::init(argc, argv, "fault");
   ros::NodeHandle node_handle;
 

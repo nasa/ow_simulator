@@ -1,5 +1,7 @@
 <launch>
 
+  <arg name="use_sim_time" value="true"/>
+
   <!-- This file makes it easy to include the settings for trajectory execution  -->
 
   <!-- Flag indicating whether MoveIt! is allowed to load/unload  or switch controllers -->

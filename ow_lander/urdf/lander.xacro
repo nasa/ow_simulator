@@ -548,7 +548,8 @@
         <contact>
           <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
           <ode>
-            <kd>1e12</kd>
+            <kd>5e13</kd>
+            <kp>1e20</kp>
           </ode>
         </contact>
       </surface>
@@ -653,7 +654,10 @@
       <surface>
         <contact>
           <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
-
+          <ode>
+            <kp>1e15</kp>
+            <kd>1e13</kd>
+          </ode>
         </contact>
       </surface>
     </collision>
