@@ -107,7 +107,7 @@ def talker(req):
       current_time = rospy.get_time()
       # print (current_time)
       if row[0][0] == '1' : # If the row is a command
-        if ground_detector.detect(): #here is call for ground detection, which I suspect is as often in 3 and 1
+        if ground_detector.detect():
           print "Ground found! Motion stopped!"
           guarded_move_pub.publish(True, ground_detector.ground_position, 'base_link')
           return True, "Done publishing guarded_move"

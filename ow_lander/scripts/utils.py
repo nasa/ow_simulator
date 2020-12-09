@@ -42,7 +42,7 @@ def start_traj_recording(delete_prev_traj, bagname):
 
   # Start rosbag recording
   command = "rosbag record -O " + bagname + " /planning/joint_states"
-  p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.') #this is just recording 
+  p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
 
 def stop_traj_recording(result, bagname):  
   """

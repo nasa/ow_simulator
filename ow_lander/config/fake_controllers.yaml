@@ -1,4 +1,4 @@
-rate: 0.1 
+rate: 2.5 
 controller_list:
   - name: fake_arm_controller
     type: interpolate
