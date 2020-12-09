@@ -31,11 +31,11 @@ scoop_yaw_position_controller:
 ant_pan_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_ant_pan
-  pid: {p: 100.0, i: 0.01, d: 10.0}
+  pid: {p: 100.0, i: 0.01, d: 15.0}
 ant_tilt_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_ant_tilt
-  pid: {p: 100.0, i: 0.01, d: 10.0}
+  pid: {p: 550.0, i: 0.01, d: 70.0}
 grinder_yaw_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_grinder

@@ -34,9 +34,9 @@ class MoveGroupPythonInteface(object):
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
 
-    move_arm = moveit_commander.MoveGroupCommander("arm")
-    move_limbs = moveit_commander.MoveGroupCommander("limbs")
-    move_grinder = moveit_commander.MoveGroupCommander("grinder")
+    move_arm = moveit_commander.MoveGroupCommander("arm", wait_for_servers=15.0)
+    move_limbs = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=15.0)
+    move_grinder = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=15.0)
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)

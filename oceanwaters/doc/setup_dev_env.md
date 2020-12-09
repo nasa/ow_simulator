@@ -60,13 +60,9 @@ of PLEXIL.  On rare occasions the latest version of this branch won't be
 compatible with OceanWATERS and you will need to check out a particular commit.
 We plan to simplify the workflow needed to keep these two software systems compatible.
 
-* UNTIL FURTHER NOTICE (i.e. the absence of this step), check out an older
-  commit of PLEXIL that supports OceanWATERS.  The newest version of the
-  releases/plexil-4 branch will not work.
-
-```
-git checkout 51813f1
-```
+NOTE: this version of OceanWATERS was tested with the git tag '2020-11-17' of
+this branch, though it should with the head of the branch.  If you encounter
+problems, please revert to this tag and contact the OceanWATERS team.
 
 * Install any of the following build prerequisites needed. If you're not sure,
 try the build, see where it breaks, and install new packages as you go. All of
