@@ -96,7 +96,7 @@ class GroundDetector:
     self._last_position, self._last_time = current_position, current_time
     velocity_z = delta_d[2] / delta_t
     self._trending_velocity.append(velocity_z)
-    print(self._dynamic_threshold)
+    # print(self._dynamic_threshold)
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._dynamic_threshold = self._trending_velocity.value
@@ -141,7 +141,7 @@ class GroundDetector:
     return t.transform.translation
 
   def _tf_2_method(self):
-    # print (self._tf_lookup_position().z)
+    print (self._tf_lookup_position().z)
 
     return self._check_condition(self._tf_lookup_position())
 

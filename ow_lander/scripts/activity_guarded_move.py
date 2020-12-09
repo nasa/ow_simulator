@@ -24,7 +24,7 @@ def arg_parsing(req):
     direction_x=0.0
     direction_y=0.0
     direction_z=1.0
-    search_distance = 0.5
+    search_distance = 0.8
 
   else :
     delete_prev_traj = req.delete_prev_traj
