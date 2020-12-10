@@ -53,17 +53,14 @@ def arg_parsing_lin(req):
     depth=0.01
     length=0.1
     ground_position=constants.DEFAULT_GROUND_HEIGHT
-    delete_prev_traj=False
-
   else :
     x_start=req.x
     y_start=req.y
     depth=req.depth
     length=req.length
     ground_position=req.ground_position
-    delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, length, ground_position, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, length, ground_position]
 
 def arg_parsing_circ(req):     
   """
@@ -76,17 +73,14 @@ def arg_parsing_circ(req):
     depth=0.01
     parallel=True
     ground_position=constants.DEFAULT_GROUND_HEIGHT
-    delete_prev_traj=False
-
   else :
     x_start=req.x
     y_start=req.y
     depth=req.depth
     parallel=req.parallel
     ground_position=req.ground_position
-    delete_prev_traj=req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, parallel, ground_position, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, parallel, ground_position]
 
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):     
   """
