@@ -5,20 +5,14 @@
 # this repository.
 
 import sys
-import rosbag
-import copy
 import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from moveit_commander.conversions import pose_to_list
 from controller_manager_msgs.srv import SwitchController
 from ow_lander.srv import *
 
-import constants
-import utils
 import activity_full_digging_traj
 import activity_guarded_move
 import activity_deliver_sample

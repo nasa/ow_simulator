@@ -5,11 +5,6 @@
 # this repository.
 
 import constants
-import math
-import time
-import subprocess, os, signal
-from std_msgs.msg import String
-import rospy
 import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
 
