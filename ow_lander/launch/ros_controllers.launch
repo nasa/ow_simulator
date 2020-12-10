@@ -8,9 +8,11 @@
   <node name="joint_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
 		output="screen" args="joint_state_controller" />
 
+  <!-- arm_controller is the default controller and is enabled by default -->
   <node name="controller_spawner_active" pkg="controller_manager" type="spawner" respawn="false"
     output="screen" args="arm_controller antenna_controller"/>
 
+  <!-- grinder_controller is enabled only when needed -->
   <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
     output="screen" args="--stopped grinder_controller"/>
 

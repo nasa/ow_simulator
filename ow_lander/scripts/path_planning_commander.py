@@ -36,11 +36,11 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
-    print("Unstow arm activity started")
+    print("Stow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
     self.arm_move_group.go(goal, wait=True)
     self.arm_move_group.stop()
-    print("Unstow arm activity completed")
+    print("Stow arm activity completed")
     return True, "Done"
 
   # === SERVICE ACTIVITIES - Unstow =============================
@@ -48,11 +48,11 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
     """
-    print("Stow arm activity started")
+    print("Unstow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
     self.arm_move_group.go(goal, wait=True)
     self.arm_move_group.stop()
-    print("Stow arm activity completed")
+    print("Unstow arm activity completed")
     return True, "Done"
 
   # === SERVICE ACTIVITIES - guarded move =============================
