@@ -58,10 +58,8 @@ def plan_cartesian_path(move_group, length, alpha, parallel):
 
   return plan, fraction
 
-def grind(move_arm, move_limbs, move_grinder, args):          
+def grind(move_grinder, args):          
   """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander' 
-  :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander' 
   :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, bool, float, bool]
   """

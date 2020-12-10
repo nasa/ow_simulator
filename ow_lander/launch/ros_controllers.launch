@@ -5,10 +5,13 @@
   <rosparam file="$(find ow_lander)/config/ros_controllers.yaml" command="load"/>
 
   <!-- Load the controllers -->
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" args="arm_controller antenna_controller"/>
-
   <node name="joint_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
 		output="screen" args="joint_state_controller" />
+
+  <node name="controller_spawner_active" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="arm_controller antenna_controller"/>
+
+  <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="--stopped grinder_controller"/>
 
 </launch>
