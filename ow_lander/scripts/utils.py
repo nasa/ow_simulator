@@ -13,64 +13,6 @@ import rospy
 import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
 
-# Basic check if input trench arguments are numbers
-def check_arguments(tx, ty, td):
-  """
-  :type tx: float
-  :type ty: float
-  :type td: float
-  """
-
-  try:
-    float(tx)
-    float(ty)
-    float(td)
-    return True
-
-  except ValueError:
-    return False
-
-def start_traj_recording(delete_prev_traj, bagname):  
-  """
-  :type delete_prev_traj: bool
-  :type bagname: str
-  """
-  # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
-  if delete_prev_traj == True:
-    os.system("rm ~/.ros/*.csv")
-
-  # Start rosbag recording
-  command = "rosbag record -O " + bagname + " /planning/joint_states"
-  p = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True, cwd='.')
-
-def stop_traj_recording(result, bagname):   
-  """
-  :type result: bool
-  :type bagname: str
-  """
-  time.sleep(1)
-  # Stop rosbag recording (TODO: clean process)
-  os.system("killall -s SIGINT record")
-
-  if result == False :
-    time.sleep(1)
-    print "[ERROR] No plan found. Exiting path_planning_commander..."
-    command = "rm " + bagname + ".bag"
-    os.system(command)
-    return
-
-  time.sleep(1)
-
-  # rosbag to csv
-  trajname = bagname + ".csv"
-  command = "rostopic echo -p -b " + bagname + ".bag /planning/joint_states > " + trajname
-  os.system(command)
-  time.sleep(1)
-
-  # Cleanup bag and csv
-  command = "rm " + bagname + ".bag"
-  os.system(command)
-
 def is_shou_yaw_goal_in_range(joint_goal):      
   """
   # type joint_goal: List[float, float, float, float, float, float]
