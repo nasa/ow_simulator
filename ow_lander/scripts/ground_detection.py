@@ -88,15 +88,11 @@ class GroundDetector:
     current_position = np.array(
         [new_position.x, new_position.y, new_position.z])
     current_time = rospy.get_time()
-    # print (current_time) #This is rostime, published by /clock
     delta_d = current_position - self._last_position
-    # print (delta_d)
     delta_t = current_time - self._last_time
-    # print (delta_t)
     self._last_position, self._last_time = current_position, current_time
     velocity_z = delta_d[2] / delta_t
     self._trending_velocity.append(velocity_z)
-    # print(self._dynamic_threshold)
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._dynamic_threshold = self._trending_velocity.value
@@ -141,8 +137,6 @@ class GroundDetector:
     return t.transform.translation
 
   def _tf_2_method(self):
-    print (self._tf_lookup_position().z)
-
     return self._check_condition(self._tf_lookup_position())
 
   @property
@@ -160,5 +154,4 @@ class GroundDetector:
     :returns: True if ground was detected, False otherwise
     :rtype: boolean
     """
-    # print(rospy.get_time())
     return self._check_ground_method()

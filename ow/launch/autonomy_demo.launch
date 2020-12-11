@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="use_sim_time" value="true"/>
   <arg name="gui" default="true"/>
   <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
 

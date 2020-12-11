@@ -35,7 +35,7 @@ def start_traj_recording(delete_prev_traj, bagname):
   :type delete_prev_traj: bool
   :type bagname: str
   """
-  rospy.set_param('gazebo/use_sim_time', True)
+  rospy.set_param('/use_sim_time', True)
   # If argument is true, delete all traj files in /.ros, to prevent sending wrong traj
   if delete_prev_traj == True:
     os.system("rm ~/.ros/*.csv")
@@ -49,7 +49,7 @@ def stop_traj_recording(result, bagname):
   :type result: bool
   :type bagname: str
   """
-  rospy.set_param('gazebo/use_sim_time', True) 
+  rospy.set_param('/use_sim_time', True) 
   rospy.sleep(1)
   # Stop rosbag recording (TODO: clean process)
   os.system("killall -s SIGINT record")

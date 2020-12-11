@@ -66,7 +66,7 @@ def grind(move_arm, move_limbs, move_grinder, args):
   :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, bool, float, bool]
   """
-  rospy.set_param('gazebo/use_sim_time', True)
+  rospy.set_param('/use_sim_time', True)
 
   x_start = args[1]
   y_start = args[2] 

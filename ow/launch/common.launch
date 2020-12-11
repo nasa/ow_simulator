@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="use_sim_time" value="true"/>
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
@@ -19,9 +18,9 @@
 
   <!-- == launch gazebo with the chosen world ==================== -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg gazebo)">
+    <arg name="use_sim_time" value="true"/>
     <arg name="world_name" value="$(arg world_name)"/>
     <arg name="paused" value="true"/>
-    <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="$(arg gzclient)"/>
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>

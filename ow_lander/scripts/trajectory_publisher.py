@@ -123,7 +123,7 @@ def talker(req):
 
 if __name__ == '__main__':
   global ground_detector
-  rospy.set_param('gazebo/use_sim_time', True)
+  rospy.set_param('/use_sim_time', True)
   rospy.init_node('trajectory_publisher', anonymous=True)
   ground_detector = GroundDetector()
   start_srv = rospy.Service('arm/publish_trajectory', PublishTrajectory, talker)

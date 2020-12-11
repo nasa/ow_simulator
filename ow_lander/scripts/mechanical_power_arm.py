@@ -57,7 +57,7 @@ def main(args):
   Initializes and cleanup ros node
   :type args: List[str, str, str]
   """
-  rospy.set_param('gazebo/use_sim_time', True)
+  rospy.set_param('/use_sim_time', True)
   rospy.init_node('mechanical_power_arm', anonymous=True)
   mp = MechanicalPower()
   try:

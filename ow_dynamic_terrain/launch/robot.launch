@@ -1,4 +1,5 @@
 <launch>
+    <arg name="use_sim_time" value="true"/>
     <arg name="robot_name" />
     <arg name="robot_file" />
     <arg name="init_x" default="0"/>

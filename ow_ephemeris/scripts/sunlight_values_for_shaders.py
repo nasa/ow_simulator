@@ -36,7 +36,6 @@ class SunValues:
 
     # Ignore missing transforms--there will probably be a few missing at startup
     try:
-      self.listener.waitForTransform(self.reference_body, self.sun, rospy.Time(0), rospy.Duration(20.0))
       (trans,rot) = self.listener.lookupTransform(self.reference_body, self.sun, rospy.Time(0))
     except:
       return
@@ -64,7 +63,7 @@ class SunValues:
 
 
 def main():
-  rospy.set_param('gazebo/use_sim_time', True)
+  rospy.set_param('/use_sim_time', True)
   rospy.init_node("sunlight_values")
 
   sun_values = SunValues()

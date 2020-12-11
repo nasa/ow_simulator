@@ -61,7 +61,7 @@ def compose_modify_terrain_patch_message(image_path, position_x, position_y, pos
 
 
 def publish_image(args):
-    rospy.set_param('gazebo/use_sim_time', True)
+    rospy.set_param('/use_sim_time', True)
     rospy.init_node("modify_terrain_patch_pub", anonymous=True)
     pub = rospy.Publisher(
         '/ow_dynamic_terrain/modify_terrain_patch', modify_terrain_patch, queue_size=1)
