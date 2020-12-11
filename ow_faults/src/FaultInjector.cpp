@@ -98,13 +98,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index] = 0.0;
   }
 
-  if (m_faults.grinder_encoder_failure && findJointIndex(J_GRINDER, index)) {
-    output.position[index] = 0.0;
-  }
-  if (m_faults.grinder_torque_sensor_failure && findJointIndex(J_GRINDER, index)) {
-    output.effort[index] = 0.0;
-  }
-
   m_joint_state_pub.publish(output);
 }
 
