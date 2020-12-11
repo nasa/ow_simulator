@@ -8,6 +8,8 @@
 
 #include <ros/ros.h>
 #include <ow_faults/FaultsConfig.h>
+#include "ow_faults/SystemFaults.h"
+#include "ow_faults/ArmFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <unordered_map>
@@ -33,6 +35,10 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
+  //Setting the correct values for system faults and arm faults messages
+  void setSystemFaultMessage(ow_faults::SystemFaults& msg);
+  void setArmFaultMessage(ow_faults::ArmFaults& msg);
+
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
@@ -46,6 +52,9 @@ private:
 
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
+
+  ros::Publisher fault_status_pub;
+  ros::Publisher arm_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
