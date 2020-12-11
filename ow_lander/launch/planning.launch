@@ -27,7 +27,7 @@
       <param name="zeros/j_hand_yaw" value="$(arg stowed_hand_yaw)"/>
       <param name="zeros/j_scoop_yaw" value="$(arg stowed_scoop_yaw)"/>
       <param name="zeros/j_grinder" value="$(arg stowed_grinder_yaw)"/>
-      
+
       <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
     </node>
 

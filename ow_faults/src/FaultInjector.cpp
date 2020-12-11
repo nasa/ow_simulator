@@ -12,8 +12,9 @@ using namespace ow_lander;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
-  m_joint_state_sub = node_handle.subscribe("/joint_states", 10, &FaultInjector::jointStateCb, this);
-  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/faults/joint_states", 10);
+  m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
+  // 'new' joint states topic where fault data is now publishes on
+  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
