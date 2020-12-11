@@ -6,7 +6,7 @@ uint32 value
 # Trajectory Generation = 2
 # Collision = 3
 # Estop = 4
-# Position limit = 5
-# Torque limit = 6
-# Velocity lmit = 7
+# Position Limit = 5
+# Torque Limit = 6
+# Velocity Lmit = 7
 # NoForceData = 8

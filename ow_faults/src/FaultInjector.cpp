@@ -4,8 +4,6 @@
 
 #include "ow_faults/FaultInjector.h"
 #include <algorithm>
-// #include "ow_faults/SystemFaults.h"
-// #include "ow_faults/ArmFaults.h"
 
 using namespace std;
 using namespace ow_lander;
@@ -18,9 +16,9 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
 
   //topic for system fault messages, see Faults.msg
-  fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
+  m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
   // //topic for arm fault status, see ArmFaults.msg
-  arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
+  m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -32,17 +30,17 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::setSystemFaultMessage(ow_faults::SystemFaults& msg) {
+void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = '/world';
+  msg.header.frame_id = "/world";
   msg.value = 4;
 }
 
 void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = '/world';
+  msg.header.frame_id = "/world";
   msg.value = 1;
 }
 
@@ -66,91 +64,91 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   unsigned int index;
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
   }
   if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
   }
 
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
   }
   if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
   }
 
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
   if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index] = 0.0;
-    setSystemFaultMessage(system_faults_msg);
+    setSytemFaultsMessage(system_faults_msg);
     setArmFaultMessage(arm_faults_msg);
   }
 
   m_joint_state_pub.publish(output);
-  fault_status_pub.publish(system_faults_msg);
-  arm_fault_status_pub.publish(arm_faults_msg);
+  m_fault_status_pub.publish(system_faults_msg);
+  m_arm_fault_status_pub.publish(arm_faults_msg);
 }
 
 template<typename group_t, typename item_t>

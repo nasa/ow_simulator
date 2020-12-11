@@ -36,7 +36,7 @@ private:
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
   //Setting the correct values for system faults and arm faults messages
-  void setSystemFaultMessage(ow_faults::SystemFaults& msg);
+  void setSytemFaultsMessage(ow_faults::SystemFaults& msg);
   void setArmFaultMessage(ow_faults::ArmFaults& msg);
 
   // Find an item in an std::vector or other find-able data structure, and
@@ -53,8 +53,8 @@ private:
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-  ros::Publisher fault_status_pub;
-  ros::Publisher arm_fault_status_pub;
+  ros::Publisher m_fault_status_pub;
+  ros::Publisher m_arm_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
