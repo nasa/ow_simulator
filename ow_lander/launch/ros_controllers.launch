@@ -6,7 +6,7 @@
 
   <!-- Load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" args="arm_controller antenna_controller"/>
+    output="screen" args="arm_controller ant_pan_position_controller ant_tilt_position_controller"/>
 
   <node name="joint_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
 		output="screen" args="joint_state_controller" />
