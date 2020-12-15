@@ -112,7 +112,7 @@ def arg_parsing_lin(req):
 
   return [req.use_defaults, x_start, y_start, depth, length, ground_position]
 
-def dig_linear(move_arm, args, controller_switcher):          
+def dig_linear(move_arm, args):          
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, int, float, float, float]

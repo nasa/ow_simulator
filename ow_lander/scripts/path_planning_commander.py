@@ -102,7 +102,6 @@ class PathPlanningCommander(object):
     dig_linear_args = activity_full_digging_traj.arg_parsing_lin(req)
     success = activity_full_digging_traj.dig_linear(
       self.arm_move_group,
-      self.limbs_move_group,
       dig_linear_args)
     print "Dig linear arm motion executed!"
     return success, "Done"
