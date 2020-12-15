@@ -33,14 +33,14 @@ void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, int valu
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
-  msg.value = value; //should be 4 for now
+  msg.value = value; //should be ARM EXECUTION ERROR for now
 }
 
 void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg, int value) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
-  msg.value = value; //should be 1 for now
+  msg.value = value; //should be HARDWARE for now
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
