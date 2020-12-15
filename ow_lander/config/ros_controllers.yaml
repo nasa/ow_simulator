@@ -25,12 +25,17 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
 controller_list:
-  - name: antenna_controller
+  - name: ant_pan_position_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
     default: true
     joints:
       - j_ant_pan
+  - name: ant_tilt_position_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
       - j_ant_tilt
   - name: arm_controller
     action_ns: follow_joint_trajectory
