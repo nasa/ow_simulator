@@ -30,11 +30,28 @@ public:
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
 
-  enum Nominal {None=0};
+  enum Nominal { None=0 };
 
-  enum ArmFaults {Hardware=1, TrajectoryGeneration=2, Collision=3, Estop=4, PositionLimit=5, TorqueLimit=6, VelocityLimit=7, NoForceData=8};
+  enum ArmFaults {
+    Hardware=1, 
+    TrajectoryGeneration=2, 
+    Collision=3, 
+    Estop=4, 
+    PositionLimit=5, 
+    TorqueLimit=6, 
+    VelocityLimit=7, 
+    NoForceData=8};
 
-  enum SystemFaults {System=1, ArmGoalError=2, ArmExecutionError=4, TaskGoalError=8, CamGoalError=16, CamExecutionError=32, PtGoalError=64, PtExecutionError=128, LanderExecutionError = 256};
+  enum SystemFaults {
+    System=1, 
+    ArmGoalError=2, 
+    ArmExecutionError=4,
+    TaskGoalError=8, 
+    CamGoalError=16, 
+    CamExecutionError=32, 
+    PtGoalError=64, 
+    PtExecutionError=128, 
+    LanderExecutionError = 256};
 
 private:
   // Output /faults/joint_states, a modified version of /joint_states, injecting
