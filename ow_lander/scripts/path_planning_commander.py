@@ -89,7 +89,8 @@ class PathPlanningCommander(object):
     success = activity_full_digging_traj.dig_circular(
       self.arm_move_group,
       self.limbs_move_group,
-      dig_circular_args)
+      dig_circular_args,
+      self.switch_controllers)
     print("Dig Circular arm activity completed")
     return success, "Done"
 

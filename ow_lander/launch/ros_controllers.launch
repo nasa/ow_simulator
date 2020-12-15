@@ -12,8 +12,8 @@
   <node name="controller_spawner_active" pkg="controller_manager" type="spawner" respawn="false"
     output="screen" args="arm_controller antenna_controller"/>
 
-  <!-- grinder_controller is enabled only when needed -->
+  <!-- limbs_controller and grinder_controller is enabled only when needed -->
   <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" args="--stopped grinder_controller"/>
+    output="screen" args="--stopped limbs_controller grinder_controller"/>
 
 </launch>

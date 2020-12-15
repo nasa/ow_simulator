@@ -43,6 +43,16 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
+  - name: limbs_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
   - name: grinder_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
@@ -118,6 +128,49 @@ arm_controller:
       j_dist_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
       j_hand_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
       j_scoop_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+    stop_trajectory_duration: 1.0
+limbs_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+  gains:
+    j_shou_yaw:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    j_shou_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    j_dist_pitch:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    j_hand_yaw:
+      p: *kp_default
+      d: *kd_default
+      i: *ki_default
+      i_clamp: *ki_clamp_default
+    constraints:
+      goal_time: *goal_time_constraint
+      stopped_velocity_tolerance: 0
+      j_shou_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_shou_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_prox_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_dist_pitch: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
+      j_hand_yaw: {trajectory: *goal_pos_constraint, goal: *trajectory_pos_constraint}
     stop_trajectory_duration: 1.0
 grinder_controller:
   type: effort_controllers/JointTrajectoryController
