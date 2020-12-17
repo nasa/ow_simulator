@@ -27,9 +27,9 @@ class PathPlanningCommander(object):
   def __init__(self):
     super(PathPlanningCommander, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    self.arm_move_group = moveit_commander.MoveGroupCommander("arm")
-    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs")
-    self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder")
+    self.arm_move_group = moveit_commander.MoveGroupCommander("arm", wait_for_servers=10.0)
+    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=10.0)
+    self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=10.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
 
   # === SERVICE ACTIVITIES - Stow =============================
