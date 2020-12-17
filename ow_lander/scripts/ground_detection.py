@@ -47,6 +47,7 @@ class SlidingWindow:
     # TODO: consider caching the value to speed up query
     return self._method(self._que)
 
+
 class GroundDetector:
   """
   GroundDetector uses readings of the link states obtained either directly from
@@ -62,7 +63,8 @@ class GroundDetector:
     self._check_ground_method = self._tf_2_method
 
     if self._check_ground_method == self._gazebo_link_states_method:
-      rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
+      rospy.Subscriber(
+          "/gazebo/link_states", LinkStates, self._handle_link_states)
       self._query_ground_position_method = lambda: self._tf_lookup_position(
           rospy.Duration(10))
     else:
@@ -137,7 +139,6 @@ class GroundDetector:
     return t.transform.translation
 
   def _tf_2_method(self):
-
     return self._check_condition(self._tf_lookup_position())
 
   @property
