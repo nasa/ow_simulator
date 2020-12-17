@@ -7,11 +7,12 @@
 import sys
 import rospy
 import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
+from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from controller_manager_msgs.srv import SwitchController
 from ow_lander.srv import *
+from ow_lander.msg import *
+from actionlib_msgs.msg import GoalStatus
 
 import activity_full_digging_traj
 import activity_guarded_move
@@ -19,6 +20,7 @@ import activity_deliver_sample
 import activity_grind
 
 from trajectory_async_execution import TrajectoryAsyncExecuter
+from ground_detection import GroundDetector
 
 
 class PathPlanningCommander(object):
@@ -124,13 +126,17 @@ class PathPlanningCommander(object):
     print("Grinde arm activity completed")
     return success, "Done"
 
-  # === SERVICE ACTIVITIES - guarded move =============================
   def handle_guarded_move_done(self, state, result):
-    pass
+    ground_detected = state == GoalStatus.PREEMPTED
+    ground_position = self.ground_detector.ground_position if ground_detected else Point()
+    rospy.loginfo("Ground Detected ? {}".format(ground_detected))
+    self.guarded_move_pub.publish(ground_detected, 'base_link', ground_position)
 
   def handle_guarded_move_feedback(self, feedback):
-    pass
+    if self.ground_detector.detect():
+      self.trajectory_async_executer.stop()
 
+  # === SERVICE ACTIVITIES - guarded move =============================
   def handle_guarded_move(self, req):
     """
     :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
@@ -145,10 +151,14 @@ class PathPlanningCommander(object):
         self.arm_move_group, guarded_move_args)
     if len(plan.joint_trajectory.points) == 0:
       return False, "guarded_move_plan failed"
+    self.ground_detector.reset()
     self.trajectory_async_executer.execute(plan.joint_trajectory,
                                            done_cb=self.handle_guarded_move_done,
                                            active_cb=None,
                                            feedback_cb=self.handle_guarded_move_feedback)
+    # TODO: the async execute returns immediately after submitting a trajectory
+    # to maintaing current behavior on melodic-devel we can insert a wait like:
+    # self.trajectory_async_executer.wait(time_to_start of last point)
     print("Guarded Move arm activity completed")
     return success, "Done"
 
@@ -166,7 +176,10 @@ class PathPlanningCommander(object):
         'arm/deliver_sample', DeliverSample, self.handle_deliver_sample)
     self.grind_srv = rospy.Service(
         'arm/grind', Grind, self.handle_grind)
+    self.ground_detector = GroundDetector()
     self.trajectory_async_executer.connect("arm_controller")
+    self.guarded_move_pub = rospy.Publisher(
+        '/guarded_move_result', GuardedMoveResult, queue_size=10)
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
     print("path_planning_commander has started!")

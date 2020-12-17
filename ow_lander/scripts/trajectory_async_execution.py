@@ -39,7 +39,6 @@ class TrajectoryAsyncExecuter:
     goal = FollowJointTrajectoryGoal()
     goal.goal_time_tolerance = self._goal_time_tolerance
     goal.trajectory = trajectory
-    goal.trajectory.header.stamp = rospy.Time.now()
     self._client.send_goal(goal, done_cb, active_cb, feedback_cb)
 
   def stop(self):
