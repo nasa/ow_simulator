@@ -22,15 +22,15 @@ def unstow_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # A FibonacciResult
+    return client.get_result()  # 
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the SimpleActionClient can
+        # Initializes a rospy node so that the UnstowActionClient can
         # publish and subscribe over ROS.
         rospy.init_node('unstow_client_py')
         result = unstow_client()
-        #print("Result:", ', ',result)
-        print("Result:", ', '.join([str(n) for n in result.sequence]))
+        print("Result:", ', ',result)
+        #print("Result:", ', '.join([str(n) for n in result.sequence]))
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)

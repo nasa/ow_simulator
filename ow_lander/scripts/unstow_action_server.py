@@ -14,12 +14,14 @@ from sensor_msgs.msg import JointState
 from moveit_commander.conversions import pose_to_list
 import math
 import constants
-
+import threading
 import utils
 import activity_full_digging_traj
+import random
 
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
+
 
 
 class UnstowActionServer(object):
@@ -40,25 +42,44 @@ class UnstowActionServer(object):
         
     
     def _check_state(self):
-        self._xc = self._current_state.get_value()
-        print (self._xc)
+        #rate = rospy.Rate(1) # 10hz
+        #while not rospy.is_shutdown():
+          self._xc = self._current_state.get_value()
+          self._fdbk.current_x = self._xc
+          self._fdbk.current_y = self._xc
+          self._fdbk.current_z = self._xc
+          self._result = self._fdbk
+          self._server.publish_feedback(self._fdbk)
+          #self._xc = (random.choice([1, 4, 8, 10, 3])) 
+          #self._xc = (random.choice([1, 4, 8, 10, 3])) 
+          #print (self._xc)
+          print "state update loop"
         
     def _update_feedback(self):
-        self._fdbk.current_x = self._xc
-        self._fdbk.current_y = self._xc
-        self._fdbk.current_z = self._xc
-        self._result = self._fdbk
-        self._server.publish_feedback(self._fdbk)
+        rate = rospy.Rate(1) # 10hz
+        while not rospy.is_shutdown():
+          self._fdbk.current_x = self._xc
+          self._fdbk.current_y = self._xc
+          self._fdbk.current_z = self._xc
+          self._result = self._fdbk
+          self._server.publish_feedback(self._fdbk)
+          print "feedback loop"
+          rate.sleep()
+        
+        
+    def _update_motion(self):
+        activity_full_digging_traj.unstow(self._interface.move_arm)
         
     def on_unstow_action(self,goal):
         
         # Record start time
         start_time = rospy.get_time()
+        print "main loop"
 
         def now_from_start(start):
             return rospy.get_time() - start
         
-        r = rospy.Rate(1)
+        #r = rospy.Rate(10)
         success = True
 
         while ((now_from_start(start_time) < self._timeout)):# and not      rospy.is_shutdown()):
@@ -70,10 +91,26 @@ class UnstowActionServer(object):
                 break
             
             self._check_state()
-            self._update_feedback()
-            activity_full_digging_traj.unstow(self._interface.move_arm)
-
-          
+            #self._update_feedback()
+            #self._update_mo-*tion()  
+            
+            #t1 = threading.Thread(target=self._check_state())
+            #t2 = threading.Thread(target=self._update_feedback())
+            t3 = threading.Thread(target=self._update_motion())
+            #t1.setDaemon(True)
+            #t2.setDaemon(True)
+            #t3.setDaemon(True)
+            #t2.start()
+            #activity_full_digging_traj.unstow(self._interface.move_arm)
+            #t1.start()
+            t3.start()
+            #t1.join()
+            #t2.join()
+            #t3.join()
+            
+        #for (k = 1:range(100)):
+            #k = k+1
+            
         if success:
             self._result.final_x = self._fdbk.current_x
             self._result.final_y = self._fdbk.current_y
