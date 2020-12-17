@@ -4,7 +4,6 @@ float32 y               # Trench starting point - Y coordinate
 float32 depth           # Desired depth
 float32 length          # Desired length
 float32 ground_position # Z coordinate of ground level in base_link frame
-bool delete_prev_traj   # Set to true to cleanup ~/.ros
 ---
 bool success
 string message

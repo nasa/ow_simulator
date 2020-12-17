@@ -42,52 +42,6 @@ def change_joint_value(move_group, joint_index, target_value):
   move_group.go(joint_goal, wait=True)
   move_group.stop()
 
-def arg_parsing_lin(req):      
-  """
-  :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
-  """
-  if req.use_defaults :
-    # Default trenching values
-    x_start=1.46
-    y_start=0
-    depth=0.01
-    length=0.1
-    ground_position=constants.DEFAULT_GROUND_HEIGHT
-    delete_prev_traj=False
-
-  else :
-    x_start=req.x
-    y_start=req.y
-    depth=req.depth
-    length=req.length
-    ground_position=req.ground_position
-    delete_prev_traj=req.delete_prev_traj
-
-  return [req.use_defaults, x_start, y_start, depth, length, ground_position, delete_prev_traj]
-
-def arg_parsing_circ(req):     
-  """
-  :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest' 
-  """
-  if req.use_defaults :
-    # Default trenching values
-    x_start=1.65
-    y_start=0
-    depth=0.01
-    parallel=True
-    ground_position=constants.DEFAULT_GROUND_HEIGHT
-    delete_prev_traj=False
-
-  else :
-    x_start=req.x
-    y_start=req.y
-    depth=req.depth
-    parallel=req.parallel
-    ground_position=req.ground_position
-    delete_prev_traj=req.delete_prev_traj
-
-  return [req.use_defaults, x_start, y_start, depth, parallel, ground_position, delete_prev_traj]
-
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):     
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -138,11 +92,30 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
 
   return plan, fraction
 
-def dig_linear(move_arm, move_limbs, args):          
+def arg_parsing_lin(req):      
+  """
+  :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
+  """
+  if req.use_defaults :
+    # Default trenching values
+    x_start=1.46
+    y_start=0
+    depth=0.01
+    length=0.1
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
+  else :
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
+    length=req.length
+    ground_position=req.ground_position
+
+  return [req.use_defaults, x_start, y_start, depth, length, ground_position]
+
+def dig_linear(move_arm, args):          
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, float, int, float, float, float, bool]
+  :type args: List[bool, float, int, float, float, float]
   """
   x_start = args[1]
   y_start = args[2]
@@ -188,11 +161,31 @@ def dig_linear(move_arm, move_limbs, args):
 
   return True
 
-def dig_circular(move_arm, move_limbs, args): 
+def arg_parsing_circ(req):     
+  """
+  :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest' 
+  """
+  if req.use_defaults :
+    # Default trenching values
+    x_start=1.65
+    y_start=0
+    depth=0.01
+    parallel=True
+    ground_position=constants.DEFAULT_GROUND_HEIGHT
+  else :
+    x_start=req.x
+    y_start=req.y
+    depth=req.depth
+    parallel=req.parallel
+    ground_position=req.ground_position
+
+  return [req.use_defaults, x_start, y_start, depth, parallel, ground_position]
+
+def dig_circular(move_arm, move_limbs, args, controller_switcher): 
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, float, int, float, bool, float, bool]
+  :type args: List[bool, float, int, float, bool, float]
   """
   x_start = args[1]
   y_start = args[2]
@@ -208,7 +201,9 @@ def dig_circular(move_arm, move_limbs, args):
 
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
+    controller_switcher('limbs_controller', 'arm_controller')
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
+    controller_switcher('arm_controller', 'limbs_controller')
 
     # Rotate hand perpendicular to arm direction
     change_joint_value(move_arm, constants.J_HAND_YAW, -0.29*math.pi)
@@ -225,7 +220,9 @@ def dig_circular(move_arm, move_limbs, args):
 
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
+    controller_switcher('limbs_controller', 'arm_controller')
     go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
+    controller_switcher('arm_controller', 'limbs_controller')
 
     # Rotate dist to dig
     joint_goal = move_arm.get_current_joint_values()
