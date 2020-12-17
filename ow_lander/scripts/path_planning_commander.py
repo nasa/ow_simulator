@@ -126,12 +126,22 @@ class PathPlanningCommander(object):
     return success, "Done"
 
   def handle_guarded_move_done(self, state, result):
+    """
+    :type state: int
+    :type result: FollowJointTrajectoryResult
+    """
+    print(type(result))
     ground_detected = state == GoalStatus.PREEMPTED
     ground_position = self.ground_detector.ground_position if ground_detected else Point()
     rospy.loginfo("Ground Detected ? {}".format(ground_detected))
-    self.guarded_move_pub.publish(ground_detected, 'base_link', ground_position)
+    self.guarded_move_pub.publish(
+        ground_detected, 'base_link', ground_position)
 
   def handle_guarded_move_feedback(self, feedback):
+    """
+    :type feedback: FollowJointTrajectoryFeedback
+    """
+    print(type(feedback))
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
@@ -155,9 +165,9 @@ class PathPlanningCommander(object):
                                            done_cb=self.handle_guarded_move_done,
                                            active_cb=None,
                                            feedback_cb=self.handle_guarded_move_feedback)
-    # TODO: the async execute returns immediately after submitting a trajectory
-    # to maintaing current behavior on melodic-devel we can insert a wait like:
-    # self.trajectory_async_executer.wait(time_to_start of last point)
+    # To preserve the previous behaviour we are adding a blocking call till the
+    # execution of the trajectory is completed
+    self.trajectory_async_executer.wait()
     print("Guarded Move arm activity completed")
     return success, "Done"
 
