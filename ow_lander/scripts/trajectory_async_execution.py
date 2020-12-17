@@ -18,6 +18,7 @@ class TrajectoryAsyncExecuter:
   def __init__(self):
     self._connected = False
     self._goal_time_tolerance = rospy.Time(0.1)
+    self._client = None
 
   def connect(self, controller):
     """
@@ -61,17 +62,21 @@ class TrajectoryAsyncExecuter:
     """
     Stops the execution of the last trajectory submitted for executoin
     """
-    self._client.cancel_goal()
+    if self._connected:
+      self._client.cancel_goal()
 
   def wait(self, timeout=0):
     """
     Blocks until the execution of the current trajectory comes to an end
     :type timeout: int
     """
-    self._client.wait_for_result(timeout=rospy.Duration(timeout))
+    if self._connected:
+      self._client.wait_for_result(timeout=rospy.Duration(timeout))
 
   def result(self):
     """
     Gets the result of the last goal
     """
+    if not self._connected:
+      return None    
     return self._client.get_result()
