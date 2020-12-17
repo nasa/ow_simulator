@@ -130,7 +130,6 @@ class PathPlanningCommander(object):
     :type state: int
     :type result: FollowJointTrajectoryResult
     """
-    print(type(result))
     ground_detected = state == GoalStatus.PREEMPTED
     ground_position = self.ground_detector.ground_position if ground_detected else Point()
     rospy.loginfo("Ground Detected ? {}".format(ground_detected))
@@ -141,7 +140,6 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
-    print(type(feedback))
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
