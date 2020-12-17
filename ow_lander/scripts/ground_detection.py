@@ -96,7 +96,7 @@ class GroundDetector:
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._dynamic_threshold = self._trending_velocity.value
-        self._threshold_tolerance = np.std(self._trending_velocity._que)
+        self._threshold_tolerance = 0.5 * np.std(self._trending_velocity._que)
         return False
     else:
       return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance

@@ -8,12 +8,11 @@ import sys
 import rospy
 import moveit_commander
 from geometry_msgs.msg import Point
-from std_msgs.msg import String
 from controller_manager_msgs.srv import SwitchController
-from ow_lander.srv import *
-from ow_lander.msg import *
 from actionlib_msgs.msg import GoalStatus
 
+from ow_lander.srv import *
+from ow_lander.msg import *
 import activity_full_digging_traj
 import activity_guarded_move
 import activity_deliver_sample
