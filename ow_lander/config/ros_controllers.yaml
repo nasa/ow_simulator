@@ -6,7 +6,6 @@ moveit_sim_hw_interface:
 generic_hw_control_loop:
   loop_hz: 300
   cycle_time_error_threshold: 0.01
-
 # Settings for ros_control hardware interface
 hardware_interface:
   joints:
@@ -20,6 +19,11 @@ hardware_interface:
     - j_grinder
     - j_scoop_yaw
   sim_control_mode: 1  # 0: position, 1: velocity
+# Publish all joint states
+# Creates the /joint_states topic necessary in ROS
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
 controller_list:
   - name: arm_controller
     action_ns: follow_joint_trajectory
@@ -32,20 +36,34 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
-  # TODO: We probably need to move the grinder_controller to another file to
-  # ease the process of controller switching
-  # - name: grinder_controller
-  #   action_ns: follow_joint_trajectory
-  #   type: FollowJointTrajectory
-  #   joints:
-  #     - j_shou_yaw
-  #     - j_shou_pitch
-  #     - j_prox_pitch
-  #     - j_dist_pitch
-  #     - j_hand_yaw
-  #     - j_grinder
-# Publish all joint states
-# Creates the /joint_states topic necessary in ROS
+  - name: limbs_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+  - name: grinder_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+      - j_grinder
+ant_pan_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_pan
+  pid: {p: 100.0, i: 0.01, d: 15.0}
+ant_tilt_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_tilt
+  pid: {p: 550.0, i: 0.01, d: 70.0}
 arm_controller:
   type: effort_controllers/JointTrajectoryController
   joints:
@@ -179,14 +197,3 @@ grinder_controller:
       d: *kd_default
       i: *ki_default
       i_clamp: *ki_clamp_default
-joint_state_controller:
-  type: joint_state_controller/JointStateController
-  publish_rate: 300
-ant_pan_position_controller:
-  type: effort_controllers/JointPositionController
-  joint: j_ant_pan
-  pid: {p: 100.0, i: 0.01, d: 15.0}
-ant_tilt_position_controller:
-  type: effort_controllers/JointPositionController
-  joint: j_ant_tilt
-  pid: {p: 550.0, i: 0.01, d: 70.0}
