@@ -1,13 +1,23 @@
-The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+> The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 Research and Simulation can be found in README.md in the root directory of
 this repository.
 
 # ow_lander
+
 Contains the lander semantic and kinematic descriptions (SRDF and URDF), the
 moveit path planner and the gazebo trajectory feeder, and common code related
 to the lander.
 
-## requirements
+* [Requirements](#requirements)
+* [Common Code](#common-code)
+* [Usage](#usage)
+  - [Calling Arm Operations using RQT Service Caller](#calling-arm-operations-using-rqt-service-caller)
+  - [Calling Arm Operations using ROS Command Line Interface](#calling-arm-operations-using-ros-command-line-interface)
+* [MoveIt Setup Assistant](#moveit-setup-assistant)
+* [Misc Information](#misc-information)
+  - [Package History](#package-history)
+
+## Requirements
 * ros-melodic-destkop-full
 * ros-melodic-joint-trajectory-controller
 
@@ -17,56 +27,81 @@ URDF and related code. Please prefer this header over writing similar code
 yourself to keep all our code consistent. If the lander is modified to change
 the number of joints or any joint names, this header must be updated as well.
 
-Run it
-------
-To run along with Gazebo:
+## Usage
 
-`$ roslaunch ow europa_terminator_workspace.launch`
+First run the simulation using any of the available OceanWATERS launch configurations:
 
-This will start Gazebo, as well as the planning and feeding nodes. Now to run
-both these nodes, you need to call the appropriate services (note that PLEXIL
-will be calling these services in code).
+```bash
+roslaunch ow atacma_y1a.launch  # other options:
+                                # * europa_terminator.launch
+                                # * europa_terminator_workspace.launch
+```
 
-### Unstow trajectory planning
-Call the Unstow service.
+This will start the simulation, as well as loads available services to to control
+the arm, below we show two means to invoke these services
 
-### Guarded move trajectory planning
-Call the GuardedMove service. This creates two trajectories in .ros.
+### Calling Arm Operations using RQT Service Caller
+To run these services manually, find the 'rqt' window and select the Service
+Caller tab. Then, from the drop down menu, select the service you want
+(`/arm/dig_circular` or `/arm/publish_trajectory`), configure the service arguments,
+then press the 'Call' button to invoke the service as show below:
+<p align="center"><img src="./misc/service_caller.png" width="40%" ></p>
 
-### Grind trajectory planning
-Call the Grind service.
-
-### Circular trenching trajectory planning
-Call the DigCircular service.
-
-### Linear trenching trajectory planning
-Call the DigLinear service.
-
-### Deliver sample trajectory planning
-Call the DeliverSample service.
-
-### Stow trajectory planning
-Call the Stow service.
-
-### Trajectory feeding
-Call the PublishTrajectory service.
+### Calling Arm Operations using ROS Command Line Interface
+* Stow
+```bash
+rosservice call /arm/stow "{}"
+```
+* Unstow
+```bash
+rosservice call /arm/unstow "{}"
+```
+* Deliver Sample
+```bash
+rosservice call /arm/deliver_sample \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, z: 0.0}"
+```
+* Dig Linear
+```bash
+rosservice call /arm/dig_linear \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, depth: 0.0,
+    length: 0.0, ground_position: 0.0}" 
+```
+* Dig Circular
+```bash
+rosservice call /arm/dig_circular \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, depth: 0.0,
+    parallel: false, ground_position: 0.0}"
+```
+* Grind
+```bash
+rosservice call /arm/grind \
+  "{use_defaults: false,
+    x: 0.0, y: 0.0, depth: 0.0,
+    length: 0.0,
+    parallel: false, ground_position: 0.0}" 
+```
+* Guarded Move
+```bash
+rosservice call /arm/guarded_move \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, z: 0.0,
+    direction_x: 0.0, direction_y: 0.0, direction_z: 0.0,
+    search_distance: 0.0}"
+```
 
 For more info on the message type of each of the services above, please refer to
 the message declaration in the .srv files. Alternatively, info can be displayed
 directly from terminal typing the following command:
-```
-$ rossrv show -r foo
+```bash
+rossrv show -r foo
 ```
 replacing "foo" with the desired service name (for instance, foo=DigCircular).
 
-### Manual Operations
-To run these services manually, find the 'rqt' window and select the Service
-Caller tab. Then, from the drop down menu, select the service you want
-(`/planning/arm/dig_circular` or `/planning/arm/publish_trajectory`), set the
-arguments (Careful, the bools have a capital first letter: `True`, `False`),
-then call the service.
-
-### MoveIt Setup Assistant
+## MoveIt Setup Assistant
 The moveit setup assistant can now be easily launched using the command:
 ```bash
 roslaunch ow_lander setup_assistant.launch
@@ -77,6 +112,7 @@ There are different reasons why you may need to re-run the setup assistant:
  links count, their shape or size changes or there was a change in the number of
  joints or their types.
 * Define new arm/antenna poses or revise existing ones.
+
 
 
 Unmodified Files Generated by MoveIt Setup Assistant:
