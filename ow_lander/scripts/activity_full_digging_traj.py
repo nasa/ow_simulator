@@ -25,11 +25,12 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   goal_pose.position.z = z_start
   move_group.set_pose_target(goal_pose)
   plan = move_group.plan()
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   plan = move_group.go(wait=True)
   move_group.stop()
   move_group.clear_pose_targets()
+
 
 def change_joint_value(move_group, joint_index, target_value):
   """
@@ -42,7 +43,8 @@ def change_joint_value(move_group, joint_index, target_value):
   move_group.go(joint_goal, wait=True)
   move_group.stop()
 
-def move_to_pre_trench_configuration(move_arm, x_start, y_start):     
+
+def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type x_start: float
@@ -50,10 +52,11 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   """
  # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
-  h = math.sqrt( pow(y_start-constants.Y_SHOU,2) + pow(x_start-constants.X_SHOU,2) )
+  h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
+                pow(x_start-constants.X_SHOU, 2))
   l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
-    # Move to pre trench position, align shoulder yaw
+  beta = math.asin(l/h)
+  # Move to pre trench position, align shoulder yaw
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = 0.0
   joint_goal[constants.J_HAND_YAW] = math.pi/2.2
@@ -71,7 +74,8 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
 
   return True
 
-def plan_cartesian_path_lin(move_arm, length, alpha):         
+
+def plan_cartesian_path_lin(move_arm, length, alpha):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type length: float
@@ -86,33 +90,35 @@ def plan_cartesian_path_lin(move_arm, length, alpha):
   waypoints.append(copy.deepcopy(wpose))
 
   (plan, fraction) = move_arm.compute_cartesian_path(
-                               waypoints,   # waypoints to follow
-                               0.01,        # end effector follow step (meters)
-                               0.0)         # jump threshold
+      waypoints,   # waypoints to follow
+      0.01,        # end effector follow step (meters)
+      0.0)         # jump threshold
 
   return plan, fraction
 
-def arg_parsing_lin(req):      
+
+def arg_parsing_lin(req):
   """
   :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
   """
-  if req.use_defaults :
+  if req.use_defaults:
     # Default trenching values
-    x_start=1.46
-    y_start=0
-    depth=0.01
-    length=0.1
-    ground_position=constants.DEFAULT_GROUND_HEIGHT
-  else :
-    x_start=req.x
-    y_start=req.y
-    depth=req.depth
-    length=req.length
-    ground_position=req.ground_position
+    x_start = 1.46
+    y_start = 0
+    depth = 0.01
+    length = 0.1
+    ground_position = constants.DEFAULT_GROUND_HEIGHT
+  else:
+    x_start = req.x
+    y_start = req.y
+    depth = req.depth
+    length = req.length
+    ground_position = req.ground_position
 
   return [req.use_defaults, x_start, y_start, depth, length, ground_position]
 
-def dig_linear(move_arm, args):          
+
+def dig_linear(move_arm, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, int, float, float, float]
@@ -123,22 +129,24 @@ def dig_linear(move_arm, args):
   length = args[4]
   ground_position = args[5]
 
-  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
+  pre_move_complete = move_to_pre_trench_configuration(
+      move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
-  ## Rotate hand yaw to dig in
+  # Rotate hand yaw to dig in
   change_joint_value(move_arm, constants.J_HAND_YAW, 0.0)
 
-  #rotate scoop
+  # rotate scoop
   change_joint_value(move_arm, constants.J_SCOOP_YAW, math.pi/2)
 
-  #rotate dist pith to pre-trenching position.
+  # rotate dist pith to pre-trenching position.
   change_joint_value(move_arm, constants.J_DIST_PITCH, -math.pi/2)
 
-  ## Once aligned to trench goal, place hand above the desired start point
+  # Once aligned to trench goal, place hand above the desired start point
   alpha = math.atan2(constants.WRIST_SCOOP_PARAL, constants.WRIST_SCOOP_PERP)
-  distance_from_ground = constants.ROT_RADIUS*(math.cos(alpha) - math.sin(alpha))
+  distance_from_ground = constants.ROT_RADIUS * \
+      (math.cos(alpha) - math.sin(alpha))
   z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
   go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
 
@@ -147,7 +155,8 @@ def dig_linear(move_arm, args):
 
   # determine linear trenching direction (alpha)
   current_pose = move_arm.get_current_pose().pose
-  quaternion = [current_pose.orientation.x, current_pose.orientation.y, current_pose.orientation.z, current_pose.orientation.w]
+  quaternion = [current_pose.orientation.x, current_pose.orientation.y,
+                current_pose.orientation.z, current_pose.orientation.w]
   current_euler = euler_from_quaternion(quaternion)
   alpha = current_euler[2]
 
@@ -157,31 +166,33 @@ def dig_linear(move_arm, args):
   move_arm.stop()
 
   #  rotate to dig out
-  change_joint_value(move_arm,constants.J_DIST_PITCH, math.pi/2)
+  change_joint_value(move_arm, constants.J_DIST_PITCH, math.pi/2)
 
   return True
 
-def arg_parsing_circ(req):     
+
+def arg_parsing_circ(req):
   """
   :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest' 
   """
-  if req.use_defaults :
+  if req.use_defaults:
     # Default trenching values
-    x_start=1.65
-    y_start=0
-    depth=0.01
-    parallel=True
-    ground_position=constants.DEFAULT_GROUND_HEIGHT
-  else :
-    x_start=req.x
-    y_start=req.y
-    depth=req.depth
-    parallel=req.parallel
-    ground_position=req.ground_position
+    x_start = 1.65
+    y_start = 0
+    depth = 0.01
+    parallel = True
+    ground_position = constants.DEFAULT_GROUND_HEIGHT
+  else:
+    x_start = req.x
+    y_start = req.y
+    depth = req.depth
+    parallel = req.parallel
+    ground_position = req.ground_position
 
   return [req.use_defaults, x_start, y_start, depth, parallel, ground_position]
 
-def dig_circular(move_arm, move_limbs, args, controller_switcher): 
+
+def dig_circular(move_arm, move_limbs, args, controller_switcher):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -193,11 +204,12 @@ def dig_circular(move_arm, move_limbs, args, controller_switcher):
   parallel = args[4]
   ground_position = args[5]
 
-  pre_move_complete = move_to_pre_trench_configuration(move_arm, x_start, y_start)
+  pre_move_complete = move_to_pre_trench_configuration(
+      move_arm, x_start, y_start)
   if pre_move_complete == False:
     return False
 
-  if parallel==False:
+  if not parallel:
 
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
@@ -227,7 +239,7 @@ def dig_circular(move_arm, move_limbs, args, controller_switcher):
     # Rotate dist to dig
     joint_goal = move_arm.get_current_joint_values()
     dist_now = joint_goal[3]
-    change_joint_value(move_arm, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
+    change_joint_value(move_arm, constants.J_DIST_PITCH,
+                       dist_now + 2*math.pi/3)
 
   return True
-  
