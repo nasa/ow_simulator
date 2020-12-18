@@ -6,7 +6,8 @@ this repository.
 
 Contains the lander semantic and kinematic descriptions (SRDF and URDF), the
 moveit path planner and the gazebo trajectory feeder, and common code related
-to the lander.
+to the lander. The package also contains the definition and implementation of
+several arm services
 
 * [Requirements](#requirements)
 * [Usage](#usage)
@@ -35,11 +36,15 @@ This will start the simulation, as well as loads available services to to contro
 the arm, below we show two means to invoke these services
 
 ### Calling Arm Operations using RQT Service Caller
-To run these services manually, find the 'rqt' window and select the Service
-Caller tab. Then, from the drop down menu, select the service you want
-(`/arm/dig_circular` or `/arm/publish_trajectory`), configure the service arguments,
-then press the **Call** button to invoke the service as show below:
+When OceanWATERS sim is launched by default it starts an instance of **rqt_gui**
+that has the _Service Caller_ plugin enabled. You can use the service caller
+interface to invoke the different arm services that are exposed by the simulation.
+Find the **rqt_gui** window then select the _Service Caller_ tab. Using the drop
+down menu, select the service that you want to invoke (for example`/arm/dig_circular`
+or `/arm/guarded_move`), configure the service arguments, as shown below:
 <p align="center"><img src="./misc/service_caller.png" width="40%" ></p>
+
+Finally, press the `Call` button to invoke the service as configured.
 
 ### Calling Arm Operations using ROS Command Line Interface
 * Stow
@@ -73,7 +78,7 @@ rosservice call /arm/dig_circular \
 * Grind
 ```bash
 rosservice call /arm/grind \
-  "{use_defaults: false,
+  "{use_defaults: true,
     x: 0.0, y: 0.0, depth: 0.0,
     length: 0.0,
     parallel: false, ground_position: 0.0}" 
