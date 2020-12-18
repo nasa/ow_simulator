@@ -25,13 +25,6 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
 controller_list:
-  - name: antenna_controller
-    action_ns: follow_joint_trajectory
-    type: FollowJointTrajectory
-    default: true
-    joints:
-      - j_ant_pan
-      - j_ant_tilt
   - name: arm_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
@@ -63,22 +56,14 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_grinder
-antenna_controller:
-  type: effort_controllers/JointTrajectoryController
-  joints:
-    - j_ant_pan
-    - j_ant_tilt
-  gains:
-    j_ant_pan:
-      p: 100
-      d: 1
-      i: 1
-      i_clamp: 1
-    j_ant_tilt:
-      p: 100
-      d: 1
-      i: 1
-      i_clamp: 1
+ant_pan_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_pan
+  pid: {p: 100.0, i: 0.01, d: 15.0}
+ant_tilt_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_tilt
+  pid: {p: 550.0, i: 0.01, d: 70.0}
 arm_controller:
   type: effort_controllers/JointTrajectoryController
   joints:
