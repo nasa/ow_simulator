@@ -25,13 +25,6 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
 controller_list:
-  - name: antenna_controller
-    action_ns: follow_joint_trajectory
-    type: FollowJointTrajectory
-    default: true
-    joints:
-      - j_ant_pan
-      - j_ant_tilt
   - name: arm_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
@@ -43,34 +36,34 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
-  # TODO: We probably need to move the grinder_controller to another file to
-  # ease the process of controller switching
-  # - name: grinder_controller
-  #   action_ns: follow_joint_trajectory
-  #   type: FollowJointTrajectory
-  #   joints:
-  #     - j_shou_yaw
-  #     - j_shou_pitch
-  #     - j_prox_pitch
-  #     - j_dist_pitch
-  #     - j_hand_yaw
-  #     - j_grinder
-antenna_controller:
-  type: effort_controllers/JointTrajectoryController
-  joints:
-    - j_ant_pan
-    - j_ant_tilt
-  gains:
-    j_ant_pan:
-      p: 100
-      d: 1
-      i: 1
-      i_clamp: 1
-    j_ant_tilt:
-      p: 100
-      d: 1
-      i: 1
-      i_clamp: 1
+  - name: limbs_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+  - name: grinder_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
+      - j_grinder
+ant_pan_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_pan
+  pid: {p: 100.0, i: 0.01, d: 15.0}
+ant_tilt_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_tilt
+  pid: {p: 550.0, i: 0.01, d: 70.0}
 arm_controller:
   type: effort_controllers/JointTrajectoryController
   joints:
@@ -126,47 +119,108 @@ arm_controller:
       d: 10.0
       i: 0.01
       i_clamp: 1
-  
+limbs_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_shou_yaw: {trajectory: &traj_tolerance 0.5, goal: &goal_tolerance 0.1}
+    j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_scoop_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: 1.0
+  gains:
+    j_shou_yaw: 
+      p: 1000.0
+      d: 300.0
+      i: 10.0
+      i_clamp: *ki_clamp_default
+    j_shou_pitch:
+      p: 2000.0
+      d: 150.0
+      i: 0.2
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: 1100.0
+      d: 100.0
+      i: 2.0
+      i_clamp: 1
+    j_dist_pitch:
+      p: 700.0
+      d: 20.0
+      i: 0.06
+      i_clamp: 1
+    j_hand_yaw:
+      p: 100.0
+      d: 10.0
+      i: 0.01
+      i_clamp: 1
+grinder_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+    - j_grinder
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_shou_yaw: {trajectory: &traj_tolerance 0.5, goal: &goal_tolerance 0.1}
+    j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_scoop_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: 1.0
+  gains:
+    j_shou_yaw: 
+      p: 1000.0
+      d: 300.0
+      i: 10.0
+      i_clamp: *ki_clamp_default
+    j_shou_pitch:
+      p: 2000.0
+      d: 150.0
+      i: 0.2
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: 1100.0
+      d: 100.0
+      i: 2.0
+      i_clamp: 1
+    j_dist_pitch:
+      p: 700.0
+      d: 20.0
+      i: 0.06
+      i_clamp: 1
+    j_hand_yaw:
+      p: 100.0
+      d: 10.0
+      i: 0.01
+      i_clamp: 1
+    j_grinder:
+      p: 10.0
+      d: 1.0
+      i: 0.01
+      i_clamp: 1
 
-# TODO: Same as above .. We may need to move the grinder_controller to another file to
-# ease the process of controller switching
-# grinder_controller:
-#   type: effort_controllers/JointTrajectoryController
-#   joints:
-#     - j_shou_yaw
-#     - j_shou_pitch
-#     - j_prox_pitch
-#     - j_dist_pitch
-#     - j_hand_yaw
-#     - j_grinder
-#   gains:
-#     j_shou_yaw:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1
-#     j_shou_pitch:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1
-#     j_prox_pitch:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1
-#     j_dist_pitch:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1
-#     j_hand_yaw:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1
-#     j_grinder:
-#       p: 100
-#       d: 1
-#       i: 1
-#       i_clamp: 1

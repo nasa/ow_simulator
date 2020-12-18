@@ -6,25 +6,22 @@
 
 import constants
 import math
-import datetime
-import time
-import rospy
 from utils import is_shou_yaw_goal_in_range
 
-def arg_parsing(req): 
+
+def arg_parsing(req):
   """
   :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
   """
-  if req.use_defaults :
+  if req.use_defaults:
     # Default trenching values
-    target_x=2.0
-    target_y=0.0
-    target_z=0.3
-    direction_x=0.0
-    direction_y=0.0
-    direction_z=1.0
+    target_x = 2.0
+    target_y = 0.0
+    target_z = 0.3
+    direction_x = 0.0
+    direction_y = 0.0
+    direction_z = 1.0
     search_distance = 0.5
-
   else:
     target_x = req.x
     target_y = req.y
@@ -37,8 +34,8 @@ def arg_parsing(req):
   return [req.use_defaults, target_x, target_y, target_z,
           direction_x, direction_y, direction_z, search_distance]
 
-# Approach
-def pre_guarded_move(move_arm, args): 
+
+def pre_guarded_move(move_arm, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, float, float, float]
@@ -53,28 +50,30 @@ def pre_guarded_move(move_arm, args):
 
   # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
   targ_elevation = -0.2
-  if (targ_z+targ_elevation)==0:
+  if (targ_z+targ_elevation) == 0:
     offset = search_distance
   else:
     offset = (targ_z*search_distance)/(targ_z+targ_elevation)
 
   # Compute shoulder yaw angle to target
-  alpha = math.atan2( (targ_y+direction_y*offset)-constants.Y_SHOU, (targ_x+direction_x*offset)-constants.X_SHOU)
-  h = math.sqrt(pow( (targ_y+direction_y*offset)-constants.Y_SHOU,2) + pow( (targ_x+direction_x*offset)-constants.X_SHOU,2) )
+  alpha = math.atan2((targ_y+direction_y*offset)-constants.Y_SHOU,
+                     (targ_x+direction_x*offset)-constants.X_SHOU)
+  h = math.sqrt(pow((targ_y+direction_y*offset)-constants.Y_SHOU, 2) +
+                pow((targ_x+direction_x*offset)-constants.X_SHOU, 2))
   l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-  beta = math.asin (l/h)
+  beta = math.asin(l/h)
 
   # Move to pre move position, align shoulder yaw
   joint_goal = move_arm.get_current_joint_values()
   joint_goal[constants.J_DIST_PITCH] = 0
   joint_goal[constants.J_HAND_YAW] = 0
   joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-  joint_goal  [constants.J_SHOU_PITCH] = math.pi/2
+  joint_goal[constants.J_SHOU_PITCH] = math.pi/2
   joint_goal[constants.J_SHOU_YAW] = alpha + beta
 
   # If out of joint range, abort
   if (is_shou_yaw_goal_in_range(joint_goal) == False):
-     return False
+    return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   move_arm.go(joint_goal, wait=True)
@@ -88,8 +87,8 @@ def pre_guarded_move(move_arm, args):
   move_arm.set_pose_target(goal_pose)
   move_arm.set_max_velocity_scaling_factor(0.5)
   plan = move_arm.plan()
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-     return False
+  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
+    return False
 
   plan = move_arm.go(wait=True)
   move_arm.stop()
@@ -99,7 +98,8 @@ def pre_guarded_move(move_arm, args):
 
   return True
 
-def guarded_move(move_arm, args):       
+
+def guarded_move_plan(move_arm, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, float, float, float]
@@ -116,13 +116,5 @@ def guarded_move(move_arm, args):
   goal_pose.position.z -= direction_z*search_distance
   move_arm.set_pose_target(goal_pose)
   plan = move_arm.plan()
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
-    return False
-
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
-
   print "Done planning safe part of guarded_move"
-
-  return True
+  return plan
