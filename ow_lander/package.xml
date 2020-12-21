@@ -47,6 +47,7 @@
   <exec_depend>xacro</exec_depend>
   <exec_depend>message_generation</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
   <export>
     <architecture_independent />
   </export>

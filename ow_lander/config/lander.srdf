@@ -47,11 +47,11 @@
         <joint name="j_shou_yaw" value="0" />
     </group_state>
     <group_state name="arm_unstowed" group="arm">
-        <joint name="j_dist_pitch" value="0.7171" />
-        <joint name="j_hand_yaw" value="0" />
+        <joint name="j_dist_pitch" value="0" />
+        <joint name="j_hand_yaw" value="1.5707" />
         <joint name="j_prox_pitch" value="-1.5707" />
         <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="0.8537" />
+        <joint name="j_shou_pitch" value="1.5707" />
         <joint name="j_shou_yaw" value="0" />
     </group_state>
     <group_state name="arm_digging" group="arm">

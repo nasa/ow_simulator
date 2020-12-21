@@ -5,10 +5,15 @@
   <rosparam file="$(find ow_lander)/config/ros_controllers.yaml" command="load"/>
 
   <!-- Load the controllers -->
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" args="arm_controller antenna_controller"/>
-
   <node name="joint_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
 		output="screen" args="joint_state_controller" />
+
+  <!-- arm_controller is the default controller and is enabled by default -->
+  <node name="controller_spawner_active" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="arm_controller antenna_controller"/>
+
+  <!-- limbs_controller and grinder_controller is enabled only when needed -->
+  <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="--stopped limbs_controller grinder_controller"/>
 
 </launch>

@@ -82,6 +82,7 @@
   </node>
 
   <include file="$(find ow_lander)/launch/move_group.launch">
+    <arg name="load_robot_description" value="false"/>
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="false"/>
     <arg name="info" value="true"/>
@@ -93,5 +94,8 @@
     <arg name="rviz_config" value="$(find ow_lander)/config/moveit.rviz"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
+
+  <!-- == launch the path planner node ============== -->
+  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" />
 
 </launch>

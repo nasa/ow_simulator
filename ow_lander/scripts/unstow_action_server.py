@@ -21,6 +21,7 @@ import random
 
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
+from trajectory_async_execution import TrajectoryAsyncExecuter
 
 
 
@@ -39,12 +40,15 @@ class UnstowActionServer(object):
         self._current_state = JointStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 5.0
+        self.trajectory_async_executer = TrajectoryAsyncExecuter()
+        self.trajectory_async_executer.connect("arm_controller")
         
     
     def _check_state(self):
         #rate = rospy.Rate(1) # 10hz
         #while not rospy.is_shutdown():
-          self._xc = self._current_state.get_value()
+          #self._xc = self._current_state.get_value()
+          self._xc = self._current_state._state_value 
           self._fdbk.current_x = self._xc
           self._fdbk.current_y = self._xc
           self._fdbk.current_z = self._xc
@@ -53,7 +57,7 @@ class UnstowActionServer(object):
           #self._xc = (random.choice([1, 4, 8, 10, 3])) 
           #self._xc = (random.choice([1, 4, 8, 10, 3])) 
           #print (self._xc)
-          print "state update loop"
+          #print "state update loop"
         
     def _update_feedback(self):
         rate = rospy.Rate(1) # 10hz
@@ -68,10 +72,43 @@ class UnstowActionServer(object):
         
         
     def _update_motion(self):
-        activity_full_digging_traj.unstow(self._interface.move_arm)
+        #activity_full_digging_traj.unstow(self._interface.move_arm)
+        print("Unstow arm activity started")
+        goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
+        plan = self._interface.move_arm.plan(goal)
+        self._timeout = plan.time_from_start
+        #self._interface.move_arm.go(goal, wait=True)
+        #self._interface.move_arm.stop()
+        #print plan
+        return plan
+        
+    def stow_done(self, state, result):
+        """
+        :type state: int
+        :type result: FollowJointTrajectoryResult
+        """
+        #ground_detected = state == GoalStatus.PREEMPTED
+        #ground_position = self.ground_detector.ground_position if ground_detected else Point()
+        #rospy.loginfo("Ground Detected ? {}".format(ground_detected))
+        #self.guarded_move_pub.publish(
+            #ground_detected, 'base_link', ground_position)
+
+    def stow_feedback(self, feedback):
+        """
+        :type feedback: FollowJointTrajectoryFeedback
+        """
+        #if self.ground_detector.detect():
+            #self.trajectory_async_executer.stop()    
         
     def on_unstow_action(self,goal):
-        
+        plan = self._update_motion()
+        self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                           done_cb=None,
+                                           active_cb=None,
+                                           feedback_cb=self._check_state())
+            # To preserve the previous behaviour we are adding a blocking call till the
+            # execution of the trajectory is completed
+        #self.trajectory_async_executer.wait()
         # Record start time
         start_time = rospy.get_time()
         print "main loop"
@@ -83,33 +120,20 @@ class UnstowActionServer(object):
         success = True
 
         while ((now_from_start(start_time) < self._timeout)):# and not      rospy.is_shutdown()):
-            # start executing the action
-            if self._server.is_preempt_requested():
-                rospy.loginfo('%s: Preempted' % self._action_name)
-                self._server.set_preempted()
-                success = False
-                break
-            
-            self._check_state()
-            #self._update_feedback()
-            #self._update_mo-*tion()  
-            
-            #t1 = threading.Thread(target=self._check_state())
-            #t2 = threading.Thread(target=self._update_feedback())
-            t3 = threading.Thread(target=self._update_motion())
-            #t1.setDaemon(True)
-            #t2.setDaemon(True)
-            #t3.setDaemon(True)
-            #t2.start()
-            #activity_full_digging_traj.unstow(self._interface.move_arm)
-            #t1.start()
-            t3.start()
-            #t1.join()
-            #t2.join()
-            #t3.join()
-            
-        #for (k = 1:range(100)):
-            #k = k+1
+            ## start executing the action
+            #if self._server.is_preempt_requested():
+                #rospy.loginfo('%s: Preempted' % self._action_name)
+                #self._server.set_preempted()
+                #success = False
+                #break
+
+           self._check_state()
+           #print (type(self.trajectory_async_executer.wait()))
+           #print (self.trajectory_async_executer.wait())
+           
+        success = self.trajectory_async_executer.wait()
+        print ("balcher")
+        print success
             
         if success:
             self._result.final_x = self._fdbk.current_x
