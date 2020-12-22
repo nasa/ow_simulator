@@ -72,6 +72,8 @@ class TrajectoryAsyncExecuter:
     """
     if self._connected:
       self._client.wait_for_result(timeout=rospy.Duration(timeout))
+      
+    return True  
 
   def result(self):
     """
