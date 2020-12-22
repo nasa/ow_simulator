@@ -87,7 +87,7 @@ arm_controller:
     j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
     j_scoop_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
   # Time it takes to bring the current state (position and velocity) to a stop
-  stop_trajectory_duration: 1.0
+  stop_trajectory_duration: &traj_stop_duration 0.5
   gains:
     j_shou_yaw: 
       p: &j_shou_yaw_p 1000.0
@@ -140,7 +140,7 @@ limbs_controller:
     j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
     j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
   # Time it takes to bring the current state (position and velocity) to a stop
-  stop_trajectory_duration: 1.0
+  stop_trajectory_duration: *traj_stop_duration
   gains:
     j_shou_yaw: 
       p: *j_shou_yaw_p
@@ -190,7 +190,7 @@ grinder_controller:
     j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
     j_grinder: {trajectory: *traj_tolerance, goal: *goal_tolerance}
   # Time it takes to bring the current state (position and velocity) to a stop
-  stop_trajectory_duration: 1.0
+  stop_trajectory_duration: *traj_stop_duration
   gains:
     j_shou_yaw: 
       p: *j_shou_yaw_p
