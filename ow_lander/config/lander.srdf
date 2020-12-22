@@ -33,7 +33,7 @@
     <group_state name="arm_stowed" group="arm">
         <joint name="j_dist_pitch" value="2.9" />
         <joint name="j_hand_yaw" value="0" />
-        <joint name="j_prox_pitch" value="-2.75" />
+        <joint name="j_prox_pitch" value="-2.65" />
         <joint name="j_scoop_yaw" value="0" />
         <joint name="j_shou_pitch" value="1.5708" />
         <joint name="j_shou_yaw" value="-1.5" />
