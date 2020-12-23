@@ -192,10 +192,9 @@ def arg_parsing_circ(req):
   return [req.use_defaults, x_start, y_start, depth, parallel, ground_position]
 
 
-def dig_circular(move_arm, move_limbs, args, controller_switcher):
+def dig_circular(move_arm, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, int, float, bool, float]
   """
   x_start = args[1]
@@ -210,32 +209,21 @@ def dig_circular(move_arm, move_limbs, args, controller_switcher):
     return False
 
   if not parallel:
-
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
-    controller_switcher('limbs_controller', 'arm_controller')
-    go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
-    controller_switcher('arm_controller', 'limbs_controller')
-
+    go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
     # Rotate hand perpendicular to arm direction
     change_joint_value(move_arm, constants.J_HAND_YAW, -0.29*math.pi)
-
   else:
     # Rotate hand so scoop is in middle point
     change_joint_value(move_arm, constants.J_HAND_YAW, 0.0)
-
     # Rotate scoop
     change_joint_value(move_arm, constants.J_SCOOP_YAW, math.pi/2)
-
     # Rotate dist so scoop is back
     change_joint_value(move_arm, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
-
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
-    controller_switcher('limbs_controller', 'arm_controller')
-    go_to_Z_coordinate(move_limbs, x_start, y_start, z_start)
-    controller_switcher('arm_controller', 'limbs_controller')
-
+    go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
     # Rotate dist to dig
     joint_goal = move_arm.get_current_joint_values()
     dist_now = joint_goal[3]

@@ -177,34 +177,6 @@ antenna:
     - SPARStwo
   projection_evaluator: joints(j_ant_pan,j_ant_tilt)
   longest_valid_segment_fraction: 0.005
-limbs:
-  default_planner_config: RRTConnect
-  planner_configs:
-    - SBL
-    - EST
-    - LBKPIECE
-    - BKPIECE
-    - KPIECE
-    - RRT
-    - RRTConnect
-    - RRTstar
-    - TRRT
-    - PRM
-    - PRMstar
-    - FMT
-    - BFMT
-    - PDST
-    - STRIDE
-    - BiTRRT
-    - LBTRRT
-    - BiEST
-    - ProjEST
-    - LazyPRM
-    - LazyPRMstar
-    - SPARS
-    - SPARStwo
-  projection_evaluator: joints(j_shou_yaw,j_shou_pitch)
-  longest_valid_segment_fraction: 0.005
 grinder:
   default_planner_config: RRTstar
   planner_configs:

@@ -15,9 +15,6 @@
     <group name="antenna">
         <chain base_link="base_link" tip_link="l_ant_panel" />
     </group>
-    <group name="limbs">
-        <chain base_link="base_link" tip_link="l_hand" />
-    </group>
     <group name="grinder">
         <chain base_link="base_link" tip_link="l_grinder" />
     </group>

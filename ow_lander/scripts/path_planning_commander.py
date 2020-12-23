@@ -28,7 +28,6 @@ class PathPlanningCommander(object):
     super(PathPlanningCommander, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
     self.arm_move_group = moveit_commander.MoveGroupCommander("arm", wait_for_servers=10.0)
-    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=10.0)
     self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=10.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
 
@@ -77,9 +76,7 @@ class PathPlanningCommander(object):
     dig_circular_args = activity_full_digging_traj.arg_parsing_circ(req)
     success = activity_full_digging_traj.dig_circular(
         self.arm_move_group,
-        self.limbs_move_group,
-        dig_circular_args,
-        self.switch_controllers)
+        dig_circular_args)
     print("Dig Circular arm activity completed")
     return success, "Done"
 
@@ -113,7 +110,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Grind.GrindRequest'
     """
-    print("Grinde arm activity started")
+    print("Grind arm activity started")
     grind_args = activity_grind.arg_parsing(req)
     success = self.switch_controllers('grinder_controller', 'arm_controller')
     if not success:
@@ -122,7 +119,7 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    print("Grinde arm activity completed")
+    print("Grind arm activity completed")
     return success, "Done"
 
   def handle_guarded_move_done(self, state, result):
