@@ -209,7 +209,11 @@ def arg_parsing_circ(req):
 
   return [req.use_defaults, x_start, y_start, depth, parallel, ground_position]
 
-
+# During dig_circular, the code alternates between arm and limbs controller,
+# RRTConnect planner quite often reports a problem of being "Unable to sample any
+#  valid states for goal". Due to the error, the code employs `go_to_Z_cartesian`
+# instead of `go_to_Z_coordinate` which avoid this issue. For more background
+# refer to https://github.com/nasa/ow_simulator/pull/59
 def dig_circular(move_arm, move_limbs, args, controller_switcher):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
