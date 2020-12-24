@@ -103,7 +103,7 @@ class PathPlanningCommander(object):
       switch_controller = rospy.ServiceProxy(
           '/controller_manager/switch_controller', SwitchController)
       success = switch_controller(
-          [start_controller], [stop_controller], 2, False, 1.0)
+          [start_controller], [stop_controller], 2, True, 0.0)
     except rospy.ServiceException, e:
       print("switch_controllers error: %s" % e)
     finally:
