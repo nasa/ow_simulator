@@ -231,6 +231,8 @@ def dig_circular(move_arm, move_limbs, args, controller_switcher):
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
     controller_switcher('limbs_controller', 'arm_controller')
+    z_now = move_limbs.get_current_pose().pose.position.z
+    go_to_Z_coordinate(move_limbs, x_start, y_start, z_now)
     go_to_Z_cartesian(move_limbs, z_start)
     controller_switcher('arm_controller', 'limbs_controller')
     # Rotate hand perpendicular to arm direction
@@ -245,6 +247,8 @@ def dig_circular(move_arm, move_limbs, args, controller_switcher):
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
     controller_switcher('limbs_controller', 'arm_controller')
+    z_now = move_limbs.get_current_pose().pose.position.z
+    go_to_Z_coordinate(move_limbs, x_start, y_start, z_now)
     go_to_Z_cartesian(move_limbs, z_start)
     controller_switcher('arm_controller', 'limbs_controller')
     # Rotate dist to dig
