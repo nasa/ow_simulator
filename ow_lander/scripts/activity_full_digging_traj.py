@@ -23,7 +23,7 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
   goal_pose.position.z = z_start
-  move_group.set_pose_target(goal_pose)
+  move_group.set_joint_value_target(goal_pose, True)
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
