@@ -23,6 +23,9 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
   goal_pose.position.z = z_start
+  # Ask the planner to generate a plan to the approximate joint values generated
+  # by kinematics builtin IK solver. For more insight on this issue refer to:
+  # https://github.com/nasa/ow_simulator/pull/60 
   move_group.set_joint_value_target(goal_pose, True)
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
