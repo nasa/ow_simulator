@@ -22,8 +22,6 @@ def arg_parsing(req):
     length = 0.6
     parallel = True
     ground_position = constants.DEFAULT_GROUND_HEIGHT
-    delete_prev_traj = False
-
   else :
     x_start = req.x
     y_start = req.y
@@ -31,9 +29,8 @@ def arg_parsing(req):
     length = req.length
     parallel = req.parallel
     ground_position = req.ground_position
-    delete_prev_traj = req.delete_prev_traj
 
-  return [req.use_defaults, x_start, y_start, depth, length, parallel, ground_position, delete_prev_traj]
+  return [req.use_defaults, x_start, y_start, depth, length, parallel, ground_position]
 
 def plan_cartesian_path(move_group, length, alpha, parallel):   
   """
@@ -58,10 +55,8 @@ def plan_cartesian_path(move_group, length, alpha, parallel):
 
   return plan, fraction
 
-def grind(move_arm, move_limbs, move_grinder, args):          
+def grind(move_grinder, args):          
   """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander' 
-  :type move_limbs: class 'moveit_commander.move_group.MoveGroupCommander' 
   :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float, float, bool, float, bool]
   """

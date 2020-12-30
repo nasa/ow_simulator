@@ -1,8 +1,8 @@
-# MoveIt-specific simulation settings
+# Simulation settings for using moveit_sim_controllers
 moveit_sim_hw_interface:
-  joint_model_group: controllers_initial_group_
-  joint_model_group_pose: controllers_initial_pose_
-# Settings for ros_control control loop
+  joint_model_group: arm
+  joint_model_group_pose: default_pose
+# Settings for ros_control_boilerplate control loop
 generic_hw_control_loop:
   loop_hz: 300
   cycle_time_error_threshold: 0.01
@@ -16,8 +16,8 @@ hardware_interface:
     - j_prox_pitch
     - j_dist_pitch
     - j_hand_yaw
-    - j_scoop_yaw
     - j_grinder
+    - j_scoop_yaw
   sim_control_mode: 1  # 0: position, 1: velocity
 # Publish all joint states
 # Creates the /joint_states topic necessary in ROS
@@ -25,17 +25,10 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
 controller_list:
-  - name: antenna_controller
-    action_ns: follow_joint_trajectory
-    default: True
-    type: FollowJointTrajectory
-    joints:
-      - j_ant_pan
-      - j_ant_tilt
   - name: arm_controller
     action_ns: follow_joint_trajectory
-    default: True
     type: FollowJointTrajectory
+    default: true
     joints:
       - j_shou_yaw
       - j_shou_pitch
@@ -43,9 +36,18 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
+  - name: limbs_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - j_shou_yaw
+      - j_shou_pitch
+      - j_prox_pitch
+      - j_dist_pitch
+      - j_hand_yaw
   - name: grinder_controller
     action_ns: follow_joint_trajectory
-    default: True
     type: FollowJointTrajectory
     joints:
       - j_shou_yaw
@@ -54,3 +56,170 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_grinder
+ant_pan_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_pan
+  pid: {p: 100.0, i: 0.01, d: 15.0}
+ant_tilt_position_controller:
+  type: effort_controllers/JointPositionController
+  joint: j_ant_tilt
+  pid: {p: 550.0, i: 0.01, d: 70.0}
+arm_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+    - j_scoop_yaw
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_shou_yaw: {trajectory: &traj_tolerance 0.5, goal: &goal_tolerance 0.1}
+    j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_scoop_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: &traj_stop_duration 0.5
+  gains:
+    j_shou_yaw: 
+      p: &j_shou_yaw_p 1000.0
+      d: &j_shou_yaw_d 300.0
+      i: &j_shou_yaw_i 10.0
+      i_clamp: &ki_clamp_default 2
+    j_shou_pitch:
+      p: &j_shou_pitch_p 2000.0
+      d: &j_shou_pitch_d 150.0
+      i: &j_shou_pitch_i 0.2
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: &j_prox_pitch_p 1100.0
+      d: &j_prox_pitch_d 100.0
+      i: &j_prox_pitch_i 2.0
+      i_clamp: 1
+    j_dist_pitch:
+      p: &j_dist_pitch_p 700.0
+      d: &j_dist_pitch_d 20.0
+      i: &j_dist_pitch_i 0.06
+      i_clamp: 1
+    j_hand_yaw:
+      p: &j_hand_yaw_p 100.0
+      d: &j_hand_yaw_d 10.0
+      i: &j_hand_yaw_i 0.01
+      i_clamp: 1
+    j_scoop_yaw:
+      p: 100.0
+      d: 10.0
+      i: 0.01
+      i_clamp: 1
+limbs_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_shou_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: *traj_stop_duration
+  gains:
+    j_shou_yaw: 
+      p: *j_shou_yaw_p
+      d: *j_shou_yaw_d
+      i: *j_shou_yaw_i
+      i_clamp: *ki_clamp_default
+    j_shou_pitch:
+      p: *j_shou_pitch_p
+      d: *j_shou_pitch_d
+      i: *j_shou_pitch_i
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: *j_prox_pitch_p
+      d: *j_prox_pitch_d
+      i: *j_prox_pitch_i
+      i_clamp: 1
+    j_dist_pitch:
+      p: *j_dist_pitch_p
+      d: *j_dist_pitch_d
+      i: *j_dist_pitch_i
+      i_clamp: 1
+    j_hand_yaw:
+      p: *j_hand_yaw_p
+      d: *j_hand_yaw_d
+      i: *j_hand_yaw_i
+      i_clamp: 1
+grinder_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_shou_yaw
+    - j_shou_pitch
+    - j_prox_pitch
+    - j_dist_pitch
+    - j_hand_yaw
+    - j_grinder
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_shou_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_hand_yaw: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_grinder: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: *traj_stop_duration
+  gains:
+    j_shou_yaw: 
+      p: *j_shou_yaw_p
+      d: *j_shou_yaw_d
+      i: *j_shou_yaw_i
+      i_clamp: *ki_clamp_default
+    j_shou_pitch:
+      p: *j_shou_pitch_p
+      d: *j_shou_pitch_d
+      i: *j_shou_pitch_i
+      i_clamp: *ki_clamp_default
+    j_prox_pitch:
+      p: *j_prox_pitch_p
+      d: *j_prox_pitch_d
+      i: *j_prox_pitch_i
+      i_clamp: 1
+    j_dist_pitch:
+      p: *j_dist_pitch_p
+      d: *j_dist_pitch_d
+      i: *j_dist_pitch_i
+      i_clamp: 1
+    j_hand_yaw:
+      p: *j_hand_yaw_p
+      d: *j_hand_yaw_d
+      i: *j_hand_yaw_i
+      i_clamp: 1
+    j_grinder:
+      p: 10.0
+      d: 1.0
+      i: 0.01
+      i_clamp: 1
+

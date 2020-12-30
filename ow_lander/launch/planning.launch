@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
+  <!-- specify the planning pipeline -->
+  <arg name="pipeline" default="ompl" />
+  
   <!-- Stowed arm joint positions -->
   <arg name="stowed_shou_yaw" default="0" />
   <arg name="stowed_shou_pitch" default="0" />
@@ -8,11 +11,12 @@
   <arg name="stowed_dist_pitch" default="0" />
   <arg name="stowed_hand_yaw" default="0" />
   <arg name="stowed_scoop_yaw" default="0" />
-  <arg name="stowed_grinder_yaw" default="0.0" />
+  <arg name="stowed_grinder_yaw" default="0" />
 
   <group ns="planning">
     <arg name="debug" default="false" />
     <arg name="use_gui" default="false" />
+    <arg name="use_rviz" default="true" />
 
     <include file="$(find ow_lander)/launch/planning_context.launch">
       <arg name="load_robot_description" value="true"/>
@@ -27,9 +31,11 @@
       <param name="zeros/j_hand_yaw" value="$(arg stowed_hand_yaw)"/>
       <param name="zeros/j_scoop_yaw" value="$(arg stowed_scoop_yaw)"/>
       <param name="zeros/j_grinder" value="$(arg stowed_grinder_yaw)"/>
-
       <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
     </node>
+
+    <!-- Given the published joint states, publish tf for the robot links -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
     <!-- == movegroup, used to control the arm ========== -->
     <include file="$(find ow_lander)/launch/move_group.launch">
@@ -37,21 +43,14 @@
       <arg name="fake_execution" value="true"/>
       <arg name="info" value="true"/>
       <arg name="debug" value="$(arg debug)"/>
+      <arg name="pipeline" value="$(arg pipeline)"/>
     </include>
 
-    <!-- == launch arm specific rviz ============== -->
-    <include file="$(find ow_lander)/launch/arm_sim_rviz.launch">
-      <arg name="config" value="true"/>
+    <!-- Run Rviz and load the default config to see the state of the move_group node -->
+    <include file="$(find ow_lander)/launch/moveit_rviz.launch" if="$(arg use_rviz)">
+      <arg name="rviz_config" value="$(find ow_lander)/config/moveit.rviz"/>
       <arg name="debug" value="$(arg debug)"/>
     </include>
-
-    <!-- == launch the path planner node ============== -->
-    <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen">
-    </node>
-
-    <!-- == launch the trajectory publishing node ========= -->
-    <node pkg="ow_lander" name="trajectory_publisher" type="trajectory_publisher.py" output="screen">
-    </node>
 
   </group>
 
