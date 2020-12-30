@@ -90,7 +90,7 @@ arm_controller:
   stop_trajectory_duration: &traj_stop_duration 0.5
   gains:
     j_shou_yaw: 
-      p: &j_shou_yaw_p 8000.0
+      p: &j_shou_yaw_p 9000.0
       d: &j_shou_yaw_d 300.0
       i: &j_shou_yaw_i 10.0
       i_clamp: &ki_clamp_default 2
