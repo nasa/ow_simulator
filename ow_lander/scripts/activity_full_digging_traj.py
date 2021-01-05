@@ -30,7 +30,7 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
   # https://github.com/nasa/ow_simulator/pull/60
   if approximate:
     move_group.set_joint_value_target(goal_pose, True)
-  else
+  else:
     move_group.set_pose_target(goal_pose)
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
