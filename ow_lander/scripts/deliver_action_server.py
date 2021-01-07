@@ -21,6 +21,8 @@ import math
 import constants
 import utils
 import activity_full_digging_traj
+import action_deliver_sample
+#from action_deliver_sample import deliver_sample
 
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
@@ -29,11 +31,11 @@ from trajectory_async_execution import TrajectoryAsyncExecuter
 
 
 
-class UnstowActionServer(object):
+class DeliverActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.UnstowAction, execute_cb=self.on_unstow_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.DeliverAction, execute_cb=self.on_deliver_action, auto_start = False)
         self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
@@ -57,11 +59,12 @@ class UnstowActionServer(object):
 
         
         
-    def _update_motion(self):
+    def _update_motion(self, goal):
         #activity_full_digging_traj.unstow(self._interface.move_arm)
-        print("Unstow arm activity started")
-        goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        plan = self._interface.move_arm.plan(goal)
+        print("Deliver sample activity started")
+        #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
+        plan =  action_deliver_sample.deliver_sample(self._interface.move_arm,goal)
+        #plan = self._interface.move_arm.plan(goal)
         n_points = len(plan.joint_trajectory.points)
         start_time =   plan.joint_trajectory.points[0].time_from_start
         end_time = plan.joint_trajectory.points[n_points-1].time_from_start
@@ -70,8 +73,8 @@ class UnstowActionServer(object):
         
 
         
-    def on_unstow_action(self,goal):
-        plan = self._update_motion()
+    def on_deliver_action(self,goal):
+        plan = self._update_motion(goal)
         success = False
 
         self.trajectory_async_executer.execute(plan.joint_trajectory,
@@ -101,8 +104,8 @@ class UnstowActionServer(object):
             self._server.set_succeeded(self._result)
     
 if __name__ == '__main__':
-    rospy.init_node('Unstow')
-    server = UnstowActionServer(rospy.get_name())
+    rospy.init_node('Deliver')
+    server = DeliverActionServer(rospy.get_name())
     rospy.spin()
         
   

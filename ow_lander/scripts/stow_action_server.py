@@ -59,8 +59,8 @@ class UnstowActionServer(object):
         
     def _update_motion(self):
         #activity_full_digging_traj.unstow(self._interface.move_arm)
-        print("Unstow arm activity started")
-        goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
+        print("Stow arm activity started")
+        goal = self._interface.move_arm.get_named_target_values("arm_stowed")
         plan = self._interface.move_arm.plan(goal)
         n_points = len(plan.joint_trajectory.points)
         start_time =   plan.joint_trajectory.points[0].time_from_start
@@ -101,7 +101,7 @@ class UnstowActionServer(object):
             self._server.set_succeeded(self._result)
     
 if __name__ == '__main__':
-    rospy.init_node('Unstow')
+    rospy.init_node('Stow')
     server = UnstowActionServer(rospy.get_name())
     rospy.spin()
         

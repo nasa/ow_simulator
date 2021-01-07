@@ -15,6 +15,7 @@ import geometry_msgs.msg
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+from gazebo_msgs.msg import LinkStates
 import math
 import constants
 from sensor_msgs.msg import JointState
@@ -68,3 +69,18 @@ class JointStateSubscriber:
     
   def get_value(self):
       return self._state_value
+  
+class LinkStateSubscriber:
+    
+  def __init__(self):
+    self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
+    self._link_value = None
+    
+    
+  def _handle_link_states(self, data):
+    """
+    :type data: gazebo_msgs.msg._LinkStates.LinkStates
+    """
+    idx = data.name.index("lander::l_scoop_tip")
+    self._link_value = (data.pose[idx].position)
+  
