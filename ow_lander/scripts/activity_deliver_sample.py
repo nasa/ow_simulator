@@ -4,35 +4,35 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import math
-import copy
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
-from moveit_msgs.msg import RobotState, Constraints, OrientationConstraint, PositionConstraint
+from moveit_msgs.msg import PositionConstraint
 from geometry_msgs.msg import Quaternion
-from geometry_msgs.msg import Vector3
 from shape_msgs.msg import SolidPrimitive
 
+
 def arg_parsing(req):
-  if req.use_defaults :
+  """
+  :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+  """
+  if req.use_defaults:
     # Default trenching values
-    x_delivery=0.55
-    y_delivery=-0.3
-    z_delivery=0.82 # was .78
-    delete_prev_traj=False
+    x_delivery = 0.55
+    y_delivery = -0.3
+    z_delivery = 0.82  # was .78
+  else:
+    x_delivery = req.x
+    y_delivery = req.y
+    z_delivery = req.z
 
-  else :
-    x_delivery=req.x
-    y_delivery=req.y
-    z_delivery=req.z
-    delete_prev_traj=req.delete_prev_traj
-
-  return [req.use_defaults, x_delivery, y_delivery, z_delivery, delete_prev_traj]
-
+  return [req.use_defaults, x_delivery, y_delivery, z_delivery]
 
 
 def deliver_sample(move_arm, args):
-
+  """
+  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type args: List[bool, float, float, float]
+  """
   move_arm.set_planner_id("RRTstar")
 
   x_delivery = args[1]
@@ -45,7 +45,7 @@ def deliver_sample(move_arm, args):
   r2d = 180/mypi
 
   goal_pose = move_arm.get_current_pose().pose
-  #position was found from rviz tool
+  # position was found from rviz tool
   goal_pose.position.x = x_delivery
   goal_pose.position.y = y_delivery
   goal_pose.position.z = z_delivery
@@ -61,13 +61,13 @@ def deliver_sample(move_arm, args):
 
   plan = move_arm.plan()
 
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
   plan = move_arm.go(wait=True)
   move_arm.stop()
 
-  ###rotate scoop to deliver sample at current location...
+  # rotate scoop to deliver sample at current location...
 
   # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
   pos_constraint = PositionConstraint()
@@ -75,25 +75,28 @@ def deliver_sample(move_arm, args):
   pos_constraint.link_name = "l_scoop"
   pos_constraint.target_point_offset.x = 0.1
   pos_constraint.target_point_offset.y = 0.1
-  pos_constraint.target_point_offset.z = 0.1  ###rotate scoop to deliver sample at current location begin
-  pos_constraint.constraint_region.primitives.append(SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+  # rotate scoop to deliver sample at current location begin
+  pos_constraint.target_point_offset.z = 0.1
+  pos_constraint.constraint_region.primitives.append(
+      SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
   pos_constraint.weight = 1
 
-  #using euler angles for own verification..
+  # using euler angles for own verification..
 
   r = +180
   p = 90  # 45 worked get
   y = -90
   q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
   goal_pose = move_arm.get_current_pose().pose
-  rotation = (goal_pose.orientation.x, goal_pose.orientation.y, goal_pose.orientation.z, goal_pose.orientation.w)
+  rotation = (goal_pose.orientation.x, goal_pose.orientation.y,
+              goal_pose.orientation.z, goal_pose.orientation.w)
   euler_angle = euler_from_quaternion(rotation)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   move_arm.set_pose_target(goal_pose)
   plan = move_arm.plan()
 
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
   plan = move_arm.go(wait=True)

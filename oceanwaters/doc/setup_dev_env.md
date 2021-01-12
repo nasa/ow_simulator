@@ -41,36 +41,35 @@ In the following instructions, we assume the default command shell is Bash.
 
 ### PLEXIL
 
-The OceanWATERS distribution includes an autonomy module (ow_autonomy) that at present
+The OceanWATERS distribution includes an autonomy module (`ow_autonomy`) that at present
 depends on PLEXIL, an open-source plan authoring language and autonomy executive (see
 [*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).  PLEXIL must be installed
-*prior* to building OceanWATERS.
+*prior* to building the `ow_autonomy` package.
 
 PLEXIL is hosted on sourceforge.net, which provides both source code and binary
-distributions. Because OceanWATERS requires a specific version of PLEXIL, PLEXIL
-should be built from source code.
+distributions. PLEXIL should be built from source code, as the binary
+distributions on sourceforge.net are not always kept up to date.
 
 * Check out the source code:
 ```
 git clone https://git.code.sf.net/p/plexil/git plexil
 ```
 
-The default git branch is releases/plexil-4, which is the latest stable version
+The default git branch is `releases/plexil-4`, which is the latest stable version
 of PLEXIL.  On rare occasions the latest version of this branch won't be
 compatible with OceanWATERS and you will need to check out a particular commit.
 We plan to simplify the workflow needed to keep these two software systems compatible.
 
-* UNTIL FURTHER NOTICE (i.e. the absence of this step), check out an older
-  commit of PLEXIL that supports OceanWATERS.  The newest version of the
-  releases/plexil-4 branch will not work.
+NOTE: The current release of OceanWATERS was tested with the git tag
+`2020-11-17` of PLEXIL's `releases/plexil-4` branch, though it should work with
+the head of this branch.  If you encounter problems, please revert to the
+`2020-11-17` tag and contact the OceanWATERS team.
 
-```
-git checkout 51813f1
-```
+* Install any of the following build prerequisites needed. If you're not sure
+which are missing, try the build, see where it breaks, and install new packages
+as you go. All of the following may be installed with: `sudo apt install
+<package-name>`
 
-* Install any of the following build prerequisites needed. If you're not sure,
-try the build, see where it breaks, and install new packages as you go. All of
-the following may be installed with: `sudo apt install <package-name>`
 ```
 sudo apt install make \
                  autotools-dev \
@@ -82,19 +81,23 @@ sudo apt install make \
                  openjdk-8-jdk
 ```
 
-* Add the following lines to your ~/.bashrc file, using your actual location of
-plexil in the first line:
+* Define the `PLEXIL_HOME` environment variable as the location of your PLEXIL
+  installation, e.g.
+
 ```
 export PLEXIL_HOME=/home/<username>/plexil
+```
+
+* Source the PLEXIL initialization file:
+```
 source $PLEXIL_HOME/scripts/plexil-setup.sh
 ```
 
-* Source your shell init file.
-```
-source ~/.bashrc
-```
+NOTE: for convenience, you may wish to add the previous two commands to your
+shell initialization file (e.g. `.profile`), since they are needed every time
+you use PLEXIL or the `ow_autonomy` package.
 
-* Configure for the build as needed for OceanWATERS.
+* Configure PLEXIL for the build:
 ```
 cd $PLEXIL_HOME
 make src/configure
@@ -102,7 +105,7 @@ cd src
 ./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc
 ```
 
-* Build it.
+* Build PLEXIL.
 ```
 cd $PLEXIL_HOME
 make

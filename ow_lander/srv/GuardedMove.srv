@@ -1,5 +1,4 @@
 bool use_defaults           # Set to true to use the default touch location
-bool delete_prev_traj       # Set to true to cleanup ~/.ros
 float32 x                   # x,y,z coordinates of guarded move starting point
 float32 y
 float32 z
@@ -7,7 +6,6 @@ float32 direction_x         # x,y,z coordinates of the vector normal to the
 float32 direction_y         # surface to be approached (direction of approach)
 float32 direction_z
 float32 search_distance     # How deep along normal vector the scoop moves
-
 ---
 bool success
 string message

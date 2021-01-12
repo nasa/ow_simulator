@@ -35,6 +35,7 @@ planner_configs:
     type: geometric::RRTstar
     range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
     goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
+    optimization_objective: MechanicalWorkOptimizationObjective # Optimizer minimizes the mechanical effort
     delay_collision_checking: 1  # Stop collision checking as soon as C-free parent found. default 1
   TRRT:
     type: geometric::TRRT
@@ -121,7 +122,7 @@ planner_configs:
     dense_delta_fraction: 0.001  # delta fraction for interface detection. default: 0.001
     max_failures: 5000  # maximum consecutive failure limit. default: 5000
 arm:
-  default_planner_config: None
+  default_planner_config: RRTConnect
   planner_configs:
     - SBL
     - EST
@@ -149,7 +150,7 @@ arm:
   projection_evaluator: joints(j_shou_yaw,j_shou_pitch)
   longest_valid_segment_fraction: 0.005
 antenna:
-  default_planner_config: None
+  default_planner_config: RRTConnect
   planner_configs:
     - SBL
     - EST
@@ -177,7 +178,7 @@ antenna:
   projection_evaluator: joints(j_ant_pan,j_ant_tilt)
   longest_valid_segment_fraction: 0.005
 limbs:
-  default_planner_config: None
+  default_planner_config: RRTConnect
   planner_configs:
     - SBL
     - EST
@@ -202,6 +203,8 @@ limbs:
     - LazyPRMstar
     - SPARS
     - SPARStwo
+  projection_evaluator: joints(j_shou_yaw,j_shou_pitch)
+  longest_valid_segment_fraction: 0.005
 grinder:
   default_planner_config: RRTstar
   planner_configs:
@@ -228,3 +231,5 @@ grinder:
     - LazyPRMstar
     - SPARS
     - SPARStwo
+  projection_evaluator: joints(j_shou_yaw,j_shou_pitch)
+  longest_valid_segment_fraction: 0.005
