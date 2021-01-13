@@ -158,8 +158,8 @@
       <!-- TODO: Figure out why lens flare is causing black camera images. -->
       <!--plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/-->
       <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
-        <exposure>0.02</exposure>
-        <energy_conversion>0.01625</energy_conversion>
+        <exposure>0.05</exposure>
+        <energy_conversion>0.005</energy_conversion>
       </plugin>
     </sensor>
   </gazebo>  

@@ -1,7 +1,9 @@
-rate: 2.5 
 controller_list:
+  - name: fake_antenna_controller
+    joints:
+      - j_ant_pan
+      - j_ant_tilt
   - name: fake_arm_controller
-    type: interpolate
     joints:
       - j_shou_yaw
       - j_shou_pitch
@@ -9,10 +11,6 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_scoop_yaw
-  - name: fake_antenna_controller
-    joints:
-      - j_ant_pan
-      - j_ant_tilt
   - name: fake_limbs_controller
     joints:
       - j_shou_yaw
@@ -28,3 +26,6 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_grinder
+initial:  # Define initial robot poses.
+  - group: arm
+    pose: default_pose

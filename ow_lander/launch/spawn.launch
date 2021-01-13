@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="debug" default="false" />
+  <arg name="use_gui" default="false" />
+
   <!-- Initial lander pose arguments -->
   <arg name="init_x" default="0" />
   <arg name="init_y" default="0" />
@@ -14,7 +17,7 @@
   <!-- These values should not be duplicated elsewhere, as that would lead to code maintainability problems. -->
   <arg name="stowed_shou_yaw" default="-1.5" />
   <arg name="stowed_shou_pitch" default="1.5708" />
-  <arg name="stowed_prox_pitch" default="-2.75" />
+  <arg name="stowed_prox_pitch" default="-2.65" />
   <arg name="stowed_dist_pitch" default="2.9" />
   <arg name="stowed_hand_yaw" default="0.0" />
   <arg name="stowed_scoop_yaw" default="0.0" />
@@ -33,24 +36,6 @@
   <param name="robot_description"
     command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'
     freeze_base_link:=$(arg freeze_base_link)"/>
-
-  <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find ow_lander)/config/lander_control.yaml" command="load" />
-
-  <!-- load the controllers -->
-  <node name="controller_spawner" pkg="controller_manager" type="spawner"
-    respawn="false" output="screen" ns="/" args="joint_state_controller
-    shou_yaw_position_controller shou_pitch_position_controller
-    prox_pitch_position_controller dist_pitch_position_controller
-    hand_yaw_position_controller scoop_yaw_position_controller
-    ant_pan_position_controller ant_tilt_position_controller
-     grinder_yaw_position_controller"/> 
-   
-
-  <!-- Convert joint states from Gazebo to tf-tree for rviz -->
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
-    <param name="publish_frequency" value="30"/>
-  </node>
 
   <!-- Spawn lander in gazebo with the arm in a stowed pose -->
   <!-- -J (initial joint position) must affect joints *and* controllers. Due to
@@ -71,6 +56,24 @@
     -J j_grinder $(arg stowed_grinder_yaw)
     -unpause" />
 
+  <include file="$(find ow_lander)/launch/ros_controllers.launch"/>
+
+  <!-- Load the URDF, SRDF and other .yaml configuration files on the param server -->
+  <include file="$(find ow_lander)/launch/planning_context.launch">
+    <arg name="load_robot_description" value="false"/>
+  </include>
+
+  <!-- We do not have a robot connected, so publish fake joint states -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="$(arg use_gui)"/>
+    <rosparam param="source_list">[/joint_states]</rosparam>
+  </node>
+
+  <!-- Convert joint states from Gazebo to tf-tree for rviz -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+    <param name="publish_frequency" value="30"/>
+  </node>
+
   <!-- Convert stereo images to point clouds -->
   <!-- disparity_range = (img_width * stereo_baseline) / (estimated_nearest_obj_dist * 2 * tan(hfov / 2)) -->
   <!-- Instead of using above formulaa, disparity_range was determined empirically using dynamic_reconfigure. -->
@@ -78,15 +81,21 @@
     <param name="disparity_range" type="int" value="672"/>
   </node>
 
-  <!-- Start arm trajectory planning ======== -->
-  <include file="$(find ow_lander)/launch/planning.launch">
-    <arg name="stowed_shou_yaw" value="$(arg stowed_shou_yaw)" />
-    <arg name="stowed_shou_pitch" value="$(arg stowed_shou_pitch)" />
-    <arg name="stowed_prox_pitch" value="$(arg stowed_prox_pitch)" />
-    <arg name="stowed_dist_pitch" value="$(arg stowed_dist_pitch)" />
-    <arg name="stowed_hand_yaw" value="$(arg stowed_hand_yaw)" />
-    <arg name="stowed_scoop_yaw" value="$(arg stowed_scoop_yaw)" />
-    <arg name="stowed_grinder_yaw" value="$(arg stowed_grinder_yaw)" />
+  <include file="$(find ow_lander)/launch/move_group.launch">
+    <arg name="load_robot_description" value="false"/>
+    <arg name="allow_trajectory_execution" value="true"/>
+    <arg name="fake_execution" value="false"/>
+    <arg name="info" value="true"/>
+    <arg name="debug" value="$(arg debug)"/>
   </include>
+
+  <!-- Run Rviz and load the default config to see the state of the move_group node -->
+  <include file="$(find ow_lander)/launch/moveit_rviz.launch">
+    <arg name="rviz_config" value="$(find ow_lander)/config/moveit.rviz"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
+
+  <!-- == launch the path planner node ============== -->
+  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" />
 
 </launch>
