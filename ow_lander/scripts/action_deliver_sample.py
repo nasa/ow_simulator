@@ -154,6 +154,7 @@ def deliver_sample(move_arm, robot, args):
   cs = robot.get_current_state()
 
   # adding antenna state and grinder state  to the robot states.
+  # grider state obstained from rviz
   
   new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
   
@@ -163,20 +164,17 @@ def deliver_sample(move_arm, robot, args):
   move_arm.set_start_state(cs)
   
   
-  rotation = (goal_pose.orientation.x, goal_pose.orientation.y,
-              goal_pose.orientation.z, goal_pose.orientation.w)
-  euler_angle = euler_from_quaternion(rotation)
+  #rotation = (goal_pose.orientation.x, goal_pose.orientation.y,
+              #goal_pose.orientation.z, goal_pose.orientation.w)
+  #euler_angle = euler_from_quaternion(rotation)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
-  #position vlue obtained from rviz scopp
+  #position value obtained from rviz scoop
   goal_pose.position.x = 0.55127
   goal_pose.position.y = -0.4213
   goal_pose.position.z = 0.77815
   
-  #goal_pose.position.x = 0.54986
-  #goal_pose.position.y = -0.2999
-  #goal_pose.position.z = 0.81915
   move_arm.set_pose_target(goal_pose)
   plan_b = move_arm.plan()
 
