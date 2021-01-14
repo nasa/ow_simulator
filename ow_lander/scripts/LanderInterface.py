@@ -35,10 +35,11 @@ class MoveItInterface(object):
     move_arm = moveit_commander.MoveGroupCommander("arm")
     move_limbs = moveit_commander.MoveGroupCommander("limbs")
     move_grinder = moveit_commander.MoveGroupCommander("grinder")
-    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',moveit_msgs.msg.DisplayTrajectory, queue_size=20)
+    #display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',moveit_msgs.msg.DisplayTrajectory, queue_size=20)
     self.move_arm = move_arm
     self.move_limbs = move_limbs
     self.move_grinder = move_grinder
+    self.robot = robot
     
     
 class JointStateSubscriber:

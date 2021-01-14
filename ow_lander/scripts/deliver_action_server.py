@@ -28,6 +28,7 @@ from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
+from moveit_msgs.msg import RobotTrajectory
 
 
 
@@ -46,6 +47,7 @@ class DeliverActionServer(object):
         self._timeout = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
+        self.deliver_sample_traj = RobotTrajectory()
         
     
     def _update_feedback(self):
@@ -63,13 +65,14 @@ class DeliverActionServer(object):
         #activity_full_digging_traj.unstow(self._interface.move_arm)
         print("Deliver sample activity started")
         #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        plan =  action_deliver_sample.deliver_sample(self._interface.move_arm,goal)
+        #plan =  
+        self.deliver_sample_traj  = action_deliver_sample.deliver_sample(self._interface.move_arm,self._interface.robot, goal)
         #plan = self._interface.move_arm.plan(goal)
-        n_points = len(plan.joint_trajectory.points)
-        start_time =   plan.joint_trajectory.points[0].time_from_start
-        end_time = plan.joint_trajectory.points[n_points-1].time_from_start
+        n_points = len(self.deliver_sample_traj.joint_trajectory.points)
+        start_time =   self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
+        end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
         self._timeout = end_time -start_time
-        return plan
+        #return self.deliver_sample_traj
         
 
         
@@ -77,7 +80,7 @@ class DeliverActionServer(object):
         plan = self._update_motion(goal)
         success = False
 
-        self.trajectory_async_executer.execute(plan.joint_trajectory,
+        self.trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
                                            done_cb=None,
                                            active_cb=None,
                                            feedback_cb=None)

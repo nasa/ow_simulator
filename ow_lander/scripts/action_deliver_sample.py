@@ -4,6 +4,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+import rospy
+
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from moveit_msgs.msg import PositionConstraint
@@ -12,6 +14,9 @@ from shape_msgs.msg import SolidPrimitive
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
+
+
+deliver_sample_traj = RobotTrajectory()
 
 
 def cascade_plans (plan1, plan2):
@@ -32,6 +37,9 @@ def cascade_plans (plan1, plan2):
     end_time = plan1.joint_trajectory.points[n_points1-1].time_from_start
     start_time =  plan1.joint_trajectory.points[0].time_from_start
     duration =  end_time - start_time
+    # add a time toleracne between  successive plans
+    time_tolerance = rospy.Duration.from_sec(0.1)
+    
 
     for i in range(n_points1):
         point = JointTrajectoryPoint()
@@ -45,7 +53,7 @@ def cascade_plans (plan1, plan2):
         
     for i in range(n_points2):
         point = JointTrajectoryPoint()
-        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + end_time
+        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + end_time +time_tolerance
         point.velocities = list(plan2.joint_trajectory.points[i].velocities)
         point.accelerations = list(plan2.joint_trajectory.points[i].accelerations)
         point.positions = plan2.joint_trajectory.points[i].positions
@@ -75,7 +83,7 @@ def arg_parsing(req):
   return [req.use_defaults, x_delivery, y_delivery, z_delivery]
 
 
-def deliver_sample(move_arm, args):
+def deliver_sample(move_arm, robot, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float]
@@ -109,12 +117,13 @@ def deliver_sample(move_arm, args):
 
   move_arm.set_pose_target(goal_pose)
 
-  plan = move_arm.plan()
+  plan_a = move_arm.plan()
+  
 
-  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
+  if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
-  return plan
+  #return plan
 
   #plan = move_arm.go(wait=True)
   #move_arm.stop()
@@ -139,22 +148,46 @@ def deliver_sample(move_arm, args):
   p = 90  # 45 worked get
   y = -90
   q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-  goal_pose = move_arm.get_current_pose().pose
+  
+  start_state = plan_a.joint_trajectory.points[len(plan_a.joint_trajectory.points)-1].positions
+  
+  cs = robot.get_current_state()
+
+  # adding antenna state and grinder state  to the robot states.
+  
+  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  
+  
+  cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
+  
+  move_arm.set_start_state(cs)
+  
+  
   rotation = (goal_pose.orientation.x, goal_pose.orientation.y,
               goal_pose.orientation.z, goal_pose.orientation.w)
   euler_angle = euler_from_quaternion(rotation)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+  
+  #position vlue obtained from rviz scopp
+  goal_pose.position.x = 0.55127
+  goal_pose.position.y = -0.4213
+  goal_pose.position.z = 0.77815
+  
+  #goal_pose.position.x = 0.54986
+  #goal_pose.position.y = -0.2999
+  #goal_pose.position.z = 0.81915
   move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
+  plan_b = move_arm.plan()
 
-  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-    return False
+  if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
+    return plan_a
 
-  plan = move_arm.go(wait=True)
-  move_arm.stop()
-  move_arm.clear_pose_targets()
+  #plan = move_arm.go(wait=True)
+  #move_arm.stop()
+  #move_arm.clear_pose_targets()
+  deliver_sample_traj = cascade_plans (plan_a, plan_b)
 
   move_arm.set_planner_id("RRTconnect")
 
-  return True
+  return deliver_sample_traj
