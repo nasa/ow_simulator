@@ -7,7 +7,7 @@ and issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
 import rospy
-import time
+# import time
 from math import degrees
 import numpy as np
 from geometry_msgs.msg import Point
@@ -19,6 +19,8 @@ from ow_dynamic_terrain.msg import modify_terrain_circle
 class ModifyTerrainGrinder:
 
   def __init__(self, *args):
+
+    rospy.set_param('/use_sim_time', True)
     rospy.init_node("modify_terrain_grinder_pub", anonymous=True)
     self.last_translation = np.zeros(3)
     self.pub_visual = rospy.Publisher(
@@ -61,7 +63,7 @@ class ModifyTerrainGrinder:
 
     msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=2.0)
     self.pub_collision.publish(msg)
-    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.06, scale=1.0)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=1.0)
     self.pub_visual.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_grinder message:\n" + str(msg))
@@ -79,5 +81,7 @@ class ModifyTerrainGrinder:
 
 
 if __name__ == '__main__':
+  rospy.set_param('/use_sim_time', True)
+  rospy.set_param('use_sim_time', True)
   mtg = ModifyTerrainGrinder()
   rospy.spin()

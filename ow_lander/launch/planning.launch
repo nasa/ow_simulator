@@ -35,7 +35,10 @@
     </node>
 
     <!-- Given the published joint states, publish tf for the robot links -->
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" >
+      <param name="publish_frequency" value="300"/>
+    </node>
+
 
     <!-- == movegroup, used to control the arm ========== -->
     <include file="$(find ow_lander)/launch/move_group.launch">

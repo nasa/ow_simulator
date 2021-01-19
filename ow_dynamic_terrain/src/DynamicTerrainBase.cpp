@@ -50,7 +50,7 @@ void DynamicTerrainBase::subscribe(const std::string& topic,
                                    const boost::function<void(const boost::shared_ptr<T const>&)>& callback)
 {
   string topic_fqn = "/" + m_package_name + "/" + topic;
-  m_subscribers.push_back(m_node_handle->subscribe<T>(topic_fqn, 10, callback));
+  m_subscribers.push_back(m_node_handle->subscribe<T>(topic_fqn, 100, callback));
 }
 
 gazebo::rendering::Heightmap* DynamicTerrainBase::getHeightmap(gazebo::rendering::ScenePtr scene)

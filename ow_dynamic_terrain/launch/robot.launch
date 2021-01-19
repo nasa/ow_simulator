@@ -7,6 +7,7 @@
     <arg name="init_R" default="0"/>
     <arg name="init_P" default="0"/>
     <arg name="init_Y" default="0"/>
+    <arg name="use_sim_time" default="true" />
 
     <param name="robot_description" command="cat $(arg robot_file)" />
 

@@ -6,7 +6,6 @@
 
 import sys
 import rospy
-import time
 import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
@@ -109,7 +108,7 @@ class PathPlanningCommander(object):
     finally:
       # This sleep is a workaround for "start point deviates from current robot
       # state" error on dig_circular trajectory execution.
-      time.sleep(0.2)
+      rospy.sleep(0.2)
       return success
 
   # === SERVICE ACTIVITIES - Grind =============================

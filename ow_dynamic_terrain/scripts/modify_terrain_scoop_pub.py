@@ -6,7 +6,7 @@ movement. It accomplishes this by subscribing to link poses of the scoop and
 issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
-import time
+# import time
 from math import degrees
 import rospy
 import numpy as np

@@ -4,10 +4,12 @@
 
 #include "DynamicTerrainBase.h"
 #include "TerrainModifier.h"
+#include <ros/ros.h>
 
 using namespace std;
 using namespace gazebo;
 using namespace rendering;
+
 
 namespace ow_dynamic_terrain
 {
@@ -57,7 +59,10 @@ private:
 
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override
   {
+    // ros info print time
+    // ROS_INFO("Time now: %f\n",ros::Time::now().toSec());
     onModifyTerrainMsg(msg, TerrainModifier::modifyCircle);
+    
   }
 
   void onModifyTerrainEllipseMsg(const modify_terrain_ellipse::ConstPtr& msg) override

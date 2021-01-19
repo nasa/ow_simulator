@@ -4,7 +4,6 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import time
 import numpy as np
 import rospy
 import tf2_ros
@@ -85,14 +84,17 @@ class GroundDetector:
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
-      self._last_time = time.time()
+      self._last_time = rospy.get_time()
       return False
     current_position = np.array(
         [new_position.x, new_position.y, new_position.z])
-    current_time = time.time()
+    print(new_position.z) 
+    current_time = rospy.get_time()
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
+    # print(delta_d)
+    # print(delta_t)
     velocity_z = delta_d[2] / delta_t
     self._trending_velocity.append(velocity_z)
     if self._dynamic_threshold is None:
@@ -125,7 +127,7 @@ class GroundDetector:
 
     return self._ground_detected
 
-  def _tf_lookup_position(self, timeout=rospy.Duration(0.0)):
+  def _tf_lookup_position(self, timeout=rospy.Duration(10.0)):
     """
     :type timeout: rospy.rostime.Duration
     """
@@ -135,7 +137,7 @@ class GroundDetector:
           "base_link", "l_scoop_tip", rospy.Time(), timeout)
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
       rospy.logwarn("GroundDetector: tf2 raised an exception")
-      return None
+      return None 
     return t.transform.translation
 
   def _tf_2_method(self):

@@ -7,7 +7,6 @@
 
 import os
 import argparse
-import time
 import rospy
 import rospkg
 
@@ -75,7 +74,7 @@ def publish_image(args):
                 pub.publish(msg)
                 rospy.loginfo("modify_terrain_patch message sent")
                 break
-            time.sleep(0.1)
+            rospy.sleep(0.1)
     except rospy.ROSInterruptException, e:
         raise e
 

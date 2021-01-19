@@ -218,7 +218,7 @@ grinder_controller:
       i: *j_hand_yaw_i
       i_clamp: 1
     j_grinder:
-      p: 10.0
+      p: 50.0
       d: 1.0
       i: 0.01
       i_clamp: 1
