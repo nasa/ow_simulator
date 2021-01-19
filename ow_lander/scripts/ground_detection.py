@@ -92,6 +92,8 @@ class GroundDetector:
     current_time = rospy.get_time()
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
+    if np.isclose(delta_t, 0.0, atol=1.e-4):
+      return False  # don't consider this sample
     self._last_position, self._last_time = current_position, current_time
     # print(delta_d)
     # print(delta_t)
