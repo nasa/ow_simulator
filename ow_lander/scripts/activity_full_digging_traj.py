@@ -12,12 +12,14 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 
 
-def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
+def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
   """
+  :param approximate: use an approximate solution. default True
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
   :type x_start: float
   :type y_start: float
   :type z_start: float
+  :type approximate: bool
   """
   goal_pose = move_group.get_current_pose().pose
   goal_pose.position.x = x_start
@@ -25,8 +27,11 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start):
   goal_pose.position.z = z_start
   # Ask the planner to generate a plan to the approximate joint values generated
   # by kinematics builtin IK solver. For more insight on this issue refer to:
-  # https://github.com/nasa/ow_simulator/pull/60 
-  move_group.set_joint_value_target(goal_pose, True)
+  # https://github.com/nasa/ow_simulator/pull/60
+  if approximate:
+    move_group.set_joint_value_target(goal_pose, True)
+  else:
+    move_group.set_pose_target(goal_pose)
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
