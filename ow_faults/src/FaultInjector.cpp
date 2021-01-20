@@ -33,6 +33,78 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 
 }
 
+
+// Refer to the following website for more information about embedding the
+// Python code in C++.
+// https://docs.python.org/2/extending/embedding.html
+void FaultInjector::stopArmMovement()
+{
+  PyObject *module_name, *module, *dict, *python_class, *object;
+
+  // Initializes the Python interpreter
+  Py_Initialize();
+
+  module_name = PyBytes_FromString(
+      "trajectory_async_execution");
+
+  // Load the module object
+  module = PyImport_Import(module_name);
+  if (module == nullptr) {
+    PyErr_Print();
+    std::cerr << "Fails to import the module.\n";
+    // return 1;
+  }
+  Py_DECREF(module_name);
+
+  // dict is a borrowed reference.
+  dict = PyModule_GetDict(module);
+  if (dict == nullptr) {
+    PyErr_Print();
+    std::cerr << "Fails to get the dictionary.\n";
+    // return 1;
+  }
+  Py_DECREF(module);
+
+  // Builds the name of a callable class
+  python_class = PyDict_GetItemString(dict, "TrajectoryAsyncExecuter");
+  if (python_class == nullptr) {
+    PyErr_Print();
+    std::cerr << "Fails to get the Python class.\n";
+    // return 1;
+  }
+  Py_DECREF(dict);
+
+  // Creates an instance of the class
+  if (PyCallable_Check(python_class)) {
+    object = PyObject_CallObject(python_class, nullptr);
+    Py_DECREF(python_class);
+  } else {
+    std::cout << "Cannot instantiate the Python class" << std::endl;
+    Py_DECREF(python_class);
+    // return 1;
+  }
+
+  // int sum = 0;
+  // int x;
+
+  // for (size_t i = 0; i < 5; i++) {
+  //   x = rand() % 100;
+  //   sum += x;
+  //   PyObject *value = PyObject_CallMethod(object, "add", "(i)", x); 
+  //   if (value)
+  //     Py_DECREF(value);
+  //   else
+  //     PyErr_Print();
+  // }
+  PyObject_CallMethod(object, "stop", nullptr);
+  // std::cout << "the sum via C++ is " << sum << std::endl;
+
+  std::getchar();
+  Py_Finalize();
+
+  // return (0);
+}
+
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
 {
   // This is where we would check to see if faults is different from m_faults
@@ -75,12 +147,13 @@ void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
 
 void FaultInjector::checkSystemFaults(const ow_faults::SystemFaults& msg)
 {
-  ow_faults::SystemFaults system_faults_msg;
+  // ow_faults::SystemFaults system_faults_msg;
   SystemFaults sf = ArmExecutionError;
   if (msg.value == sf) {
-    system_faults_msg.value = 100;
+    stopArmMovement();
+  //   system_faults_msg.value = 100;
   }
-  m_fault_arm_plan_pub.publish(system_faults_msg);
+  // m_fault_arm_plan_pub.publish(system_faults_msg);
 
 }
 

@@ -216,3 +216,5 @@ target_link_libraries(${EXEC_NAME}
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+find_package (PythonLibs 3.6.9 EXACT)
+target_link_libraries(${EXEC_NAME} ${catkin_LIBRARIES} ${PYTHON_LIBRARIES})
