@@ -16,7 +16,7 @@ def unstow_client():
     client = actionlib.SimpleActionClient('Unstow', ow_lander.msg.UnstowAction)
 
     client.wait_for_server()
-
+    #dummy goal for action server
     goal = ow_lander.msg.UnstowGoal(goal=20)
 
     # Sends the goal to the action server.
