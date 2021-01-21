@@ -103,6 +103,4 @@ def deliver_sample(move_arm, args):
   move_arm.stop()
   move_arm.clear_pose_targets()
 
-  move_arm.set_planner_id("RRTconnect")
-
   return True
