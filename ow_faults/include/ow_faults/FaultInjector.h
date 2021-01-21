@@ -5,7 +5,8 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
-
+#include <ctime>
+#include <cstdlib>
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
@@ -55,6 +56,10 @@ public:
     LanderExecutionError = 256};
 
 private:
+  float powerTemperatureOverload;
+  
+  void setPowerTemperatureFaultValue(bool b_getTemp);
+
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);

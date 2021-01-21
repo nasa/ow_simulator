@@ -23,6 +23,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   // topic for arm fault status, see ArmFaults.msg
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
   
+  srand (static_cast <unsigned> (time(0)));
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -46,6 +47,16 @@ void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg, int value) {
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
   msg.value = value; //should be HARDWARE for now
+}
+
+void FaultInjector::setPowerTemperatureFaultValue(bool b_getTemp){
+  float thermal_val;
+  if (isnan(powerTemperatureOverload)) {
+    thermal_val =  50.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(90.0-50.0)));
+    powerTemperatureOverload = thermal_val;
+  } else if (!b_getTemp) {
+    powerTemperatureOverload = NAN;
+  }
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -169,8 +180,11 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if(m_faults.thermal_power_failure){
     // if > 50 degrees C, then consider fault. 
     std_msgs::Float64 thermal_msg;
-    thermal_msg.data = 51.8;
+    setPowerTemperatureFaultValue(true);
+    thermal_msg.data = powerTemperatureOverload;
     m_fault_power_temp_pub.publish(thermal_msg);
+  } else {
+    setPowerTemperatureFaultValue(false);
   }
 
   m_joint_state_pub.publish(output);
