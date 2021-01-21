@@ -7,6 +7,7 @@
 
 
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
@@ -75,6 +76,9 @@ private:
 
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
+
+  ros::Publisher m_fault_power_state_of_charge_pub;
+  ros::Publisher m_fault_power_temp_pub;
 
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
