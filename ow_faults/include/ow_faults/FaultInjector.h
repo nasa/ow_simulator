@@ -44,6 +44,9 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
+  enum PowerFaults {
+    Execution=1}; //may need to be expanded
+
   enum SystemFaults {
     System=1, 
     ArmGoalError=2, 
@@ -56,8 +59,9 @@ public:
     LanderExecutionError = 256};
 
 private:
-  float powerTemperatureOverload;
+  float powerTemperatureOverloadValue;
   
+  // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool b_getTemp);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
@@ -66,7 +70,8 @@ private:
 
   //Setting the correct values for system faults and arm faults messages
   void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
-  void setArmFaultMessage(ow_faults::ArmFaults& msg, int value);
+  void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
+  void setPowerFaultMessage(ow_faults::PowerFaults& msg, int value);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -79,14 +84,18 @@ private:
 
   ow_faults::FaultsConfig m_faults;
 
+  // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
+  // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
   ros::Publisher m_fault_power_temp_pub;
 
+  // publishers for sending ros messages for component failures
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
+  ros::Publisher m_power_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;

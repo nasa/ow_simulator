@@ -22,6 +22,8 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
   // topic for arm fault status, see ArmFaults.msg
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
+  // topic for power fault status, see PowerFaults.msg
+  m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
   
   srand (static_cast <unsigned> (time(0)));
 }
@@ -42,7 +44,14 @@ void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, int valu
   msg.value = value; //should be ARM EXECUTION ERROR for now
 }
 
-void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg, int value) {
+void FaultInjector::setArmFaultsMessage(ow_faults::ArmFaults& msg, int value) {
+  // for now only arm execution errors
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "/world";
+  msg.value = value; //should be HARDWARE for now
+}
+
+void FaultInjector::setPowerFaultMessage(ow_faults::PowerFaults& msg, int value) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
@@ -51,11 +60,11 @@ void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg, int value) {
 
 void FaultInjector::setPowerTemperatureFaultValue(bool b_getTemp){
   float thermal_val;
-  if (isnan(powerTemperatureOverload)) {
+  if (isnan(powerTemperatureOverloadValue)) {
     thermal_val =  50.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(90.0-50.0)));
-    powerTemperatureOverload = thermal_val;
+    powerTemperatureOverloadValue = thermal_val;
   } else if (!b_getTemp) {
-    powerTemperatureOverload = NAN;
+    powerTemperatureOverloadValue = NAN;
   }
 }
 
@@ -74,8 +83,10 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   sensor_msgs::JointState output(*msg);
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
+  ow_faults::PowerFaults power_faults_msg;
   SystemFaults sf = ArmExecutionError;
   ArmFaults af = Hardware;
+  PowerFaults pf = Execution;
 
   //arm faults
   // Set failed sensor values to 0
@@ -101,67 +112,67 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
   if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index] = 0.0;
     setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    setArmFaultsMessage(arm_faults_msg, af);
   }
 
   std_msgs::Float64 soc_msg;
@@ -171,18 +182,21 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     // Fault is a range ( anything < 10%)
     soc_msg.data = 2.2;
     m_fault_power_state_of_charge_pub.publish(soc_msg);
+    setPowerFaultsMessage(power_faults_msg, pf);
   }
   if(m_faults.instantaneous_capacity_loss_power_failure) {
     // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
     soc_msg.data = 98.5; //random now but should be >5% more than the previous value
     m_fault_power_state_of_charge_pub.publish(soc_msg);
+    setPowerFaultsMessage(power_faults_msg, pf);
   }
   if(m_faults.thermal_power_failure){
     // if > 50 degrees C, then consider fault. 
     std_msgs::Float64 thermal_msg;
     setPowerTemperatureFaultValue(true);
-    thermal_msg.data = powerTemperatureOverload;
+    thermal_msg.data = powerTemperatureOverloadValue;
     m_fault_power_temp_pub.publish(thermal_msg);
+    setPowerFaultsMessage(power_faults_msg, pf);
   } else {
     setPowerTemperatureFaultValue(false);
   }
@@ -190,6 +204,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   m_joint_state_pub.publish(output);
   m_fault_status_pub.publish(system_faults_msg);
   m_arm_fault_status_pub.publish(arm_faults_msg);
+  m_power_fault_status_pub.publish(power_faults_msg);
 }
 
 template<typename group_t, typename item_t>
