@@ -93,15 +93,19 @@ class GroundDetector:
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
     self._last_position, self._last_time = current_position, current_time
-    velocity_z = delta_d[2] / delta_t
+    velocity_z = delta_d / delta_t
     self._trending_velocity.append(velocity_z)
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._dynamic_threshold = self._trending_velocity.value
-        self._threshold_tolerance = 0.5 * np.std(self._trending_velocity._que)
+        self._threshold_tolerance = np.std(self._trending_velocity._que, axis=0)
       return False
     else:
-      return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance
+      dynamic_threshold_norm = np.linalg.norm(self._dynamic_threshold)
+      trending_velocity_norm = np.linalg.norm(self._trending_velocity.value)
+      m_x_v = np.dot(self._dynamic_threshold, self._trending_velocity.value) / \
+              (dynamic_threshold_norm * trending_velocity_norm)
+      return m_x_v < 0.9
 
   def _handle_link_states(self, data):
     """
