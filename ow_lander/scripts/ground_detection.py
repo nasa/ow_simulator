@@ -85,27 +85,35 @@ class GroundDetector:
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
-      self._last_time = time.time()
+      self._last_time = rospy.get_time()
       return False
     current_position = np.array(
         [new_position.x, new_position.y, new_position.z])
-    current_time = time.time()
+    current_time = rospy.get_time()
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
+    if np.isclose(delta_t, 0.0, atol=1.e-4):
+      return False  # if delta_t is relatively small then abort!
     self._last_position, self._last_time = current_position, current_time
     velocity_z = delta_d / delta_t
     self._trending_velocity.append(velocity_z)
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
+        self._samples_skipped += 1
+        if self._samples_skipped <= self._samples_skip_count:
+          return False
         self._dynamic_threshold = self._trending_velocity.value
         self._threshold_tolerance = np.std(self._trending_velocity._que, axis=0)
       return False
     else:
-      dynamic_threshold_norm = np.linalg.norm(self._dynamic_threshold)
-      trending_velocity_norm = np.linalg.norm(self._trending_velocity.value)
-      m_x_v = np.dot(self._dynamic_threshold, self._trending_velocity.value) / \
-              (dynamic_threshold_norm * trending_velocity_norm)
-      return m_x_v < 0.9
+      r = copy.deepcopy(self._dynamic_threshold)
+      r_norm = np.linalg.norm(r)
+      r /= r_norm
+      v = copy.deepcopy(self._trending_velocity.value)
+      v_norm = np.linalg.norm(v)
+      v /= v_norm
+      r_x_v = np.dot(r, v)
+      return r_x_v < 0.95
 
   def _handle_link_states(self, data):
     """
