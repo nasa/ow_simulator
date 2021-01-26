@@ -115,11 +115,9 @@ class GroundDetector:
       return False
     else:
       r = copy.deepcopy(self._reference_velocity)
-      r_norm = np.linalg.norm(r)
-      r /= r_norm
+      r /= np.linalg.norm(r)
       t = copy.deepcopy(self._trending_velocity.value)
-      t_norm = np.linalg.norm(t)
-      t /= t_norm
+      t /= np.linalg.norm(t)
       r_x_t = np.dot(r, t)
       return r_x_t < GroundDetector.DIRECTION_TOLERANCE
 
