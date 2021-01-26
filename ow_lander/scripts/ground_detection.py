@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import time
+import copy
 import numpy as np
 import rospy
 import tf2_ros
@@ -85,8 +85,7 @@ class GroundDetector:
     self._samples_skipped = 0
     self._trending_velocity = SlidingWindow(
         GroundDetector.ROLLING_AVERAGE_WINDOW, lambda a: np.mean(a, axis=0))
-    self._dynamic_threshold = None
-    self._threshold_tolerance = None
+    self._reference_velocity = None
 
   def _check_condition(self, new_position):
     """
@@ -107,24 +106,22 @@ class GroundDetector:
     self._last_position, self._last_time = current_position, current_time
     velocity_z = delta_d / delta_t
     self._trending_velocity.append(velocity_z)
-    if self._dynamic_threshold is None:
+    if self._reference_velocity is None:
       if self._trending_velocity.valid:
         self._samples_skipped += 1
         if self._samples_skipped <= GroundDetector.SKIP_SAMPLES_COUNT:
           return False
-        self._dynamic_threshold = self._trending_velocity.value
-        self._threshold_tolerance = np.std(
-            self._trending_velocity._que, axis=0)
+        self._reference_velocity = self._trending_velocity.value
       return False
     else:
-      r = copy.deepcopy(self._dynamic_threshold)
+      r = copy.deepcopy(self._reference_velocity)
       r_norm = np.linalg.norm(r)
       r /= r_norm
-      v = copy.deepcopy(self._trending_velocity.value)
-      v_norm = np.linalg.norm(v)
-      v /= v_norm
-      r_x_v = np.dot(r, v)
-      return r_x_v < GroundDetector.DIRECTION_TOLERANCE
+      t = copy.deepcopy(self._trending_velocity.value)
+      t_norm = np.linalg.norm(t)
+      t /= t_norm
+      r_x_t = np.dot(r, t)
+      return r_x_t < GroundDetector.DIRECTION_TOLERANCE
 
   def _handle_link_states(self, data):
     """
