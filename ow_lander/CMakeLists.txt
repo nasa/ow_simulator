@@ -30,6 +30,7 @@ add_action_files(
   FILES Unstow.action
   FILES Stow.action
   FILES Deliver.action
+  FILES DigLinear.action
 )
 
 

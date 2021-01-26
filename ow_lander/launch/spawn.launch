@@ -96,9 +96,11 @@
   </include>
 
   <!-- == launch the path planner node ============== -->
-  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" />
+  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" ></node>
   
     <!-- == launch the action servers============== -->
-  <!--node pkg="ow_lander" name="unstow_action_server" type="unstow_action_server.py" output="screen" /-->
+  <node pkg="ow_lander" name="Unstow" type="unstow_action_server.py" output="screen"> </node>
+  <node pkg="ow_lander" name="Stow" type="stow_action_server.py" output="screen"> </node>
+  <node pkg="ow_lander" name="Deliver" type="deliver_action_server.py" output="screen"> </node>
 
 </launch>
