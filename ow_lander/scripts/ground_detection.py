@@ -56,6 +56,14 @@ class GroundDetector:
   arm as it descends to touch the ground.
   """
 
+  SKIP_SAMPLES_COUNT = 5      # Number of samples to skip before computing the
+                              # moving average
+
+  ROLLING_AVERAGE_WINDOW = 5  # Moving/Rolling Average Window Size
+
+  DIRECTION_TOLERANCE = 0.95  # How much tolerance is allowed before considering
+                              # two vectors to have diverged
+
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
@@ -74,7 +82,9 @@ class GroundDetector:
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
-    self._trending_velocity = SlidingWindow(5, np.mean)
+    self._samples_skipped = 0
+    self._trending_velocity = SlidingWindow(
+        GroundDetector.ROLLING_AVERAGE_WINDOW, lambda a: np.mean(a, axis=0))
     self._dynamic_threshold = None
     self._threshold_tolerance = None
 
@@ -100,10 +110,11 @@ class GroundDetector:
     if self._dynamic_threshold is None:
       if self._trending_velocity.valid:
         self._samples_skipped += 1
-        if self._samples_skipped <= self._samples_skip_count:
+        if self._samples_skipped <= GroundDetector.SKIP_SAMPLES_COUNT:
           return False
         self._dynamic_threshold = self._trending_velocity.value
-        self._threshold_tolerance = np.std(self._trending_velocity._que, axis=0)
+        self._threshold_tolerance = np.std(
+            self._trending_velocity._que, axis=0)
       return False
     else:
       r = copy.deepcopy(self._dynamic_threshold)
@@ -113,7 +124,7 @@ class GroundDetector:
       v_norm = np.linalg.norm(v)
       v /= v_norm
       r_x_v = np.dot(r, v)
-      return r_x_v < 0.95
+      return r_x_v < GroundDetector.DIRECTION_TOLERANCE
 
   def _handle_link_states(self, data):
     """
