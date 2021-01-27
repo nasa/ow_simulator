@@ -164,6 +164,7 @@ sudo apt install git \
                  ros-melodic-joint-state-publisher \
                  ros-melodic-joint-state-controller \
                  ros-melodic-effort-controllers \
+                 ros-melodic-joint-trajectory-controller \
                  ros-melodic-dynamic-reconfigure \
                  ros-melodic-nodelet \
                  ros-melodic-nodelet-topic-tools \
