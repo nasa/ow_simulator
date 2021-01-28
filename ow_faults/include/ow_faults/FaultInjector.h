@@ -5,14 +5,12 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
-<<<<<<< HEAD
-#include <ctime>
-#include <cstdlib>
-=======
+
 #include <stdio.h>
 #include <python3.6m/Python.h>
 
->>>>>>> getting python to be callable in c++ test
+#include <ctime>
+#include <cstdlib>
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
