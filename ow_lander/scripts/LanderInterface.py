@@ -61,8 +61,8 @@ class JointStateSubscriber:
     num_joints = len(ros_data.name)
     power = 0
     for x in range(0,num_joints):
-        power = power + abs(ros_data.velocity[x]*ros_data.effort[x])
-
+        #power = power + abs(ros_data.velocity[x]*ros_data.effort[x])
+        power = 0
         # Publish total power
     self._state_value = power    
     self.power_pub.publish(power)

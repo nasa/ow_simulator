@@ -95,15 +95,16 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- == launch the path planner node ============== -->
+  <!-- == launch the path planner services node ============== -->
   <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" ></node>
   
     <!-- == launch the action servers============== -->
   
-  <arg name="node_start_delay" default="2.0" />  
-  <node pkg="ow_lander" name="Unstow" type="unstow_action_server.py" output="screen"> </node>
-  <node pkg="ow_lander" name="Stow" type="stow_action_server.py" output="screen"> </node>
-  <node pkg="ow_lander" name="Deliver" type="deliver_action_server.py" output="screen"> </node>
-  <node pkg="ow_lander" name="DigLinear" type="dig_linear_action_server.py" output="screen"> </node>
+  <arg name="node_start_delay" default="10.0" />  
+  <node name="listener" pkg="roscpp_tutorials" type="listener" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="Unstow" type="unstow_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="Stow" type="stow_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="Deliver" type="deliver_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="DigLinear" type="dig_linear_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 
 </launch>
