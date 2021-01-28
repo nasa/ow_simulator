@@ -56,6 +56,7 @@ add_message_files(
   FILES
   SystemFaults.msg
   ArmFaults.msg
+  PowerFaults.msg
 )
 
 ## Generate services in the 'srv' folder
