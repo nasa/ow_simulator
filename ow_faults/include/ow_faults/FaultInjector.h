@@ -62,7 +62,7 @@ private:
   float powerTemperatureOverloadValue;
   
   // renders new temperature when thermal power fault is re-triggered
-  void setPowerTemperatureFaultValue(bool b_getTemp);
+  void setPowerTemperatureFaultValue(bool getTempBool);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.

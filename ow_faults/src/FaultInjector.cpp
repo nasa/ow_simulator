@@ -58,13 +58,13 @@ void FaultInjector::setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value
   msg.value = value; //should be HARDWARE for now
 }
 
-void FaultInjector::setPowerTemperatureFaultValue(bool b_getTemp){
+void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
   float thermal_val;
   if (isnan(powerTemperatureOverloadValue)) {
     thermal_val =  50.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(90.0-50.0)));
-    powerTemperatureOverloadValue = thermal_val;
-  } else if (!b_getTemp) {
-    powerTemperatureOverloadValue = NAN;
+    powerTemperatureOverload = thermal_val;
+  } else if (!getTempBool) {
+    powerTemperatureOverload = NAN;
   }
 }
 
