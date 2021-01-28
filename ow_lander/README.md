@@ -1,118 +1,142 @@
-The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+> The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 Research and Simulation can be found in README.md in the root directory of
 this repository.
 
 # ow_lander
+
 Contains the lander semantic and kinematic descriptions (SRDF and URDF), the
 moveit path planner and the gazebo trajectory feeder, and common code related
-to the lander.
+to the lander. The package also contains the definition and implementation of
+several arm services
 
-## requirements
+* [Requirements](#requirements)
+* [Usage](#usage)
+  - [Calling Arm Operations using RQT Service Caller](#calling-arm-operations-using-rqt-service-caller)
+  - [Calling Arm Operations using ROS Command Line Interface](#calling-arm-operations-using-ros-command-line-interface)
+* [MoveIt Setup Assistant](#moveit-setup-assistant)
+* [Misc Information](#misc-information)
+  - [Common Code](#common-code)
+  - [Package History](#package-history)
+
+## Requirements
+To compile and run this package you need to have the following dependencies:
 * ros-melodic-destkop-full
 * ros-melodic-joint-trajectory-controller
 
-## Common Code
-`include/ow_lander/lander_joints.h` contains joint names as they appear in the
-URDF and related code. Please prefer this header over writing similar code
-yourself to keep all our code consistent. If the lander is modified to change
-the number of joints or any joint names, this header must be updated as well.
+## Usage
 
-Run it
-------
-To run along with Gazebo:
+First run the simulation using any of the available OceanWATERS launch configurations:
 
-`$ roslaunch ow europa_terminator_workspace.launch`
-
-This will start Gazebo, as well as the planning and feeding nodes. Now to run
-both these nodes, you need to call the appropriate services (note that PLEXIL
-will be calling these services in code).
-
-### Unstow trajectory planning
-Call the Unstow service.
-
-### Guarded move trajectory planning
-Call the GuardedMove service. This creates two trajectories in .ros.
-
-### Grind trajectory planning
-Call the Grind service.
-
-### Circular trenching trajectory planning
-Call the DigCircular service.
-
-### Linear trenching trajectory planning
-Call the DigLinear service.
-
-### Deliver sample trajectory planning
-Call the DeliverSample service.
-
-### Stow trajectory planning
-Call the Stow service.
-
-### Trajectory feeding
-Call the PublishTrajectory service.
-
-For more info on the message type of each of the services above, please refer to
-the message declaration in the .srv files. Alternatively, info can be displayed
-directly from terminal typing the following command:
+```bash
+roslaunch ow atacma_y1a.launch  # other options:
+                                # * europa_terminator.launch
+                                # * europa_terminator_workspace.launch
 ```
-$ rossrv show -r foo
+
+This will start the simulation, as well as loads available services to to control
+the arm, you can interact with the exposed services using any of the two methds
+described below:
+
+### Calling Arm Operations using RQT Service Caller
+When OceanWATERS sim is launched by default it starts an instance of **rqt_gui**
+that has the _Service Caller_ plugin enabled. You can use the service caller
+interface to invoke the different arm services that are exposed by the simulation.
+Find the **rqt_gui** window then select the _Service Caller_ tab. Using the drop
+down menu, select the service that you want to invoke (for example`/arm/dig_circular`
+or `/arm/guarded_move`), configure the service arguments, as shown below:
+<p align="center"><img src="./misc/service_caller.png" width="40%" ></p>
+
+Finally, press the `Call` button to invoke the service as configured.
+
+### Calling Arm Operations using ROS Command Line Interface
+Alternatively to using the **RQT Service Caller** gui interface, you may interact
+with the services using the `rosservice` command line tool. While the simulation
+is running, start a new terminal and source OceanWATERS workspace. Then, invoke
+the services using their respective commands as listed below:
+
+
+* Stow
+```bash
+rosservice call /arm/stow "{}"
 ```
-replacing "foo" with the desired service name (for instance, foo=DigCircular).
+* Unstow
+```bash
+rosservice call /arm/unstow "{}"
+```
+* Deliver Sample
+```bash
+rosservice call /arm/deliver_sample \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, z: 0.0}"
+```
+* Dig Linear
+```bash
+rosservice call /arm/dig_linear \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, depth: 0.0,
+    length: 0.0, ground_position: 0.0}" 
+```
+* Dig Circular
+```bash
+rosservice call /arm/dig_circular \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, depth: 0.0,
+    parallel: false, ground_position: 0.0}"
+```
+* Grind
+```bash
+rosservice call /arm/grind \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, depth: 0.0,
+    length: 0.0,
+    parallel: false, ground_position: 0.0}" 
+```
+* Guarded Move
+```bash
+rosservice call /arm/guarded_move \
+  "{use_defaults: true,
+    x: 0.0, y: 0.0, z: 0.0,
+    direction_x: 0.0, direction_y: 0.0, direction_z: 0.0,
+    search_distance: 0.0}"
+```
 
-### Manual Operations
-To run these services manually, find the 'rqt' window and select the Service
-Caller tab. Then, from the drop down menu, select the service you want
-(`/planning/arm/dig_circular` or `/planning/arm/publish_trajectory`), set the
-arguments (Careful, the bools have a capital first letter: `True`, `False`),
-then call the service.
+> Note: Some of the exposed arm services take a number of arguments, the examples
+provided here show running these service using default values. For more info on
+the arguments of each of the services above, refer to the message declaration in
+the .srv files.or use `rossrv` utility as shown here (replacing "foo" with the desired service name):
+```bash
+rossrv show -r foo
+```
 
-### MoveIt Setup Assistant
+## MoveIt Setup Assistant
 The moveit setup assistant can now be easily launched using the command:
 ```bash
 roslaunch ow_lander setup_assistant.launch
-``` 
+```
 
-There are different reasons why you may need to re-run the setup assistant:
+Once the assistant is launched call the **Load Files** to load the current configuration.
+The following image shows a screenshot of a successfully loaded lander configuration:
+<p align="center"><img src="./misc/setup_assistant.png" width="40%" ></p>
+
+There are various reasons why you may need to re-run the setup assistant:
 * Update the links collision matrix: this should be reconfigured again whenever
  links count, their shape or size changes or there was a change in the number of
  joints or their types.
 * Define new arm/antenna poses or revise existing ones.
 
 
-Unmodified Files Generated by MoveIt Setup Assistant:
-- config/
-- config/fake_controllers.yaml
-- config/kinematics.yaml
-- config/ros_controllers.yaml
-- launch/
 
-Modified Files Generated by MoveIt Setup Assistant:
-- CMakeLists.txt: updated min version req, several added packages, install directory included
-- config/lander.srdf: added robot name "lander"
-- config/ompl_planning.yaml: added default_planner_config = None, added SPARStwo to planner configs list
-- launch/gazebo.launch: added load command for lander urdf, robot_description parameter
-- launch/move_group.launch: added include commands for trajectory_execution, planning_pipeline,
-  planning_context .launch files, added move_group node, lander argument, gdb value
-- launch/ompl_planning_pipeline.launch: added load command for config/ompl_planning.yaml file
-- launch/ompl_planning_pipeline.launch: added load command for config/ompl_planning.yaml file
-- launch/planning_context.launch: added load command for kinematics.yaml file, find lander xacro command
-- launch/planning_pipeline.launch: added include command for planning_pipeline.launch
-- launch/ros_controllers.launch: added load command for ros_controllers.yaml
-- launch/trajectory_execution.launch: added name, include command for moveit_controller_manager.launch
-- package.xml: added exec and build dependencies
+## Misc Information
 
-Files NOT Generated by MoveIt Setup Assistant:
-- config/lander.rviz: Appears to be generated by T. Welsh with several modifications by both T. Welsh and 
-  A. Tardy, added parameters and preferences after initial commit
-- config/lander_control.yaml: Appears to be generated by T. Welsh with modifications by D. Catanoso, A.
-  Tardy, pid controllers, publish rate added after initial commit
-- config/ow_arm_sim.rviz: Generated by A. Tardy, modified by A. Tardy, T. Welsh
-- launch/arm_sim_rviz.launch: Generated and modified by A. Tardy
-- launch/planning.launch: Generated by A. Tardy, modified by T. Welsh
-- launch/spawn.launch: Generated by T. Welsh, modified by D. Catanoso, T. Welsh, A. Tardy
+### Common Code
+`include/ow_lander/lander_joints.h` contains joint names as they appear in the
+URDF and related code. Please prefer this header over writing similar code
+yourself to keep all our code consistent. If the lander is modified to change
+the number of joints or any joint names, this header must be updated as well.
 
-There are several additional files generated by the setup assistant that are unused and have been
-deleted. The setup assistant shouldn't have to be rerun unless one of the necessary config/launch
-files were deleted for some reason. It would likely be better practice to move some of the simple
-include/load/naming modifications to separate files to retain autogenerated files in original state.
-Otherwise, it is recommended to rename a modified launch/config file as filename_mod for clarity.
+### Package History
+
+A major overhaul of this package was done after switching from JointPositionController
+to JointTrajectoryController for arm services. Nonetheless, this revised version
+is more comptabile with the file generated by the setup_assistant with few manual
+edits. Refer to PR: [Oceanwater 518 switch to using effort controllers joint trajectory controller](https://github.com/nasa/ow_simulator/pull/40) for complete track of the set of changes.

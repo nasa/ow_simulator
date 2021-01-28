@@ -10,7 +10,7 @@
 
   <!-- arm_controller is the default controller and is enabled by default -->
   <node name="controller_spawner_active" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" args="arm_controller antenna_controller"/>
+    output="screen" args="arm_controller ant_pan_position_controller ant_tilt_position_controller"/>
 
   <!-- limbs_controller and grinder_controller is enabled only when needed -->
   <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"

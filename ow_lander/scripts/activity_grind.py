@@ -107,7 +107,7 @@ def grind(move_grinder, args):
 
   # entering terrain
   z_start = ground_position + constants.GRINDER_OFFSET - depth
-  go_to_Z_coordinate(move_grinder, x_start, y_start, z_start)
+  go_to_Z_coordinate(move_grinder, x_start, y_start, z_start, False)
 
   # grinding ice forward
   cartesian_plan, fraction = plan_cartesian_path(move_grinder, length, alpha, parallel)
@@ -123,7 +123,7 @@ def grind(move_grinder, args):
     z_now = move_grinder.get_current_pose().pose.position.z
     x_goal = x_now + 0.08*math.cos(alpha)
     y_goal = y_now + 0.08*math.sin(alpha)
-    go_to_Z_coordinate(move_grinder, x_goal, y_goal, z_now)
+    go_to_Z_coordinate(move_grinder, x_goal, y_goal, z_now, False)
 
   # grinding ice backwards
   cartesian_plan, fraction = plan_cartesian_path(move_grinder, -length, alpha, parallel)
@@ -133,6 +133,6 @@ def grind(move_grinder, args):
   # exiting terrain
   x_now = move_grinder.get_current_pose().pose.position.x
   y_now = move_grinder.get_current_pose().pose.position.y
-  go_to_Z_coordinate(move_grinder, x_start, y_start, 0.22)
+  go_to_Z_coordinate(move_grinder, x_start, y_start, 0.22, False)
 
   return True
