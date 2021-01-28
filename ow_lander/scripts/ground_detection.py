@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import time
+import copy
 import numpy as np
 import rospy
 import tf2_ros
@@ -56,6 +56,14 @@ class GroundDetector:
   arm as it descends to touch the ground.
   """
 
+  SKIP_SAMPLES_COUNT = 5      # Number of samples to skip before computing the
+                              # moving average
+
+  ROLLING_AVERAGE_WINDOW = 5  # Moving/Rolling Average Window Size
+
+  DIRECTION_TOLERANCE = 0.95  # How much tolerance is allowed before considering
+                              # two vectors to have diverged
+
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
@@ -74,9 +82,10 @@ class GroundDetector:
     """ Reset the state of the ground detector for another round """
     self._last_position, self._last_time = None, None
     self._ground_detected = False
-    self._trending_velocity = SlidingWindow(5, np.mean)
-    self._dynamic_threshold = None
-    self._threshold_tolerance = None
+    self._samples_skipped = 0
+    self._trending_velocity = SlidingWindow(
+        GroundDetector.ROLLING_AVERAGE_WINDOW, lambda a: np.mean(a, axis=0))
+    self._reference_velocity = None
 
   def _check_condition(self, new_position):
     """
@@ -85,23 +94,32 @@ class GroundDetector:
     if self._last_position is None:
       self._last_position = np.array(
           [new_position.x, new_position.y, new_position.z])
-      self._last_time = time.time()
+      self._last_time = rospy.get_time()
       return False
     current_position = np.array(
         [new_position.x, new_position.y, new_position.z])
-    current_time = time.time()
+    current_time = rospy.get_time()
     delta_d = current_position - self._last_position
     delta_t = current_time - self._last_time
+    if np.isclose(delta_t, 0.0, atol=1.e-4):
+      return False  # if delta_t is relatively small then abort!
     self._last_position, self._last_time = current_position, current_time
-    velocity_z = delta_d[2] / delta_t
+    velocity_z = delta_d / delta_t
     self._trending_velocity.append(velocity_z)
-    if self._dynamic_threshold is None:
+    if self._reference_velocity is None:
       if self._trending_velocity.valid:
-        self._dynamic_threshold = self._trending_velocity.value
-        self._threshold_tolerance = 0.5 * np.std(self._trending_velocity._que)
+        self._samples_skipped += 1
+        if self._samples_skipped <= GroundDetector.SKIP_SAMPLES_COUNT:
+          return False
+        self._reference_velocity = self._trending_velocity.value
       return False
     else:
-      return self._trending_velocity.value > self._dynamic_threshold + self._threshold_tolerance
+      r = copy.deepcopy(self._reference_velocity)
+      r /= np.linalg.norm(r)
+      t = copy.deepcopy(self._trending_velocity.value)
+      t /= np.linalg.norm(t)
+      r_x_t = np.dot(r, t)
+      return r_x_t < GroundDetector.DIRECTION_TOLERANCE
 
   def _handle_link_states(self, data):
     """
