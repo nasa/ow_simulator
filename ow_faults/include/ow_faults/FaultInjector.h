@@ -15,6 +15,7 @@
 #include "ow_faults/PowerFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
+#include <trajectory_msgs/JointTrajectory.h>
 #include <unordered_map>
 
 
@@ -68,6 +69,8 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
+  void checkSystemFaults(const ow_faults::SystemFaults& msg);
+
   //Setting the correct values for system faults and arm faults messages
   void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
   void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
@@ -96,6 +99,9 @@ private:
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
+
+  ros::Subscriber m_arm_state_sub;
+  ros::Publisher m_fault_arm_plan_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;

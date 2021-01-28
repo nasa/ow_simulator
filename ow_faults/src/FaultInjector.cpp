@@ -26,6 +26,11 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
   
   srand (static_cast <unsigned> (time(0)));
+
+  m_arm_state_sub = node_handle.subscribe("/system_faults_status", 10, &FaultInjector::checkSystemFaults, this);
+  // m_fault_arm_plan_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/fake_arm_plan", 10); 
+  m_fault_arm_plan_pub = node_handle.advertise<ow_faults::SystemFaults>("/fake_arm_plan", 10); 
+
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -66,6 +71,17 @@ void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
   } else if (!getTempBool) {
     powerTemperatureOverload = NAN;
   }
+}
+
+void FaultInjector::checkSystemFaults(const ow_faults::SystemFaults& msg)
+{
+  ow_faults::SystemFaults system_faults_msg;
+  SystemFaults sf = ArmExecutionError;
+  if (msg.value == sf) {
+    system_faults_msg.value = 100;
+  }
+  m_fault_arm_plan_pub.publish(system_faults_msg);
+
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
