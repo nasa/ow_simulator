@@ -1,7 +1,7 @@
 ## Linked Issues:
-| Jira Ticket 🎟️   | [Oceanwater-XXX](url) |
-| ----------- | ----------- |
-| EPIC ⚡| [Oceanwater-XXX](url) |
+| EPIC ⚡| [OCEANWATER-XXX](url) |
+| :----------- | :----------- |
+| Jira Ticket 🎟️   | [OCEANWATER-XXX](url) |
 | Github :octocat:  | # |
 
 
