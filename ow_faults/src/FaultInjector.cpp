@@ -62,9 +62,9 @@ void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
   float thermal_val;
   if (isnan(powerTemperatureOverloadValue)) {
     thermal_val =  50.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(90.0-50.0)));
-    powerTemperatureOverload = thermal_val;
+    powerTemperatureOverloadValue = thermal_val;
   } else if (!getTempBool) {
-    powerTemperatureOverload = NAN;
+    powerTemperatureOverloadValue = NAN;
   }
 }
 
