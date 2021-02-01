@@ -5,9 +5,8 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
-
-#include <stdio.h>
 #include <python3.6m/Python.h>
+#include <stdio.h>
 
 #include <ctime>
 #include <cstdlib>
@@ -73,8 +72,8 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
   
-  void stopArmMovement();
-  void checkSystemFaults(const ow_faults::SystemFaults& msg);
+  // void stopArmMovement();
+  // void armFailureCb(const ow_faults::SystemFaults& msg);
 
   //Setting the correct values for system faults and arm faults messages
   void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
@@ -105,8 +104,8 @@ private:
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
 
-  ros::Subscriber m_arm_state_sub;
-  ros::Publisher m_fault_arm_plan_pub;
+  // ros::Subscriber m_arm_state_sub;
+  // ros::Publisher m_fault_arm_plan_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
