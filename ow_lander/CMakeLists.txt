@@ -26,6 +26,7 @@ add_service_files(
 add_message_files(
   FILES
   GuardedMoveResult.msg
+  # SystemFaults.msg
 )
 
 generate_messages(
@@ -58,3 +59,9 @@ install(
   DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   PATTERN "setup_assistant.launch" EXCLUDE)
+
+# add_dependencies(ow_faults ${catkin_EXPORTED_TARGETS})
+# add_dependencies (
+#   ${EXEC_NAME} ${PROJECT_NAME}_gencfg
+#   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+#   )

@@ -81,19 +81,3 @@ class TrajectoryAsyncExecuter:
     if not self._connected:
       return None    
     return self._client.get_result()
-
-  def callback(self, data):
-    rospy.loginfo("%d is value!! SYSTEM FAULT: %d" % (data.value))
-    if data.value == 4:
-      self.stop()
-
-  def systemFaultListener(self):
-    """
-    Listens for system faults
-    """
-    rospy.init_node('listener_system_faults', anonymous=True)
-
-    rospy.Subscriber("/system_faults_status", SystemFaults, callback)
-
-    # spin() simply keeps python from exiting until this node is stopped
-    rospy.spin()

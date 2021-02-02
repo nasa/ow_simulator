@@ -11,6 +11,7 @@ import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
+from ow_faults.msg import SystemFaults
 
 from ow_lander.srv import *
 from ow_lander.msg import *
@@ -175,6 +176,8 @@ class PathPlanningCommander(object):
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
+    self.systemFaultListener()
+
     self.stow_srv = rospy.Service(
         'arm/stow', Stow, self.handle_stow)
     self.unstow_srv = rospy.Service(
@@ -194,7 +197,22 @@ class PathPlanningCommander(object):
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
     print("path_planning_commander has started!")
+
+
     rospy.spin()
+
+  def callback(self, data):
+    rospy.loginfo(data.value)
+    if data.value == 4:
+      rospy.loginfo("%d is value!! SYSTEM FAULT" % (data.value))
+      self.trajectory_async_executer.stop()
+    
+
+  def systemFaultListener(self):
+    """
+    Listens for system faults
+    """
+    rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
 
 
 if __name__ == '__main__':
