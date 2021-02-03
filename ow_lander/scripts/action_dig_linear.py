@@ -95,7 +95,7 @@ def change_joint_value(move_arm, cs, start_state, joint_index, target_value):
   #move_group.stop()
   return plan
 
-def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
+def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=False):
   """
   :param approximate: use an approximate solution. default True
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -104,22 +104,30 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
   :type z_start: float
   :type approximate: bool
   """
-  goal_pose = move_group.get_current_pose().pose
+  
+  move_arm.set_start_state(cs)
+  
+  goal_pose = move_arm.get_current_pose().pose
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
   goal_pose.position.z = z_start
+  
+  goal_pose.orientation.x = -0.70685
+  goal_pose.orientation.y = 0.011349
+  goal_pose.orientation.z = 0.70711
+  goal_pose.orientation.w = 0.014891
   # Ask the planner to generate a plan to the approximate joint values generated
   # by kinematics builtin IK solver. For more insight on this issue refer to:
   # https://github.com/nasa/ow_simulator/pull/60
   if approximate:
-    move_group.set_joint_value_target(goal_pose, True)
+    move_arm.set_joint_value_target(goal_pose, True)
   else:
-    move_group.set_pose_target(goal_pose)
-  plan = move_group.plan()
+    move_arm.set_pose_target(goal_pose)
+  plan = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   #plan = move_group.go(wait=True)
-  plan = move_group.plan(joint_goal)
+  #plan = move_arm.plan(joint_goal)
   return plan
   #move_group.execute(plan, wait=True)
   #move_group.stop()
@@ -196,7 +204,34 @@ def dig_linear(move_arm, robot, args):
   distance_from_ground = constants.ROT_RADIUS * \
       (math.cos(alpha) - math.sin(alpha))
   z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
-  #go_to_Z_coordinate(move_arm, x_start, y_start, z_start)
+  
+  start_state = plan_d.joint_trajectory.points[len(plan_d.joint_trajectory.points)-1].positions 
+  cs = robot.get_current_state()
+  # adding antenna state and grinder state  to the robot states.
+  # grider state obstained from rviz
+  
+  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  
+  cs.joint_state.position = new_value # modify current state of robot to the end
+  
+  plan_e = go_to_Z_coordinate(move_arm, cs,  x_start, y_start, z_start)
+  
+  dig_linear_traj = cascade_plans (dig_linear_traj, plan_e)
+  
+  ############################  rotate to dig in the ground
+  
+  start_state = plan_e.joint_trajectory.points[len(plan_e.joint_trajectory.points)-1].positions 
+  cs = robot.get_current_state()
+  # adding antenna state and grinder state  to the robot states.
+  # grider state obstained from rviz
+  
+  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  
+  cs.joint_state.position = new_value # modify current state of robot to the end
+  
+  plan_f = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
+  
+  dig_linear_traj = cascade_plans (dig_linear_traj, plan_f)
   
   return dig_linear_traj
   

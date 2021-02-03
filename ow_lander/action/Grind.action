@@ -1,0 +1,17 @@
+#goal definition
+float32 x_start
+float32 y_start
+float32 depth
+float32 length
+float32 parallel
+float32 ground_position
+---
+#result definition
+float32 final_x
+float32 final_y
+float32 final_z
+---
+#feedback
+float32 current_x
+float32 current_y
+float32 current_z

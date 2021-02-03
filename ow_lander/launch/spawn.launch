@@ -106,5 +106,6 @@
   <node pkg="ow_lander" name="Stow" type="stow_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="Deliver" type="deliver_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="DigLinear" type="dig_linear_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="Grind" type="grind_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 
 </launch>

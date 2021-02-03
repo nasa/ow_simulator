@@ -35,9 +35,7 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
   plan = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
-  #plan = move_group.go(wait=True)
-  move_group.plan(joint_goal)
-  move_group.execute(plan, wait=True)
+  plan = move_group.go(wait=True)
   move_group.stop()
   move_group.clear_pose_targets()
 
