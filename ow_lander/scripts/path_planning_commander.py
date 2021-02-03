@@ -32,6 +32,7 @@ class PathPlanningCommander(object):
     self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=10.0)
     self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=10.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
+    self.trajectory_async_executer.systemFaultListener()
 
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stop(self, req):
