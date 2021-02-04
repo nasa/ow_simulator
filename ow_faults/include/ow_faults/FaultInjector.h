@@ -48,15 +48,15 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
-	std::bitset<9> isSystem{		0b0'0000'0001 };
-	std::bitset<9> isArmGoalError{		0b0'0000'0010 };
-	std::bitset<9> isArmExecutionError{		0b0'0000'0100 };
-	std::bitset<9> isTaskGoalError{	0b0'000'1000 };
-	std::bitset<9> isCamGoalError{	0b0'0001'0000 };
-	std::bitset<9> isCamExecutionError{	0b0'0010'0000 };
-	std::bitset<9> isPtGoalError{		0b0'0100'0000 };
-	std::bitset<9> isPtExecutionError{	0b0'1000'0000 };
-	std::bitset<9> isLanderExecutionError{	0b1'0000'0000 };
+	static constexpr std::bitset<9> isSystem{		0b0'0000'0001 };
+	static constexpr std::bitset<9> isArmGoalError{		0b0'0000'0010 };
+	static constexpr std::bitset<9> isArmExecutionError{		0b0'0000'0100 };
+	static constexpr std::bitset<9> isTaskGoalError{	0b0'000'1000 };
+	static constexpr std::bitset<9> isCamGoalError{	0b0'0001'0000 };
+	static constexpr std::bitset<9> isCamExecutionError{	0b0'0010'0000 };
+	static constexpr std::bitset<9> isPtGoalError{		0b0'0100'0000 };
+	static constexpr std::bitset<9> isPtExecutionError{	0b0'1000'0000 };
+	static constexpr std::bitset<9> isLanderExecutionError{	0b1'0000'0000 };
   
 private:
   float powerTemperatureOverloadValue;
