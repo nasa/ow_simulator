@@ -6,8 +6,6 @@
 
 import rospy
 import actionlib
-import activity_guarded_move
-from ow_faults.msg import SystemFaults
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
 
@@ -58,7 +56,6 @@ class TrajectoryAsyncExecuter:
     goal = FollowJointTrajectoryGoal()
     goal.goal_time_tolerance = self._goal_time_tolerance
     goal.trajectory = trajectory
-    # print(goal, goal.trajectory)
     self._client.send_goal(goal, done_cb, active_cb, feedback_cb)
 
   def stop(self):
