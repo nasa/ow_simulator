@@ -48,17 +48,6 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
-  enum SystemFaults {
-    System=1, 
-    ArmGoalError=2, 
-    ArmExecutionError=4,
-    TaskGoalError=8, 
-    CamGoalError=16, 
-    CamExecutionError=32, 
-    PtGoalError=64, 
-    PtExecutionError=128, 
-    LanderExecutionError = 256};
-
   std::bitset<9> isNominal{};
 	std::bitset<9> isSystem{		0b0'0000'0001 };
 	std::bitset<9> isArmGoalError{		0b0'0000'0010 };
