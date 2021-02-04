@@ -8,6 +8,9 @@
 using namespace std;
 using namespace ow_lander;
 
+constexpr std::bitset<9> FaultInjector::isPtExecutionError;
+constexpr std::bitset<9> FaultInjector::isArmExecutionError;
+
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
   m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
