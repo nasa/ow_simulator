@@ -25,7 +25,7 @@ def Grind_client():
     goal.x_start = 1.65
     goal.y_start = 0.0
     goal.depth = 0.05
-    goal.length = 0.6
+    goal.length = 0.5 # 0.6
     goal.parallel = True
     goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
 

@@ -57,7 +57,7 @@ def cascade_plans (plan1, plan2):
         point.velocities = list(plan2.joint_trajectory.points[i].velocities)
         point.accelerations = list(plan2.joint_trajectory.points[i].accelerations)
         point.positions = plan2.joint_trajectory.points[i].positions
-        points1[i] = point
+        #points1[i] = point
         traj_msg.points.append(point)
     
     traj_msg.joint_names = plan1.joint_trajectory.joint_names

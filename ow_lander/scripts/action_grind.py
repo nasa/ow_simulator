@@ -12,15 +12,36 @@ import constants
 import math
 import copy
 from utils import is_shou_yaw_goal_in_range
-from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
+#from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from action_deliver_sample import cascade_plans
+from action_dig_linear import go_to_Z_coordinate, change_joint_value
 
 
+grind_traj = RobotTrajectory()
 
-def plan_cartesian_path(move_group, length, alpha, parallel):   
+def calculate_starting_state_grinder (plan,robot):
+  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
+  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
+  #j_grinder, j_scoop_yaw]
+
+  start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
+  cs = robot.get_current_state()
+  ## adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
+  ## j_scoop_yaw  state obstained from rviz
+  new_value =  (0,0) + start_state[:6] + (0.17403329917811217,) 
+  # modify current state of robot to the end state of the previous plan
+  cs.joint_state.position = new_value 
+  return cs
+
+def return_start_state (plan):
+    start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
+    return start_state
+    
+
+def plan_cartesian_path(move_group, length, alpha, parallel, z_start, cs):   
   """
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
   :type length: float
@@ -29,9 +50,20 @@ def plan_cartesian_path(move_group, length, alpha, parallel):
   """
   if parallel==False:
     alpha = alpha - math.pi/2
-
+  move_group.set_start_state(cs)
   waypoints = []
   wpose = move_group.get_current_pose().pose
+  # these values were obtained from rviz
+  wpose.position.x = 1.48266
+  wpose.position.y = -0.059
+  wpose.position.z = z_start # -0.0456
+  wpose.orientation.x = -0.706
+  wpose.orientation.y = 0.011186
+  wpose.orientation.z = 0.707963
+  wpose.orientation.w = 0.0146962
+  #wpose.orientation. 
+  #print('balcher')
+  #print (wpose)
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
   waypoints.append(copy.deepcopy(wpose))
@@ -86,41 +118,57 @@ def grind(move_grinder, robot, args):
   goal_pose.orientation.z = -0.706723318474
   goal_pose.orientation.w = 0.0307192507001
   move_grinder.set_pose_target(goal_pose)
-  plan = move_grinder.plan()
-  if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
+  plan_a = move_grinder.plan()
+  if len(plan_a.joint_trajectory.points) == 0: # If no plan found, abort
     return False
   #plan = move_grinder.go(wait=True)
   #move_grinder.stop()
   #move_grinder.clear_pose_targets()
+  #print(plan)
+  #cs = robot.get_current_state()
+  #print(cs)
 
   ## entering terrain
-  #z_start = ground_position + constants.GRINDER_OFFSET - depth
-  #go_to_Z_coordinate(move_grinder, x_start, y_start, z_start, False)
+  z_start = ground_position + constants.GRINDER_OFFSET - depth
+  cs = calculate_starting_state_grinder (plan_a, robot)
+  plan_b = go_to_Z_coordinate(move_grinder, cs, x_start, y_start, z_start, False)
+  
+  grind_traj = cascade_plans (plan_a, plan_b)
 
   ## grinding ice forward
-  #cartesian_plan, fraction = plan_cartesian_path(move_grinder, length, alpha, parallel)
+  cs = calculate_starting_state_grinder (plan_b, robot)
+  cartesian_plan, fraction = plan_cartesian_path(move_grinder, length, alpha, parallel, z_start, cs)
+  
+  grind_traj = cascade_plans (grind_traj , cartesian_plan)
   #move_grinder.execute(cartesian_plan, wait=True)
   #move_grinder.stop()
 
-  #joint_goal = move_grinder.get_current_joint_values()
-  #if parallel:
-    #change_joint_value(move_grinder, constants.J_SHOU_YAW, joint_goal[0]+0.08)
-  #else:
-    #x_now = move_grinder.get_current_pose().pose.position.x
-    #y_now = move_grinder.get_current_pose().pose.position.y
-    #z_now = move_grinder.get_current_pose().pose.position.z
-    #x_goal = x_now + 0.08*math.cos(alpha)
-    #y_goal = y_now + 0.08*math.sin(alpha)
-    #go_to_Z_coordinate(move_grinder, x_goal, y_goal, z_now, False)
+  ## grinding sideways
+  cs = calculate_starting_state_grinder (grind_traj, robot)
+  start_state =  return_start_state (grind_traj)
+  joint_goal = move_grinder.get_current_joint_values()
+  if parallel:
+    plan_c = change_joint_value(move_grinder, cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
+  else:
+    x_now = 1.48266 + length*math.cos(alpha)
+    y_now = -0.059 +length*math.sin(alpha)
+    z_now = z_start
+    x_goal = x_now + 0.08*math.cos(alpha)
+    y_goal = y_now + 0.08*math.sin(alpha)
+    plan_c = go_to_Z_coordinate(move_grinder, cs, x_goal, y_goal, z_now, False)
+    
 
+  grind_traj = cascade_plans (grind_traj , plan_c)
   ## grinding ice backwards
-  #cartesian_plan, fraction = plan_cartesian_path(move_grinder, -length, alpha, parallel)
+  cs = calculate_starting_state_grinder (grind_traj, robot)
+  cartesian_plan2, fraction2 = plan_cartesian_path(move_grinder, -length, alpha, parallel, z_start, cs)
+  grind_traj = cascade_plans (grind_traj , cartesian_plan2)
   #move_grinder.execute(cartesian_plan, wait=True)
   #move_grinder.stop()
 
   ## exiting terrain
-  #x_now = move_grinder.get_current_pose().pose.position.x
-  #y_now = move_grinder.get_current_pose().pose.position.y
-  #go_to_Z_coordinate(move_grinder, x_start, y_start, 0.22, False)
+  cs = calculate_starting_state_grinder (grind_traj, robot)
+  plan_d = go_to_Z_coordinate(move_grinder, cs,  x_start, y_start, 0.22, False)
+  grind_traj = cascade_plans (grind_traj , plan_d)
 
-  return plan
+  return grind_traj
