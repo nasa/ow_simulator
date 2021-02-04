@@ -177,11 +177,6 @@ class PathPlanningCommander(object):
       print("Guarded Move arm activity completed")
       return success, "Done"
     else:
-      # plan = activity_guarded_move.stop_guarded_move_plan(self.arm_move_group)
-      # self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                          #  done_cb=None,
-                                          #  active_cb=None,
-                                          #  feedback_cb=self.handle_guarded_move_feedback)
       self.trajectory_async_executer.stop()
       print("Guarded Move arm activity incomplete")
       return False, "guarded_move_plan failed"
@@ -218,6 +213,10 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
 
   def callback(self, data):
+
+    """
+    If system fault occurs, and it is an arm failure, path planning stops
+    """
     if (data.value & 4) == 4 :
       self.arm_fault = True
       self.trajectory_async_executer.stop()
