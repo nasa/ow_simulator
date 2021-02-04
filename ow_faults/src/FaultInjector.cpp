@@ -37,11 +37,11 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value) {
+void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<9> systemFaultsBitmask) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
-  msg.value = value; //should be ARM EXECUTION ERROR for now
+  msg.value = systemFaultsBitmask.to_ullong(); 
 }
 
 void FaultInjector::setArmFaultsMessage(ow_faults::ArmFaults& msg, int value) {
@@ -84,95 +84,100 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
   ow_faults::PowerFaults power_faults_msg;
-  SystemFaults sf = ArmExecutionError;
+
   ComponentFaults hardwareFault = Hardware;
+
+  std::bitset<9> systemFaultsBitmask{};
 
   //arm faults
   // Set failed sensor values to 0
   unsigned int index;
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isPtExecutionError;
   }
   if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isPtExecutionError;
   }
 
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isPtExecutionError;
+
   }
   if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isPtExecutionError;
   }
 
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
   if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+    systemFaultsBitmask |= isArmExecutionError;
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
+
+  setSytemFaultsMessage(system_faults_msg, systemFaultsBitmask);
 
   std_msgs::Float64 soc_msg;
 

@@ -218,8 +218,7 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
 
   def callback(self, data):
-    if data.value == 4:
-      # rospy.loginfo("%d is value!! SYSTEM FAULT" % (data.value))
+    if (data.value & 4) == 4 :
       self.arm_fault = True
       self.trajectory_async_executer.stop()
     else:
