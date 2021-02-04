@@ -48,7 +48,6 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
-  std::bitset<9> isNominal{};
 	std::bitset<9> isSystem{		0b0'0000'0001 };
 	std::bitset<9> isArmGoalError{		0b0'0000'0010 };
 	std::bitset<9> isArmExecutionError{		0b0'0000'0100 };
