@@ -118,3 +118,10 @@ def guarded_move_plan(move_arm, args):
   plan, _ = move_arm.compute_cartesian_path(waypoints, 0.01, 0.0)
   print "Done planning safe part of guarded_move"
   return plan
+
+def stop_guarded_move_plan(move_arm):
+  goal_pose = move_arm.get_current_pose().pose
+  waypoints = [goal_pose]
+  plan, _ = move_arm.compute_cartesian_path(waypoints, 0.01, 0.0)
+  print "Done planning no motion for arm"
+  return plan

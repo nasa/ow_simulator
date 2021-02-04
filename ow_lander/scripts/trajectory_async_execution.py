@@ -6,6 +6,7 @@
 
 import rospy
 import actionlib
+import activity_guarded_move
 from ow_faults.msg import SystemFaults
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
@@ -57,6 +58,7 @@ class TrajectoryAsyncExecuter:
     goal = FollowJointTrajectoryGoal()
     goal.goal_time_tolerance = self._goal_time_tolerance
     goal.trajectory = trajectory
+    # print(goal, goal.trajectory)
     self._client.send_goal(goal, done_cb, active_cb, feedback_cb)
 
   def stop(self):
@@ -82,18 +84,21 @@ class TrajectoryAsyncExecuter:
       return None    
     return self._client.get_result()
 
-  def callback(self, data):
-    rospy.loginfo("%d is value!! SYSTEM FAULT" % (data.value))
-    if data.value == 4:
-      self.stop()
+  # def callback(self, data):
+  #   if data.value == 4:
+  #     # rospy.loginfo("%d is value!! SYSTEM FAULT" % (data.value))
+  #     self._client.cancel_goal()
+  #     self.stop()
+  #     plan = activity_guarded_move.stop_guarded_move_plan(self.arm_move_group)
 
-  def systemFaultListener(self):
-    """
-    Listens for system faults
-    """
-    rospy.init_node('listener_system_faults', anonymous=True)
 
-    rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
+  # def systemFaultListener(self):
+  #   """
+  #   Listens for system faults
+  #   """
+  #   # rospy.init_node('listener_system_faults', anonymous=True)
 
-    # spin() simply keeps python from exiting until this node is stopped
-    rospy.spin()
+  #   rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
+
+  #   # spin() simply keeps python from exiting until this node is stopped
+  #   # rospy.spin()
