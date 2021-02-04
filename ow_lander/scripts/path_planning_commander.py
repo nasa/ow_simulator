@@ -234,6 +234,9 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
 
   def callback(self, data):
+    """
+    If system fault occurs, and it is an arm failure, path planning stops
+    """
     if data.value == 4:
       self.arm_fault = True
       self.trajectory_async_executer.stop()
