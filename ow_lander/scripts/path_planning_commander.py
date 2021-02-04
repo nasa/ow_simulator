@@ -184,7 +184,7 @@ class PathPlanningCommander(object):
                                           #  feedback_cb=self.handle_guarded_move_feedback)
       self.trajectory_async_executer.stop()
       print("Guarded Move arm activity incomplete")
-      return False, "gaurded_move_plan failed"
+      return False, "guarded_move_plan failed"
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
