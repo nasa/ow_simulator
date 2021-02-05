@@ -8,8 +8,9 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<9> FaultInjector::isPanTiltExecutionError;
-constexpr std::bitset<9> FaultInjector::isArmExecutionError;
+constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
+constexpr std::bitset<10> FaultInjector::isArmExecutionError;
+constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
@@ -40,7 +41,7 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<9> systemFaultsBitmask) {
+void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
@@ -90,7 +91,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   ComponentFaults hardwareFault = Hardware;
 
-  std::bitset<9> systemFaultsBitmask{};
+  std::bitset<10> systemFaultsBitmask{};
 
   //arm faults
   // Set failed sensor values to 0
@@ -180,7 +181,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setArmFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
-  setSytemFaultsMessage(system_faults_msg, systemFaultsBitmask);
 
   std_msgs::Float64 soc_msg;
 
@@ -190,12 +190,14 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     soc_msg.data = 2.2;
     m_fault_power_state_of_charge_pub.publish(soc_msg);
     setPowerFaultsMessage(power_faults_msg, hardwareFault);
+    systemFaultsBitmask |= isPowerSystemFault;
   }
   if(m_faults.instantaneous_capacity_loss_power_failure) {
     // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
     soc_msg.data = 98.5; //random now but should be >5% more than the previous value
     m_fault_power_state_of_charge_pub.publish(soc_msg);
     setPowerFaultsMessage(power_faults_msg, hardwareFault);
+    systemFaultsBitmask |= isPowerSystemFault;
   }
   if(m_faults.thermal_power_failure){
     // if > 50 degrees C, then consider fault. 
@@ -204,9 +206,12 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     thermal_msg.data = powerTemperatureOverloadValue;
     m_fault_power_temp_pub.publish(thermal_msg);
     setPowerFaultsMessage(power_faults_msg, hardwareFault);
+    systemFaultsBitmask |= isPowerSystemFault;
   } else {
     setPowerTemperatureFaultValue(false);
   }
+
+  setSytemFaultsMessage(system_faults_msg, systemFaultsBitmask);
 
   m_joint_state_pub.publish(output);
   m_fault_status_pub.publish(system_faults_msg);

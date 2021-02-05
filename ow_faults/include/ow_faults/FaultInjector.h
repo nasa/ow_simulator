@@ -48,15 +48,16 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
-	static constexpr std::bitset<9> isSystem{		0b0'0000'0001 };
-	static constexpr std::bitset<9> isArmGoalError{		0b0'0000'0010 };
-	static constexpr std::bitset<9> isArmExecutionError{		0b0'0000'0100 };
-	static constexpr std::bitset<9> isTaskGoalError{	0b0'000'1000 };
-	static constexpr std::bitset<9> isCamGoalError{	0b0'0001'0000 };
-	static constexpr std::bitset<9> isCamExecutionError{	0b0'0010'0000 };
-	static constexpr std::bitset<9> isPanTiltGoalError{		0b0'0100'0000 };
-	static constexpr std::bitset<9> isPanTiltExecutionError{	0b0'1000'0000 };
-	static constexpr std::bitset<9> isLanderExecutionError{	0b1'0000'0000 };
+	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
+	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
+	static constexpr std::bitset<10> isArmExecutionError{		0b00'0000'0100 };
+	static constexpr std::bitset<10> isTaskGoalError{	0b00'000'1000 };
+	static constexpr std::bitset<10> isCamGoalError{	0b00'0001'0000 };
+	static constexpr std::bitset<10> isCamExecutionError{	0b00'0010'0000 };
+	static constexpr std::bitset<10> isPanTiltGoalError{		0b00'0100'0000 };
+	static constexpr std::bitset<10> isPanTiltExecutionError{	0b00'1000'0000 };
+	static constexpr std::bitset<10> isLanderExecutionError{	0b01'0000'0000 };
+	static constexpr std::bitset<10> isPowerSystemFault{	0b10'0000'0000 };
   
 private:
   float powerTemperatureOverloadValue;
@@ -69,7 +70,7 @@ private:
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
   //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<9> systemFaultsBitmask);
+  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
   void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
   void setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value);
 
