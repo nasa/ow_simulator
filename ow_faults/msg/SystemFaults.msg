@@ -10,4 +10,4 @@ uint64 value
 # CamExecutionError=32, 
 # PtGoalError=64, 
 # PtExecutionError=128, 
-# LanderExecutionError = 256};
+# LanderExecutionError = 256

@@ -23,6 +23,7 @@ import activity_grind
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from ground_detection import GroundDetector
 
+ARM_EXECUTION_ERROR = 4
 
 class PathPlanningCommander(object):
 
@@ -217,7 +218,7 @@ class PathPlanningCommander(object):
     """
     If system fault occurs, and it is an arm failure, path planning stops
     """
-    if (data.value & 4) == 4 :
+    if (data.value & ARM_EXECUTION_ERROR) == ARM_EXECUTION_ERROR :
       self.arm_fault = True
       self.trajectory_async_executer.stop()
     else:

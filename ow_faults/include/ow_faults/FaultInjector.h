@@ -54,8 +54,8 @@ public:
 	static constexpr std::bitset<9> isTaskGoalError{	0b0'000'1000 };
 	static constexpr std::bitset<9> isCamGoalError{	0b0'0001'0000 };
 	static constexpr std::bitset<9> isCamExecutionError{	0b0'0010'0000 };
-	static constexpr std::bitset<9> isPtGoalError{		0b0'0100'0000 };
-	static constexpr std::bitset<9> isPtExecutionError{	0b0'1000'0000 };
+	static constexpr std::bitset<9> isPanTiltGoalError{		0b0'0100'0000 };
+	static constexpr std::bitset<9> isPanTiltExecutionError{	0b0'1000'0000 };
 	static constexpr std::bitset<9> isLanderExecutionError{	0b1'0000'0000 };
   
 private:
