@@ -8,7 +8,7 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<9> FaultInjector::isPtExecutionError;
+constexpr std::bitset<9> FaultInjector::isPanTiltExecutionError;
 constexpr std::bitset<9> FaultInjector::isArmExecutionError;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
@@ -97,21 +97,21 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   unsigned int index;
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = 0.0;
-    systemFaultsBitmask |= isPtExecutionError;
+    systemFaultsBitmask |= isPanTiltExecutionError;
   }
   if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index] = 0.0;
-    systemFaultsBitmask |= isPtExecutionError;
+    systemFaultsBitmask |= isPanTiltExecutionError;
   }
 
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index] = 0.0;
-    systemFaultsBitmask |= isPtExecutionError;
+    systemFaultsBitmask |= isPanTiltExecutionError;
 
   }
   if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index] = 0.0;
-    systemFaultsBitmask |= isPtExecutionError;
+    systemFaultsBitmask |= isPanTiltExecutionError;
   }
 
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
