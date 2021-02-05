@@ -41,7 +41,7 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<9> systemFaultsBitmask) {
+void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "/world";
