@@ -231,9 +231,6 @@ class PathPlanningCommander(object):
 
     rospy.spin()
 
-  def stop_arm(self):
-    plan = activity_guarded_move.stop_guarded_move_plan(self.arm_move_group)
-    self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
 
   def callback(self, data):
     """
