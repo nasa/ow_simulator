@@ -235,7 +235,7 @@ class PathPlanningCommander(object):
 
   def callback(self, data):
     """
-    If system fault occurs, and it is an arm failure, path planning stops
+    If system fault occurs, and it is an arm failure, arm movement is halted abruptly!
     """
     if data.value == 4:
       self.arm_fault = True
