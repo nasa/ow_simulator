@@ -188,7 +188,7 @@ class PathPlanningCommander(object):
       self.ground_detector.reset()
       self.trajectory_async_executer.execute(plan.joint_trajectory,
                                             done_cb=self.handle_guarded_move_done,
-                                            active_cb=None,
+                                            active_cb=self.stop_arm_if_fault,
                                             feedback_cb=self.handle_guarded_move_feedback)
       # To preserve the previous behaviour we are adding a blocking call till the
       # execution of the trajectory is completed
@@ -231,6 +231,11 @@ class PathPlanningCommander(object):
 
     rospy.spin()
 
+  def stop_arm_if_fault(self):
+    if self.arm_fault:
+      plan = activity_guarded_move.stop_guarded_move_plan(self.arm_move_group)
+      self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
+      self.trajectory_async_executer.stop()
 
   def callback(self, data):
     """
