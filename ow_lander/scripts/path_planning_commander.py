@@ -57,10 +57,12 @@ class PathPlanningCommander(object):
     plan = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
-    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.execute(plan.joint_trajectory, 
+                                          active_cb=self.stop_arm_if_fault_active_cb,
+                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
-    print("Stow arm activity completed")
-    return True, "Done"
+    return self.return_message("Stow arm")
+
 
   # === SERVICE ACTIVITIES - Unstow =============================
   def handle_unstow(self, req):
@@ -73,10 +75,11 @@ class PathPlanningCommander(object):
     plan = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
-    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          active_cb=self.stop_arm_if_fault_active_cb,
+                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
-    print("Unstow arm activity completed")
-    return True, "Done"
+    return self.return_message("Unstow arm")
 
   # === SERVICE ACTIVITIES - deliver sample =============================
   def handle_deliver_sample(self, req):
@@ -165,6 +168,9 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
+    if self.arm_fault:
+      self.trajectory_async_executer.stop()
+
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
@@ -175,35 +181,29 @@ class PathPlanningCommander(object):
     """
     print("Guarded Move arm activity started")
 
-    if not self.arm_fault:
-      guarded_move_args = activity_guarded_move.arg_parsing(req)
-      success = activity_guarded_move.pre_guarded_move(
-          self.arm_move_group, guarded_move_args)
-      if not success:
-        return False, "pre_guarded_move failed"
-      plan = activity_guarded_move.guarded_move_plan(
-          self.arm_move_group, guarded_move_args)
-      if len(plan.joint_trajectory.points) == 0:
-        return False, "guarded_move_plan failed"
-      self.ground_detector.reset()
-      self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                            done_cb=self.handle_guarded_move_done,
-                                            active_cb=self.stop_arm_if_fault,
-                                            feedback_cb=self.handle_guarded_move_feedback)
-      # To preserve the previous behaviour we are adding a blocking call till the
-      # execution of the trajectory is completed
-      self.trajectory_async_executer.wait()
-      print("Guarded Move arm activity completed")
-      return success, "Done"
-    else:
-      self.trajectory_async_executer.stop()
-      print("Guarded Move arm activity incomplete")
+    guarded_move_args = activity_guarded_move.arg_parsing(req)
+    success = activity_guarded_move.pre_guarded_move(
+        self.arm_move_group, guarded_move_args)
+    if not success:
+      return False, "pre_guarded_move failed"
+    plan = activity_guarded_move.guarded_move_plan(
+        self.arm_move_group, guarded_move_args)
+    if len(plan.joint_trajectory.points) == 0:
       return False, "guarded_move_plan failed"
+    self.ground_detector.reset()
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          done_cb=self.handle_guarded_move_done,
+                                          active_cb=self.stop_arm_if_fault_active_cb,
+                                          feedback_cb=self.handle_guarded_move_feedback)
+    # To preserve the previous behaviour we are adding a blocking call till the
+    # execution of the trajectory is completed
+    self.trajectory_async_executer.wait()
+    
+    return self.return_message( "Guarded Move arm activity", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
 
-    self.systemFaultListener()
     # subscribe to system_fault_status for any arm faults
     rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
 
@@ -231,19 +231,35 @@ class PathPlanningCommander(object):
 
     rospy.spin()
 
-  def stop_arm_if_fault(self):
-    if self.arm_fault:
-      plan = activity_guarded_move.stop_guarded_move_plan(self.arm_move_group)
-      self.trajectory_async_executer.systemFaultListener(plan.joint_trajectory, self.handle_guarded_move_feedback)
-      self.trajectory_async_executer.stop()
+  def stop_arm_if_fault_feedback_cb(self, feedback):
+    """
+    stops arm if arm fault exists during feedback callback
+    """
+    if self.arm_fault: self.trajectory_async_executer.stop()
+
+  def stop_arm_if_fault_active_cb(self):
+    """
+    stops arm if arm fault exists during active callback
+    """
+    if self.arm_fault: self.trajectory_async_executer.stop()
+
+  def return_message(self, action_name, success=None):
+    if not self.arm_fault and success:
+      print(action_name + " activity completed")
+      return success, "Done" 
+    elif not self.arm_fault and success is None:
+      print(action_name + " activity completed")
+      return True, "Done" 
+    else:
+      print(action_name + " activity incomplete")
+      return False,  action_name + " failed"
 
   def callback(self, data):
     """
-    If system fault occurs, and it is an arm failure, arm movement is halted abruptly!
+    If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
     """
     if data.value == 4:
       self.arm_fault = True
-      self.trajectory_async_executer.stop()
     else:
       self.arm_fault = False
 
