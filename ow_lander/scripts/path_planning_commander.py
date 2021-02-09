@@ -34,14 +34,29 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
 
   # === SERVICE ACTIVITIES - Stow =============================
+  def handle_stop(self, req):
+    """
+    :type req: class 'ow_lander.srv._Stow.StopRequest'
+    """
+    print("Stop arm activity started")
+    self.trajectory_async_executer.stop()
+    print("Stop arm activity completed")
+    return True, "Done"
+
+  # === SERVICE ACTIVITIES - Stow =============================
   def handle_stow(self, req):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
     print("Stow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
-    self.arm_move_group.go(goal, wait=True)
-    self.arm_move_group.stop()
+    self.arm_move_group.set_joint_value_target(goal)
+
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.wait()
     print("Stow arm activity completed")
     return True, "Done"
 
@@ -52,8 +67,12 @@ class PathPlanningCommander(object):
     """
     print("Unstow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
-    self.arm_move_group.go(goal, wait=True)
-    self.arm_move_group.stop()
+    self.arm_move_group.set_joint_value_target(goal)
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.wait()
     print("Unstow arm activity completed")
     return True, "Done"
 
@@ -175,6 +194,8 @@ class PathPlanningCommander(object):
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
+    self.stop_srv = rospy.Service(
+        'arm/stop', Stop, self.handle_stop)
     self.stow_srv = rospy.Service(
         'arm/stow', Stow, self.handle_stow)
     self.unstow_srv = rospy.Service(
