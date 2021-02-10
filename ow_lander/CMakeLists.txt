@@ -31,6 +31,7 @@ add_action_files(
   FILES Stow.action
   FILES Deliver.action
   FILES DigLinear.action
+  FILES DigCircular.action
   FILES Grind.action
 )
 

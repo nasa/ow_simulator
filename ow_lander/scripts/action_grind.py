@@ -34,11 +34,8 @@ def calculate_starting_state_grinder (plan,robot):
   new_value =  (0,0) + start_state[:6] + (0.17403329917811217,) 
   # modify current state of robot to the end state of the previous plan
   cs.joint_state.position = new_value 
-  return cs
+  return cs, start_state
 
-def return_start_state (plan):
-    start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
-    return start_state
     
 
 def plan_cartesian_path(move_group, length, alpha, parallel, z_start, cs):   
@@ -130,13 +127,13 @@ def grind(move_grinder, robot, args):
 
   ## entering terrain
   z_start = ground_position + constants.GRINDER_OFFSET - depth
-  cs = calculate_starting_state_grinder (plan_a, robot)
+  cs, start_state  = calculate_starting_state_grinder (plan_a, robot)
   plan_b = go_to_Z_coordinate(move_grinder, cs, x_start, y_start, z_start, False)
   
   grind_traj = cascade_plans (plan_a, plan_b)
 
   ## grinding ice forward
-  cs = calculate_starting_state_grinder (plan_b, robot)
+  cs, start_state = calculate_starting_state_grinder (plan_b, robot)
   cartesian_plan, fraction = plan_cartesian_path(move_grinder, length, alpha, parallel, z_start, cs)
   
   grind_traj = cascade_plans (grind_traj , cartesian_plan)
@@ -144,8 +141,7 @@ def grind(move_grinder, robot, args):
   #move_grinder.stop()
 
   ## grinding sideways
-  cs = calculate_starting_state_grinder (grind_traj, robot)
-  start_state =  return_start_state (grind_traj)
+  cs, start_state  = calculate_starting_state_grinder (grind_traj, robot)
   joint_goal = move_grinder.get_current_joint_values()
   if parallel:
     plan_c = change_joint_value(move_grinder, cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
@@ -160,14 +156,14 @@ def grind(move_grinder, robot, args):
 
   grind_traj = cascade_plans (grind_traj , plan_c)
   ## grinding ice backwards
-  cs = calculate_starting_state_grinder (grind_traj, robot)
+  cs, start_state  = calculate_starting_state_grinder (grind_traj, robot)
   cartesian_plan2, fraction2 = plan_cartesian_path(move_grinder, -length, alpha, parallel, z_start, cs)
   grind_traj = cascade_plans (grind_traj , cartesian_plan2)
   #move_grinder.execute(cartesian_plan, wait=True)
   #move_grinder.stop()
 
   ## exiting terrain
-  cs = calculate_starting_state_grinder (grind_traj, robot)
+  cs, start_state  = calculate_starting_state_grinder (grind_traj, robot)
   plan_d = go_to_Z_coordinate(move_grinder, cs,  x_start, y_start, 0.22, False)
   grind_traj = cascade_plans (grind_traj , plan_d)
 
