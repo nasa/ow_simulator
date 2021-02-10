@@ -258,10 +258,7 @@ class PathPlanningCommander(object):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
     """
-    if data.value == 4:
-      self.arm_fault = True
-    else:
-      self.arm_fault = False
+    self.arm_fault = (data.value & 4 == 4)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()
