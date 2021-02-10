@@ -259,7 +259,7 @@ class PathPlanningCommander(object):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
     """
-    if data.value == 4:
+    if (data.value & ARM_EXECUTION_ERROR) == ARM_EXECUTION_ERROR :
       self.arm_fault = True
     else:
       self.arm_fault = False
