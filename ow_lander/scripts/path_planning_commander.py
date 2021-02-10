@@ -58,7 +58,6 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
-                                          active_cb=None,
                                           feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
     return self.return_message("Stow arm")
@@ -76,7 +75,6 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                          active_cb=None,
                                           feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
     return self.return_message("Unstow arm")
@@ -191,7 +189,6 @@ class PathPlanningCommander(object):
     self.ground_detector.reset()
     self.trajectory_async_executer.execute(plan.joint_trajectory,
                                           done_cb=self.handle_guarded_move_done,
-                                          active_cb=None,
                                           feedback_cb=self.handle_guarded_move_feedback)
     # To preserve the previous behaviour we are adding a blocking call till the
     # execution of the trajectory is completed
