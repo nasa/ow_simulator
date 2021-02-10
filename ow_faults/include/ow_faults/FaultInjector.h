@@ -5,6 +5,7 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
+#include <bitset>
 #include <ctime>
 #include <cstdlib>
 #include <ros/ros.h>
@@ -47,17 +48,17 @@ public:
     VelocityLimit=7, 
     NoForceData=8};
 
-  enum SystemFaults {
-    System=1, 
-    ArmGoalError=2, 
-    ArmExecutionError=4,
-    TaskGoalError=8, 
-    CamGoalError=16, 
-    CamExecutionError=32, 
-    PtGoalError=64, 
-    PtExecutionError=128, 
-    LanderExecutionError = 256};
-
+	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
+	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
+	static constexpr std::bitset<10> isArmExecutionError{		0b00'0000'0100 };
+	static constexpr std::bitset<10> isTaskGoalError{	0b00'000'1000 };
+	static constexpr std::bitset<10> isCamGoalError{	0b00'0001'0000 };
+	static constexpr std::bitset<10> isCamExecutionError{	0b00'0010'0000 };
+	static constexpr std::bitset<10> isPanTiltGoalError{		0b00'0100'0000 };
+	static constexpr std::bitset<10> isPanTiltExecutionError{	0b00'1000'0000 };
+	static constexpr std::bitset<10> isLanderExecutionError{	0b01'0000'0000 };
+	static constexpr std::bitset<10> isPowerSystemFault{	0b10'0000'0000 };
+  
 private:
   float powerTemperatureOverloadValue;
   
@@ -69,7 +70,7 @@ private:
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
   //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
+  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
   void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
   void setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value);
 

@@ -23,6 +23,7 @@ import activity_grind
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from ground_detection import GroundDetector
 
+ARM_EXECUTION_ERROR = 4
 
 class PathPlanningCommander(object):
 
@@ -244,7 +245,7 @@ class PathPlanningCommander(object):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
     """
-    self.arm_fault = (data.value & 4 == 4)
+    self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()
