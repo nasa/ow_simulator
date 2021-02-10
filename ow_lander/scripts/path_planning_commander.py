@@ -243,13 +243,10 @@ class PathPlanningCommander(object):
     """
     if self.arm_fault: self.trajectory_async_executer.stop()
 
-  def return_message(self, action_name, success=None):
-    if not self.arm_fault and success:
+  def return_message(self, action_name, success=True):
+    if not self.arm_fault:
       print(action_name + " activity completed")
-      return success, "Done" 
-    elif not self.arm_fault and success is None:
-      print(action_name + " activity completed")
-      return True, "Done" 
+      return success, "Done"
     else:
       print(action_name + " activity incomplete")
       return False,  action_name + " failed"
