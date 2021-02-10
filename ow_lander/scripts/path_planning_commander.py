@@ -11,6 +11,7 @@ import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
+from ow_faults.msg import SystemFaults
 
 from ow_lander.srv import *
 from ow_lander.msg import *
@@ -32,6 +33,7 @@ class PathPlanningCommander(object):
     self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=10.0)
     self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=10.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
+    self.arm_fault = False
 
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stop(self, req):
@@ -55,10 +57,11 @@ class PathPlanningCommander(object):
     plan = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
-    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.execute(plan.joint_trajectory, 
+                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
-    print("Stow arm activity completed")
-    return True, "Done"
+    return self.return_message("Stow arm")
+
 
   # === SERVICE ACTIVITIES - Unstow =============================
   def handle_unstow(self, req):
@@ -71,10 +74,10 @@ class PathPlanningCommander(object):
     plan = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
-    self.trajectory_async_executer.execute(plan.joint_trajectory)
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
-    print("Unstow arm activity completed")
-    return True, "Done"
+    return self.return_message("Unstow arm")
 
   # === SERVICE ACTIVITIES - deliver sample =============================
   def handle_deliver_sample(self, req):
@@ -163,6 +166,7 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
+
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
@@ -172,6 +176,7 @@ class PathPlanningCommander(object):
     :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
     """
     print("Guarded Move arm activity started")
+
     guarded_move_args = activity_guarded_move.arg_parsing(req)
     success = activity_guarded_move.pre_guarded_move(
         self.arm_move_group, guarded_move_args)
@@ -183,17 +188,20 @@ class PathPlanningCommander(object):
       return False, "guarded_move_plan failed"
     self.ground_detector.reset()
     self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                           done_cb=self.handle_guarded_move_done,
-                                           active_cb=None,
-                                           feedback_cb=self.handle_guarded_move_feedback)
+                                          done_cb=self.handle_guarded_move_done,
+                                          feedback_cb=self.handle_guarded_move_feedback)
     # To preserve the previous behaviour we are adding a blocking call till the
     # execution of the trajectory is completed
     self.trajectory_async_executer.wait()
-    print("Guarded Move arm activity completed")
-    return success, "Done"
+    
+    return self.return_message( "Guarded Move arm activity", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
+
+    # subscribe to system_fault_status for any arm faults
+    rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
+
     self.stop_srv = rospy.Service(
         'arm/stop', Stop, self.handle_stop)
     self.stow_srv = rospy.Service(
@@ -215,8 +223,28 @@ class PathPlanningCommander(object):
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
     print("path_planning_commander has started!")
+
     rospy.spin()
 
+  def stop_arm_if_fault_feedback_cb(self, feedback):
+    """
+    stops arm if arm fault exists during feedback callback
+    """
+    if self.arm_fault: self.trajectory_async_executer.stop()
+
+  def return_message(self, action_name, success=True):
+    if not self.arm_fault:
+      print(action_name + " activity completed")
+      return success, "Done"
+    else:
+      print(action_name + " activity incomplete")
+      return False,  action_name + " failed"
+
+  def callback(self, data):
+    """
+    If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+    """
+    self.arm_fault = (data.value & 4 == 4)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()
