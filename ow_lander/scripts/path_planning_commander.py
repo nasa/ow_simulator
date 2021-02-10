@@ -59,7 +59,6 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
-                                          active_cb=self.stop_arm_if_fault_active_cb,
                                           feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
     return self.return_message("Stow arm")
@@ -77,7 +76,6 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                          active_cb=self.stop_arm_if_fault_active_cb,
                                           feedback_cb=self.stop_arm_if_fault_feedback_cb)
     self.trajectory_async_executer.wait()
     return self.return_message("Unstow arm")
@@ -169,8 +167,6 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
-    if self.arm_fault:
-      self.trajectory_async_executer.stop()
 
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
@@ -194,7 +190,6 @@ class PathPlanningCommander(object):
     self.ground_detector.reset()
     self.trajectory_async_executer.execute(plan.joint_trajectory,
                                           done_cb=self.handle_guarded_move_done,
-                                          active_cb=self.stop_arm_if_fault_active_cb,
                                           feedback_cb=self.handle_guarded_move_feedback)
     # To preserve the previous behaviour we are adding a blocking call till the
     # execution of the trajectory is completed
@@ -238,19 +233,10 @@ class PathPlanningCommander(object):
     """
     if self.arm_fault: self.trajectory_async_executer.stop()
 
-  def stop_arm_if_fault_active_cb(self):
-    """
-    stops arm if arm fault exists during active callback
-    """
-    if self.arm_fault: self.trajectory_async_executer.stop()
-
-  def return_message(self, action_name, success=None):
-    if not self.arm_fault and success:
+  def return_message(self, action_name, success=True):
+    if not self.arm_fault:
       print(action_name + " activity completed")
-      return success, "Done" 
-    elif not self.arm_fault and success is None:
-      print(action_name + " activity completed")
-      return True, "Done" 
+      return success, "Done"
     else:
       print(action_name + " activity incomplete")
       return False,  action_name + " failed"
@@ -259,10 +245,7 @@ class PathPlanningCommander(object):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
     """
-    if (data.value & ARM_EXECUTION_ERROR) == ARM_EXECUTION_ERROR :
-      self.arm_fault = True
-    else:
-      self.arm_fault = False
+    self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()
