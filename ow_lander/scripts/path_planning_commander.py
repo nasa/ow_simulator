@@ -168,8 +168,6 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
-    if self.arm_fault:
-      self.trajectory_async_executer.stop()
 
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
