@@ -14,6 +14,7 @@
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
 #include "ow_faults/PowerFaults.h"
+#include "ow_faults/PTFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <unordered_map>
@@ -39,14 +40,17 @@ public:
   enum ComponentFaults {
     // general
     Hardware=1, 
+    //pt
+    JointLimit = 2,
     //arm 
-    TrajectoryGeneration=2, 
+    TrajectoryGeneration = 2,
     Collision=3, 
     Estop=4, 
     PositionLimit=5, 
     TorqueLimit=6, 
     VelocityLimit=7, 
-    NoForceData=8};
+    NoForceData=8
+    };
 
 	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
 	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
@@ -73,6 +77,7 @@ private:
   void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
   void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
   void setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value);
+  void setPTFaultsMessage(ow_faults::PTFaults& msg, int value);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -97,6 +102,7 @@ private:
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
+  ros::Publisher m_antennae_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;

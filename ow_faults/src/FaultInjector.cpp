@@ -28,7 +28,9 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
   // topic for power fault status, see PowerFaults.msg
   m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
-  
+  // topic for power fault status, see PTFaults.msg
+  m_antennae_fault_status_pub = node_handle.advertise<ow_faults::PTFaults>("/pt_faults_status", 10);
+
   srand (static_cast <unsigned> (time(0)));
 }
 
@@ -62,6 +64,13 @@ void FaultInjector::setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value
   msg.value = value; //should be HARDWARE for now
 }
 
+void FaultInjector::setPTFaultsMessage(ow_faults::PTFaults& msg, int value) {
+  // for now only arm execution errors
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "/world";
+  msg.value = value; //should be HARDWARE for now
+}
+
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
   float thermal_val;
   if (isnan(powerTemperatureOverloadValue)) {
@@ -88,6 +97,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
   ow_faults::PowerFaults power_faults_msg;
+  ow_faults::PTFaults pt_faults_msg;
 
   ComponentFaults hardwareFault = Hardware;
 
@@ -211,12 +221,22 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setPowerTemperatureFaultValue(false);
   }
 
+  if (m_faults.antennae_pan_failure){
+    systemFaultsBitmask |= isPanTiltExecutionError;
+    setPTFaultsMessage(pt_faults_msg,hardwareFault);
+  }
+  if (m_faults.antennae_tilt_failure) {
+    systemFaultsBitmask |= isPanTiltExecutionError;
+    setPTFaultsMessage(pt_faults_msg,hardwareFault);
+  }
+
   setSytemFaultsMessage(system_faults_msg, systemFaultsBitmask);
 
   m_joint_state_pub.publish(output);
   m_fault_status_pub.publish(system_faults_msg);
   m_arm_fault_status_pub.publish(arm_faults_msg);
   m_power_fault_status_pub.publish(power_faults_msg);
+  m_antennae_fault_status_pub.publish(pt_faults_msg);
 }
 
 template<typename group_t, typename item_t>
