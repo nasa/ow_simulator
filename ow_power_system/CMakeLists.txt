@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_power_system)
 
+set(GSAP_DIR /usr/local/home/unaal/tools/GSAP)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -13,6 +15,12 @@ find_package(roslaunch)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+include(${GSAP_DIR}/compiler_flags.cmake) ## TODO: Is this really needed?
+
+link_directories(
+  ${GSAP_DIR}/build
+)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -109,8 +117,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  ${GSAP_DIR}/inc
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 
 ## Declare a C++ library
@@ -126,7 +135,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME} power_system_node src/power_system_node.cpp)
+add_executable(power_system_node
+  src/power_system_util.cpp
+  src/power_system_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -139,9 +150,10 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(power_system_node
+  ${catkin_LIBRARIES}
+  gsap
+)
 
 #############
 ## Install ##
@@ -159,9 +171,9 @@ include_directories(
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS power_system_node
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -197,5 +209,3 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-add_subdirectory(src)
