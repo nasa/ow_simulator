@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_power_system)
 
-set(GSAP_DIR /usr/local/home/unaal/tools/GSAP)
+if(DEFINED ENV{GSAP_ROOT_DIR})
+  set(GSAP_DIR $ENV{GSAP_ROOT_DIR})
+else()
+  message(FATAL_ERROR, "GSAP_ROOT_DIR environment variable is not set")
+endif()
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
