@@ -33,6 +33,7 @@ add_action_files(
   FILES DigLinear.action
   FILES DigCircular.action
   FILES Grind.action
+  FILES Guardedmove.action
 )
 
 

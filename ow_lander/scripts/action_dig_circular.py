@@ -91,10 +91,13 @@ def dig_circular(move_arm, move_limbs, robot, args):
     #if not parallel:
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
-    #controller_switcher('limbs_controller', 'arm_controller')
     plan_b = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
     circ_traj = cascade_plans (plan_a, plan_b)
-    #controller_switcher('arm_controller', 'limbs_controller')
+
+    # Rotate hand perpendicular to arm direction
+    cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    plan_c = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
+    circ_traj = cascade_plans (circ_traj, plan_c)
   else:
     # Rotate hand so scoop is in middle point
     cs, start_state = calculate_starting_state_arm (plan_a, robot)
@@ -110,7 +113,17 @@ def dig_circular(move_arm, move_limbs, robot, args):
     cs, start_state = calculate_starting_state_arm (circ_traj, robot)
     plan_d = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
     circ_traj = cascade_plans (circ_traj, plan_d)
-  #circ_traj = cascade_plans (plan_a, plan_b)
-
+    
+    # Once aligned to trench goal, place hand above trench middle point
+    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    z_start = ground_position + constants.R_PARALLEL_FALSE - depth
+    plan_e = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
+    circ_traj = cascade_plans (circ_traj, plan_e)
+    
+    # Rotate dist to dig
+    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    dist_now = start_state[3]
+    plan_f = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
+    circ_traj = cascade_plans (circ_traj, plan_f)
 
   return circ_traj
