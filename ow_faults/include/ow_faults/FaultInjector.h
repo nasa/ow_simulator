@@ -29,6 +29,7 @@
 // placeholder fault estimator.
 class FaultInjector
 {
+
 public:
   FaultInjector(ros::NodeHandle node_handle);
   ~FaultInjector(){}
@@ -74,10 +75,14 @@ private:
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
   //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
-  void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
-  void setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value);
-  void setPTFaultsMessage(ow_faults::PTFaults& msg, int value);
+  //System Faults
+  void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+  // Arm Faults
+  void setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value);
+  //Power Faults
+  void setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value);
+  //Pan Tilt Faults
+  void setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -107,6 +112,5 @@ private:
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
 };
-
 
 #endif
