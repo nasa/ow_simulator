@@ -9,6 +9,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <ros/ros.h>
+#include <cstdint>
 #include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
@@ -38,7 +39,7 @@ public:
 
   enum Nominal { None=0 };
 
-  enum class ComponentFaults : int {
+  enum class ComponentFaults : uint {
     // general
     Hardware = 1, 
     //pt

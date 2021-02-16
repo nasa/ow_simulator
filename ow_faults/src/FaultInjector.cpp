@@ -56,7 +56,7 @@ void FaultInjector::setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults 
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-  msg.value = static_cast<int>(value); //should be HARDWARE for now
+  msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
 //Setting Power Faults Message
@@ -64,7 +64,7 @@ void FaultInjector::setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFault
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-  msg.value = static_cast<int>(value); //should be HARDWARE for now
+  msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
 //Setting Pant Tilt Faults Message
@@ -72,7 +72,7 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-  msg.value = static_cast<int>(value); //should be HARDWARE for now
+  msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
