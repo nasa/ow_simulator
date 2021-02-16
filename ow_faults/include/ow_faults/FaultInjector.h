@@ -39,17 +39,17 @@ public:
 
   enum class ComponentFaults : int {
     // general
-    Hardware=1, 
+    Hardware = 1, 
     //pt
     JointLimit = 2,
     //arm 
     TrajectoryGeneration = 2,
-    Collision=3, 
-    Estop=4, 
-    PositionLimit=5, 
-    TorqueLimit=6, 
-    VelocityLimit=7, 
-    NoForceData=8
+    Collision = 3, 
+    Estop = 4, 
+    PositionLimit = 5, 
+    TorqueLimit = 6, 
+    VelocityLimit = 7, 
+    NoForceData = 8
     };
 
 	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
