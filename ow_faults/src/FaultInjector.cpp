@@ -67,7 +67,7 @@ void FaultInjector::setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value
 void FaultInjector::setPTFaultsMessage(ow_faults::PTFaults& msg, int value) {
   // for now only arm execution errors
   msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "/world";
+  msg.header.frame_id = "world";
   msg.value = value; //should be HARDWARE for now
 }
 
