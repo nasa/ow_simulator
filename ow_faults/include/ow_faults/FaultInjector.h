@@ -37,7 +37,7 @@ public:
 
   enum Nominal { None=0 };
 
-  enum ComponentFaults {
+  enum class ComponentFaults : int {
     // general
     Hardware=1, 
     //pt
