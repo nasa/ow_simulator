@@ -74,7 +74,7 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
-  //Setting the correct values for system faults and arm faults messages
+  //Setting the correct values for faults messages via function overloading
   //System Faults
   void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
   // Arm Faults
