@@ -221,15 +221,10 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setPowerTemperatureFaultValue(false);
   }
 
-  if (m_faults.antennae_pan_failure){
+  if (m_faults.antennae_pan_failure || m_faults.antennae_tilt_failure) {
     systemFaultsBitmask |= isPanTiltExecutionError;
     setPTFaultsMessage(pt_faults_msg,hardwareFault);
   }
-  if (m_faults.antennae_tilt_failure) {
-    systemFaultsBitmask |= isPanTiltExecutionError;
-    setPTFaultsMessage(pt_faults_msg,hardwareFault);
-  }
-
   setSytemFaultsMessage(system_faults_msg, systemFaultsBitmask);
 
   m_joint_state_pub.publish(output);
