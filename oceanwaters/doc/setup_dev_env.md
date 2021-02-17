@@ -55,7 +55,9 @@ distributions on sourceforge.net are not always kept up to date.
 git clone https://git.code.sf.net/p/plexil/git plexil
 ```
 
-The default git branch of PLEXIL is `releases/plexil-4`, which is maintained as a stable version of PLEXIL compatible with OceanWATERS and suitable for general use.
+The default git branch of PLEXIL is `releases/plexil-4`, which is maintained as
+a stable version of PLEXIL compatible with OceanWATERS and suitable for general
+use.
 
 * Install any of the following build prerequisites needed. If you're not sure
 which are missing, try the build, see where it breaks, and install new packages
@@ -70,8 +72,11 @@ sudo apt install make \
                  g++ \
                  ant \
                  gperf \
-                 openjdk-8-jdk
+                 default-jre
 ```
+
+Note that PLEXIL (specifically the plan compiler) requires the Java compiler and
+runtime environment, version 8 or newer.
 
 * Define the `PLEXIL_HOME` environment variable as the location of your PLEXIL
   installation, e.g.
