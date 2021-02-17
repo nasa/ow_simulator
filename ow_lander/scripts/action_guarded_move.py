@@ -7,8 +7,6 @@
 import rospy
 import constants
 import math
-import copy
-from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
@@ -23,14 +21,14 @@ guarded_move_traj = RobotTrajectory()
 
 def guarded_move_plan(move_arm, robot, args):
     
-  ### pre-guarded move starts here ###  
+  ### pre-guarded move starts here ### 
     
-  targ_x = args.targ_x
-  targ_y = args.targ_y
-  targ_z = args.targ_z
-  direction_x = args.direction_x
-  direction_y = args.direction_y
-  direction_z = args.direction_z
+  targ_x = args.start.x
+  targ_y = args.start.y
+  targ_z = args.start.z
+  direction_x = args.normal.x
+  direction_y = args.normal.y
+  direction_z = args.normal.z
   search_distance = args.search_distance
   
   # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM

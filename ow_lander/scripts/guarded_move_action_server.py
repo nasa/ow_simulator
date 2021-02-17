@@ -8,28 +8,15 @@ import rospy
 import actionlib
 import ow_lander.msg
 import sys
-import copy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
-from math import pi
-from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
-from moveit_commander.conversions import pose_to_list
-import math
-import constants
-import utils
-import activity_full_digging_traj
-import action_deliver_sample
 import action_guarded_move
-#from action_deliver_sample import deliver_sample
-
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
+from ground_detection import GroundDetector
+from ow_lander.msg import *
+from actionlib_msgs.msg import GoalStatus
 
 
 
@@ -49,31 +36,65 @@ class GuardedMoveActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
+        self.ground_detector = GroundDetector()
+        self.guarded_move_pub = rospy.Publisher(
+        '/guarded_move_result', GuardedMoveResult, queue_size=10)
+        
+    def handle_guarded_move_done(self, state, result):
+        """
+        :type state: int
+        :type result: FollowJointTrajectoryResult
+        """
+        ground_detected = state == GoalStatus.PREEMPTED
+        ground_position = self.ground_detector.ground_position if ground_detected else Point()
+        rospy.loginfo("Ground Detected ? {}".format(ground_detected))
+        self.guarded_move_pub.publish(
+        ground_detected, 'base_link', ground_position)
+
+    def handle_guarded_move_feedback(self, feedback):
+        """
+        :type feedback: FollowJointTrajectoryFeedback
+        """
+        if self.ground_detector.detect():
+          self.trajectory_async_executer.stop()    
         
     
     def _update_feedback(self):
  
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
-        self._fdbk.current_x = self._ls.x
-        self._fdbk.current_y = self._ls.y
-        self._fdbk.current_z = self._ls.z
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
         
         
     def _update_motion(self, goal):
-        #activity_full_digging_traj.unstow(self._interface.move_arm)
         print("Guarded move activity started")
-        #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        #plan =  
         self.guarded_move_traj  = action_guarded_move.guarded_move_plan(self._interface.move_arm,self._interface.robot, goal)
         #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.guarded_move_traj.joint_trajectory.points)
         start_time =   self.guarded_move_traj.joint_trajectory.points[0].time_from_start
         end_time = self.guarded_move_traj.joint_trajectory.points[n_points-1].time_from_start
         self._timeout = end_time -start_time
-        #return self.deliver_sample_traj
+        
+    def handle_guarded_move_done(self, state, result):
+        """
+        :type state: int
+        :type result: FollowJointTrajectoryResult
+        """
+        ground_detected = state == GoalStatus.PREEMPTED
+        ground_position = self.ground_detector.ground_position if ground_detected else Point()
+        rospy.loginfo("Ground Detected ? {}".format(ground_detected))
+        self.guarded_move_pub.publish(
+            ground_detected, 'base_link', ground_position)
+
+    def handle_guarded_move_feedback(self, feedback):
+        """
+        :type feedback: FollowJointTrajectoryFeedback
+        """
+        if self.ground_detector.detect():
+            self.trajectory_async_executer.stop()
         
 
         
@@ -85,6 +106,13 @@ class GuardedMoveActionServer(object):
                                            done_cb=None,
                                            active_cb=None,
                                            feedback_cb=None)
+        # commented out ground detection implementation for now for false ground
+        # detection
+        #self.ground_detector.reset()
+        #self.trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
+                                           #done_cb=self.handle_guarded_move_done,
+                                           #active_cb=None,
+                                           #feedback_cb=self.handle_guarded_move_feedback)
 
         # Record start time
         start_time = rospy.get_time()
@@ -101,9 +129,9 @@ class GuardedMoveActionServer(object):
         
             
         if success:
-            self._result.final_x = self._fdbk.current_x
-            self._result.final_y = self._fdbk.current_y 
-            self._result.final_z = self._fdbk.current_z 
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y 
+            self._result.final.z = self._fdbk.current.z 
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     

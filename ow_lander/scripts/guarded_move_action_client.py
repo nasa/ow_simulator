@@ -3,12 +3,11 @@
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
-
 from __future__ import print_function
-
 import rospy
 import actionlib
 import ow_lander.msg
+import sys
 
 
 def guarded_move_client():
@@ -20,12 +19,12 @@ def guarded_move_client():
     goal = ow_lander.msg.GuardedmoveGoal()
     
     # Default trenching values
-    goal.targ_x = 2.0
-    goal.targ_y = 0.0
-    goal.targ_z = 0.3
-    goal.direction_x = 0.0
-    goal.direction_y = 0.0
-    goal.direction_z = 1.0
+    goal.start.x = 2.0
+    goal.start.y = 0.0
+    goal.start.z = 0.3
+    goal.normal.x = 0.0
+    goal.normal.y = 0.0
+    goal.normal.z = 1.0
     goal.search_distance = 0.5
 
     # Sends the goal to the action server.
