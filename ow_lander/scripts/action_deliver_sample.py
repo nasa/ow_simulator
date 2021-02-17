@@ -66,36 +66,15 @@ def cascade_plans (plan1, plan2):
     return new_traj   
 
 
-def arg_parsing(req):
-  """
-  :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
-  """
-  if req.use_defaults:
-    # Default trenching values
-    x_delivery = 0.55
-    y_delivery = -0.3
-    z_delivery = 0.82  # was .78
-  else:
-    x_delivery = req.x
-    y_delivery = req.y
-    z_delivery = req.z
-
-  return [req.use_defaults, x_delivery, y_delivery, z_delivery]
-
-
 def deliver_sample(move_arm, robot, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float]
   """
   move_arm.set_planner_id("RRTstar")
-
-  #x_delivery = args[1]
-  #y_delivery = args[2]
-  #z_delivery = args[3]
-  x_delivery = args.x_delivery
-  y_delivery = args.y_delivery
-  z_delivery = args.z_delivery
+  x_delivery = args.delivery.x
+  y_delivery = args.delivery.y
+  z_delivery = args.delivery.z
 
   # after sample collect
   mypi = 3.14159
@@ -122,11 +101,6 @@ def deliver_sample(move_arm, robot, args):
 
   if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
-
-  #return plan
-
-  #plan = move_arm.go(wait=True)
-  #move_arm.stop()
 
   # rotate scoop to deliver sample at current location...
 

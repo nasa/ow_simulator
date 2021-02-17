@@ -20,9 +20,7 @@ from moveit_commander.conversions import pose_to_list
 import math
 import constants
 import utils
-import activity_full_digging_traj
 import action_deliver_sample
-#from action_deliver_sample import deliver_sample
 
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
@@ -51,30 +49,22 @@ class DeliverActionServer(object):
         
     
     def _update_feedback(self):
- 
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
-        self._fdbk.current_x = self._ls.x
-        self._fdbk.current_y = self._ls.y
-        self._fdbk.current_z = self._ls.z
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
         
         
     def _update_motion(self, goal):
-        #activity_full_digging_traj.unstow(self._interface.move_arm)
         print("Deliver sample activity started")
-        #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        #plan =  
         self.deliver_sample_traj  = action_deliver_sample.deliver_sample(self._interface.move_arm,self._interface.robot, goal)
         #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.deliver_sample_traj.joint_trajectory.points)
         start_time =   self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
         end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
         self._timeout = end_time -start_time
-        #return self.deliver_sample_traj
-        
-
         
     def on_deliver_action(self,goal):
         plan = self._update_motion(goal)
@@ -100,9 +90,9 @@ class DeliverActionServer(object):
         
             
         if success:
-            self._result.final_x = self._fdbk.current_x
-            self._result.final_y = self._fdbk.current_y 
-            self._result.final_z = self._fdbk.current_z 
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y 
+            self._result.final.z = self._fdbk.current.z 
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     
