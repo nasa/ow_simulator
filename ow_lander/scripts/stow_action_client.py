@@ -5,7 +5,6 @@
 # this repository.
 
 from __future__ import print_function
-
 import rospy
 import actionlib
 import ow_lander.msg

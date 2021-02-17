@@ -12,16 +12,12 @@ import copy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-from math import pi
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
-import math
 import constants
 import utils
-import activity_full_digging_traj
-
 from LanderInterface import MoveItInterface
 from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
@@ -50,15 +46,15 @@ class UnstowActionServer(object):
  
         #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
-        self._fdbk.current_x = self._ls.x
-        self._fdbk.current_y = self._ls.y
-        self._fdbk.current_z = self._ls.z
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
         
         
     def _update_motion(self):
-        #activity_full_digging_traj.unstow(self._interface.move_arm)
+
         print("Unstow arm activity started")
         goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
         plan = self._interface.move_arm.plan(goal)
@@ -81,7 +77,6 @@ class UnstowActionServer(object):
 
         # Record start time
         start_time = rospy.get_time()
-
         def now_from_start(start):
             #return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
@@ -94,9 +89,9 @@ class UnstowActionServer(object):
         
             
         if success:
-            self._result.final_x = self._fdbk.current_x
-            self._result.final_y = self._fdbk.current_y 
-            self._result.final_z = self._fdbk.current_z 
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y 
+            self._result.final.z = self._fdbk.current.z 
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     
