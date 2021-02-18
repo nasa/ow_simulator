@@ -5,12 +5,8 @@ float32  depth
 float32  length
 float32  ground_position
 ---
-#result definition
-float32 final_x
-float32 final_y
-float32 final_z
+# result
+geometry_msgs/Point final     # arm final position
 ---
-#feedback
-float32 current_x
-float32 current_y
-float32 current_z
+# feedback
+geometry_msgs/Point current   # arm current position

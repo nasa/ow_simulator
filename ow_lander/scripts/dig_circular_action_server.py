@@ -70,11 +70,10 @@ class DigCircularActionServer(object):
     
     def _update_feedback(self):
  
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
-        self._fdbk.current_x = self._ls.x
-        self._fdbk.current_y = self._ls.y
-        self._fdbk.current_z = self._ls.z
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
         
@@ -117,9 +116,9 @@ class DigCircularActionServer(object):
         
             
         if success:
-            self._result.final_x = self._fdbk.current_x
-            self._result.final_y = self._fdbk.current_y 
-            self._result.final_z = self._fdbk.current_z 
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y 
+            self._result.final.z = self._fdbk.current.z 
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     

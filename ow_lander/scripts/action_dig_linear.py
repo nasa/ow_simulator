@@ -14,8 +14,23 @@ from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from action_deliver_sample import cascade_plans
+#from action_dig_circular import calculate_starting_state_arm
 
 dig_linear_traj = RobotTrajectory()
+
+def calculate_starting_state_arm (plan,robot):
+  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
+  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
+  #j_grinder, j_scoop_yaw]
+
+  start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
+  cs = robot.get_current_state()
+  ## adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
+  ## j_scoop_yaw  state obstained from rviz
+  new_value =  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  # modify current state of robot to the end state of the previous plan
+  cs.joint_state.position = new_value 
+  return cs, start_state
 
 def move_to_pre_trench_configuration(move_arm, x_start, y_start):
   """
@@ -43,12 +58,6 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   plan = move_arm.plan(joint_goal)
-  ##move_arm.asyncExecute(plan, wait=True)
-  #move_arm.execute(plan, wait=True)
-  ##move_arm.go(joint_goal, wait=True)
-  #move_arm.stop()
-
-  #return True
   return plan
 
 
@@ -90,9 +99,6 @@ def change_joint_value(move_arm, cs, start_state, joint_index, target_value):
       
   joint_goal[joint_index] = target_value
   plan = move_arm.plan(joint_goal)
-  #move_group.execute(plan, wait=True)
-  ##move_group.go(joint_goal, wait=True)
-  #move_group.stop()
   return plan
 
 def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=False):
@@ -126,12 +132,8 @@ def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=Fals
   plan = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
-  #plan = move_group.go(wait=True)
-  #plan = move_arm.plan(joint_goal)
   return plan
-  #move_group.execute(plan, wait=True)
-  #move_group.stop()
-  #move_group.clear_pose_targets()
+
 
 
 def dig_linear(move_arm, robot, args):
@@ -148,18 +150,9 @@ def dig_linear(move_arm, robot, args):
   
   plan_a= move_to_pre_trench_configuration(
       move_arm, x_start, y_start)
-  #if pre_move_complete == False:
-    #return False
     
-  start_state = plan_a.joint_trajectory.points[len(plan_a.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
   
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  
-  cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
+  cs, start_state = calculate_starting_state_arm (plan_a, robot)
   
   #################### Rotate hand yaw to dig in#################################
   plan_b = change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, 0.0) 
@@ -171,28 +164,14 @@ def dig_linear(move_arm, robot, args):
   dig_linear_traj = cascade_plans (plan_a, plan_b)
   
   ######################### rotate scoop #######################################
-  start_state = plan_b.joint_trajectory.points[len(plan_b.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
-  
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   
   plan_c = change_joint_value(move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
   
   dig_linear_traj = cascade_plans (dig_linear_traj, plan_c)
   
   ######################### rotate dist pith to pre-trenching position###########
-  start_state = plan_c.joint_trajectory.points[len(plan_c.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
-  
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  cs.joint_state.position = new_value # modify current state of robot to the end
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   
   plan_d = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
 
@@ -205,14 +184,7 @@ def dig_linear(move_arm, robot, args):
       (math.cos(alpha) - math.sin(alpha))
   z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
   
-  start_state = plan_d.joint_trajectory.points[len(plan_d.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
-  
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  cs.joint_state.position = new_value # modify current state of robot to the end
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   
   plan_e = go_to_Z_coordinate(move_arm, cs,  x_start, y_start, z_start)
   
@@ -220,14 +192,7 @@ def dig_linear(move_arm, robot, args):
   
   ############################  rotate to dig in the ground
   
-  start_state = plan_e.joint_trajectory.points[len(plan_e.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
-  
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  cs.joint_state.position = new_value # modify current state of robot to the end
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   
   plan_f = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
   
