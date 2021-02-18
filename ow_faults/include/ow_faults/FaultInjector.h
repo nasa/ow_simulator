@@ -9,11 +9,13 @@
 #include <ctime>
 #include <cstdlib>
 #include <ros/ros.h>
+#include <cstdint>
 #include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
 #include "ow_faults/PowerFaults.h"
+#include "ow_faults/PTFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <unordered_map>
@@ -28,6 +30,7 @@
 // placeholder fault estimator.
 class FaultInjector
 {
+
 public:
   FaultInjector(ros::NodeHandle node_handle);
   ~FaultInjector(){}
@@ -36,17 +39,20 @@ public:
 
   enum Nominal { None=0 };
 
-  enum ComponentFaults {
+  enum class ComponentFaults : uint {
     // general
-    Hardware=1, 
+    Hardware = 1, 
+    //pt
+    JointLimit = 2,
     //arm 
-    TrajectoryGeneration=2, 
-    Collision=3, 
-    Estop=4, 
-    PositionLimit=5, 
-    TorqueLimit=6, 
-    VelocityLimit=7, 
-    NoForceData=8};
+    TrajectoryGeneration = 2,
+    Collision = 3, 
+    Estop = 4, 
+    PositionLimit = 5, 
+    TorqueLimit = 6, 
+    VelocityLimit = 7, 
+    NoForceData = 8
+    };
 
 	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
 	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
@@ -69,10 +75,15 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
-  //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
-  void setArmFaultsMessage(ow_faults::ArmFaults& msg, int value);
-  void setPowerFaultsMessage(ow_faults::PowerFaults& msg, int value);
+  //Setting the correct values for faults messages via function overloading
+  //System Faults
+  void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+  // Arm Faults
+  void setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value);
+  //Power Faults
+  void setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value);
+  //Pan Tilt Faults
+  void setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -97,10 +108,10 @@ private:
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
+  ros::Publisher m_antennae_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
 };
-
 
 #endif
