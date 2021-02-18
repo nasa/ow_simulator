@@ -56,15 +56,9 @@ distributions on sourceforge.net are not always kept up to date.
 git clone https://git.code.sf.net/p/plexil/git plexil
 ```
 
-The default git branch is `releases/plexil-4`, which is the latest stable version
-of PLEXIL.  On rare occasions the latest version of this branch won't be
-compatible with OceanWATERS and you will need to check out a particular commit.
-We plan to simplify the workflow needed to keep these two software systems compatible.
-
-NOTE: The current release of OceanWATERS was tested with the git tag
-`2020-11-17` of PLEXIL's `releases/plexil-4` branch, though it should work with
-the head of this branch.  If you encounter problems, please revert to the
-`2020-11-17` tag and contact the OceanWATERS team.
+The default git branch of PLEXIL is `releases/plexil-4`, which is maintained as
+a stable version of PLEXIL compatible with OceanWATERS and suitable for general
+use.
 
 * Install any of the following build prerequisites needed. If you're not sure
 which are missing, try the build, see where it breaks, and install new packages
@@ -79,8 +73,11 @@ sudo apt install make \
                  g++ \
                  ant \
                  gperf \
-                 openjdk-8-jdk
+                 default-jre
 ```
+
+Note that PLEXIL (specifically the plan compiler) requires the Java compiler and
+runtime environment, version 8 or newer.
 
 * Define the `PLEXIL_HOME` environment variable as the location of your PLEXIL
   installation, e.g.
@@ -109,11 +106,14 @@ cd src
 * Build PLEXIL.
 ```
 cd $PLEXIL_HOME
-make
+make universalExec plexil-compiler checkpoint
 ```
 
-* If you have problems, see additional build information
+* Note that this is a minimal build of PLEXIL including only what is needed by
+OceanWATERS.  Additional build information is available
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
+
+* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`. 
 
 ### GSAP
 
@@ -153,6 +153,8 @@ make
 
 * If you have problems, see additional build information
 [here](https://github.com/nasa/GSAP/wiki).
+
+* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`.  
 
 ### ROS
 
