@@ -13,17 +13,10 @@ import copy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-from math import pi
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
-import math
-import constants
-import utils
-#import activity_full_digging_traj
-#import action_deliver_sample
-#import action_dig_linear
 import action_grind
 
 from LanderInterface import MoveItInterface
@@ -32,7 +25,7 @@ from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
-#from path_planning_commander import switch_controllers
+
 
 
 
@@ -56,11 +49,10 @@ class GrindActionServer(object):
     
     def _update_feedback(self):
  
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
-        self._fdbk.current_x = self._ls.x
-        self._fdbk.current_y = self._ls.y
-        self._fdbk.current_z = self._ls.z
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
         
     def switch_controllers(self, start_controller, stop_controller):
@@ -118,9 +110,9 @@ class GrindActionServer(object):
         
             
         if success:
-            self._result.final_x = self._fdbk.current_x
-            self._result.final_y = self._fdbk.current_y 
-            self._result.final_z = self._fdbk.current_z 
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y 
+            self._result.final.z = self._fdbk.current.z 
             switch_success = self.switch_controllers('arm_controller','grinder_controller')
             if not switch_success:
                 return False, "Failed Switching Controllers"

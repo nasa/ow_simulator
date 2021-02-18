@@ -5,7 +5,6 @@
 # this repository.
 
 import rospy
-
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from moveit_msgs.msg import PositionConstraint
@@ -136,11 +135,6 @@ def deliver_sample(move_arm, robot, args):
   cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
   
   move_arm.set_start_state(cs)
-  
-  
-  #rotation = (goal_pose.orientation.x, goal_pose.orientation.y,
-              #goal_pose.orientation.z, goal_pose.orientation.w)
-  #euler_angle = euler_from_quaternion(rotation)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
