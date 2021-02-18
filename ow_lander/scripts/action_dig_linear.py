@@ -63,15 +63,23 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
 
 
 
-def plan_cartesian_path_lin(move_arm, length, alpha):
+def plan_cartesian_path_lin(move_arm, length, alpha, z_start, cs):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type length: float
   :type alpha: float
   """
+  move_arm.set_start_state(cs)
   waypoints = []
   wpose = move_arm.get_current_pose().pose
-
+  # these values were obtained from rviz 
+  wpose.position.x = 1.94233
+  wpose.position.y = -0.0167343
+  wpose.position.z = -0.122421 # -0.0456
+  wpose.orientation.x = 0.9988
+  wpose.orientation.y = -0.211093
+  wpose.orientation.z = -0.0442189
+  wpose.orientation.w = -0.00196722
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
 
@@ -197,6 +205,24 @@ def dig_linear(move_arm, robot, args):
   plan_f = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
   
   dig_linear_traj = cascade_plans (dig_linear_traj, plan_f)
+  
+  # determine linear trenching direction (alpha) value obtained from rviz
+  current_pose = move_arm.get_current_pose().pose
+  current_pose.orientation.x = 0.9988
+  current_pose.orientation.y = -0.0215346
+  current_pose.orientation.z = -0.043971
+  current_pose.orientation.w = -0.00134208
+  
+  quaternion = [current_pose.orientation.x, current_pose.orientation.y,
+                current_pose.orientation.z, current_pose.orientation.w]
+  current_euler = euler_from_quaternion(quaternion)
+  alpha = current_euler[2]
+  
+  # linear trenching
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
+  cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha, z_start, cs)
+  dig_linear_traj = cascade_plans (dig_linear_traj , cartesian_plan)
+  
   
   return dig_linear_traj
   

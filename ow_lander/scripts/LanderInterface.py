@@ -35,7 +35,6 @@ class MoveItInterface(object):
     move_arm = moveit_commander.MoveGroupCommander("arm")
     move_limbs = moveit_commander.MoveGroupCommander("limbs")
     move_grinder = moveit_commander.MoveGroupCommander("grinder")
-    #display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',moveit_msgs.msg.DisplayTrajectory, queue_size=20)
     self.move_arm = move_arm
     self.move_limbs = move_limbs
     self.move_grinder = move_grinder
@@ -45,7 +44,6 @@ class MoveItInterface(object):
 class JointStateSubscriber:
   def __init__(self):
     """Initialize joint subscriber"""
-    self.power_pub = rospy.Publisher('/mechanical_power/bal', Float64, queue_size = 10)
     self.subscriber = rospy.Subscriber('/joint_states', JointState, self.callback, queue_size = 1)
     self.history = []
     rate = rospy.Rate(100)    
@@ -65,7 +63,7 @@ class JointStateSubscriber:
         power = 0
         # Publish total power
     self._state_value = power    
-    self.power_pub.publish(power)
+    #self.power_pub.publish(power)
 
     
   def get_value(self):
