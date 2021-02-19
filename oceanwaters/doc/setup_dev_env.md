@@ -154,7 +154,6 @@ make
 * If you have problems, see additional build information
 [here](https://github.com/nasa/GSAP/wiki).
 
-* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`.  
 
 ### ROS
 
