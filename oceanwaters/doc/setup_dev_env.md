@@ -124,7 +124,7 @@ depends on GSAP, an open-source battery prognostics executive. GSAP  must be ins
 
 * Check out the source code:
 ```
-git clone https://github.com/nasa/GSAP.git gsap
+git clone --branch v2.0.0 https://github.com/nasa/GSAP.git gsap
 ```
 
 The default git branch is v2.0.0, which is the latest stable version
