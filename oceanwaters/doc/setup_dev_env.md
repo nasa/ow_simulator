@@ -132,11 +132,11 @@ of GSAP.  On rare occasions the latest version of this branch won't be
 compatible with OceanWATERS and you will need to check out a particular commit.
 We plan to simplify the workflow needed to keep these two software systems compatible.
 
-* Define the `GSAP_ROOT_DIR` environment variable as the location of your GSAP
+* Define the `GSAP_HOME` environment variable as the location of your GSAP
   installation, e.g.
 
 ```
-export GSAP_ROOT_DIR=/home/<username>/gsap
+export GSAP_HOME=/home/<username>/gsap
 ```
 
 NOTE: for convenience, you may wish to add the previous command to your
