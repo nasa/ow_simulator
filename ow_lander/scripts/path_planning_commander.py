@@ -116,7 +116,7 @@ class PathPlanningCommander(object):
     success = activity_full_digging_traj.dig_linear(
         self.arm_move_group,
         dig_linear_args)
-    print "Dig linear arm motion executed!"
+    print("Dig linear arm motion executed!")
     return success, "Done"
 
   def switch_controllers(self, start_controller, stop_controller):
@@ -127,7 +127,7 @@ class PathPlanningCommander(object):
           '/controller_manager/switch_controller', SwitchController)
       success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
       print("switch_controllers error: %s" % e)
     finally:
       # This sleep is a workaround for "start point deviates from current robot
@@ -140,7 +140,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Grind.GrindRequest'
     """
-    print("Grinde arm activity started")
+    print("Grind arm activity started")
     grind_args = activity_grind.arg_parsing(req)
     success = self.switch_controllers('grinder_controller', 'arm_controller')
     if not success:
@@ -149,7 +149,7 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    print("Grinde arm activity completed")
+    print("Grind arm activity completed")
     return success, "Done"
 
   def handle_guarded_move_done(self, state, result):
