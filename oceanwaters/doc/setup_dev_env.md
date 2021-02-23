@@ -151,9 +151,15 @@ cmake ..
 make
 ```
 
+NOTE: Configuration files can be used to tune the prognostics algorithm and/or adjust the prognostics model used to perform calculations.
+An example configuration file can be found at:
+```
+ow_power_system/config/example.cfg
+```
+Additional information about mapping configuration files and modifying their contents can be found [here](https://github.com/nasa/GSAP/wiki/Getting-Started).
+
 * If you have problems, see additional build information
 [here](https://github.com/nasa/GSAP/wiki).
-
 
 ### ROS
 
