@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_power_system)
 
-if(DEFINED ENV{GSAP_ROOT_DIR})
-  set(GSAP_DIR $ENV{GSAP_ROOT_DIR})
+if(DEFINED ENV{GSAP_HOME})
+  set(GSAP_DIR $ENV{GSAP_HOME})
 else()
-  message(FATAL_ERROR, "GSAP_ROOT_DIR environment variable is not set")
+  message(FATAL_ERROR, "GSAP_HOME environment variable is not set")
 endif()
 
 ## Find catkin macros and libraries
