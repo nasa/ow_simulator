@@ -27,6 +27,7 @@ required):
     -   The Catkin build system
 -   Gazebo 9.13
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
+- Generic Software Architecture for Prognostics (GSAP) v2.0
 
 Note on virtual machines (e.g. VMWare, Parallels, VirtualBox, Windows Subsystem
 for Linux): These have all worked to some degree, but tend to not support the
@@ -36,7 +37,7 @@ Gazebo simulator very well or at all. They are not recommended for OceanWATERS.
 Prerequisites
 -------------
 
-OceanWATERS requires PLEXIL, ROS, and Gazebo.
+OceanWATERS requires PLEXIL, GSAP, ROS, and Gazebo.
 In the following instructions, we assume the default command shell is Bash.
 
 ### PLEXIL
@@ -112,8 +113,53 @@ make universalExec plexil-compiler checkpoint
 OceanWATERS.  Additional build information is available
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
 
-* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`.  
+* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`. 
 
+### GSAP
+
+The OceanWATERS distribution includes a power system  module (`ow_power_system`) that at present
+depends on GSAP, an open-source battery prognostics executive. GSAP  must be installed
+*prior* to building the `ow_power_system` package.
+
+
+* Check out the source code:
+```
+git clone --branch v2.0.0 https://github.com/nasa/GSAP.git gsap
+```
+
+The default git branch is v2.0.0, which is the latest stable version
+of GSAP.  On rare occasions the latest version of this branch won't be
+compatible with OceanWATERS and you will need to check out a particular commit.
+We plan to simplify the workflow needed to keep these two software systems compatible.
+
+* Define the `GSAP_HOME` environment variable as the location of your GSAP
+  installation, e.g.
+
+```
+export GSAP_HOME=/home/<username>/gsap
+```
+
+NOTE: for convenience, you may wish to add the previous command to your
+shell initialization file (e.g. `.profile` or '.bashrc'), since they are needed every time
+
+* Build GSAP.
+```
+cd $GSAP_HOME
+mkdir build
+cd build
+cmake ..
+make
+```
+
+NOTE: Configuration files can be used to tune the prognostics algorithm and/or adjust the prognostics model used to perform calculations.
+An example configuration file can be found at:
+```
+ow_power_system/config/example.cfg
+```
+Additional information about mapping configuration files and modifying their contents can be found [here](https://github.com/nasa/GSAP/wiki/Getting-Started).
+
+* If you have problems, see additional build information
+[here](https://github.com/nasa/GSAP/wiki).
 
 ### ROS
 
