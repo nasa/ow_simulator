@@ -76,10 +76,6 @@ def plan_cartesian_path_lin(move_arm, length, alpha, z_start, cs):
   wpose.position.x = 1.94233
   wpose.position.y = -0.0167343
   wpose.position.z = -0.122421 # -0.0456
-  #wpose.orientation.x = 0.9988
-  #wpose.orientation.y = -0.211093
-  #wpose.orientation.z = -0.0442189
-  #wpose.orientation.w = -0.00196722
   wpose.orientation.x = 0.9988
   wpose.orientation.y = -0.0215346
   wpose.orientation.z = -0.043971
