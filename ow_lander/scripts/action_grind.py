@@ -58,9 +58,7 @@ def plan_cartesian_path(move_group, length, alpha, parallel, z_start, cs):
   wpose.orientation.y = 0.011186
   wpose.orientation.z = 0.707963
   wpose.orientation.w = 0.0146962
-  #wpose.orientation. 
-  #print('balcher')
-  #print (wpose)
+
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
   waypoints.append(copy.deepcopy(wpose))

@@ -76,10 +76,14 @@ def plan_cartesian_path_lin(move_arm, length, alpha, z_start, cs):
   wpose.position.x = 1.94233
   wpose.position.y = -0.0167343
   wpose.position.z = -0.122421 # -0.0456
+  #wpose.orientation.x = 0.9988
+  #wpose.orientation.y = -0.211093
+  #wpose.orientation.z = -0.0442189
+  #wpose.orientation.w = -0.00196722
   wpose.orientation.x = 0.9988
-  wpose.orientation.y = -0.211093
-  wpose.orientation.z = -0.0442189
-  wpose.orientation.w = -0.00196722
+  wpose.orientation.y = -0.0215346
+  wpose.orientation.z = -0.043971
+  wpose.orientation.w = -0.00134208
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
 
@@ -223,6 +227,11 @@ def dig_linear(move_arm, robot, args):
   cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, length, alpha, z_start, cs)
   dig_linear_traj = cascade_plans (dig_linear_traj , cartesian_plan)
   
+  
+  #  rotate to dig out
+  cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
+  plan_g = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
+  dig_linear_traj = cascade_plans (dig_linear_traj, plan_g)
   
   return dig_linear_traj
   
