@@ -9,12 +9,12 @@ import tf2_ros
 from geometry_msgs.msg import Point, WrenchStamped
 
 
-FORCE_X_THRESHOLD = -10.0
+FORCE_X_THRESHOLD = -10.0 # TODO: Optimize for sensor noise as part of OCEANWATERS-617
 
 class GroundDetector:
   """
   GroundDetector uses readings of the force torque sensor to detect when the arm
-  has reached the ground.
+  has reached the ground (or any downward blocker in general).
   """
 
   def __init__(self):
