@@ -404,6 +404,17 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+  <gazebo reference="j_dist_pitch">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo>
+    <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+      <jointName>j_dist_pitch</jointName>
+      <topicName>ft_sensor_dist_pitch</topicName>
+      <updateRate>30.0</updateRate>
+      <gaussianNoise>0.0</gaussianNoise>
+    </plugin>
+  </gazebo>
   <link name="l_hand">
     <inertial>
       <origin
