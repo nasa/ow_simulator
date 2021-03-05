@@ -7,7 +7,7 @@
   <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
-  <arg name="power_draw_csv_file" default="data_const_load.csv"/>  <!-- options: data_const_load.csv -->
+  <arg name="power_draw_csv_file" default="data_const_load.csv"/>  <!-- options: data_const_load.csv data_variable_load.csv -->
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />

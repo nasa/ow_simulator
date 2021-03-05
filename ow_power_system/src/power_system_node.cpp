@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
 
   // Retrieve our publication rate expressed in Hz
-  double power_update_rate = csv_path.find("onewatt") != string::npos ? 0.1 : 1;  // if onewatt default to 0.1 Hz otherwise 1 Hz
+  double power_update_rate = 1;
   double power_update_rate_override;  // allow the user to override it
   auto update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
 
@@ -98,18 +98,15 @@ int main(int argc, char* argv[]) {
       // result of each particle used in the prediction.
       UData eod_time = eod_event.getTOE();
       if (eod_time.uncertainty() != UType::Samples) {
-        std::cerr << "Unexpected uncertainty type for EoD prediction" << std::endl;
-        return 1;
+        ROS_ERROR_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
       }
-
+      
       // For this example, we will print the median EoD.
       auto samples = eod_time.getVec();
       std::sort(samples.begin(), samples.end());
       double eod_median = samples.at(samples.size() / 2);
       auto now =  MessageClock::now();
       auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
-      //std::cout << "Predicted median EoD: " << eod_median << " s (T- "
-      //          << (eod_median-now_s.count())<< " s)" << std::endl;
       double rul_median = eod_median - now_s.count();
       rul_msg.data = rul_median;
 
@@ -131,7 +128,7 @@ int main(int argc, char* argv[]) {
         //medianSystemState[i] = systemStates[i][MEDIAN]; // Where MEDIAN corresponds to the sampleID of the median EOL prediction
         
       // Next, You will pass it into the model outputEqn to get the outputs:
-      //auto output = model.outputEqn(meanSystemState);
+      //auto output = model.outputEqn(medianSystemState);
       //double temperature = output[1];
       
       //publish current SOC & RUL
