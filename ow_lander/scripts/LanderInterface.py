@@ -20,7 +20,8 @@ import math
 import constants
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
-
+import tf2_ros
+from moveit_msgs.srv import GetPositionFK
 
 
 class MoveItInterface(object):
@@ -39,6 +40,14 @@ class MoveItInterface(object):
     self.move_limbs = move_limbs
     self.move_grinder = move_grinder
     self.robot = robot
+    self._buffer = tf2_ros.Buffer()
+    self._listener = tf2_ros.TransformListener(self._buffer)
+    ### forward kinematics: enable forward kinematics service from moveit
+    rospy.wait_for_service('compute_fk')
+    try:
+      self.moveit_fk = rospy.ServiceProxy('compute_fk', GetPositionFK)
+    except rospy.ServiceException, e:
+      rospy.logerror("Service call failed: %s"%e)
     
     
 class JointStateSubscriber:

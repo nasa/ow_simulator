@@ -65,7 +65,7 @@ class DigLinearActionServer(object):
         print("DigLinear activity started")
         #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
         #plan =  
-        self.current_traj  = action_dig_linear.dig_linear(self._interface.move_arm,self._interface.robot, goal)
+        self.current_traj  = action_dig_linear.dig_linear(self._interface.move_arm,self._interface.robot,  self._interface.moveit_fk, goal)
         #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.current_traj.joint_trajectory.points)
         start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
