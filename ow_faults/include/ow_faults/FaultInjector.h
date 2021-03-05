@@ -72,6 +72,7 @@ private:
   // float powerStateOfChargeValue;
   
   // renders new temperature when thermal power fault is re-triggered
+  void getRandomValueFromRange(float min_val, float max_val);
   void setPowerFaultValues(std::string powerType, float min_val, float max_val);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
