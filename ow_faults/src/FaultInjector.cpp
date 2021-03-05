@@ -19,7 +19,8 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
 
   //power fault publishers and subs
-  m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/state_of_charge", 10);
+  m_power_soc_sub = node_handle.subscribe("/_original/power_system_node/state_of_charge", 1000, &FaultInjector::powerSoCCallback, this);
+  m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("/power_system_node/state_of_charge", 10);
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/temp_increase", 10);
 
   // topic for system fault messages, see Faults.msg
@@ -75,14 +76,47 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
-void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
-  float thermal_val;
-  if (isnan(powerTemperatureOverloadValue)) {
-    thermal_val =  50.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(90.0-50.0)));
-    powerTemperatureOverloadValue = thermal_val;
-  } else if (!getTempBool) {
-    powerTemperatureOverloadValue = NAN;
+void FaultInjector::setPowerFaultValues(string powerType, float min_val, float max_val){
+  float power_val = min_val + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max_val-min_val)));
+
+  if (powerType == "SOC"){
+    // value needs to be between 0 and 9.99, decreased by more than 5% each time until 0
+    if (powerStateOfChargeValue > max_val){
+      powerStateOfChargeValue = power_val;
+    } else {
+      float change_in_val = powerStateOfChargeValue*0.05 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(powerStateOfChargeValue*0.1)-powerStateOfChargeValue*0.05)); // 5-10% difference
+      powerStateOfChargeValue =
+      ((powerStateOfChargeValue-change_in_val) < min_val) ?  min_val : (powerStateOfChargeValue-change_in_val);
+    }
   }
+  else if (powerType == "SOC-LOW"){
+    // value needs to be between 0 and 9.99, decreased by less than 5% each time until 0
+    if (powerStateOfChargeValue > 9.99){
+      powerStateOfChargeValue = power_val;
+    } else {
+      float change_in_val = powerStateOfChargeValue*0.001 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(powerStateOfChargeValue*0.049)-powerStateOfChargeValue*0.001)); // less than a 5% difference
+      powerStateOfChargeValue =
+      ((powerStateOfChargeValue-change_in_val) < min_val) ?  min_val : (powerStateOfChargeValue-change_in_val);
+    }
+  }
+  else if (powerType == "SOC-CAP-LOSS"){
+    // cap loss error have increase of 5-10 % of the SOC
+     float percent_increase = powerStateOfChargeValue*0.05 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(powerStateOfChargeValue*0.1)-powerStateOfChargeValue*0.05));
+      powerStateOfChargeValue = ((powerStateOfChargeValue+percent_increase) > 100) ?  100 : (powerStateOfChargeValue+percent_increase);
+  }
+  else if (powerType == "THERMAL"){
+    if (isnan(powerTemperatureOverloadValue)){
+      powerTemperatureOverloadValue = power_val;
+    } else {
+      float change_in_val = .01 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(1.0-.01)));
+      powerTemperatureOverloadValue += change_in_val;
+    }
+  }
+}
+
+void FaultInjector::powerSoCCallback(const std_msgs::Float64& msg)
+{
+  originalSOC = msg.data;
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -98,7 +132,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   sensor_msgs::JointState output(*msg);
-  std_msgs::Float64 soc_msg;
 
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
@@ -201,31 +234,41 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setFaultsMessage(arm_faults_msg,hardwareFault);
   }
 
-  // power faults
-  if(m_faults.low_state_of_charge_power_failure) {
-    // Fault is a range ( anything < 10%)
-    soc_msg.data = 2.2;
+    // power faults
+  std_msgs::Float64 soc_msg;
+  std_msgs::Float64 thermal_msg;
+  if (m_faults.low_state_of_charge_power_failure || m_faults.instantaneous_capacity_loss_power_failure) {
+    if (m_faults.low_state_of_charge_power_failure && m_faults.instantaneous_capacity_loss_power_failure) {
+      //both faults are on
+      setPowerFaultValues("SOC", 0.5, 9.99);    
+    } 
+    else if (m_faults.low_state_of_charge_power_failure){
+      // Fault is a range ( anything < 10%)
+      setPowerFaultValues("SOC-LOW", 0.5, 9.99);
+    } 
+    else if (m_faults.instantaneous_capacity_loss_power_failure) {
+      // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
+      setPowerFaultValues("SOC-CAP-LOSS", 0, 100);
+    } 
+    soc_msg.data = powerStateOfChargeValue;
     m_fault_power_state_of_charge_pub.publish(soc_msg);
     setFaultsMessage(power_faults_msg, hardwareFault);
     systemFaultsBitmask |= isPowerSystemFault;
-  }
-  if(m_faults.instantaneous_capacity_loss_power_failure) {
-    // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
-    soc_msg.data = 98.5; //random now but should be >5% more than the previous value
-    m_fault_power_state_of_charge_pub.publish(soc_msg);
-    setFaultsMessage(power_faults_msg, hardwareFault);
-    systemFaultsBitmask |= isPowerSystemFault;
+  } 
+  else { //no faults, set to SOC
+      powerStateOfChargeValue = originalSOC;
+      soc_msg.data = powerStateOfChargeValue;
+      m_fault_power_state_of_charge_pub.publish(soc_msg);
   }
   if(m_faults.thermal_power_failure){
     // if > 50 degrees C, then consider fault. 
-    std_msgs::Float64 thermal_msg;
-    setPowerTemperatureFaultValue(true);
+    setPowerFaultValues("THERMAL", 50, 90);
     thermal_msg.data = powerTemperatureOverloadValue;
     m_fault_power_temp_pub.publish(thermal_msg);
     setFaultsMessage(power_faults_msg, hardwareFault);
     systemFaultsBitmask |= isPowerSystemFault;
   } else {
-    setPowerTemperatureFaultValue(false);
+    powerTemperatureOverloadValue = NAN;
   }
 
   setFaultsMessage(system_faults_msg, systemFaultsBitmask);

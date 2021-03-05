@@ -69,6 +69,7 @@
   <!-- Start power_system_node -->
   <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
     <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
+    <remap from="/power_system_node/state_of_charge" to="/_original/power_system_node/state_of_charge"/>
   </node>
 
   <!-- Start faults node -->

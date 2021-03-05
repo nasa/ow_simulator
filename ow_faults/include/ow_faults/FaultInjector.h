@@ -67,13 +67,17 @@ public:
   
 private:
   float powerTemperatureOverloadValue;
+  float powerStateOfChargeValue;
+  float originalSOC;
+  // float powerStateOfChargeValue;
   
   // renders new temperature when thermal power fault is re-triggered
-  void setPowerTemperatureFaultValue(bool getTempBool);
+  void setPowerFaultValues(std::string powerType, float min_val, float max_val);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
+  void powerSoCCallback(const std_msgs::Float64& msg);
 
   //Setting the correct values for faults messages via function overloading
   //System Faults
@@ -99,6 +103,8 @@ private:
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
+
+  ros::Subscriber m_power_soc_sub;
 
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
