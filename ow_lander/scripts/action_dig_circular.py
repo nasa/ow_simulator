@@ -20,6 +20,34 @@ from action_deliver_sample import cascade_plans
 
 circ_traj = RobotTrajectory()
 
+def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_fk):
+  ''' 
+  calculate the end pose (position and orientation), joint states and robot states
+  from the current plan
+  inputs:  current plan, robot, arm interface, and moveit forward kinematics object
+  outputs: goal_pose, robot state and joint states at end of the plan
+  '''  
+  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_scoop_yaw]
+  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
+  #j_grinder, j_scoop_yaw]
+
+  # get joint states from the end of the plan 
+  joint_states = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
+  # construct robot state at the end of the plan
+  robot_state = robot.get_current_state()
+  # adding antenna (0,0) and grinder positions (-0.1) which should not change
+  new_value =  new_value =  (0,0) + joint_states[:5] + (-0.1,) + (joint_states [5],)
+  # modify current state of robot to the end state of the previous plan
+  robot_state.joint_state.position = new_value 
+  # calculate goal pose at the end of the plan using forward kinematics
+  goal_pose = move_arm.get_current_pose().pose
+  header = Header(0,rospy.Time.now(),"base_link")
+  fkln = ['l_scoop']
+  goal_pose_stamped = moveit_fk(header, fkln, robot_state )
+  goal_pose = goal_pose_stamped.pose_stamped[0].pose
+  
+  return robot_state, joint_states, goal_pose 
+
 def calculate_starting_state_arm (plan,robot):
   #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
   #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
@@ -29,7 +57,7 @@ def calculate_starting_state_arm (plan,robot):
   cs = robot.get_current_state()
   ## adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
   ## j_scoop_yaw  state obstained from rviz
-  new_value =  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
   # modify current state of robot to the end state of the previous plan
   cs.joint_state.position = new_value 
   return cs, start_state
@@ -69,7 +97,7 @@ def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=Fals
   #plan = move_arm.plan(joint_goal)
   return plan
 
-def dig_circular(move_arm, move_limbs, robot, args):
+def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
