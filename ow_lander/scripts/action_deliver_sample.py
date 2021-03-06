@@ -13,9 +13,39 @@ from shape_msgs.msg import SolidPrimitive
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
+#from action_dig_linear import calculate_joint_state_end_pose_from_plan_arm
+from std_msgs.msg import Header
 
 
 deliver_sample_traj = RobotTrajectory()
+
+def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_fk):
+  ''' 
+  calculate the end pose (position and orientation), joint states and robot states
+  from the current plan
+  inputs:  current plan, robot, arm interface, and moveit forward kinematics object
+  outputs: goal_pose, robot state and joint states at end of the plan
+  '''  
+  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_scoop_yaw]
+  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
+  #j_grinder, j_scoop_yaw]
+
+  # get joint states from the end of the plan 
+  joint_states = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
+  # construct robot state at the end of the plan
+  robot_state = robot.get_current_state()
+  # adding antenna (0,0) and grinder positions (-0.1) which should not change
+  new_value =  new_value =  (0,0) + joint_states[:5] + (-0.1,) + (joint_states [5],)
+  # modify current state of robot to the end state of the previous plan
+  robot_state.joint_state.position = new_value 
+  # calculate goal pose at the end of the plan using forward kinematics
+  goal_pose = move_arm.get_current_pose().pose
+  header = Header(0,rospy.Time.now(),"base_link")
+  fkln = ['l_scoop']
+  goal_pose_stamped = moveit_fk(header, fkln, robot_state )
+  goal_pose = goal_pose_stamped.pose_stamped[0].pose
+  
+  return robot_state, joint_states, goal_pose 
 
 
 def cascade_plans (plan1, plan2):
@@ -65,7 +95,7 @@ def cascade_plans (plan1, plan2):
     return new_traj   
 
 
-def deliver_sample(move_arm, robot, args):
+def deliver_sample(move_arm, robot, moveit_fk, args):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, float, float]
@@ -122,26 +152,28 @@ def deliver_sample(move_arm, robot, args):
   y = -90
   q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
   
-  start_state = plan_a.joint_trajectory.points[len(plan_a.joint_trajectory.points)-1].positions
+  #start_state = plan_a.joint_trajectory.points[len(plan_a.joint_trajectory.points)-1].positions
   
-  cs = robot.get_current_state()
+  #cs = robot.get_current_state()
 
-  # adding antenna state and grinder state  to the robot states.
-  # grider state obstained from rviz
+  ## adding antenna state and grinder state  to the robot states.
+  ## grider state obstained from rviz
   
-  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
+  #new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
   
   
-  cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
+  #cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
+  
+  cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   
   move_arm.set_start_state(cs)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
   #position value obtained from rviz scoop
-  goal_pose.position.x = 0.55127
-  goal_pose.position.y = -0.4213
-  goal_pose.position.z = 0.77815
+  #goal_pose.position.x = 0.55127
+  #goal_pose.position.y = -0.4213
+  #goal_pose.position.z = 0.77815
   
   move_arm.set_pose_target(goal_pose)
   plan_b = move_arm.plan()
@@ -149,11 +181,8 @@ def deliver_sample(move_arm, robot, args):
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
     return plan_a
 
-  #plan = move_arm.go(wait=True)
-  #move_arm.stop()
-  #move_arm.clear_pose_targets()
   deliver_sample_traj = cascade_plans (plan_a, plan_b)
 
-  move_arm.set_planner_id("RRTconnect")
+  #move_arm.set_planner_id("RRTconnect")
 
   return deliver_sample_traj
