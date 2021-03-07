@@ -11,6 +11,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <ros/console.h>
+#include <std_msgs/Int16.h>
 #include <std_msgs/Float64.h>
 
 #include "power_system_util.h"
@@ -22,19 +23,22 @@ int main(int argc, char* argv[]) {
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle nh ("power_system_node");
 
-  //Construct our State of Charge (SOC) publisher (%)
+  //Construct our State of Charge (SOC) publisher
   ros::Publisher SOC_pub = nh.advertise<std_msgs::Float64>("state_of_charge",1000);
   //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-  ros::Publisher RUL_pub = nh.advertise<std_msgs::Float64>("remaining_useful_life",1000);
+  ros::Publisher RUL_pub = nh.advertise<std_msgs::Int16>("remaining_useful_life",1000);
+  //Construct our Battery Temperature (TempBat) publisher
+  ros::Publisher TempBat_pub = nh.advertise<std_msgs::Float64>("battery_temperature",1000);
   
   //Load power values csv
   string csv_path;
-  auto csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
-    ros::package::getPath("ow_power_system") + "/data/data_const_load.csv");
+  string default_csv = "/data/data_const_load.csv";
+  bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
+    ros::package::getPath("ow_power_system") + default_csv);
 
   if (!csv_path_param_exist)
   {
-    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: onewatt.csv");
+    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: data_const_load.csv");
   }
 
   ROS_INFO_STREAM_NAMED("power_system_node", "power_draw_csv_path is set to: " << csv_path);
@@ -53,7 +57,7 @@ int main(int argc, char* argv[]) {
   // Retrieve our publication rate expressed in Hz
   double power_update_rate = 1;
   double power_update_rate_override;  // allow the user to override it
-  auto update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
+  bool update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
 
   if (update_rate_param_exist)
   {
@@ -77,7 +81,8 @@ int main(int argc, char* argv[]) {
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
-  std_msgs::Float64 rul_msg;
+  std_msgs::Int16 rul_msg;
+  std_msgs::Float64 tempbat_msg;
   ROS_INFO ("Power system node running");
   
   while (ros::ok()) {
@@ -99,6 +104,7 @@ int main(int argc, char* argv[]) {
       UData eod_time = eod_event.getTOE();
       if (eod_time.uncertainty() != UType::Samples) {
         ROS_ERROR_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+        return 1;
       }
       
       // For this example, we will print the median EoD.
@@ -130,10 +136,12 @@ int main(int argc, char* argv[]) {
       // Next, You will pass it into the model outputEqn to get the outputs:
       //auto output = model.outputEqn(medianSystemState);
       //double temperature = output[1];
+      //tempbat_msg.data = temperature;
       
       //publish current SOC & RUL
       //SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
+      //TempBat_pub.publish(tempbat_msg);
 
       ros::spinOnce();
       rate.sleep();
