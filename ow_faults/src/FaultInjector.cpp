@@ -20,7 +20,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 
   //power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/_original/power_system_node/state_of_charge", 1000, &FaultInjector::powerSoCCallback, this);
-  m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("/power_system_node/state_of_charge", 10);
+  m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("/power_system_node/state_of_charge", 1000);
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("/temporary/power_fault/temp_increase", 10);
 
   // topic for system fault messages, see Faults.msg
@@ -76,20 +76,20 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
-float FaultInjector::getRandomValueFromRange( float min_val, float max_val){
+float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
   float randomValue = min_val + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max_val-min_val)));
   return randomValue;
 }
 
-void FaultInjector::setPowerFaultValues(string powerType, float min_val, float max_val){
-  float power_val = getRandomValueFromRange(min_val, max_val);
+void FaultInjector::setPowerFaultValues(const string& powerType, float min_val, float max_val){
+  float power_val = getRandomFloatFromRange(min_val, max_val);
 
   if (powerType == "SOC"){
     // value needs to be between 0 and 9.99, decreased by more than 5% each time until 0
     if (powerStateOfChargeValue > max_val){
       powerStateOfChargeValue = power_val;
     } else {
-      float change_in_val = getRandomValueFromRange(powerStateOfChargeValue*0.05, powerStateOfChargeValue*0.1);  // 5-10% difference
+      float change_in_val = getRandomFloatFromRange(powerStateOfChargeValue*0.05, powerStateOfChargeValue*0.1);  // 5-10% difference
       powerStateOfChargeValue =
       ((powerStateOfChargeValue-change_in_val) < min_val) ?  min_val : (powerStateOfChargeValue-change_in_val);
     }
@@ -99,21 +99,21 @@ void FaultInjector::setPowerFaultValues(string powerType, float min_val, float m
     if (powerStateOfChargeValue > 9.99){
       powerStateOfChargeValue = power_val;
     } else {
-      float change_in_val = getRandomValueFromRange(powerStateOfChargeValue*0.001, powerStateOfChargeValue*0.049);  // less than a 5% difference
+      float change_in_val = getRandomFloatFromRange(powerStateOfChargeValue*0.001, powerStateOfChargeValue*0.049);  // less than a 5% difference
       powerStateOfChargeValue =
       ((powerStateOfChargeValue-change_in_val) < min_val) ?  min_val : (powerStateOfChargeValue-change_in_val);
     }
   }
   else if (powerType == "SOC-CAP-LOSS"){
     // cap loss error have increase of 5-10 % of the SOC
-     float percent_increase = getRandomValueFromRange(powerStateOfChargeValue*0.05, powerStateOfChargeValue*0.1);
+     float percent_increase = getRandomFloatFromRange(powerStateOfChargeValue*0.05, powerStateOfChargeValue*0.1);
       powerStateOfChargeValue = ((powerStateOfChargeValue+percent_increase) > 100) ?  100 : (powerStateOfChargeValue+percent_increase);
   }
   else if (powerType == "THERMAL"){
     if (isnan(powerTemperatureOverloadValue)){
       powerTemperatureOverloadValue = power_val;
     } else {
-      float change_in_val = getRandomValueFromRange(.01, 1);
+      float change_in_val = getRandomFloatFromRange(.01, 1);
       powerTemperatureOverloadValue += change_in_val;
     }
   }
