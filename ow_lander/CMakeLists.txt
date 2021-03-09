@@ -23,6 +23,7 @@ add_service_files(
   PublishTrajectory.srv
   Stow.srv
   Unstow.srv
+  Stop.srv
 )
 
 add_action_files(

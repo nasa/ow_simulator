@@ -63,7 +63,7 @@ def main(args):
   try:
     rospy.spin()
   except KeyboardInterrupt:
-    print "Shutting down mechanical_power module"
+    print("Shutting down mechanical_power module")
 
 
 if __name__ == '__main__':

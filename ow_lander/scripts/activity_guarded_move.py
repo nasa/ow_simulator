@@ -94,7 +94,7 @@ def pre_guarded_move(move_arm, args):
   move_arm.stop()
   move_arm.clear_pose_targets()
 
-  print "Done planning approach of guarded_move"
+  print("Done planning approach of guarded_move")
 
   return True
 
@@ -114,7 +114,7 @@ def guarded_move_plan(move_arm, args):
   goal_pose.position.x -= direction_x*search_distance
   goal_pose.position.y -= direction_y*search_distance
   goal_pose.position.z -= direction_z*search_distance
-  move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
-  print "Done planning safe part of guarded_move"
+  waypoints = [goal_pose]
+  plan, _ = move_arm.compute_cartesian_path(waypoints, 0.01, 0.0)
+  print("Done planning safe part of guarded_move")
   return plan

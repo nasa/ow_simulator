@@ -5,11 +5,17 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
-
+#include <bitset>
+#include <ctime>
+#include <cstdlib>
 #include <ros/ros.h>
+#include <cstdint>
+#include <std_msgs/Float64.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
+#include "ow_faults/PowerFaults.h"
+#include "ow_faults/PTFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <unordered_map>
@@ -24,6 +30,7 @@
 // placeholder fault estimator.
 class FaultInjector
 {
+
 public:
   FaultInjector(ros::NodeHandle node_handle);
   ~FaultInjector(){}
@@ -32,35 +39,51 @@ public:
 
   enum Nominal { None=0 };
 
-  enum ArmFaults {
-    Hardware=1, 
-    TrajectoryGeneration=2, 
-    Collision=3, 
-    Estop=4, 
-    PositionLimit=5, 
-    TorqueLimit=6, 
-    VelocityLimit=7, 
-    NoForceData=8};
+  enum class ComponentFaults : uint {
+    // general
+    Hardware = 1, 
+    //pt
+    JointLimit = 2,
+    //arm 
+    TrajectoryGeneration = 2,
+    Collision = 3, 
+    Estop = 4, 
+    PositionLimit = 5, 
+    TorqueLimit = 6, 
+    VelocityLimit = 7, 
+    NoForceData = 8
+    };
 
-  enum SystemFaults {
-    System=1, 
-    ArmGoalError=2, 
-    ArmExecutionError=4,
-    TaskGoalError=8, 
-    CamGoalError=16, 
-    CamExecutionError=32, 
-    PtGoalError=64, 
-    PtExecutionError=128, 
-    LanderExecutionError = 256};
-
+	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
+	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
+	static constexpr std::bitset<10> isArmExecutionError{		0b00'0000'0100 };
+	static constexpr std::bitset<10> isTaskGoalError{	0b00'000'1000 };
+	static constexpr std::bitset<10> isCamGoalError{	0b00'0001'0000 };
+	static constexpr std::bitset<10> isCamExecutionError{	0b00'0010'0000 };
+	static constexpr std::bitset<10> isPanTiltGoalError{		0b00'0100'0000 };
+	static constexpr std::bitset<10> isPanTiltExecutionError{	0b00'1000'0000 };
+	static constexpr std::bitset<10> isLanderExecutionError{	0b01'0000'0000 };
+	static constexpr std::bitset<10> isPowerSystemFault{	0b10'0000'0000 };
+  
 private:
+  float powerTemperatureOverloadValue;
+  
+  // renders new temperature when thermal power fault is re-triggered
+  void setPowerTemperatureFaultValue(bool getTempBool);
+
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
-  //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
-  void setArmFaultMessage(ow_faults::ArmFaults& msg, int value);
+  //Setting the correct values for faults messages via function overloading
+  //System Faults
+  void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+  // Arm Faults
+  void setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value);
+  //Power Faults
+  void setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value);
+  //Pan Tilt Faults
+  void setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value);
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -73,15 +96,22 @@ private:
 
   ow_faults::FaultsConfig m_faults;
 
+  // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
+  // temporary placeholder publishers until power feautre is finished
+  ros::Publisher m_fault_power_state_of_charge_pub;
+  ros::Publisher m_fault_power_temp_pub;
+
+  // publishers for sending ros messages for component failures
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
+  ros::Publisher m_power_fault_status_pub;
+  ros::Publisher m_antennae_fault_status_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
 };
-
 
 #endif
