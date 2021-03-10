@@ -84,7 +84,7 @@ void FaultInjector::powerFaultCb(){
   if (m_faults.low_state_of_charge_power_failure || m_faults.instantaneous_capacity_loss_power_failure) {
     if (m_faults.low_state_of_charge_power_failure && m_faults.instantaneous_capacity_loss_power_failure) {
       //both faults are on
-      setPowerFaultValues("SOC", 0.05, .1);    
+      setPowerFaultValues("SOC", 0.05, .06);    
     } 
     else if (m_faults.low_state_of_charge_power_failure){
       // Fault is a range ( anything < 10%)
