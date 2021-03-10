@@ -65,20 +65,22 @@ public:
 	static constexpr std::bitset<10> isLanderExecutionError{	0b01'0000'0000 };
 	static constexpr std::bitset<10> isPowerSystemFault{	0b10'0000'0000 };
   
+
 private:
   float powerTemperatureOverloadValue;
   float powerStateOfChargeValue;
   float originalSOC;
-  // float powerStateOfChargeValue;
-  
+  bool powerLowVoltage;
+  bool powerCapLoss;
   // renders new temperature when thermal power fault is re-triggered
   float getRandomFloatFromRange(float min_val, float max_val);
   void setPowerFaultValues(const std::string& powerType, float min_val, float max_val);
+  void powerFaultCb();
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
-  void powerSoCCallback(const std_msgs::Float64& msg);
+  void powerSOCListener(const std_msgs::Float64& msg);
 
   //Setting the correct values for faults messages via function overloading
   //System Faults
@@ -106,6 +108,8 @@ private:
   ros::Publisher m_joint_state_pub;
 
   ros::Subscriber m_power_soc_sub;
+
+  ros::Timer timerPublishTemperature;
 
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
