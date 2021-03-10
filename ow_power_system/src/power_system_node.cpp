@@ -145,7 +145,6 @@ int main(int argc, char* argv[]) {
       //SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
       //TempBat_pub.publish(tempbat_msg);
-      count+=1;
       ros::spinOnce();
       rate.sleep();
     }
