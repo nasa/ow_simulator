@@ -104,27 +104,15 @@ int main(int argc, char* argv[]) {
       // result of each particle used in the prediction.
       UData eod_time = eod_event.getTOE();
       if (eod_time.uncertainty() != UType::Samples) {
+        // Log warning and don't update the last value
         ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
-        if (count > 0) {
-          RUL_pub.publish(rul_msg);
-          //SOC_pub.publish(soc_msg);
-          //TempBat_pub.publish(tempbat_msg);
-        } else {
-          rul_msg.data = 0;
-          //soc_msg.data = 0.0;
-          //TempBat_msg.data = 0.0;
-          RUL_pub.publish(rul_msg);
-          //SOC_pub.publish(soc_msg);
-          //TempBat_pub.publish(tempbat_msg);
-        }
-        ros::spinOnce();
-        rate.sleep();
-        continue;
+      } else { // valid prediction
+        // For this example, we will print the median EoD.
+        auto samples = eod_time.getVec();
+        std::sort(samples.begin(), samples.end());
+        ...
+        rul_msg.data = rul_median;
       }
-      
-      // For this example, we will print the median EoD.
-      auto samples = eod_time.getVec();
-      std::sort(samples.begin(), samples.end());
       double eod_median = samples.at(samples.size() / 2);
       auto now =  MessageClock::now();
       auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
