@@ -84,6 +84,8 @@ int main(int argc, char* argv[]) {
   std_msgs::Int16 rul_msg;
   std_msgs::Float64 tempbat_msg;
   ROS_INFO ("Power system node running");
+
+  int count = 0;
   
   while (ros::ok()) {
 
@@ -103,8 +105,22 @@ int main(int argc, char* argv[]) {
       // result of each particle used in the prediction.
       UData eod_time = eod_event.getTOE();
       if (eod_time.uncertainty() != UType::Samples) {
-        ROS_ERROR_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
-        return 1;
+        ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+        if (count > 0) {
+          RUL_pub.publish(rul_msg);
+          //SOC_pub.publish(soc_msg);
+          //TempBat_pub.publish(tempbat_msg);
+        } else {
+          rul_msg.data = 0;
+          //soc_msg.data = 0.0;
+          //TempBat_msg.data = 0.0;
+          RUL_pub.publish(rul_msg);
+          //SOC_pub.publish(soc_msg);
+          //TempBat_pub.publish(tempbat_msg);
+        }
+        ros::spinOnce();
+        rate.sleep();
+        continue;
       }
       
       // For this example, we will print the median EoD.
@@ -142,7 +158,7 @@ int main(int argc, char* argv[]) {
       //SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
       //TempBat_pub.publish(tempbat_msg);
-
+      count+=1;
       ros::spinOnce();
       rate.sleep();
     }
