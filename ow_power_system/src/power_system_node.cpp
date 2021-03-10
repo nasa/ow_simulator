@@ -86,8 +86,6 @@ int main(int argc, char* argv[]) {
   std_msgs::Float64 tempbat_msg;
   ROS_INFO ("Power system node running");
 
-  int count = 0;
-  
   while (ros::ok()) {
 
     // For each line of data in the example file, run a single prediction step.
