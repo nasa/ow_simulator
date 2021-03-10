@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
   std_msgs::Int16 rul_msg;
+  rul_msg.data = 0;  // immediately set to a good default
   std_msgs::Float64 tempbat_msg;
   ROS_INFO ("Power system node running");
 
