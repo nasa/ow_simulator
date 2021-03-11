@@ -68,8 +68,18 @@ public:
 private:
   float powerTemperatureOverloadValue;
   
+
+
+
+  float faultPanValue;
+  float faultTiltValue;
+
   // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool getTempBool);
+
+  // Antennae functions
+  void antennaePanFaultCb(const std_msgs::Float64& msg);
+  void antennaeTiltFaultCb(const std_msgs::Float64& msg);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
@@ -109,6 +119,12 @@ private:
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
   ros::Publisher m_antennae_fault_status_pub;
+
+  //antenna pub and subs
+  ros::Subscriber m_fault_ant_pan_sub;
+  ros::Subscriber m_fault_ant_tilt_sub;
+  ros::Publisher m_fault_ant_pan_pub;
+  ros::Publisher m_fault_ant_tilt_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
