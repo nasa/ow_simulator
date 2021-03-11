@@ -146,7 +146,7 @@ void FaultInjector::setPowerFaultValues(const string& powerType, float min_val, 
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
 {
   originalSOC = msg.data;
-
+  powerFaultCb();
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
