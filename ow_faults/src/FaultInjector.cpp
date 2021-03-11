@@ -83,27 +83,21 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
 
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
   std_msgs::Float64 pan_msg;
-  ROS_INFO("THIS IS THE OG %f", msg.data);
   if (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure) {
     if (isnan(faultPanValue)){
       faultPanValue = msg.data;
-      ROS_INFO("set fault value to OG %f", msg.data);
     }
     pan_msg.data = faultPanValue;
-    ROS_INFO("publishing %f", faultPanValue);
     m_fault_ant_pan_pub.publish(pan_msg);
   } else {
     //turning off fault, should revert to most recent msg val
-    ROS_INFO("publishing %f", msg.data);
     m_fault_ant_pan_pub.publish(msg);
     faultPanValue = msg.data;
   }
-
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
   std_msgs::Float64 tilt_msg;
-
   if (m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure) {
     if (isnan(faultTiltValue)){
       faultTiltValue = msg.data;
@@ -112,7 +106,7 @@ void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
     m_fault_ant_tilt_pub.publish(tilt_msg);
   } else {
     m_fault_ant_tilt_pub.publish(msg);
-    faultTiltValue = NAN;
+    faultTiltValue = msg.data;
   }
 }
 
