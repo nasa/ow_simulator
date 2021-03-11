@@ -109,8 +109,6 @@ private:
 
   ros::Subscriber m_power_soc_sub;
 
-  ros::Timer timerPublishTemperature;
-
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
   ros::Publisher m_fault_power_temp_pub;
