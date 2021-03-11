@@ -182,9 +182,12 @@ def grind(move_grinder, robot, moveit_fk, args):
   if parallel:
     plan_c = change_joint_value(move_grinder, cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
   else:
-    x_now = 1.48266 + length*math.cos(alpha)
-    y_now = -0.059 +length*math.sin(alpha)
-    z_now = z_start
+    #x_now = 1.48266 + length*math.cos(alpha)
+    #y_now = -0.059 +length*math.sin(alpha)
+    #z_now = z_start
+    x_now = joint_goal.position.x
+    y_now = joint_goal.position.y
+    z_now = joint_goal.position.z
     x_goal = x_now + 0.08*math.cos(alpha)
     y_goal = y_now + 0.08*math.sin(alpha)
     plan_c = go_to_Z_coordinate(move_grinder, cs, joint_goal, x_goal, y_goal, z_now, False)
