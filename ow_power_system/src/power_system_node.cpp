@@ -110,14 +110,12 @@ int main(int argc, char* argv[]) {
         // For this example, we will print the median EoD.
         auto samples = eod_time.getVec();
         std::sort(samples.begin(), samples.end());
-        ...
+        double eod_median = samples.at(samples.size() / 2);
+        auto now =  MessageClock::now();
+        auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
+        double rul_median = eod_median - now_s.count();
         rul_msg.data = rul_median;
       }
-      double eod_median = samples.at(samples.size() / 2);
-      auto now =  MessageClock::now();
-      auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
-      double rul_median = eod_median - now_s.count();
-      rul_msg.data = rul_median;
 
       // State of Charge Code
       //UData currentSOC = eod_event.getState()[0];
