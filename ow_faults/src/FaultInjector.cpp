@@ -34,7 +34,6 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_antennae_fault_status_pub = node_handle.advertise<ow_faults::PTFaults>("/pt_faults_status", 10);
 
   srand (static_cast <unsigned> (time(0)));
-  // ros::spin();
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
