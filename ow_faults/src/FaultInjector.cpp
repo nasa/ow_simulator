@@ -19,7 +19,9 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
 
   //power fault publishers and subs
-  m_power_soc_sub = node_handle.subscribe("/_original/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this);
+    // will return to checking state of charge once that returns
+  // m_power_soc_sub = node_handle.subscribe("/_original/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this); 
+  m_power_soc_sub = node_handle.subscribe("/power_system_node/remaining_useful_life", 1000, &FaultInjector::powerSOCListener, this);
   m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("/power_system_node/state_of_charge", 1000);
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("/temporary/power_fault/temp_increase", 10);
 

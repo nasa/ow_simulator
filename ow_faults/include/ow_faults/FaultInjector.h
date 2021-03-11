@@ -112,7 +112,6 @@ private:
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
   ros::Publisher m_fault_power_temp_pub;
-
   // publishers for sending ros messages for component failures
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
