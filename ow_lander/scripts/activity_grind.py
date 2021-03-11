@@ -98,7 +98,7 @@ def grind(move_grinder, args):
   goal_pose.orientation.z = -0.706723318474
   goal_pose.orientation.w = 0.0307192507001
   move_grinder.set_pose_target(goal_pose)
-  plan = move_grinder.plan()
+  success, plan, planning_time, error_code = move_grinder.plan()
   if len(plan.joint_trajectory.points) == 0: # If no plan found, abort
     return False
   plan = move_grinder.go(wait=True)

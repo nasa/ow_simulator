@@ -55,7 +55,7 @@ class PathPlanningCommander(object):
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
     self.arm_move_group.set_joint_value_target(goal)
 
-    plan = self.arm_move_group.plan()
+    success, plan, planning_time, error_code = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
@@ -72,7 +72,7 @@ class PathPlanningCommander(object):
     print("Unstow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
     self.arm_move_group.set_joint_value_target(goal)
-    plan = self.arm_move_group.plan()
+    success, plan, planning_time, error_code = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory,
