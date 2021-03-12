@@ -129,10 +129,10 @@ git clone --branch v1.0-OW https://github.com/nasa/GSAP.git gsap
 
 The git branch used is v1.0-OW, which is the latest stable version of GSAP for use with OceanWATERS.
 Please note that this is not the default branch for GSAP and the two may differ.
-This implementation strategy is required to utilize required functionality developed after the most 
-recent release of GSAP and to prevent compatibility issues that may arise due to continuing updates 
-made within the GSAP framework. The latest stable version of GSAP for use with OceanWATERS will be 
-updated as necessary and will revert to the default branch of GSAP pending its next scheduled release.
+This implementation strategy is required to utilize essential functionality developed after the most 
+recent offical release of GSAP and to prevent compatibility issues that may arise due to continuing 
+updates made within the GSAP framework. The latest stable version of GSAP for use with OceanWATERS will
+be updated as necessary and will revert to the default branch of GSAP pending its next scheduled release.
 
 * Define the `GSAP_HOME` environment variable as the location of your GSAP
   installation, e.g.
