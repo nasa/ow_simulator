@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
+  soc_msg.data = 0;
   std_msgs::Int16 rul_msg;
   rul_msg.data = 0;  // immediately set to a good default
   std_msgs::Float64 tempbat_msg;
@@ -140,7 +141,7 @@ int main(int argc, char* argv[]) {
       //tempbat_msg.data = temperature;
       
       //publish current SOC & RUL
-      //SOC_pub.publish(soc_msg);
+      SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
       //TempBat_pub.publish(tempbat_msg);
       ros::spinOnce();
