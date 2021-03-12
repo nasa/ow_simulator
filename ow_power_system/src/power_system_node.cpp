@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
-  soc_msg.data = 0;
+  soc_msg.data = 0.0;
   std_msgs::Int16 rul_msg;
   rul_msg.data = 0;  // immediately set to a good default
   std_msgs::Float64 tempbat_msg;
@@ -109,9 +109,9 @@ int main(int argc, char* argv[]) {
         ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
       } else { // valid prediction
         // For this example, we will print the median EoD.
-        auto samples = eod_time.getVec();
-        std::sort(samples.begin(), samples.end());
-        double eod_median = samples.at(samples.size() / 2);
+        auto samplesRUL = eod_time.getVec();
+        std::sort(samplesRUL.begin(), samplesRUL.end());
+        double eod_median = samplesRUL.at(samplesRUL.size() / 2);
         auto now =  MessageClock::now();
         auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
         double rul_median = eod_median - now_s.count();
@@ -119,12 +119,12 @@ int main(int argc, char* argv[]) {
       }
 
       // State of Charge Code
-      //UData currentSOC = eod_event.getState()[0];
+      UData currentSOC = eod_event.getState()[0];
       // For this example, we will print the median SOC
-      //auto samples2 = currentSOC.getVec();
-      //std::sort(samples2.begin(), samples2.end());
-      //double soc_median = samples2.at(samples2.size() / 2);
-      //soc_msg.data = soc_median;
+      auto samplesSOC = currentSOC.getVec();
+      std::sort(samplesSOC.begin(), samplesSOC.end());
+      double soc_median = samplesSOC.at(samplesSOC.size() / 2);
+      soc_msg.data = soc_median;
 
       // Temperature Code
       //std::vector<UData> systemStates = eod_event.getSystemState()[0]; // Get the system (battery) state at t=0 (now)
