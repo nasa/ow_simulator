@@ -117,7 +117,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
     #plan_b = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
     plan_b = go_to_Z_coordinate(move_arm, cs, end_pose, x_start, y_start, z_start)
-    print (plan_b)
+    
     circ_traj = cascade_plans (plan_a, plan_b)
 
     # Rotate hand perpendicular to arm direction
@@ -125,6 +125,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     plan_c = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
     circ_traj = cascade_plans (circ_traj, plan_c)
+    
   else:
     # Rotate hand so scoop is in middle point
     #cs, start_state = calculate_starting_state_arm (plan_a, robot)

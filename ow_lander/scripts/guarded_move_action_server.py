@@ -84,28 +84,7 @@ class GuardedMoveActionServer(object):
         end_time = self.guarded_move_traj.joint_trajectory.points[n_points-1].time_from_start
         self._timeout = end_time -start_time
         
-    #def handle_guarded_move_done(self, state, result):
-        #"""
-        #:type state: int
-        #:type result: FollowJointTrajectoryResult
-        #"""
-        #ground_detected = state == GoalStatus.PREEMPTED
-        #ground_position = self.ground_detector.ground_position if ground_detected else Point()
         
-        #print (ground_detected)
-        
-        #rospy.loginfo("Ground Detected ? {}".format(ground_detected))
-        #self.guarded_move_pub.publish(
-            #ground_detected, 'base_link', ground_position)
-
-    #def handle_guarded_move_feedback(self, feedback):
-        #"""
-        #:type feedback: FollowJointTrajectoryFeedback
-        #"""
-        #if self.ground_detector.detect():
-            #self.trajectory_async_executer.stop()
-        
-
         
     def on_guarded_move_action(self,goal):
         plan = self._update_motion(goal)
