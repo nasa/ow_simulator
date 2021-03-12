@@ -11,91 +11,53 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <ros/console.h>
+#include <std_msgs/Int16.h>
 #include <std_msgs/Float64.h>
 
 #include "power_system_util.h"
 
 using namespace std;
 
-
-// This example sets up a simple synchronos prognoser to predict battery end of
-// discharge using a Monte Carlo predictor and an Unscented Kalman Filter.
-int simple_example() {
-    using namespace std::chrono;
-    // Read battery data from a file.
-    auto data = read_file("data_const_load.csv");
-
-    // Create a configuration from a file
-    ConfigMap config("example.cfg");
-
-    // Contruct a new prognoser using the prognoser factory. The prognoser
-    // will automatically construct an appropriate model, observer and predictor
-    // based on the values specified in the config.
-    auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
-
-    // For each line of data in the example file, run a single prediction step.
-    for (const auto& line : data) {
-        // Get a new prediction
-        auto prediction = prognoser->step(line);
-
-        // Get the event for battery EoD. The first line of data is used to initialize the observer,
-        // so the first prediction won't have any events.
-        if (prediction.getEvents().size() == 0) {
-            continue;
-        }
-        auto eod_event = prediction.getEvents().front();
-
-        // The time of event is a `UData` structure, which represents a data
-        // point while maintaining uncertainty. For the MonteCarlo predictor
-        // used by this example, the uncertainty is captured by storing the
-        // result of each particle used in the prediction.
-        UData eod_time = eod_event.getTOE();
-        if (eod_time.uncertainty() != UType::Samples) {
-            std::cerr << "Unexpected uncertainty type for EoD prediction" << std::endl;
-            return 1;
-        }
-
-        // For this example, we will print the median EoD.
-        auto samples = eod_time.getVec();
-        std::sort(samples.begin(), samples.end());
-        double eod_median = samples.at(samples.size() / 2);
-        auto now =  MessageClock::now();
-        auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
-        std::cout << "Predicted median EoD: " << eod_median << " s (T- "
-                  << (eod_median-now_s.count())<< " s)" << std::endl;
-    }
-
-    return 0;
-}
-
 int main(int argc, char* argv[]) {
-  
+  using namespace std::chrono;
   ros::init(argc,argv,"power_system_node");
   ros::NodeHandle nh ("power_system_node");
 
-  //Construct our State of Charge (SOC) publisher (Volts)
+  //Construct our State of Charge (SOC) publisher
   ros::Publisher SOC_pub = nh.advertise<std_msgs::Float64>("state_of_charge",1000);
   //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-  ros::Publisher RUL_pub = nh.advertise<std_msgs::Float64>("remaining_useful_life",1000);
+  ros::Publisher RUL_pub = nh.advertise<std_msgs::Int16>("remaining_useful_life",1000);
+  //Construct our Battery Temperature (TempBat) publisher
+  ros::Publisher TempBat_pub = nh.advertise<std_msgs::Float64>("battery_temperature",1000);
   
   //Load power values csv
   string csv_path;
-  auto csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
-    ros::package::getPath("ow_power_system") + "/data/onewatt.csv");
+  string default_csv = "/data/data_const_load.csv";
+  bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
+    ros::package::getPath("ow_power_system") + default_csv);
 
   if (!csv_path_param_exist)
   {
-    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: onewatt.csv");
+    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: data_const_load.csv");
   }
 
   ROS_INFO_STREAM_NAMED("power_system_node", "power_draw_csv_path is set to: " << csv_path);
 
-  auto power_csv = load_csv(csv_path);
+  // Read battery data from a file.
+  auto power_data = read_file(csv_path);
+
+  // Create a configuration from a file
+  string config_path = ros::package::getPath("ow_power_system")+"/config/example.cfg";
+  ConfigMap config(config_path);
+  // Contruct a new prognoser using the prognoser factory. The prognoser
+  // will automatically construct an appropriate model, observer and predictor
+  // based on the values specified in the config.
+  auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
 
   // Retrieve our publication rate expressed in Hz
-  double power_update_rate = csv_path.find("onewatt") != string::npos ? 0.1 : 1;  // if onewatt default to 0.1 Hz otherwise 1 Hz
+  double power_update_rate = 1;
   double power_update_rate_override;  // allow the user to override it
-  auto update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
+  bool update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
 
   if (update_rate_param_exist)
   {
@@ -113,39 +75,79 @@ int main(int argc, char* argv[]) {
 
   ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
   
-  // Initialize time step to 0
-  int t_step = 0;
-
-  //set our indices
-  int time_i = 0;
-  int voltage_i = 1;
-  int rul_i = 2;
-  
   // ROS Loop. Note that once this loop starts,
   // this function (and node) is terminated with an interrupt.
   
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
   std_msgs::Float64 soc_msg;
-  std_msgs::Float64 rul_msg;
+  soc_msg.data = 0;
+  std_msgs::Int16 rul_msg;
+  rul_msg.data = 0;  // immediately set to a good default
+  std_msgs::Float64 tempbat_msg;
   ROS_INFO ("Power system node running");
 
-  int power_lifetime = power_csv.size();
   while (ros::ok()) {
-    if (t_step < power_lifetime) {
-      soc_msg.data=power_csv[t_step][voltage_i];
-      rul_msg.data=power_csv[t_step][rul_i];
-    } //publishes last voltage value if sim time exceeds the length of the csv
 
-    //publish current SOC
-    SOC_pub.publish(soc_msg);
-    RUL_pub.publish(rul_msg);
-    t_step+=1;
-    
-    ros::spinOnce();
-    rate.sleep();
-   
+    // For each line of data in the example file, run a single prediction step.
+    for (const auto & line : power_data) {
+      // Get a new prediction
+      auto prediction = prognoser->step(line);
+      // Get the event for battery EoD. The first line of data is used to initialize the observer,
+      // so the first prediction won't have any events.
+      if (prediction.getEvents().size() == 0) {
+          continue;
+      }
+      auto eod_event = prediction.getEvents().front();
+      // The time of event is a `UData` structure, which represents a data
+      // point while maintaining uncertainty. For the MonteCarlo predictor
+      // used by this example, the uncertainty is captured by storing the
+      // result of each particle used in the prediction.
+      UData eod_time = eod_event.getTOE();
+      if (eod_time.uncertainty() != UType::Samples) {
+        // Log warning and don't update the last value
+        ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+      } else { // valid prediction
+        // For this example, we will print the median EoD.
+        auto samples = eod_time.getVec();
+        std::sort(samples.begin(), samples.end());
+        double eod_median = samples.at(samples.size() / 2);
+        auto now =  MessageClock::now();
+        auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
+        double rul_median = eod_median - now_s.count();
+        rul_msg.data = rul_median;
+      }
+
+      // State of Charge Code
+      //UData currentSOC = eod_event.getState()[0];
+      // For this example, we will print the median SOC
+      //auto samples2 = currentSOC.getVec();
+      //std::sort(samples2.begin(), samples2.end());
+      //double soc_median = samples2.at(samples2.size() / 2);
+      //soc_msg.data = soc_median;
+
+      // Temperature Code
+      //std::vector<UData> systemStates = eod_event.getSystemState()[0]; // Get the system (battery) state at t=0 (now)
+      // This is in format [stateId][sampleId].
+      // Here you will have to choose the sampleId the corresponds to your chosen percentile (e.g., Median) - and load it into a vector<double> where each element is a different state (in same order as above). 
+      // For Example:
+      //std::vector<double> medianSystemState(systemStates.size());
+      //for (int i = 0; i < medianSystemState.size(); i++) 
+        //medianSystemState[i] = systemStates[i][MEDIAN]; // Where MEDIAN corresponds to the sampleID of the median EOL prediction
+        
+      // Next, You will pass it into the model outputEqn to get the outputs:
+      //auto output = model.outputEqn(medianSystemState);
+      //double temperature = output[1];
+      //tempbat_msg.data = temperature;
+      
+      //publish current SOC & RUL
+      SOC_pub.publish(soc_msg);
+      RUL_pub.publish(rul_msg);
+      //TempBat_pub.publish(tempbat_msg);
+      ros::spinOnce();
+      rate.sleep();
+    }
+        
   }
-
   return 0;
 }
