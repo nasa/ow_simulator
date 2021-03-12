@@ -81,14 +81,20 @@ class JointStateSubscriber:
 class LinkStateSubscriber:
     
   def __init__(self):
-    self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
+    #self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
     self._link_value = None
-    
+    self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
     
   def _handle_link_states(self, data):
     """
     :type data: gazebo_msgs.msg._LinkStates.LinkStates
     """
-    idx = data.name.index("lander::l_scoop_tip")
+    #idx = data.name.index("lander::l_scoop_tip")
+    try:
+     idx = data.name.index("lander::l_scoop")
+    except ValueError:
+      rospy.logerr_throttle(
+          1, "GroundDetector: lander::l_scoop_tip not found in link_states")
+      return
     self._link_value = (data.pose[idx].position)
   

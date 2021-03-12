@@ -18,7 +18,7 @@ from action_deliver_sample import cascade_plans
 from action_dig_circular import calculate_starting_state_arm
 from std_msgs.msg import Header
 
-guarded_move_traj = RobotTrajectory()
+pre_guarded_move_traj = RobotTrajectory()
 
 def calculate_end_state_arm_fk (robot, move_arm, joint_goal, moveit_fk):
   #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
@@ -94,13 +94,13 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   plan_b = move_arm.plan()
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
-  guarded_move_traj = cascade_plans (plan_a, plan_b)
+  pre_guarded_move_traj = cascade_plans (plan_a, plan_b)
   
   ### pre-guarded move ends here ###  
   
   # Drive scoop tip along norm vector, distance is search_distance
   
-  cs, start_state = calculate_starting_state_arm (guarded_move_traj, robot)
+  cs, start_state = calculate_starting_state_arm (pre_guarded_move_traj, robot)
   move_arm.set_start_state(cs)
   
   #goal_pose = move_arm.get_current_pose().pose
@@ -115,8 +115,9 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   move_arm.set_pose_target(goal_pose)
   plan_c  = move_arm.plan()
   
-  guarded_move_traj = cascade_plans (guarded_move_traj, plan_c)
+  guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
   
+  #guarded_move_traj = plan_c
   
-  
+  #return pre_guarded_move_traj, guarded_move_traj
   return guarded_move_traj

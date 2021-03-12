@@ -17,6 +17,7 @@ from action_deliver_sample import cascade_plans
 import action_dig_linear
 import action_grind
 from action_deliver_sample import cascade_plans
+from std_msgs.msg import Header
 
 circ_traj = RobotTrajectory()
 
@@ -62,7 +63,8 @@ def calculate_starting_state_arm (plan,robot):
   cs.joint_state.position = new_value 
   return cs, start_state
 
-def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=False):
+
+def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
   """
   :param approximate: use an approximate solution. default True
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -73,16 +75,9 @@ def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=Fals
   """
   
   move_arm.set_start_state(cs)
-  
-  goal_pose = move_arm.get_current_pose().pose
   goal_pose.position.x = x_start
   goal_pose.position.y = y_start
   goal_pose.position.z = z_start
-  
-  goal_pose.orientation.x = -0.70685
-  goal_pose.orientation.y = 0.011349
-  goal_pose.orientation.z = 0.70711
-  goal_pose.orientation.w = 0.014891
   # Ask the planner to generate a plan to the approximate joint values generated
   # by kinematics builtin IK solver. For more insight on this issue refer to:
   # https://github.com/nasa/ow_simulator/pull/60
@@ -91,10 +86,10 @@ def go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start, approximate=Fals
   else:
     move_arm.set_pose_target(goal_pose)
   plan = move_arm.plan()
+  
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
-  #plan = move_group.go(wait=True)
-  #plan = move_arm.plan(joint_goal)
+
   return plan
 
 def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
@@ -115,41 +110,50 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   if not parallel:
   
     #start_state = return_start_state(plan_a) 
-    cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    #cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
     #if not parallel:
     # Once aligned to trench goal, place hand above trench middle point
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
-    plan_b = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
+    #plan_b = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
+    plan_b = go_to_Z_coordinate(move_arm, cs, end_pose, x_start, y_start, z_start)
+    print (plan_b)
     circ_traj = cascade_plans (plan_a, plan_b)
 
     # Rotate hand perpendicular to arm direction
-    cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    #cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     plan_c = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
     circ_traj = cascade_plans (circ_traj, plan_c)
   else:
     # Rotate hand so scoop is in middle point
-    cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    #cs, start_state = calculate_starting_state_arm (plan_a, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
     plan_b = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
     circ_traj = cascade_plans (plan_a, plan_b)
     
     # Rotate scoop
-    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    #cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     plan_c = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
     circ_traj = cascade_plans (circ_traj, plan_c)
     
     # Rotate dist so scoop is back
-    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    #cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     plan_d = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
     circ_traj = cascade_plans (circ_traj, plan_d)
     
     # Once aligned to trench goal, place hand above trench middle point
-    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    #cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     z_start = ground_position + constants.R_PARALLEL_FALSE - depth
-    plan_e = go_to_Z_coordinate(move_arm, cs, x_start, y_start, z_start)
+    plan_e = go_to_Z_coordinate(move_arm, cs, end_pose, x_start, y_start, z_start)
     circ_traj = cascade_plans (circ_traj, plan_e)
     
     # Rotate dist to dig
-    cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    #cs, start_state = calculate_starting_state_arm (circ_traj, robot)
+    cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     dist_now = start_state[3]
     plan_f = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
     circ_traj = cascade_plans (circ_traj, plan_f)

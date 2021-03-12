@@ -139,7 +139,7 @@ def change_joint_value(move_arm, cs, start_state, joint_index, target_value):
   plan = move_arm.plan(joint_goal)
   return plan
 
-def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=False):
+def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
   """
   :param approximate: use an approximate solution. default True
   :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'

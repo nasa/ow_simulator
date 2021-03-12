@@ -34,12 +34,22 @@ def Grind_client():
     #Real GP = -0.155; X = 1.75, Y = 0.1, Depth = 0.045,
                      #Length = 0.5, Parallel = false,
                      #GroundPos = GP);
+                     
+    #mike dig circular                 
     goal.x_start = 1.75
     goal.y_start = 0.1
     goal.depth = 0.045
     goal.length = 0.5 # 0.6
     goal.parallel = False
     goal.ground_position = -0.155
+    
+    #mike dig linear
+    #goal.x_start = 1.75
+    #goal.y_start = 0.1
+    #goal.depth = 0.045
+    #goal.length = 0.5 # 0.6
+    #goal.parallel = True
+    #goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)
