@@ -116,15 +116,15 @@ int main(int argc, char* argv[]) {
         auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
         double rul_median = eod_median - now_s.count();
         rul_msg.data = rul_median;
-      }
 
-      // State of Charge Code
-      UData currentSOC = eod_event.getState()[0];
-      // For this example, we will print the median SOC
-      auto samplesSOC = currentSOC.getVec();
-      std::sort(samplesSOC.begin(), samplesSOC.end());
-      double soc_median = samplesSOC.at(samplesSOC.size() / 2);
-      soc_msg.data = soc_median;
+        // State of Charge Code
+        UData currentSOC = eod_event.getState()[0];
+        // For this example, we will print the median SOC
+        auto samplesSOC = currentSOC.getVec();
+        std::sort(samplesSOC.begin(), samplesSOC.end());
+        double soc_median = samplesSOC.at(samplesSOC.size() / 2);
+        soc_msg.data = soc_median;
+      }
 
       // Temperature Code
       //std::vector<UData> systemStates = eod_event.getSystemState()[0]; // Get the system (battery) state at t=0 (now)
