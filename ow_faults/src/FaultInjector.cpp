@@ -81,33 +81,27 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
-void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
-  std_msgs::Float64 pan_msg;
-  if (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure) {
-    if (isnan(faultPanValue)){
-      faultPanValue = msg.data;
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
+std_msgs::Float64 out_msg;
+
+  if (encoder || torque) {
+    if (isnan(m_faultValue)){
+      m_faultValue = msg.data;
     }
-    pan_msg.data = faultPanValue;
-    m_fault_ant_pan_pub.publish(pan_msg);
+    out_msg.data = m_faultValue;
+    m_publisher.publish(out_msg);
   } else {
-    //turning off fault, should revert to most recent msg val
-    m_fault_ant_pan_pub.publish(msg);
-    faultPanValue = msg.data;
+    m_publisher.publish(msg);
+    m_faultValue = msg.data;
   }
 }
 
+void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
+  publishAntennaeFaults(msg, m_faults.ant_pan_encoder_failure, m_faults.ant_pan_torque_sensor_failure, m_faultPanValue, m_fault_ant_pan_pub );
+}
+
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
-  std_msgs::Float64 tilt_msg;
-  if (m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure) {
-    if (isnan(faultTiltValue)){
-      faultTiltValue = msg.data;
-    }
-    tilt_msg.data = faultTiltValue;
-    m_fault_ant_tilt_pub.publish(tilt_msg);
-  } else {
-    m_fault_ant_tilt_pub.publish(msg);
-    faultTiltValue = msg.data;
-  }
+  publishAntennaeFaults(msg, m_faults.ant_tilt_encoder_failure, m_faults.ant_tilt_torque_sensor_failure, m_faultTiltValue, m_fault_ant_tilt_pub );
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){

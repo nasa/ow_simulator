@@ -70,9 +70,8 @@ private:
   
 
 
-
-  float faultPanValue;
-  float faultTiltValue;
+  float m_faultPanValue;
+  float m_faultTiltValue;
 
   // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool getTempBool);
@@ -80,6 +79,7 @@ private:
   // Antennae functions
   void antennaePanFaultCb(const std_msgs::Float64& msg);
   void antennaeTiltFaultCb(const std_msgs::Float64& msg);
+  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
