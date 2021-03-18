@@ -12,6 +12,7 @@ constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
 constexpr std::bitset<10> FaultInjector::isArmExecutionError;
 constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
 
+
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
   m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
@@ -49,36 +50,22 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-//Setting System Faults Message
-void FaultInjector::setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask) {
-  // for now only arm execution errors
+ //Setting System Faults Message
+template<typename fault_msg>
+void FaultInjector::setFaultsMessage( fault_msg& msg){
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-  msg.value = systemFaultsBitmask.to_ullong(); 
 }
 
-//Setting Arm Faults Message
-void FaultInjector::setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value) {
-  // for now only arm execution errors
-  msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "world";
-  msg.value = static_cast<uint>(value); //should be HARDWARE for now
+void FaultInjector::setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask) {
+  setFaultsMessage(msg);
+  msg.value = systemFaultsBitmask.to_ullong();
 }
 
-//Setting Power Faults Message
-void FaultInjector::setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value) {
-  // for now only arm execution errors
-  msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "world";
-  msg.value = static_cast<uint>(value); //should be HARDWARE for now
-}
-
-//Setting Pant Tilt Faults Message
-void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value) {
-  // for now only arm execution errors
-  msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "world";
-  msg.value = static_cast<uint>(value); //should be HARDWARE for now
+template<typename fault_msg>
+void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
+  setFaultsMessage(msg);
+  msg.value = static_cast<uint>(value);
 }
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
@@ -142,92 +129,92 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   //pant tilt faults
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.position[index] = 0.0;
+    output.position[index] = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isPanTiltExecutionError;
-    setFaultsMessage(pt_faults_msg,hardwareFault);
+    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
   if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isPanTiltExecutionError;
-    setFaultsMessage(pt_faults_msg,hardwareFault);
+    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
 
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isPanTiltExecutionError;
-    setFaultsMessage(pt_faults_msg,hardwareFault);
+    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
   if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isPanTiltExecutionError;
-    setFaultsMessage(pt_faults_msg,hardwareFault);
+    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
 
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
-    output.position[index] = 0.0;
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
-    output.effort[index] = 0.0;
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
     systemFaultsBitmask |= isArmExecutionError;
-    setFaultsMessage(arm_faults_msg,hardwareFault);
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   // power faults
@@ -235,14 +222,14 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     // Fault is a range ( anything < 10%)
     soc_msg.data = 2.2;
     m_fault_power_state_of_charge_pub.publish(soc_msg);
-    setFaultsMessage(power_faults_msg, hardwareFault);
+    setComponentFaultsMessage(power_faults_msg, hardwareFault);
     systemFaultsBitmask |= isPowerSystemFault;
   }
   if(m_faults.instantaneous_capacity_loss_power_failure) {
     // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
     soc_msg.data = 98.5; //random now but should be >5% more than the previous value
     m_fault_power_state_of_charge_pub.publish(soc_msg);
-    setFaultsMessage(power_faults_msg, hardwareFault);
+    setComponentFaultsMessage(power_faults_msg, hardwareFault);
     systemFaultsBitmask |= isPowerSystemFault;
   }
   if(m_faults.thermal_power_failure){
@@ -251,14 +238,14 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setPowerTemperatureFaultValue(true);
     thermal_msg.data = powerTemperatureOverloadValue;
     m_fault_power_temp_pub.publish(thermal_msg);
-    setFaultsMessage(power_faults_msg, hardwareFault);
+    setComponentFaultsMessage(power_faults_msg, hardwareFault);
     systemFaultsBitmask |= isPowerSystemFault;
   } else {
     setPowerTemperatureFaultValue(false);
   }
 
-  setFaultsMessage(system_faults_msg, systemFaultsBitmask);
-
+  setSystemFaultsMessage(system_faults_msg, systemFaultsBitmask);
+  
   m_joint_state_pub.publish(output);
   m_fault_status_pub.publish(system_faults_msg);
   m_arm_fault_status_pub.publish(arm_faults_msg);
