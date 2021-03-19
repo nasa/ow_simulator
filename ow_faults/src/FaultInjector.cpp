@@ -50,7 +50,7 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
- //Setting System Faults Message
+ // Creating Fault Messages 
 template<typename fault_msg>
 void FaultInjector::setFaultsMessage( fault_msg& msg){
   msg.header.stamp = ros::Time::now();
@@ -68,6 +68,7 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
+// Publishing Antennae Fault Messages
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
 std_msgs::Float64 out_msg;
 
