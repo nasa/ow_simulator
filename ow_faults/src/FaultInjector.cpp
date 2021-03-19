@@ -68,6 +68,7 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
+// antenna work
 void FaultInjector::publishAntennaeFaults( std_msgs::Float64& msg, float& faultValue , ros::Publisher m_publisher){
   std_msgs::Float64 out_msg;
 
@@ -90,10 +91,6 @@ void FaultInjector::handleAllAntFaults(){
     m_faultPanValue = m_realPanMsg.data;
     m_faultTiltValue = m_realTiltMsg.data;
   }
-}
-
-void FaultInjector::checkAntFaults(){
-  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure || m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure);
 }
 
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
@@ -142,25 +139,24 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // Set failed sensor values to 0
   unsigned int index;
 
+  checkArmFaults();
+  checkAntFaults();
+
   //pant tilt faults
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
   if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
-
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
   if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
+  }
+
+  if (m_antFault){
     systemFaultsBitmask |= isPanTiltExecutionError;
     setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
@@ -168,66 +164,47 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    systemFaultsBitmask |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
   if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
+  }
+
+  if (m_armFault) {
     systemFaultsBitmask |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
@@ -266,6 +243,20 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   m_arm_fault_status_pub.publish(arm_faults_msg);
   m_power_fault_status_pub.publish(power_faults_msg);
   m_antennae_fault_status_pub.publish(pt_faults_msg);
+}
+
+void FaultInjector::checkArmFaults(){
+  m_armFault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_torque_sensor_failure ||             
+                m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_torque_sensor_failure ||
+                m_faults.prox_pitch_encoder_failure || m_faults.dist_pitch_encoder_failure || 
+                m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_torque_sensor_failure ||
+                m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_torque_sensor_failure ||
+                m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_torque_sensor_failure);
+}
+
+void FaultInjector::checkAntFaults(){
+  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure || 
+                m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure);
 }
 
 template<typename group_t, typename item_t>

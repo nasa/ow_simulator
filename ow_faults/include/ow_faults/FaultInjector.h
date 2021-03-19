@@ -75,7 +75,6 @@ private:
   std_msgs::Float64 m_realTiltMsg;
   float m_faultPanValue;
   float m_faultTiltValue;
-  bool m_antFault;
 
   // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool getTempBool);
@@ -84,7 +83,6 @@ private:
   void antennaePanFaultCb(const std_msgs::Float64& msg);
   void antennaeTiltFaultCb(const std_msgs::Float64& msg);
   void publishAntennaeFaults( std_msgs::Float64& msg, float& faultValue , ros::Publisher m_publisher);
-  void checkAntFaults();
   void handleAllAntFaults();
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
@@ -100,6 +98,10 @@ private:
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
 
+  //checking faults
+  void checkArmFaults(){
+  void checkAntFaults();
+
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
@@ -110,6 +112,10 @@ private:
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   ow_faults::FaultsConfig m_faults;
+
+  //component faults
+  bool m_armFault;
+  bool m_antFault;
 
   // arm faults
   ros::Subscriber m_joint_state_sub;
