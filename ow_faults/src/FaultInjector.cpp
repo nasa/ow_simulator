@@ -81,27 +81,42 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
-std_msgs::Float64 out_msg;
+void FaultInjector::publishAntennaeFaults( std_msgs::Float64& msg, float& faultValue , ros::Publisher m_publisher){
+  std_msgs::Float64 out_msg;
 
-  if (encoder || torque) {
-    if (isnan(m_faultValue)){
-      m_faultValue = msg.data;
-    }
-    out_msg.data = m_faultValue;
-    m_publisher.publish(out_msg);
+  if (isnan(faultValue)){
+    faultValue = msg.data;
+  }
+  out_msg.data = faultValue;
+  m_publisher.publish(out_msg);
+
+}
+
+void FaultInjector::handleAllAntFaults(){
+  checkAntFaults();
+  if (m_antFault) {
+    publishAntennaeFaults(m_realPanMsg, m_faultPanValue, m_fault_ant_pan_pub );
+    publishAntennaeFaults(m_realTiltMsg, m_faultTiltValue, m_fault_ant_tilt_pub );
   } else {
-    m_publisher.publish(msg);
-    m_faultValue = msg.data;
+    m_fault_ant_pan_pub.publish(m_realPanMsg);
+    m_fault_ant_tilt_pub.publish(m_realTiltMsg);
+    m_faultPanValue = m_realPanMsg.data;
+    m_faultTiltValue = m_realTiltMsg.data;
   }
 }
 
+void FaultInjector::checkAntFaults(){
+  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure || m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure);
+}
+
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg, m_faults.ant_pan_encoder_failure, m_faults.ant_pan_torque_sensor_failure, m_faultPanValue, m_fault_ant_pan_pub );
+  m_realPanMsg = msg;
+  handleAllAntFaults();
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg, m_faults.ant_tilt_encoder_failure, m_faults.ant_tilt_torque_sensor_failure, m_faultTiltValue, m_fault_ant_tilt_pub );
+  m_realTiltMsg = msg;
+  handleAllAntFaults();
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
