@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
         for (auto sample : stateSamples) {
           state.push_back(sample[0]);
         }
-        auto& model = ((ModelBasedPrognoser *) prognoser.get())->getModel();
+        auto& model = dynamic_cast<ModelBasedPrognoser*>(prognoser.get())->getModel();
         auto z = model.outputEqn(now_s.count(), (PrognosticsModel::state_type) state);
         double temperature = z[1];
         tempbat_msg.data = temperature;
