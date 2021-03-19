@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
   soc_msg.data = 0.0;
   std_msgs::Float64 tempbat_msg;
   tempbat_msg.data = 0.0;
+  int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
   ROS_INFO ("Power system node running");
 
   while (ros::ok()) {
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]) {
         }
         auto& model = dynamic_cast<ModelBasedPrognoser*>(prognoser.get())->getModel();
         auto z = model.outputEqn(now_s.count(), (PrognosticsModel::state_type) state);
-        double temperature = z[1];
+        double temperature = z[temp_index];
         tempbat_msg.data = temperature;
       }
       
