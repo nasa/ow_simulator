@@ -248,7 +248,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 void FaultInjector::checkArmFaults(){
   m_armFault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_torque_sensor_failure ||             
                 m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_torque_sensor_failure ||
-                m_faults.prox_pitch_encoder_failure || m_faults.dist_pitch_encoder_failure || 
+                m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_torque_sensor_failure || 
                 m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_torque_sensor_failure ||
                 m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_torque_sensor_failure ||
                 m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_torque_sensor_failure);

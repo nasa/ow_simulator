@@ -99,7 +99,7 @@ private:
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
 
   //checking faults
-  void checkArmFaults(){
+  void checkArmFaults();
   void checkAntFaults();
 
   // Find an item in an std::vector or other find-able data structure, and
