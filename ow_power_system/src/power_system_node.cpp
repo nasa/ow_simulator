@@ -80,11 +80,13 @@ int main(int argc, char* argv[]) {
   
   ros::Rate rate(power_update_rate);
   //individual soc_msg to be published by SOC_pub
-  std_msgs::Float64 soc_msg;
-  soc_msg.data = 0.0;
   std_msgs::Int16 rul_msg;
   rul_msg.data = 0;  // immediately set to a good default
+  std_msgs::Float64 soc_msg;
+  soc_msg.data = 0.0;
   std_msgs::Float64 tempbat_msg;
+  tempbat_msg.data = 0.0;
+  int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
   ROS_INFO ("Power system node running");
 
   while (ros::ok()) {
@@ -124,26 +126,23 @@ int main(int argc, char* argv[]) {
         std::sort(samplesSOC.begin(), samplesSOC.end());
         double soc_median = samplesSOC.at(samplesSOC.size() / 2);
         soc_msg.data = soc_median;
-      }
 
-      // Temperature Code
-      //std::vector<UData> systemStates = eod_event.getSystemState()[0]; // Get the system (battery) state at t=0 (now)
-      // This is in format [stateId][sampleId].
-      // Here you will have to choose the sampleId the corresponds to your chosen percentile (e.g., Median) - and load it into a vector<double> where each element is a different state (in same order as above). 
-      // For Example:
-      //std::vector<double> medianSystemState(systemStates.size());
-      //for (int i = 0; i < medianSystemState.size(); i++) 
-        //medianSystemState[i] = systemStates[i][MEDIAN]; // Where MEDIAN corresponds to the sampleID of the median EOL prediction
-        
-      // Next, You will pass it into the model outputEqn to get the outputs:
-      //auto output = model.outputEqn(medianSystemState);
-      //double temperature = output[1];
-      //tempbat_msg.data = temperature;
+        // Temperature Code
+        auto stateSamples = eod_event.getSystemState()[0];
+        std::vector<double> state;
+        for (auto sample : stateSamples) {
+          state.push_back(sample[0]);
+        }
+        auto& model = dynamic_cast<ModelBasedPrognoser*>(prognoser.get())->getModel();
+        auto z = model.outputEqn(now_s.count(), (PrognosticsModel::state_type) state);
+        double temperature = z[temp_index];
+        tempbat_msg.data = temperature;
+      }
       
       //publish current SOC & RUL
       SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
-      //TempBat_pub.publish(tempbat_msg);
+      TempBat_pub.publish(tempbat_msg);
       ros::spinOnce();
       rate.sleep();
     }

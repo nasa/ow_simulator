@@ -6,11 +6,16 @@ ow_power_system
 ===============
 It creates a node called power_system_node, which listens for power consumption
 in a topic called power_draw, publishes the estimated state of charge (SOC)
-in a topic called state_of_charge, publishes the estimated remaining useful life (RUL) in seconds in a topic called remaining_useful_life, and publishes the estimated battery temperature in a topic called battery_temperature.
+in a topic called state_of_charge, publishes the estimated remaining useful life (RUL) in seconds in a topic called
+remaining_useful_life, and publishes the estimated battery temperature in degrees Celsius in a topic called 
+battery_temperature.
 
-Currently, the state_of_charge topic is not published. The RUL value is computed via the GSAP prognostics library based on power input values from a precomputed constant or variable load csv. The value is published every second.
+The RUL, SOC, and battery temperature values are computed via the GSAP prognostics library based on power input
+values from a precomputed constant or variable load csv. The values are published every second.
 
-The RUL is expected to fluctuate (rather than decrease monotonically) due to uncertainties in the Monte Carlo predictor method, with the predicted value becoming more accurate closer to EOD (end of discharge).
+The predicted RUL and SOC values are expected to fluctuate slightly (rather than decrease monotonically) due to 
+uncertainties in the Monte Carlo predictor method, with the predicted value becoming more accurate closer to EOD 
+(end of discharge). The battery temperature is expected to hover around a constant value of approximately 20 deg. C.
 
 Once the publisher hits the end of the csv, it will repeat the dissipation sequence from the top.
 
@@ -23,7 +28,7 @@ This node can be launched using the format:
 </node>
 ```
 
-There are three options for the power draw: either constant load or variable load, with the specs listed below.
+There are two options for the power draw: either constant load or variable load, with the specs listed below.
   
 **SPECS:**  
 data_const_load.csv  
