@@ -87,16 +87,11 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
   std_msgs::Float64 out_msg;
 
-  if (encoder || torque) {
-    if (isnan(m_faultValue)){
-      m_faultValue = msg.data;
-    }
-    out_msg.data = m_faultValue;
-    m_publisher.publish(out_msg);
-  } else {
-    m_publisher.publish(msg);
+  if (!(encoder || torque)) {
     m_faultValue = msg.data;
   }
+  out_msg.data = m_faultValue;
+  m_publisher.publish(out_msg);
 }
 
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
