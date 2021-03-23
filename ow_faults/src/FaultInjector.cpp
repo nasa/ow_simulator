@@ -52,7 +52,7 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
 
 // Creating Fault Messages 
 template<typename fault_msg>
-void FaultInjector::setFaultsMessage( fault_msg& msg){
+void FaultInjector::setFaultsMessageHeader(fault_msg& msg){
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
 }
