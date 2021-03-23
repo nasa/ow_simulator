@@ -85,7 +85,7 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
 }
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
-std_msgs::Float64 out_msg;
+  std_msgs::Float64 out_msg;
 
   if (encoder || torque) {
     if (isnan(m_faultValue)){
