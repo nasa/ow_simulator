@@ -92,7 +92,7 @@ private:
   //Setting the correct values for faults messages via function overloading
 
   template<typename fault_msg>
-  void setFaultsMessage( fault_msg& msg);
+  void setFaultsMessageHeader(fault_msg& msg);
   void setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
 
   template<typename fault_msg>
