@@ -69,38 +69,33 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 }
 
 // antenna work
-void FaultInjector::publishAntennaeFaults( std_msgs::Float64& msg, float& faultValue , ros::Publisher m_publisher){
-  std_msgs::Float64 out_msg;
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
+std_msgs::Float64 out_msg;
 
-  if (isnan(faultValue)){
-    faultValue = msg.data;
-  }
-  out_msg.data = faultValue;
-  m_publisher.publish(out_msg);
-
-}
-
-void FaultInjector::handleAllAntFaults(){
-  checkAntFaults();
-  if (m_antFault) {
-    publishAntennaeFaults(m_realPanMsg, m_faultPanValue, m_fault_ant_pan_pub );
-    publishAntennaeFaults(m_realTiltMsg, m_faultTiltValue, m_fault_ant_tilt_pub );
+  if (encoder || torque) {
+    if (isnan(m_faultValue)){
+      m_faultValue = msg.data;
+    }
+    out_msg.data = m_faultValue;
+    m_publisher.publish(out_msg);
   } else {
-    m_fault_ant_pan_pub.publish(m_realPanMsg);
-    m_fault_ant_tilt_pub.publish(m_realTiltMsg);
-    m_faultPanValue = m_realPanMsg.data;
-    m_faultTiltValue = m_realTiltMsg.data;
+    m_publisher.publish(msg);
+    m_faultValue = msg.data;
   }
 }
 
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
-  m_realPanMsg = msg;
-  handleAllAntFaults();
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_pan_encoder_failure, 
+                        m_faults.ant_pan_torque_sensor_failure, 
+                        m_faultPanValue, m_fault_ant_pan_pub );
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
-  m_realTiltMsg = msg;
-  handleAllAntFaults();
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_tilt_encoder_failure, 
+                        m_faults.ant_tilt_torque_sensor_failure, 
+                        m_faultTiltValue, m_fault_ant_tilt_pub );
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){

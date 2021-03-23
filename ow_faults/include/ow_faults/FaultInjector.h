@@ -82,7 +82,7 @@ private:
   // Antennae functions
   void antennaePanFaultCb(const std_msgs::Float64& msg);
   void antennaeTiltFaultCb(const std_msgs::Float64& msg);
-  void publishAntennaeFaults( std_msgs::Float64& msg, float& faultValue , ros::Publisher m_publisher);
+  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher);
   void handleAllAntFaults();
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
