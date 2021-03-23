@@ -34,7 +34,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_ant_pan_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
-  // topic for system fault messages, see Faults.msg, Amrms.msg, Power.msg, PTFaults.msg
+  // topic for system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
   m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
@@ -84,7 +84,7 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher m_publisher){
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
   std_msgs::Float64 out_msg;
 
   if (!(encoder || torque)) {
@@ -94,6 +94,8 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
   m_publisher.publish(out_msg);
 }
 
+// Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered. 
+// Given that, this is separate from the torque sensor implemented by Ussama.
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg, 
                         m_faults.ant_pan_encoder_failure, 
