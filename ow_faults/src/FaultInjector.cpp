@@ -61,13 +61,13 @@ void FaultInjector::setFaultsMessageHeader(fault_msg& msg){
 }
 
 void FaultInjector::setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask) {
-  setFaultsMessage(msg);
+  setFaultsMessageHeader(msg);
   msg.value = systemFaultsBitmask.to_ullong();
 }
 
 template<typename fault_msg>
 void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
-  setFaultsMessage(msg);
+  setFaultsMessageHeader(msg);
   msg.value = static_cast<uint>(value);
 }
 
