@@ -5,12 +5,13 @@
   <description>The ow_power_system package. Simulates (or will simulate) the lander's power system, taking in power use and future loading and outputting state of charge and a predicted remaining useful life.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per --> 
-  <maintainer email="molly.c.oconnor@nasa.gov">Molly O'Connor</maintainer>
+  <maintainer email="jason.fugate@nasa.gov">Jason Fugate</maintainer>
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <license>NASA Internal - OpenSourcing is TODO</license>
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <author email="jason.fugate@nasa.gov">Jason Fugate</author>
   <author email="molly.c.oconnor@nasa.gov">Molly O'Connor</author>
   <author email="chetan.s.kulkarni@nasa.gov">Chetan Kulkarni</author>
 
