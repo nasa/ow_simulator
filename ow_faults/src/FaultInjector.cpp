@@ -50,7 +50,7 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
- // Creating Fault Messages 
+// Creating Fault Messages 
 template<typename fault_msg>
 void FaultInjector::setFaultsMessage( fault_msg& msg){
   msg.header.stamp = ros::Time::now();
