@@ -24,18 +24,21 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/temp_increase", 10);
 
   //antenna fault publishers and subs
-  m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 3, &FaultInjector::antennaePanFaultCb, this);
-  m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command", 3, &FaultInjector::antennaeTiltFaultCb, this);
+  m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 
+                                              3, 
+                                              &FaultInjector::antennaePanFaultCb, 
+                                              this);
+  m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command", 
+                                              3, 
+                                              &FaultInjector::antennaeTiltFaultCb, 
+                                              this);
   m_fault_ant_pan_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
-  // topic for system fault messages, see Faults.msg
+  // topic for system fault messages, see Faults.msg, Amrms.msg, Power.msg, PTFaults.msg
   m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
-  // topic for arm fault status, see ArmFaults.msg
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
-  // topic for power fault status, see PowerFaults.msg
   m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
-  // topic for power fault status, see PTFaults.msg
   m_antennae_fault_status_pub = node_handle.advertise<ow_faults::PTFaults>("/pt_faults_status", 10);
 
   srand (static_cast <unsigned> (time(0)));
@@ -94,13 +97,17 @@ void FaultInjector::handleAllAntFaults(){
 }
 
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
-  m_realPanMsg = msg;
-  handleAllAntFaults();
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_pan_encoder_failure, 
+                        m_faults.ant_pan_torque_sensor_failure, 
+                        m_faultPanValue, m_fault_ant_pan_pub );
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
-  m_realTiltMsg = msg;
-  handleAllAntFaults();
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_tilt_encoder_failure, 
+                        m_faults.ant_tilt_torque_sensor_failure, 
+                        m_faultTiltValue, m_fault_ant_tilt_pub );
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
