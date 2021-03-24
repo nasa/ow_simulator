@@ -82,19 +82,35 @@ class LinkStateSubscriber:
     
   def __init__(self):
     #self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
+    self._buffer = tf2_ros.Buffer()
+    self._listener = tf2_ros.TransformListener(self._buffer)
     self._link_value = None
     self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
     
   def _handle_link_states(self, data):
+    # position of the end of scoop can be obtained either from raw Gazebo readings
+    # of Link states or from tf2. Link state method is commented out . TF2 method is 
+    #being used in the current implementation
+      
     """
     :type data: gazebo_msgs.msg._LinkStates.LinkStates
     """
     #idx = data.name.index("lander::l_scoop_tip")
+    #try:
+     #idx = data.name.index("lander::l_scoop")
+    #except ValueError:
+      #rospy.logerr_throttle(
+          #1, "LanderInterface: lander::l_scoop_tip not found in link_states")
+      #return
+    #self._link_value = (data.pose[idx].position)
+    
+    
     try:
-     idx = data.name.index("lander::l_scoop")
-    except ValueError:
-      rospy.logerr_throttle(
-          1, "GroundDetector: lander::l_scoop_tip not found in link_states")
-      return
-    self._link_value = (data.pose[idx].position)
+      t = self._buffer.lookup_transform(
+          "base_link", "l_scoop_tip", rospy.Time())
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+      rospy.logwarn("LanderInterface: tf2 raised an exception")
+      return None
+    #return t.transform.translation
+    self._link_value = t.transform.translation
   

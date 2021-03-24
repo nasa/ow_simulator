@@ -57,7 +57,7 @@ class GuardedMoveActionServer(object):
         :type feedback: FollowJointTrajectoryFeedback
         """
         if self.ground_detector.detect():
-          if (self.ground_detector._last_position[2]) > 0.2 :
+          if (self.ground_detector._last_position[2]) > 0.05 :
             self.ground_detector.reset()
           else:
             self.trajectory_async_executer.stop()    
@@ -69,8 +69,6 @@ class GuardedMoveActionServer(object):
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
         self._fdbk.current.z = self._ls.z
-        #print (self._ls)
-        #print (self.ground_detector._last_position)
         self._server.publish_feedback(self._fdbk)
 
         
@@ -121,6 +119,7 @@ class GuardedMoveActionServer(object):
             self._result.final.x = self._fdbk.current.x
             self._result.final.y = self._fdbk.current.y 
             self._result.final.z = self._fdbk.current.z 
+            self._result.success = True
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
     
