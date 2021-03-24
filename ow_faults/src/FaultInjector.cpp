@@ -22,13 +22,22 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/state_of_charge", 10);
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/temp_increase", 10);
 
-  // topic for system fault messages, see Faults.msg
+  //antenna fault publishers and subs
+  m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 
+                                              3, 
+                                              &FaultInjector::antennaePanFaultCb, 
+                                              this);
+  m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command", 
+                                              3, 
+                                              &FaultInjector::antennaeTiltFaultCb, 
+                                              this);
+  m_fault_ant_pan_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
+  m_fault_ant_tilt_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
+
+  // topic for system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
-  // topic for arm fault status, see ArmFaults.msg
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
-  // topic for power fault status, see PowerFaults.msg
   m_power_fault_status_pub = node_handle.advertise<ow_faults::PowerFaults>("/power_faults_status", 10); 
-  // topic for power fault status, see PTFaults.msg
   m_antennae_fault_status_pub = node_handle.advertise<ow_faults::PTFaults>("/pt_faults_status", 10);
 
   srand (static_cast <unsigned> (time(0)));
@@ -73,6 +82,32 @@ void FaultInjector::setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults v
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
   msg.value = static_cast<uint>(value); //should be HARDWARE for now
+}
+
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
+  std_msgs::Float64 out_msg;
+
+  if (!(encoder || torque)) {
+    m_faultValue = msg.data;
+  }
+  out_msg.data = m_faultValue;
+  m_publisher.publish(out_msg);
+}
+
+// Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered. 
+// Given that, this is separate from the torque sensor implemented by Ussama.
+void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_pan_encoder_failure, 
+                        m_faults.ant_pan_torque_sensor_failure, 
+                        m_faultPanValue, m_fault_ant_pan_pub );
+}
+
+void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
+  publishAntennaeFaults(msg, 
+                        m_faults.ant_tilt_encoder_failure, 
+                        m_faults.ant_tilt_torque_sensor_failure, 
+                        m_faultTiltValue, m_fault_ant_tilt_pub );
 }
 
 void FaultInjector::setPowerTemperatureFaultValue(bool getTempBool){
