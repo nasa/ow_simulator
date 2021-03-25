@@ -27,14 +27,11 @@ def DigLinear_client():
     #goal.length = 0.1
     #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
     
-    #mike
-    #LibraryCall DigLinear (X = 1.75, Y = 0.1, Depth = 0.045, Length = 0.5,
-                         #GroundPos = GP);
-                         #Real GP = -0.155;  // Ground position
-    goal.x_start = 1.75
-    goal.y_start = 0.1
+    # General trenching values    
+    goal.x_start = 1.45
+    goal.y_start = 0.2
     goal.depth = 0.045
-    goal.length = 0.5
+    goal.length = 0.1 # 
     goal.ground_position = -0.155
 
     # Sends the goal to the action server.

@@ -15,23 +15,9 @@ from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from action_deliver_sample import cascade_plans
 from std_msgs.msg import Header
-#from action_dig_circular import calculate_starting_state_arm
+
 
 dig_linear_traj = RobotTrajectory()
-
-def calculate_starting_state_arm (plan,robot):
-  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
-  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
-  #j_grinder, j_scoop_yaw]
-
-  start_state = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
-  cs = robot.get_current_state()
-  ## adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
-  ## j_scoop_yaw  state obstained from rviz
-  new_value =  new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  # modify current state of robot to the end state of the previous plan
-  cs.joint_state.position = new_value 
-  return cs, start_state
 
 
 def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_fk):
@@ -101,15 +87,7 @@ def plan_cartesian_path_lin(move_arm, wpose, length, alpha, z_start, cs):
   """
   move_arm.set_start_state(cs)
   waypoints = []
-  #wpose = move_arm.get_current_pose().pose
-  ## these values were obtained from rviz 
-  #wpose.position.x = 1.94233
-  #wpose.position.y = -0.0167343
-  #wpose.position.z = -0.122421 # -0.0456
-  #wpose.orientation.x = 0.9988
-  #wpose.orientation.y = -0.0215346
-  #wpose.orientation.z = -0.043971
-  #wpose.orientation.w = -0.00134208
+
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
 
@@ -183,9 +161,7 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   
   plan_a= move_to_pre_trench_configuration(
       move_arm, x_start, y_start)
-    
-  
-  #cs, start_state = calculate_starting_state_arm (plan_a, robot)
+
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   #################### Rotate hand yaw to dig in#################################
   plan_b = change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, 0.0) 
@@ -197,14 +173,14 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   dig_linear_traj = cascade_plans (plan_a, plan_b)
   
   ######################### rotate scoop #######################################
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
+
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   plan_c = change_joint_value(move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
   
   dig_linear_traj = cascade_plans (dig_linear_traj, plan_c)
   
   ######################### rotate dist pith to pre-trenching position###########
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
+
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   
   plan_d = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
@@ -218,7 +194,6 @@ def dig_linear(move_arm, robot, moveit_fk, args):
       (math.cos(alpha) - math.sin(alpha))
   z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
   
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   
   plan_e = go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start)
@@ -227,18 +202,12 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   
   ############################  rotate to dig in the ground
   
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   plan_f = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
   
   dig_linear_traj = cascade_plans (dig_linear_traj, plan_f)
   
   # determine linear trenching direction (alpha) value obtained from rviz
-  #current_pose = move_arm.get_current_pose().pose
-  #current_pose.orientation.x = 0.9988
-  #current_pose.orientation.y = -0.0215346
-  #current_pose.orientation.z = -0.043971
-  #current_pose.orientation.w = -0.00134208
   
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   
@@ -248,14 +217,13 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   alpha = current_euler[2]
   
   # linear trenching
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
+
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   cartesian_plan, fraction = plan_cartesian_path_lin(move_arm, current_pose, length, alpha, z_start, cs)
   dig_linear_traj = cascade_plans (dig_linear_traj , cartesian_plan)
   
   
   #  rotate to dig out
-  #cs, start_state = calculate_starting_state_arm (dig_linear_traj, robot)
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, dig_linear_traj, move_arm, moveit_fk)
   plan_g = change_joint_value(move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
   dig_linear_traj = cascade_plans (dig_linear_traj, plan_g)

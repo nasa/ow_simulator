@@ -29,27 +29,22 @@ def Grind_client():
     #goal.parallel = True
     #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
 
-
-    # mike values  
-    #Real GP = -0.155; X = 1.75, Y = 0.1, Depth = 0.045,
-                     #Length = 0.5, Parallel = false,
-                     #GroundPos = GP);
-                     
-    #mike dig circular                 
-    goal.x_start = 1.75
-    goal.y_start = 0.1
-    goal.depth = 0.045
-    goal.length = 0.5 # 0.6
-    goal.parallel = False
-    goal.ground_position = -0.155
-    
-    #mike dig linear
+    # General trenching values for non- parallel circular trenching     
     #goal.x_start = 1.75
     #goal.y_start = 0.1
     #goal.depth = 0.045
     #goal.length = 0.5 # 0.6
-    #goal.parallel = True
+    #goal.parallel = False
     #goal.ground_position = -0.155
+
+    # General trenching values for linear trenching            
+    goal.x_start = 1.65
+    goal.y_start = 0.2
+    goal.depth = 0.045
+    # choose a generous value for goal length to avoid collision
+    goal.length = 0.7 
+    goal.parallel = True
+    goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)

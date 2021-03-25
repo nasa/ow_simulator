@@ -116,9 +116,9 @@ class GuardedMoveActionServer(object):
         
             
         if success:
-            self._result.final.x = self._fdbk.current.x
-            self._result.final.y = self._fdbk.current.y 
-            self._result.final.z = self._fdbk.current.z 
+            self._result.final.x = self.ground_detector._last_position[0]
+            self._result.final.y = self.ground_detector._last_position[1]
+            self._result.final.z = self.ground_detector._last_position[2]
             self._result.success = True
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
