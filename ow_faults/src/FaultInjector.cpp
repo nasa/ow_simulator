@@ -86,14 +86,14 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg, 
                         m_faults.ant_pan_encoder_failure, 
-                        m_faults.ant_pan_torque_sensor_failure, 
+                        m_faults.ant_pan_effort_failure, 
                         m_faultPanValue, m_fault_ant_pan_pub );
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg, 
                         m_faults.ant_tilt_encoder_failure, 
-                        m_faults.ant_tilt_torque_sensor_failure, 
+                        m_faults.ant_tilt_effort_failure, 
                         m_faultTiltValue, m_fault_ant_tilt_pub );
 }
 
@@ -140,13 +140,13 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
+  if (m_faults.ant_pan_effort_failure && findJointIndex(J_ANT_PAN, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
   if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
+  if (m_faults.ant_tilt_effort_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
@@ -159,42 +159,42 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
+  if (m_faults.shou_yaw_effort_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
+  if (m_faults.shou_pitch_effort_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
+  if (m_faults.prox_pitch_effort_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
+  if (m_faults.dist_pitch_effort_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
+  if (m_faults.hand_yaw_effort_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
+  if (m_faults.scoop_yaw_effort_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
@@ -240,17 +240,17 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 }
 
 void FaultInjector::checkArmFaults(){
-  m_armFault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_torque_sensor_failure ||             
-                m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_torque_sensor_failure ||
-                m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_torque_sensor_failure || 
-                m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_torque_sensor_failure ||
-                m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_torque_sensor_failure ||
-                m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_torque_sensor_failure);
+  m_armFault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||             
+                m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_effort_failure ||
+                m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_effort_failure || 
+                m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_effort_failure ||
+                m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_effort_failure ||
+                m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_effort_failure);
 }
 
 void FaultInjector::checkAntFaults(){
-  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_torque_sensor_failure || 
-                m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_torque_sensor_failure);
+  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure || 
+                m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
 }
 
 template<typename group_t, typename item_t>
