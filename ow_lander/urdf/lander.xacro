@@ -411,8 +411,8 @@
     <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
       <jointName>j_dist_pitch</jointName>
       <topicName>ft_sensor_dist_pitch</topicName>
-      <updateRate>30.0</updateRate>
-      <gaussianNoise>0.0</gaussianNoise>
+      <updateRate>250.0</updateRate>  <!-- max sensor update rate 2500 Hz  -->
+      <gaussianNoise>0.2</gaussianNoise> <!-- estimated based on a profile of the barret ft sensor -->
     </plugin>
   </gazebo>
   <link name="l_hand">
