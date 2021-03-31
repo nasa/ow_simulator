@@ -117,7 +117,5 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   
   guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
   
-  #guarded_move_traj = plan_c
-  
   #return pre_guarded_move_traj, guarded_move_traj
   return guarded_move_traj

@@ -30,21 +30,21 @@ def Grind_client():
     #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
 
     # General trenching values for non- parallel circular trenching     
-    #goal.x_start = 1.75
-    #goal.y_start = 0.1
-    #goal.depth = 0.045
-    #goal.length = 0.5 # 0.6
-    #goal.parallel = False
-    #goal.ground_position = -0.155
+    goal.x_start = 1.55
+    goal.y_start = 0.1
+    goal.depth = 0.045
+    goal.length = 0.5 # 0.6
+    goal.parallel = False
+    goal.ground_position = -0.155
 
     # General trenching values for linear trenching            
-    goal.x_start = 1.65
-    goal.y_start = 0.2
-    goal.depth = 0.045
-    # choose a generous value for goal length to avoid collision
-    goal.length = 0.7 
-    goal.parallel = True
-    goal.ground_position = -0.155
+    #goal.x_start = 1.65
+    #goal.y_start = 0.2
+    #goal.depth = 0.045
+    ##choose a generous value for goal length to avoid collision
+    #goal.length = 0.7  
+    #goal.parallel = True
+    #goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)

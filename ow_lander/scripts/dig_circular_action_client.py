@@ -28,8 +28,8 @@ def DigCircular_client():
     #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
     
     # General trenching values     
-    goal.x_start = 1.75
-    goal.y_start = 0.1
+    goal.x_start = 1.55
+    goal.y_start = 0.2
     goal.depth = 0.045
     #goal.length = 0.5 # 0.6
     goal.parallel = False
