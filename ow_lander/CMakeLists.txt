@@ -34,14 +34,14 @@ add_action_files(
   FILES DigLinear.action
   FILES DigCircular.action
   FILES Grind.action
-  FILES Guardedmove.action
-  #FILES GuardedMove.action
+  #FILES Guardedmove.action
+  FILES GuardedMove.action
 )
 
 
 add_message_files(
   FILES
-  GuardedMoveResult.msg
+  GuardedMoveFinalResult.msg
 )
 
 

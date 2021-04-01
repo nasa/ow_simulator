@@ -220,7 +220,7 @@ class PathPlanningCommander(object):
     self.ground_detector = GroundDetector()
     self.trajectory_async_executer.connect("arm_controller")
     self.guarded_move_pub = rospy.Publisher(
-        '/guarded_move_result', GuardedMoveResult, queue_size=10)
+        '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
     print("path_planning_commander has started!")

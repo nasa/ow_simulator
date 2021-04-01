@@ -24,11 +24,11 @@ class GuardedMoveActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.GuardedmoveAction, execute_cb=self.on_guarded_move_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.GuardedMoveAction, execute_cb=self.on_guarded_move_action, auto_start = False)
         self._server.start()
         # Action Feedback/Result
-        self._fdbk = ow_lander.msg.GuardedmoveFeedback()
-        self._result = ow_lander.msg.GuardedmoveResult()
+        self._fdbk = ow_lander.msg.GuardedMoveFeedback()
+        self._result = ow_lander.msg.GuardedMoveResult()
         self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
@@ -38,7 +38,7 @@ class GuardedMoveActionServer(object):
         self.guarded_move_traj = RobotTrajectory()
         self.ground_detector = GroundDetector()
         self.guarded_move_pub = rospy.Publisher(
-        '/guarded_move_result', GuardedMoveResult, queue_size=10)
+        '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
         
     def handle_guarded_move_done(self, state, result):
         """
@@ -88,14 +88,10 @@ class GuardedMoveActionServer(object):
         plan = self._update_motion(goal)
         success = False
 
-        #self.trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
-                                           #done_cb=None,
-                                           #active_cb=None,
-                                           #feedback_cb=None)
-        # commented out ground detection implementation for now for false ground
+
         # detection
         self.ground_detector.reset()
-        #print (self.guarded_move_traj.joint_trajectory)
+
         self.trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
                                            done_cb=self.handle_guarded_move_done,
                                            active_cb=None,

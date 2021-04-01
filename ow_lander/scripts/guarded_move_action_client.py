@@ -12,11 +12,11 @@ import sys
 
 def guarded_move_client():
  
-    client = actionlib.SimpleActionClient('Guarded_move', ow_lander.msg.GuardedmoveAction)
+    client = actionlib.SimpleActionClient('Guarded_move', ow_lander.msg.GuardedMoveAction)
 
     client.wait_for_server()
 
-    goal = ow_lander.msg.GuardedmoveGoal()
+    goal = ow_lander.msg.GuardedMoveGoal()
     
     # Default trenching values
     goal.start.x = 2.0
