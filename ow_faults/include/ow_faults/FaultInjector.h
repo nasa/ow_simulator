@@ -20,6 +20,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
+#include <random>
 
 
 // This class injects simple message faults that don't need to be simulated
@@ -121,6 +122,8 @@ private:
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
+
+  std::mt19937 m_randomGenerator; // Utilize a Mersenne Twister pesduo random generation
 };
 
 #endif

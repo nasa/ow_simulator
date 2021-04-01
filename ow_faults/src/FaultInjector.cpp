@@ -242,11 +242,30 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
 {
+  if (!m_faults.groups.ft_sensor_faults.enable) {
+    m_dist_pitch_ft_sensor_pub.publish(msg);
+    return;
+  }
+
   auto out_msg = msg;
-  if (m_faults.dist_pitch_ft_sensor_failure) {
+
+  if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
     out_msg.wrench.force = geometry_msgs::Vector3();
     out_msg.wrench.torque = geometry_msgs::Vector3();
   }
+
+  auto mean = m_faults.groups.ft_sensor_faults.signal_bias_failure;
+  auto stddev = m_faults.groups.ft_sensor_faults.signal_noise_failure;
+  // TODO: consider optimizing this by re-creating the distribution only when
+  // mean and stddev values change
+  auto normal_dist = std::normal_distribution<float>(mean, stddev); 
+  out_msg.wrench.force.x += normal_dist(m_randomGenerator);
+  out_msg.wrench.force.y += normal_dist(m_randomGenerator);
+  out_msg.wrench.force.z += normal_dist(m_randomGenerator);
+  out_msg.wrench.torque.x += normal_dist(m_randomGenerator);
+  out_msg.wrench.torque.y += normal_dist(m_randomGenerator);
+  out_msg.wrench.torque.z += normal_dist(m_randomGenerator);
+
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
