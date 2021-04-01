@@ -19,9 +19,14 @@ def deliver_client():
 
     goal = ow_lander.msg.DeliverGoal()
     # Default trenching values
-    goal.delivery.x = 0.55
-    goal.delivery.y = -0.3
-    goal.delivery.z = 0.82 
+    #goal.delivery.x = 0.55
+    #goal.delivery.y = -0.3
+    #goal.delivery.z = 0.82 
+    
+    # Remove Tailings values
+    goal.delivery.x = 1.5
+    goal.delivery.y = 0.8
+    goal.delivery.z = 0.65 
 
     # Sends the goal to the action server.
     client.send_goal(goal)

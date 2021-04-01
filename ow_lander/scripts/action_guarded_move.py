@@ -15,27 +15,12 @@ from action_deliver_sample import cascade_plans
 import action_dig_linear
 import action_grind
 from action_deliver_sample import cascade_plans
-from action_dig_circular import calculate_starting_state_arm
+#from action_dig_circular import calculate_starting_state_arm
+from action_dig_circular import calculate_joint_state_end_pose_from_plan_arm
 from std_msgs.msg import Header
 
 pre_guarded_move_traj = RobotTrajectory()
-
-def calculate_end_state_arm_fk (robot, move_arm, joint_goal, moveit_fk):
-  #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
-  #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
-  #j_grinder, j_scoop_yaw]
-
-  end_state = robot.get_current_state()
-  # adding antenna (0,0) and grinder positions (-0.1) which should not change
-  new_value =  (0,0) + tuple(joint_goal[:5]) + (-0.1,) + (joint_goal [5],)
-  end_state.joint_state.position = new_value 
-  goal_pose = move_arm.get_current_pose().pose
-  header = Header(0,rospy.Time.now(),"base_link")
-  fkln = ['l_scoop']
-  goal_pose_stamped = moveit_fk(header, fkln, end_state)
-  goal_pose = goal_pose_stamped.pose_stamped[0].pose
-  
-  return goal_pose
+guarded_move_traj = RobotTrajectory()
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
     
@@ -82,9 +67,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
 
   
   # Once aligned to move goal and offset, place scoop tip at surface target offset
-  cs, start_state = calculate_starting_state_arm (plan_a, robot)
+  cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   move_arm.set_start_state(cs)
-  goal_pose = calculate_end_state_arm_fk (robot, move_arm, joint_goal, moveit_fk)
   goal_pose.position.x = targ_x
   goal_pose.position.y = targ_y
   goal_pose.position.z = targ_z
@@ -100,11 +84,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   
   # Drive scoop tip along norm vector, distance is search_distance
   
-  cs, start_state = calculate_starting_state_arm (pre_guarded_move_traj, robot)
+  cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, pre_guarded_move_traj, move_arm, moveit_fk)
   move_arm.set_start_state(cs)
-  
-  #goal_pose = move_arm.get_current_pose().pose
-  goal_pose = calculate_end_state_arm_fk (robot, move_arm, joint_goal, moveit_fk)
   goal_pose.position.x = targ_x
   goal_pose.position.y = targ_y
   goal_pose.position.z = targ_z
@@ -117,5 +98,4 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   
   guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
   
-  #return pre_guarded_move_traj, guarded_move_traj
   return guarded_move_traj
