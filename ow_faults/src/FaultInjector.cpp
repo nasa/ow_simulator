@@ -16,7 +16,10 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
   m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
   // 'new' joint states topic where fault data is now publishes on
-  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
+  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10);
+
+  m_dist_pitch_ft_sensor_sub = node_handle.subscribe("/_original/ft_sensor_dist_pitch", 10, &FaultInjector::distPitchFtSensorCb, this);
+  m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>("/ft_sensor_dist_pitch", 10);
 
   //power fault publishers and subs
   m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/state_of_charge", 10);
@@ -235,6 +238,16 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   m_arm_fault_status_pub.publish(arm_faults_msg);
   m_power_fault_status_pub.publish(power_faults_msg);
   m_antennae_fault_status_pub.publish(pt_faults_msg);
+}
+
+void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
+{
+  auto out_msg = msg;
+  if (m_faults.dist_pitch_ft_sensor_failure) {
+    out_msg.wrench.force = geometry_msgs::Vector3();
+    out_msg.wrench.torque = geometry_msgs::Vector3();
+  }
+  m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
 template<typename group_t, typename item_t>
