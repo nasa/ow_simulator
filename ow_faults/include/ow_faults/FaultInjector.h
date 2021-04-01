@@ -123,7 +123,7 @@ private:
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
 
-  std::mt19937 m_randomGenerator; // Utilize a Mersenne Twister pesduo random generation
+  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
 };
 
 #endif

@@ -262,12 +262,12 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   // TODO: consider optimizing this by re-creating the distribution only when
   // mean and stddev values change
   auto normal_dist = std::normal_distribution<float>(mean, stddev); 
-  out_msg.wrench.force.x += normal_dist(m_randomGenerator);
-  out_msg.wrench.force.y += normal_dist(m_randomGenerator);
-  out_msg.wrench.force.z += normal_dist(m_randomGenerator);
-  out_msg.wrench.torque.x += normal_dist(m_randomGenerator);
-  out_msg.wrench.torque.y += normal_dist(m_randomGenerator);
-  out_msg.wrench.torque.z += normal_dist(m_randomGenerator);
+  out_msg.wrench.force.x += normal_dist(m_random_generator);
+  out_msg.wrench.force.y += normal_dist(m_random_generator);
+  out_msg.wrench.force.z += normal_dist(m_random_generator);
+  out_msg.wrench.torque.x += normal_dist(m_random_generator);
+  out_msg.wrench.torque.y += normal_dist(m_random_generator);
+  out_msg.wrench.torque.z += normal_dist(m_random_generator);
 
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
