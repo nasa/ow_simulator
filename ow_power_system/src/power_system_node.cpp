@@ -13,83 +13,95 @@
 #include <ros/console.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float64.h>
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <iomanip>
 
 #include "power_system_util.h"
-
 using namespace std;
 
-int main(int argc, char* argv[]) {
-  using namespace std::chrono;
-  ros::init(argc,argv,"power_system_node");
-  ros::NodeHandle nh ("power_system_node");
+float update_count = 0.0;
+float battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
 
-  //Construct our State of Charge (SOC) publisher
-  ros::Publisher SOC_pub = nh.advertise<std_msgs::Float64>("state_of_charge",1000);
-  //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-  ros::Publisher RUL_pub = nh.advertise<std_msgs::Int16>("remaining_useful_life",1000);
-  //Construct our Battery Temperature (TempBat) publisher
-  ros::Publisher TempBat_pub = nh.advertise<std_msgs::Float64>("battery_temperature",1000);
-  
-  //Load power values csv
-  string csv_path;
-  string default_csv = "/data/data_const_load.csv";
-  bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
-    ros::package::getPath("ow_power_system") + default_csv);
-
-  if (!csv_path_param_exist)
+class SubscribeAndPublish
+{
+public:
+  SubscribeAndPublish()
   {
-    ROS_WARN_NAMED("power_system_node", "power_draw_csv_path param was not set! Using default value: data_const_load.csv");
+    //Construct our State of Charge (SOC) publisher
+    SOC_pub = nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge",1000);
+    //Construct our Remaining Useful Life (RUL) publisher (Seconds)
+    RUL_pub = nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life",1000);
+    //Construct our Battery Temperature (TempBat) publisher
+    TempBat_pub = nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature",1000);
+
+    //Construct our Average Mechanical Power subsriber (Watts)
+    MechPower_sub = nh.subscribe("/mechanical_power/average", 1000, &SubscribeAndPublish::powerCallback, this);
+
   }
-
-  ROS_INFO_STREAM_NAMED("power_system_node", "power_draw_csv_path is set to: " << csv_path);
-
-  // Read battery data from a file.
-  auto power_data = read_file(csv_path);
-
-  // Create a configuration from a file
-  string config_path = ros::package::getPath("ow_power_system")+"/config/example.cfg";
-  ConfigMap config(config_path);
-  // Contruct a new prognoser using the prognoser factory. The prognoser
-  // will automatically construct an appropriate model, observer and predictor
-  // based on the values specified in the config.
-  auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
-
-  // Retrieve our publication rate expressed in Hz
-  double power_update_rate = 1;
-  double power_update_rate_override;  // allow the user to override it
-  bool update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
-
-  if (update_rate_param_exist)
+  void powerCallback(const std_msgs::Float64::ConstPtr& msg)
   {
-    ROS_WARN_NAMED("power_system_node", "Overriding the default power_update_rate!");
-    // Validated the parameter
-    if (power_update_rate == 0)
-    {
-      ROS_ERROR_NAMED("power_system_node", "power_update_rate param was set to zero! passed value ignored.");
-    }
-    else
-    {
-      power_update_rate = power_update_rate_override;
-    }
-  }
+    using namespace std::chrono;
+    ros::NodeHandle nh;
+    float mech_power = msg->data; // [W]
 
-  ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
-  
-  // ROS Loop. Note that once this loop starts,
-  // this function (and node) is terminated with an interrupt.
-  
-  ros::Rate rate(power_update_rate);
-  //individual soc_msg to be published by SOC_pub
-  std_msgs::Int16 rul_msg;
-  rul_msg.data = 0;  // immediately set to a good default
-  std_msgs::Float64 soc_msg;
-  soc_msg.data = 0.0;
-  std_msgs::Float64 tempbat_msg;
-  tempbat_msg.data = 0.0;
-  int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
-  ROS_INFO ("Power system node running");
+    // Create temperature estimate with pseudorandom noise generator
+    float min_temp = 17.5; // minimum temp = 17.5 deg. C
+    float max_temp = 21.5; // maximum temp = 21.5 deg. C
+    float temp_est = min_temp + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_temp - min_temp)));
 
-  while (ros::ok()) {
+    // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
+    float baseline_voltage = 3.2; // [V] estimate
+    float voltage_range = 0.1; // [V] 
+    float min_voltage = baseline_voltage + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
+    float max_voltage = (baseline_voltage + voltage_range) + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
+    
+    // If voltage limits dip below baseline, set to baseline values
+    if (min_voltage < baseline_voltage)
+    {
+      min_voltage = baseline_voltage;
+    }
+    if (max_voltage < (baseline_voltage + voltage_range))
+    {
+      max_voltage = baseline_voltage + voltage_range;
+    }
+
+    float voltage_est = min_voltage + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_voltage - min_voltage)));
+
+    // Create single line csv containing power data and voltage/temp estimates
+    string csv_path;
+    string default_csv = "/data/gsap_input_data.csv";
+    bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
+      ros::package::getPath("ow_power_system") + default_csv);
+    std::ofstream myfile;
+    myfile.open (csv_path);
+    myfile << "Timestamp, power, temperature, voltage\n";
+    myfile << "0.00, 0.00, 20.00, 4.10\n";
+    myfile << update_count << ", " << mech_power << ", " << temp_est << ", " << voltage_est << "\n";
+    myfile.close();
+    update_count = update_count + 1.0;
+
+    //individual msgs to be published
+    std_msgs::Int16 rul_msg;
+    rul_msg.data = 0;  // immediately set to a good default
+    std_msgs::Float64 soc_msg;
+    soc_msg.data = 0.0;
+    std_msgs::Float64 tempbat_msg;
+    tempbat_msg.data = 0.0;
+
+    int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
+
+    // Read battery data from a file.
+    auto power_data = read_file(csv_path);
+
+    // Create a configuration from a file
+    string config_path = ros::package::getPath("ow_power_system")+"/config/example.cfg";
+    ConfigMap config(config_path);
+    // Contruct a new prognoser using the prognoser factory. The prognoser
+    // will automatically construct an appropriate model, observer and predictor
+    // based on the values specified in the config.
+    auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
 
     // For each line of data in the example file, run a single prediction step.
     for (const auto & line : power_data) {
@@ -98,7 +110,7 @@ int main(int argc, char* argv[]) {
       // Get the event for battery EoD. The first line of data is used to initialize the observer,
       // so the first prediction won't have any events.
       if (prediction.getEvents().size() == 0) {
-          continue;
+        continue;
       }
       auto eod_event = prediction.getEvents().front();
       // The time of event is a `UData` structure, which represents a data
@@ -138,15 +150,55 @@ int main(int argc, char* argv[]) {
         double temperature = z[temp_index];
         tempbat_msg.data = temperature;
       }
-      
       //publish current SOC & RUL
       SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
       TempBat_pub.publish(tempbat_msg);
-      ros::spinOnce();
-      rate.sleep();
     }
-        
   }
+
+private:
+  ros::NodeHandle nh;
+  ros::Publisher SOC_pub;
+  ros::Publisher RUL_pub;
+  ros::Publisher TempBat_pub;
+  ros::Subscriber MechPower_sub;
+};
+
+int main(int argc, char* argv[]) {
+
+  ros::init(argc, argv, "power_system_node");
+  ros::NodeHandle nh;
+  SubscribeAndPublish SAPObject;
+  // Retrieve our publication rate expressed in Hz
+  double power_update_rate = 1;
+  double power_update_rate_override;  // allow the user to override it
+  bool update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
+  
+  if (update_rate_param_exist)
+  {
+    ROS_WARN_NAMED("power_system_node", "Overriding the default power_update_rate!");
+    // Validated the parameter
+    if (power_update_rate == 0)
+    {
+      ROS_ERROR_NAMED("power_system_node", "power_update_rate param was set to zero! passed value ignored.");
+    }
+    else
+    {
+      power_update_rate = power_update_rate_override;
+    }
+  }
+
+  ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
+  ros::Rate rate(power_update_rate);
+  
+  ROS_INFO ("Power system node running");
+  ros::spin();
+  // ROS Loop. Note that once this loop starts,
+  // this function (and node) is terminated with an interrupt.
+  //while (ros::ok()) {
+    //ros::spinOnce();
+    //rate.sleep();
+  //}
   return 0;
 }

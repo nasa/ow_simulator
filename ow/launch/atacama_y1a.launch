@@ -5,7 +5,7 @@
   <arg name="gazebo" default="true"/>
   <arg name="gzclient" default="true"/>
   <arg name="record_bag" default="false"/>
-  <arg name="power_draw_csv_file" default="data_const_load.csv"/>  <!-- options: data_const_load.csv data_variable_load.csv-->
+  <arg name="power_draw_csv_file" default="gsap_input_data.csv"/>
 
   <include file="$(find ow)/launch/common.launch">
     <arg name="world_name" value="$(find ow_europa)/worlds/atacama_y1a.world"/>
