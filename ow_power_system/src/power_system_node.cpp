@@ -13,16 +13,16 @@
 #include <ros/console.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float64.h>
-#include <iostream>
 #include <fstream>
-#include <stdlib.h>
-#include <iomanip>
 
 #include "power_system_util.h"
 using namespace std;
 
-float update_count = 0.0;
+float update_count = 0.00; // Timestep initialization
 float battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
+float init_power = 0.00; // Power initialization
+float init_temp = 20.00; // Temperature initialization
+float init_voltage = 4.10; // Voltage initialization
 
 class SubscribeAndPublish
 {
@@ -44,11 +44,15 @@ public:
   {
     using namespace std::chrono;
     ros::NodeHandle nh;
+
+    // Set mechanical power value to rostopic subscription
     float mech_power = msg->data; // [W]
 
     // Create temperature estimate with pseudorandom noise generator
     float min_temp = 17.5; // minimum temp = 17.5 deg. C
     float max_temp = 21.5; // maximum temp = 21.5 deg. C
+
+    // Temperature estimate based on pseudorandom noise and fixed range
     float temp_est = min_temp + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_temp - min_temp)));
 
     // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
@@ -67,20 +71,29 @@ public:
       max_voltage = baseline_voltage + voltage_range;
     }
 
+    // Voltage estimate based on pseudorandom noise and moving range
     float voltage_est = min_voltage + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_voltage - min_voltage)));
-
+    
     // Create single line csv containing power data and voltage/temp estimates
     string csv_path;
     string default_csv = "/data/gsap_input_data.csv";
     bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
       ros::package::getPath("ow_power_system") + default_csv);
+
+    // Open new file
     std::ofstream myfile;
     myfile.open (csv_path);
     myfile << "Timestamp, power, temperature, voltage\n";
-    myfile << "0.00, 0.00, 20.00, 4.10\n";
+    // First line is used to initialize GSAP at first time step
+    myfile << update_count << ", " << init_power << ", " << init_temp << ", " << init_voltage << "\n";
+    // Update time step and GSAP initialization parameters
+    update_count = update_count + 1.0;
+    init_power = mech_power;
+    init_temp = temp_est;
+    init_voltage = voltage_est;
+    // Line used to make the prediction (use current time step)
     myfile << update_count << ", " << mech_power << ", " << temp_est << ", " << voltage_est << "\n";
     myfile.close();
-    update_count = update_count + 1.0;
 
     //individual msgs to be published
     std_msgs::Int16 rul_msg;
@@ -92,17 +105,16 @@ public:
 
     int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
 
-    // Read battery data from a file.
+    // Read battery data from newly created file.
     auto power_data = read_file(csv_path);
 
     // Create a configuration from a file
     string config_path = ros::package::getPath("ow_power_system")+"/config/example.cfg";
     ConfigMap config(config_path);
-    // Contruct a new prognoser using the prognoser factory. The prognoser
+    // Contruct a new prognoser using the prognoser factory at the first time step. The prognoser
     // will automatically construct an appropriate model, observer and predictor
     // based on the values specified in the config.
     auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
-
     // For each line of data in the example file, run a single prediction step.
     for (const auto & line : power_data) {
       // Get a new prediction
@@ -122,7 +134,8 @@ public:
         // Log warning and don't update the last value
         ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
       } else { // valid prediction
-        // For this example, we will print the median EoD.
+        
+        // Determine the median RUL.
         auto samplesRUL = eod_time.getVec();
         std::sort(samplesRUL.begin(), samplesRUL.end());
         double eod_median = samplesRUL.at(samplesRUL.size() / 2);
@@ -131,15 +144,14 @@ public:
         double rul_median = eod_median - now_s.count();
         rul_msg.data = rul_median;
 
-        // State of Charge Code
+        // Determine the median SOC.
         UData currentSOC = eod_event.getState()[0];
-        // For this example, we will print the median SOC
         auto samplesSOC = currentSOC.getVec();
         std::sort(samplesSOC.begin(), samplesSOC.end());
         double soc_median = samplesSOC.at(samplesSOC.size() / 2);
         soc_msg.data = soc_median;
 
-        // Temperature Code
+        // Determine the Battery Temperature
         auto stateSamples = eod_event.getSystemState()[0];
         std::vector<double> state;
         for (auto sample : stateSamples) {
@@ -150,7 +162,7 @@ public:
         double temperature = z[temp_index];
         tempbat_msg.data = temperature;
       }
-      //publish current SOC & RUL
+      //publish current SOC, RUL, and battery temperature
       SOC_pub.publish(soc_msg);
       RUL_pub.publish(rul_msg);
       TempBat_pub.publish(tempbat_msg);
@@ -168,37 +180,9 @@ private:
 int main(int argc, char* argv[]) {
 
   ros::init(argc, argv, "power_system_node");
-  ros::NodeHandle nh;
   SubscribeAndPublish SAPObject;
-  // Retrieve our publication rate expressed in Hz
-  double power_update_rate = 1;
-  double power_update_rate_override;  // allow the user to override it
-  bool update_rate_param_exist = nh.param("power_update_rate", power_update_rate_override, 0.1);
-  
-  if (update_rate_param_exist)
-  {
-    ROS_WARN_NAMED("power_system_node", "Overriding the default power_update_rate!");
-    // Validated the parameter
-    if (power_update_rate == 0)
-    {
-      ROS_ERROR_NAMED("power_system_node", "power_update_rate param was set to zero! passed value ignored.");
-    }
-    else
-    {
-      power_update_rate = power_update_rate_override;
-    }
-  }
-
-  ROS_INFO_STREAM_NAMED("power_system_node", "power_update_rate is set to: " << power_update_rate << " Hz");
-  ros::Rate rate(power_update_rate);
-  
   ROS_INFO ("Power system node running");
   ros::spin();
-  // ROS Loop. Note that once this loop starts,
-  // this function (and node) is terminated with an interrupt.
-  //while (ros::ok()) {
-    //ros::spinOnce();
-    //rate.sleep();
-  //}
+
   return 0;
 }
