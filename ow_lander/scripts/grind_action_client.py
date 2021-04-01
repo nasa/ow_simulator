@@ -29,7 +29,7 @@ def Grind_client():
     goal.parallel = True
     goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
 
-    # General trenching values for non- parallel circular trenching     
+    # General trenching values for non- parallel circular/linear trenching     
     #goal.x_start = 1.55
     #goal.y_start = 0.1
     #goal.depth = 0.045
