@@ -52,6 +52,41 @@ def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_
   return robot_state, joint_states, goal_pose 
 
   
+def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
+  """
+  :param approximate: use an approximate solution. default True
+  :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type x_start: float
+  :type y_start: float
+  :type z_start: float
+  :type approximate: bool
+  """
+  
+  move_arm.set_start_state(cs)
+  goal_pose.position.x = x_start
+  goal_pose.position.y = y_start
+  goal_pose.position.z = z_start
+  
+  goal_pose.orientation.x = goal_pose.orientation.x
+  goal_pose.orientation.y = goal_pose.orientation.y
+  goal_pose.orientation.z = goal_pose.orientation.z
+  goal_pose.orientation.w = goal_pose.orientation.w
+
+  # Ask the planner to generate a plan to the approximate joint values generated
+  # by kinematics builtin IK solver. For more insight on this issue refer to:
+  # https://github.com/nasa/ow_simulator/pull/60
+  if approximate:
+    move_arm.set_joint_value_target(goal_pose, True)
+  else:
+    move_arm.set_pose_target(goal_pose)
+
+  plan = move_arm.plan()
+  print (plan)
+  
+  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
+    return False
+
+  return plan  
 
 
 def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
@@ -209,7 +244,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     # Once aligned to trench goal, place hand above trench middle point
     cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, circ_traj, move_arm, moveit_fk)
     z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
-    plan_e = go_to_Z_coordinate(move_arm, cs, end_pose, x_start, y_start, z_start)
+    plan_e = go_to_XYZ_coordinate(move_arm, cs, end_pose, x_start, y_start, z_start)
     circ_traj = cascade_plans (circ_traj, plan_e)
     
     # Rotate dist to dig

@@ -22,20 +22,20 @@ def Grind_client():
 
     # Default trenching values
     
-    #goal.x_start = 1.65
-    #goal.y_start = 0.0
-    #goal.depth = 0.05
-    #goal.length = 0.6 # 0.6
-    #goal.parallel = True
-    #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+    goal.x_start = 1.65
+    goal.y_start = 0.0
+    goal.depth = 0.05
+    goal.length = 0.6 # 0.6
+    goal.parallel = True
+    goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
 
     # General trenching values for non- parallel circular trenching     
-    goal.x_start = 1.55
-    goal.y_start = 0.1
-    goal.depth = 0.045
-    goal.length = 0.5 # 0.6
-    goal.parallel = False
-    goal.ground_position = -0.155
+    #goal.x_start = 1.55
+    #goal.y_start = 0.1
+    #goal.depth = 0.045
+    #goal.length = 0.5 # 0.6
+    #goal.parallel = False
+    #goal.ground_position = -0.155
 
     # General trenching values for linear trenching            
     #goal.x_start = 1.65

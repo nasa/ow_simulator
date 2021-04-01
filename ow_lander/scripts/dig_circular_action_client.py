@@ -21,19 +21,18 @@ def DigCircular_client():
     goal = ow_lander.msg.DigCircularGoal()
 
     # Default trenching values
-    #goal.x_start = 1.65
-    #goal.y_start = 0
-    #goal.depth = 0.01
-    #goal.parallel = True
-    #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+    goal.x_start = 1.65
+    goal.y_start = 0
+    goal.depth = 0.01
+    goal.parallel = True
+    goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
     
     # General trenching values     
-    goal.x_start = 1.55
-    goal.y_start = 0.2
-    goal.depth = 0.045
-    #goal.length = 0.5 # 0.6
-    goal.parallel = False
-    goal.ground_position = -0.155
+    #goal.x_start = 1.55
+    #goal.y_start = 0.2
+    #goal.depth = 0.045
+    #goal.parallel = False
+    #goal.ground_position = -0.155
     
     # Sends the goal to the action server.
     client.send_goal(goal)

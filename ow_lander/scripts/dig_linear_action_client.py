@@ -21,18 +21,18 @@ def DigLinear_client():
     goal = ow_lander.msg.DigLinearGoal()
 
     # Default trenching values
-    #goal.x_start = 1.46
-    #goal.y_start = 0
-    #goal.depth = 0.01
-    #goal.length = 0.1
-    #goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+    goal.x_start = 1.46
+    goal.y_start = 0
+    goal.depth = 0.01
+    goal.length = 0.1
+    goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
     
     # General trenching values    
-    goal.x_start = 1.45
-    goal.y_start = 0.2
-    goal.depth = 0.045
-    goal.length = 0.1 # 
-    goal.ground_position = -0.155
+    #goal.x_start = 1.45
+    #goal.y_start = 0.2
+    #goal.depth = 0.045
+    #goal.length = 0.1 # 
+    #goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)
