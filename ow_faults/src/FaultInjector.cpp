@@ -14,16 +14,22 @@ constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
-  m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
-  // 'new' joint states topic where fault data is now publishes on
-  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
+  auto joint_states_str = "joint_states";
+  m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
+    &FaultInjector::jointStateCb, this);
+  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>(joint_states_str, 10);
+
+  auto ft_sensor_dist_pitch_str = "ft_sensor_dist_pitch";
+  m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
+    10, &FaultInjector::distPitchFtSensorCb, this);
+  m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //power fault publishers and subs
   m_fault_power_state_of_charge_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/state_of_charge", 10);
   m_fault_power_temp_pub = node_handle.advertise<std_msgs::Float64>("temporary/power_fault/temp_increase", 10);
 
   // topic for system fault messages, see Faults.msg
-  m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
+  m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10);
   // topic for arm fault status, see ArmFaults.msg
   m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
   // topic for power fault status, see PowerFaults.msg
@@ -235,6 +241,35 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   m_arm_fault_status_pub.publish(arm_faults_msg);
   m_power_fault_status_pub.publish(power_faults_msg);
   m_antennae_fault_status_pub.publish(pt_faults_msg);
+}
+
+void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
+{
+  if (!m_faults.groups.ft_sensor_faults.enable) {
+    m_dist_pitch_ft_sensor_pub.publish(msg);
+    return;
+  }
+
+  auto out_msg = msg;
+
+  if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
+    out_msg.wrench.force = geometry_msgs::Vector3();
+    out_msg.wrench.torque = geometry_msgs::Vector3();
+  }
+
+  auto mean = m_faults.groups.ft_sensor_faults.signal_bias_failure;
+  auto stddev = m_faults.groups.ft_sensor_faults.signal_noise_failure;
+  // TODO: consider optimizing this by re-creating the distribution only when
+  // mean and stddev values change
+  auto normal_dist = std::normal_distribution<float>(mean, stddev); 
+  out_msg.wrench.force.x += normal_dist(m_random_generator);
+  out_msg.wrench.force.y += normal_dist(m_random_generator);
+  out_msg.wrench.force.z += normal_dist(m_random_generator);
+  out_msg.wrench.torque.x += normal_dist(m_random_generator);
+  out_msg.wrench.torque.y += normal_dist(m_random_generator);
+  out_msg.wrench.torque.z += normal_dist(m_random_generator);
+
+  m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
 template<typename group_t, typename item_t>
