@@ -7,6 +7,4 @@
 
 #include "PrognoserFactory.h"
 
-std::vector<std::map<MessageId, Datum<double>>> read_file(const std::string& filename);
-
 #endif

@@ -15,14 +15,16 @@
 #include <std_msgs/Float64.h>
 #include <fstream>
 
-#include "power_system_util.h"
+#include "power_system_node.h"
 using namespace std;
+using namespace chrono;
 
-float update_count = 0.00; // Timestep initialization
-float battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
-float init_power = 0.00; // Power initialization
-float init_temp = 20.00; // Temperature initialization
-float init_voltage = 4.10; // Voltage initialization
+double update_count = 0.00; // Timestep initialization
+double battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
+Datum<double> init_power = 0.00; // Power initialization
+Datum<double> init_temp = 20.00; // Temperature initialization
+Datum<double> init_voltage = 4.10; // Voltage initialization
+auto init_time = system_clock::now(); // Timestep initialization
 
 class SubscribeAndPublish
 {
@@ -30,14 +32,14 @@ public:
   SubscribeAndPublish()
   {
     //Construct our State of Charge (SOC) publisher
-    SOC_pub = nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge",1000);
+    SOC_pub = nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge",1);
     //Construct our Remaining Useful Life (RUL) publisher (Seconds)
-    RUL_pub = nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life",1000);
+    RUL_pub = nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life",1);
     //Construct our Battery Temperature (TempBat) publisher
-    TempBat_pub = nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature",1000);
+    TempBat_pub = nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature",1);
 
     //Construct our Average Mechanical Power subsriber (Watts)
-    MechPower_sub = nh.subscribe("/mechanical_power/average", 1000, &SubscribeAndPublish::powerCallback, this);
+    MechPower_sub = nh.subscribe("/mechanical_power/average", 1, &SubscribeAndPublish::powerCallback, this);
 
   }
   void powerCallback(const std_msgs::Float64::ConstPtr& msg)
@@ -46,20 +48,20 @@ public:
     ros::NodeHandle nh;
 
     // Set mechanical power value to rostopic subscription
-    float mech_power = msg->data; // [W]
+    double mech_power = msg->data; // [W]
 
     // Create temperature estimate with pseudorandom noise generator
-    float min_temp = 17.5; // minimum temp = 17.5 deg. C
-    float max_temp = 21.5; // maximum temp = 21.5 deg. C
+    double min_temp = 17.5; // minimum temp = 17.5 deg. C
+    double max_temp = 21.5; // maximum temp = 21.5 deg. C
 
     // Temperature estimate based on pseudorandom noise and fixed range
-    float temp_est = min_temp + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_temp - min_temp)));
+    double temp_est = min_temp + static_cast <double> (rand()) / RAND_MAX * (max_temp - min_temp);
 
     // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-    float baseline_voltage = 3.2; // [V] estimate
-    float voltage_range = 0.1; // [V] 
-    float min_voltage = baseline_voltage + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
-    float max_voltage = (baseline_voltage + voltage_range) + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
+    double baseline_voltage = 3.2; // [V] estimate
+    double voltage_range = 0.1; // [V] 
+    double min_voltage = baseline_voltage + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
+    double max_voltage = (baseline_voltage + voltage_range) + (battery_lifetime - update_count) / battery_lifetime * 0.8; // [V]
     
     // If voltage limits dip below baseline, set to baseline values
     if (min_voltage < baseline_voltage)
@@ -72,28 +74,7 @@ public:
     }
 
     // Voltage estimate based on pseudorandom noise and moving range
-    float voltage_est = min_voltage + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/(max_voltage - min_voltage)));
-    
-    // Create single line csv containing power data and voltage/temp estimates
-    string csv_path;
-    string default_csv = "/data/gsap_input_data.csv";
-    bool csv_path_param_exist = nh.param("power_draw_csv_path", csv_path,
-      ros::package::getPath("ow_power_system") + default_csv);
-
-    // Open new file
-    std::ofstream myfile;
-    myfile.open (csv_path);
-    myfile << "Timestamp, power, temperature, voltage\n";
-    // First line is used to initialize GSAP at first time step
-    myfile << update_count << ", " << init_power << ", " << init_temp << ", " << init_voltage << "\n";
-    // Update time step and GSAP initialization parameters
-    update_count = update_count + 1.0;
-    init_power = mech_power;
-    init_temp = temp_est;
-    init_voltage = voltage_est;
-    // Line used to make the prediction (use current time step)
-    myfile << update_count << ", " << mech_power << ", " << temp_est << ", " << voltage_est << "\n";
-    myfile.close();
+    double voltage_est = min_voltage + static_cast <double> (rand()) / RAND_MAX * (max_voltage - min_voltage);
 
     //individual msgs to be published
     std_msgs::Int16 rul_msg;
@@ -105,13 +86,49 @@ public:
 
     int temp_index = 1; // Set to 1 for now (constant vector). This will change to median SOC or RUL index or fixed percentile
 
-    // Read battery data from newly created file.
-    auto power_data = read_file(csv_path);
+    vector<map<MessageId, Datum<double>>> power_data; // GSAP Input Vector Definition
+    map<MessageId, Datum<double>> initialization_data; // GSAP Initialization Data
+    map<MessageId, Datum<double>> current_data; // GSAP Input Data at Current Timestep
+
+    // Set timestamp for initialization data to initialization time
+    init_power.setTime(init_time);
+    init_temp.setTime(init_time);
+    init_voltage.setTime(init_time);
+
+    // Determine timestamp for current callback
+    auto timestamp = system_clock::now();
+    
+    // Assign input parameters and corresponding timestamp
+    Datum<double> power = mech_power;
+    power.setTime(timestamp);
+    Datum<double> temperature = temp_est;
+    temperature.setTime(timestamp);
+    Datum<double> voltage = voltage_est;
+    voltage.setTime(timestamp);
+
+    // Populate initialization data structure
+    initialization_data.insert({MessageId::Watts, init_power});
+    initialization_data.insert({MessageId::Centigrade, init_temp});
+    initialization_data.insert({MessageId::Volts, init_voltage});
+    power_data.push_back(initialization_data);
+
+    // Populate current timestep data structure
+    current_data.insert({MessageId::Watts, power});
+    current_data.insert({MessageId::Centigrade, temperature});
+    current_data.insert({MessageId::Volts, voltage});
+    power_data.push_back(current_data);
+
+    // Update count and GSAP initialization parameters
+    update_count = update_count + 1.0;
+    init_power = mech_power;
+    init_temp = temp_est;
+    init_voltage = voltage_est;
+    init_time = timestamp;
 
     // Create a configuration from a file
     string config_path = ros::package::getPath("ow_power_system")+"/config/example.cfg";
     ConfigMap config(config_path);
-    // Contruct a new prognoser using the prognoser factory at the first time step. The prognoser
+    // Contruct a new prognoser using the prognoser factory. The prognoser
     // will automatically construct an appropriate model, observer and predictor
     // based on the values specified in the config.
     auto prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
@@ -159,8 +176,8 @@ public:
         }
         auto& model = dynamic_cast<ModelBasedPrognoser*>(prognoser.get())->getModel();
         auto z = model.outputEqn(now_s.count(), (PrognosticsModel::state_type) state);
-        double temperature = z[temp_index];
-        tempbat_msg.data = temperature;
+        double batt_temperature = z[temp_index];
+        tempbat_msg.data = batt_temperature;
       }
       //publish current SOC, RUL, and battery temperature
       SOC_pub.publish(soc_msg);
