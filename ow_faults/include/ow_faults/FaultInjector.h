@@ -39,8 +39,10 @@ public:
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
 
-  enum Nominal { None=0 };
+  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
+  enum Nominal { None=0 };
+  
   enum class ComponentFaults : uint {
     // general
     Hardware = 1, 
@@ -70,8 +72,19 @@ public:
 private:
   float powerTemperatureOverloadValue;
   
+
+  std_msgs::Float64 m_realPanMsg;
+  std_msgs::Float64 m_realTiltMsg;
+  float m_faultPanValue;
+  float m_faultTiltValue;
+
   // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool getTempBool);
+
+  // Antennae functions
+  void antennaePanFaultCb(const std_msgs::Float64& msg);
+  void antennaeTiltFaultCb(const std_msgs::Float64& msg);
+  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
@@ -82,14 +95,17 @@ private:
   void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
 
   //Setting the correct values for faults messages via function overloading
-  //System Faults
-  void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
-  // Arm Faults
-  void setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value);
-  //Power Faults
-  void setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value);
-  //Pan Tilt Faults
-  void setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value);
+
+  template<typename fault_msg>
+  void setFaultsMessageHeader(fault_msg& msg);
+  void setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+
+  template<typename fault_msg>
+  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
+
+  //checking faults
+  void checkArmFaults();
+  void checkAntFaults();
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -101,6 +117,10 @@ private:
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   ow_faults::FaultsConfig m_faults;
+
+  //component faults
+  bool m_armFault;
+  bool m_antFault;
 
   // arm faults
   ros::Subscriber m_joint_state_sub;
@@ -119,6 +139,12 @@ private:
   ros::Publisher m_arm_fault_status_pub;
   ros::Publisher m_power_fault_status_pub;
   ros::Publisher m_antennae_fault_status_pub;
+
+  //antenna pub and subs
+  ros::Subscriber m_fault_ant_pan_sub;
+  ros::Subscriber m_fault_ant_tilt_sub;
+  ros::Publisher m_fault_ant_pan_pub;
+  ros::Publisher m_fault_ant_tilt_pub;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;

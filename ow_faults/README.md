@@ -53,7 +53,7 @@ Then set faults on the `faults` node from anywhere in your script:
 
 ```
 client = dynamic_reconfigure.client.Client('/faults')
-params = { 'ant_pan_encoder_failure' : 'True', 'ant_tilt_torque_sensor_failure' : 'True' }
+params = { 'ant_pan_encoder_failure' : 'True', 'ant_tilt_effort_failure' : 'True' }
 config = client.update_configuration(params)
 ```
 
