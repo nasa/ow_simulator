@@ -84,15 +84,6 @@ def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs)
     alpha = alpha - math.pi/2
   move_group.set_start_state(cs)
   waypoints = []
-  #wpose = move_group.get_current_pose().pose
-  ## these values were obtained from rviz
-  #wpose.position.x = 1.48266
-  #wpose.position.y = -0.059
-  #wpose.position.z = z_start # -0.0456
-  #wpose.orientation.x = -0.706
-  #wpose.orientation.y = 0.011186
-  #wpose.orientation.z = 0.707963
-  #wpose.orientation.w = 0.0146962
   wpose.position.z = z_start
   wpose.position.x += length*math.cos(alpha)
   wpose.position.y += length*math.sin(alpha)
