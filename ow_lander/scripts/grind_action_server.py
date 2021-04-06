@@ -72,7 +72,9 @@ class GrindActionServer(object):
         
     def _update_motion(self, goal):
         print("Grind activity started")
-        self.current_traj  = action_grind.grind(self._interface.move_grinder,self._interface.robot, self._interface.moveit_fk, goal)
+        self.current_traj  = action_grind.grind(self._interface.move_grinder,
+                                                self._interface.robot, 
+                                                self._interface.moveit_fk, goal)
         n_points = len(self.current_traj.joint_trajectory.points)
         start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
         end_time = self.current_traj.joint_trajectory.points[n_points-1].time_from_start

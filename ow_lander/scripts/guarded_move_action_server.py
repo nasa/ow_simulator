@@ -23,7 +23,10 @@ class GuardedMoveActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.GuardedMoveAction, execute_cb=self.on_guarded_move_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, 
+                                     ow_lander.msg.GuardedMoveAction, 
+                                     execute_cb=self.on_guarded_move_action, 
+                                     auto_start = False)
         self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.GuardedMoveFeedback()
@@ -73,7 +76,9 @@ class GuardedMoveActionServer(object):
         
     def _update_motion(self, goal):
         print("Guarded move activity started")
-        self.guarded_move_traj  = action_guarded_move.guarded_move_plan(self._interface.move_arm,self._interface.robot, self._interface.moveit_fk, goal)
+        self.guarded_move_traj = action_guarded_move.guarded_move_plan(self._interface.move_arm,
+                                              self._interface.robot, 
+                                              self._interface.moveit_fk, goal)
         n_points = len(self.guarded_move_traj.joint_trajectory.points)
         start_time =   self.guarded_move_traj.joint_trajectory.points[0].time_from_start
         end_time = self.guarded_move_traj.joint_trajectory.points[n_points-1].time_from_start

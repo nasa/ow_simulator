@@ -19,7 +19,6 @@ from moveit_commander.conversions import pose_to_list
 import constants
 import utils
 from LanderInterface import MoveItInterface
-from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 
