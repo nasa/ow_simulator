@@ -411,7 +411,8 @@
     <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
       <jointName>j_dist_pitch</jointName>
       <topicName>/_original/ft_sensor_dist_pitch</topicName>
-      <updateRate>250.0</updateRate>  <!-- max sensor update rate 2500 Hz  -->
+      <updateRate>200</updateRate>  <!-- Barret F/T sensor runs at 250 Hz and has max update rate of 2500 Hz
+                                         However, the gazebo_ros_ft_sensor plugin is only able to run at a max of 200 -->
       <gaussianNoise>0.2</gaussianNoise> <!-- estimated based on a profile of the barret ft sensor -->
     </plugin>
   </gazebo>
