@@ -52,10 +52,6 @@
       <arg name="debug" value="$(arg debug)"/>
     </include>
     
-        <!-- == launch the path planner node ============== -->
-    <!--node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen">
-    </node-->
-
   </group>
 
 </launch>
