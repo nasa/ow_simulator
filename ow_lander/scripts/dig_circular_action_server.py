@@ -27,7 +27,6 @@ import action_dig_circular
 #from action_deliver_sample import deliver_sample
 
 from LanderInterface import MoveItInterface
-from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
@@ -43,7 +42,6 @@ class DigCircularActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.DigCircularFeedback()
         self._result = ow_lander.msg.DigCircularResult()
-        self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0

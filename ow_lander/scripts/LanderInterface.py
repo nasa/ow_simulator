@@ -49,39 +49,9 @@ class MoveItInterface(object):
     except rospy.ServiceException, e:
       rospy.logerror("Service call failed: %s"%e)
     
-    
-class JointStateSubscriber:
-  def __init__(self):
-    """Initialize joint subscriber"""
-    self.subscriber = rospy.Subscriber('/joint_states', JointState, self.callback, queue_size = 1)
-    self.history = []
-    rate = rospy.Rate(100)    
-    
-  def callback(self, ros_data): 
-    """
-    :type ros_data: class 'sensor_msgs.msg._JointState.JointState'
-    """
-    #self._value = len(ros_data.name)
-    #num_joints = len(ros_data.name)        
-    #self._state_value = ros_data.position[num_joints-1]   
-    self._value = len(ros_data.name)
-    num_joints = len(ros_data.name)
-    power = 0
-    for x in range(0,num_joints):
-        #power = power + abs(ros_data.velocity[x]*ros_data.effort[x])
-        power = 0
-        # Publish total power
-    self._state_value = power    
-    #self.power_pub.publish(power)
-
-    
-  def get_value(self):
-      return self._state_value
-  
 class LinkStateSubscriber:
     
   def __init__(self):
-    #self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
     self._link_value = None

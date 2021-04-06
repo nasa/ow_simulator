@@ -20,7 +20,6 @@ from moveit_commander.conversions import pose_to_list
 import action_grind
 
 from LanderInterface import MoveItInterface
-from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
@@ -38,7 +37,6 @@ class GrindActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.GrindFeedback()
         self._result = ow_lander.msg.GrindResult()
-        self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
@@ -75,11 +73,9 @@ class GrindActionServer(object):
     def _update_motion(self, goal):
         print("Grind activity started")
         self.current_traj  = action_grind.grind(self._interface.move_grinder,self._interface.robot, self._interface.moveit_fk, goal)
-        #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.current_traj.joint_trajectory.points)
         start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
         end_time = self.current_traj.joint_trajectory.points[n_points-1].time_from_start
-        #self._timeout =  rospy.Duration(end_time -start_time)
         self._timeout =  (end_time -start_time)
         
 
@@ -100,7 +96,6 @@ class GrindActionServer(object):
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            #return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):

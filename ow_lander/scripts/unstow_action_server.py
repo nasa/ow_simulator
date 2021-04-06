@@ -34,7 +34,6 @@ class UnstowActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
         self._result = ow_lander.msg.UnstowResult()
-        self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
@@ -44,7 +43,6 @@ class UnstowActionServer(object):
     
     def _update_feedback(self):
  
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y

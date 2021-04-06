@@ -24,7 +24,6 @@ import activity_full_digging_traj
 import action_deliver_sample
 import action_dig_linear
 from LanderInterface import MoveItInterface
-from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
@@ -40,7 +39,6 @@ class DigLinearActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.DigLinearFeedback()
         self._result = ow_lander.msg.DigLinearResult()
-        self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
@@ -51,7 +49,6 @@ class DigLinearActionServer(object):
     
     def _update_feedback(self):
  
-        #self._xc = self._current_state._state_value 
         self._ls =  self._current_link_state._link_value
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
@@ -61,10 +58,8 @@ class DigLinearActionServer(object):
         
         
     def _update_motion(self, goal):
-        #activity_full_digging_traj.unstow(self._interface.move_arm)
+        
         print("DigLinear activity started")
-        #goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        #plan =  
         self.current_traj  = action_dig_linear.dig_linear(self._interface.move_arm,self._interface.robot,  self._interface.moveit_fk, goal)
         #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.current_traj.joint_trajectory.points)

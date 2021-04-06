@@ -10,7 +10,6 @@ import ow_lander.msg
 import sys
 import action_guarded_move
 from LanderInterface import MoveItInterface
-from LanderInterface import JointStateSubscriber
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
@@ -29,7 +28,6 @@ class GuardedMoveActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.GuardedMoveFeedback()
         self._result = ow_lander.msg.GuardedMoveResult()
-        self._current_state = JointStateSubscriber()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
@@ -76,7 +74,6 @@ class GuardedMoveActionServer(object):
     def _update_motion(self, goal):
         print("Guarded move activity started")
         self.guarded_move_traj  = action_guarded_move.guarded_move_plan(self._interface.move_arm,self._interface.robot, self._interface.moveit_fk, goal)
-        #plan = self._interface.move_arm.plan(goal)
         n_points = len(self.guarded_move_traj.joint_trajectory.points)
         start_time =   self.guarded_move_traj.joint_trajectory.points[0].time_from_start
         end_time = self.guarded_move_traj.joint_trajectory.points[n_points-1].time_from_start
@@ -101,7 +98,6 @@ class GuardedMoveActionServer(object):
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            #return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):
