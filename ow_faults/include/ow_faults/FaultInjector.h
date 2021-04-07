@@ -18,7 +18,9 @@
 #include "ow_faults/PTFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
+#include <random>
 
 
 // This class injects simple message faults that don't need to be simulated
@@ -88,6 +90,10 @@ private:
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
+  // Output /faults/joint_states, a modified version of /joint_states, injecting
+  // simple message faults that don't need to be simulated at their source.
+  void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
+
   //Setting the correct values for faults messages via function overloading
 
   template<typename fault_msg>
@@ -120,6 +126,10 @@ private:
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
+  // ft sensor
+  ros::Subscriber m_dist_pitch_ft_sensor_sub;
+  ros::Publisher m_dist_pitch_ft_sensor_pub;
+
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
   ros::Publisher m_fault_power_temp_pub;
@@ -138,6 +148,8 @@ private:
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
+
+  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
 };
 
 #endif
