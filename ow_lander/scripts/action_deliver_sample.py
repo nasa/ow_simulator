@@ -101,6 +101,8 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
   :type args: List[bool, float, float, float]
   """
   move_arm.set_planner_id("RRTstar")
+  robot_state = robot.get_current_state()
+  move_arm.set_start_state(robot_state)
   x_delivery = args.delivery.x
   y_delivery = args.delivery.y
   z_delivery = args.delivery.z

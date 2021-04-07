@@ -24,6 +24,9 @@ guarded_move_traj = RobotTrajectory()
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
     
+  robot_state = robot.get_current_state()
+  move_arm.set_start_state(robot_state)
+    
   ### pre-guarded move starts here ### 
     
   targ_x = args.start.x

@@ -104,11 +104,6 @@ def grind(move_grinder, robot, moveit_fk, args):
   :type args: List[bool, float, float, float, float, bool, float, bool]
   """
   
-  #zero_pose = PoseStamped(header=Header(frame_id="base_link"),
-                                    #pose=Pose(orientation=Quaternion(w=1.0)))
-
-
-  #print (zero_pose)
   x_start = args.x_start
   y_start = args.y_start
   depth = args.depth
