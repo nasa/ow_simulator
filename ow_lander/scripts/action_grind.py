@@ -138,6 +138,8 @@ def grind(move_grinder, robot, moveit_fk, args):
 
   # Place the grinder vertical, above the desired starting point, at
   # an altitude of 0.25 meters in the base_link frame. 
+  robot_state = robot.get_current_state()
+  move_grinder.set_start_state(robot_state)
   goal_pose = move_grinder.get_current_pose().pose
   goal_pose.position.x = x_start # Position
   goal_pose.position.y = y_start
