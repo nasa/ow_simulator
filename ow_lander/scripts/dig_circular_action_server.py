@@ -49,6 +49,7 @@ class DigCircularActionServer(object):
         self.trajectory_async_executer.connect("arm_controller")
         self.current_traj = RobotTrajectory()
         
+        
     def switch_controllers(self, start_controller, stop_controller):
         rospy.wait_for_service('/controller_manager/switch_controller')
         success = False
@@ -78,6 +79,7 @@ class DigCircularActionServer(object):
         
     def _update_motion(self, goal):
         print("DigCircular activity started")
+        self.current_traj = None
         self.current_traj = action_dig_circular.dig_circular(self._interface.move_arm,
                                          self._interface.move_limbs, 
                                          self._interface.robot,self._interface.moveit_fk, goal)

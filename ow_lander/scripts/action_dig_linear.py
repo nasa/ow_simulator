@@ -48,12 +48,18 @@ def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_
   
   return robot_state, joint_states, goal_pose 
 
-def move_to_pre_trench_configuration(move_arm, x_start, y_start):
+def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type x_start: float
   :type y_start: float
   """
+  
+  # Initilize to current position
+  joint_goal = move_arm.get_current_pose().pose
+  robot_state = robot.get_current_state()
+  move_arm.set_start_state(robot_state)
+  
  # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
   h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
@@ -160,7 +166,7 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   ground_position = args.ground_position
   
   plan_a= move_to_pre_trench_configuration(
-      move_arm, x_start, y_start)
+      move_arm, robot, x_start, y_start)
 
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   #################### Rotate hand yaw to dig in#################################

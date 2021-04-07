@@ -21,7 +21,8 @@ import action_grind
 from action_deliver_sample import cascade_plans
 from std_msgs.msg import Header
 
-circ_traj = RobotTrajectory()
+#circ_traj = None
+#circ_traj = RobotTrajectory()
 
 def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_fk):
   ''' 
@@ -100,8 +101,6 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
   """
   
   move_arm.set_start_state(cs)
-  #goal_pose.position.x = x_start
-  #goal_pose.position.y = y_start
   goal_pose.position.z = z_start
   
   goal_pose.orientation.x = goal_pose.orientation.x
@@ -116,34 +115,27 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
     move_arm.set_joint_value_target(goal_pose, True)
   else:
     move_arm.set_pose_target(goal_pose)
-    
-  #move_arm.set_path_constraints(upright_constraints(move_arm))  
-  upright_constraints = Constraints()
-  joint_constraint = JointConstraint()
-  upright_constraints.name = "upright"
-  joint_constraint.joint_name = move_arm.get_joints()[constants.J_DIST_PITCH]
-  joint_constraint.position = 0.25*math.pi
-  joint_constraint.tolerance_above = .1
-  joint_constraint.tolerance_below = .1
-  joint_constraint.weight = 1
-  #joint_constraint.joint_name = "j_dist_pitch"
-  upright_constraints.joint_constraints.append(joint_constraint)
-  #move_arm.set_path_constraints(upright_constraints)
+
   plan = move_arm.plan()
-  print (plan)
+  
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
   return plan
 
-def move_to_pre_trench_configuration_dig_circ(move_arm, x_start, y_start):
+def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start):
   """
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type x_start: float
   :type y_start: float
   """
- # Compute shoulder yaw angle to trench
+  # Initilize to current position
+  joint_goal = move_arm.get_current_pose().pose
+  robot_state = robot.get_current_state()
+  move_arm.set_start_state(robot_state)
+  
+  # Compute shoulder yaw angle to trench
   alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
   h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
                 pow(x_start-constants.X_SHOU, 2))
@@ -162,6 +154,7 @@ def move_to_pre_trench_configuration_dig_circ(move_arm, x_start, y_start):
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
+  
   plan = move_arm.plan(joint_goal)
   return plan
 
@@ -172,19 +165,20 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
   :type args: List[bool, float, int, float, float, float]
   """
+  
+  circ_traj = None
+  circ_traj = RobotTrajectory()
+
   x_start = args.x_start
   y_start = args.y_start
   depth = args.depth
   parallel = args.parallel
   ground_position = args.ground_position
   
-  #plan_a= action_dig_linear.move_to_pre_trench_configuration(
-      #move_arm, x_start, y_start)
   
   if not parallel:
      
-    plan_a= move_to_pre_trench_configuration_dig_circ(
-      move_arm, x_start, y_start) 
+    plan_a= move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start) 
     
     # Once aligned to move goal and offset, place scoop tip at surface target offset
     
@@ -225,7 +219,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   else:
       
     plan_a= action_dig_linear.move_to_pre_trench_configuration(
-      move_arm, x_start, y_start)  
+      move_arm, robot, x_start, y_start)  
     # Rotate hand so scoop is in middle point
     cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
     plan_b = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
