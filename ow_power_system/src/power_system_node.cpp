@@ -21,10 +21,11 @@ PowerSystemNode::PowerSystemNode()
 void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
   // Set mechanical power value to rostopic subscription
-  double mech_power = msg->data;  // [W]
+  double mechanical_power = msg->data;  // [W]
 
   // Temperature estimate based on pseudorandom noise and fixed range
-  double temp_est = m_min_temp + static_cast<double>(rand()) / RAND_MAX * (m_max_temp - m_min_temp);
+  double temperature_estimate =
+      m_min_temperature + static_cast<double>(rand()) / RAND_MAX * (m_max_temperature - m_min_temperature);
 
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
   double timelapse = duration<double>(system_clock::now() - m_init_time).count();                                 // [s]
@@ -42,20 +43,20 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   }
 
   // Voltage estimate based on pseudorandom noise and moving range
-  double voltage_est = min_V + static_cast<double>(rand()) / RAND_MAX * (max_V - min_V);
+  double voltage_estimate = min_V + static_cast<double>(rand()) / RAND_MAX * (max_V - min_V);
 
   // Initialize the GSAP prognoser
-  auto current_data = map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ mech_power } },
-                                                     { MessageId::Centigrade, Datum<double>{ temp_est } },
-                                                     { MessageId::Volts, Datum<double>{ voltage_est } } };
+  auto current_data = map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ mechanical_power } },
+                                                     { MessageId::Centigrade, Datum<double>{ temperature_estimate } },
+                                                     { MessageId::Volts, Datum<double>{ voltage_estimate } } };
 
   // Get a new prediction
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
-  std_msgs::Int16 rul_msg;
   std_msgs::Float64 soc_msg;
-  std_msgs::Float64 temp_bat_msg;
+  std_msgs::Int16 rul_msg;
+  std_msgs::Float64 battery_temperature_msg;
 
   // Get the event for battery EoD.
   auto eod_event = prediction.getEvents().front();
@@ -96,13 +97,13 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
     }
     auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
     auto model_output = model.outputEqn(now_s.count(), (PrognosticsModel::state_type)state);
-    temp_bat_msg.data = model_output[TEMPERATURE_INDEX];
+    battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
   }
 
   // publish current SOC, RUL, and battery temperature
-  m_SOC_pub.publish(soc_msg);
-  m_RUL_pub.publish(rul_msg);
-  m_temp_bat_pub.publish(temp_bat_msg);
+  m_state_of_charge_pub.publish(soc_msg);
+  m_remaining_useful_life_pub.publish(rul_msg);
+  m_battery_temperature_pub.publish(battery_temperature_msg);
 }
 
 void PowerSystemNode::Run()
@@ -125,12 +126,12 @@ void PowerSystemNode::Run()
   this->m_init_time = system_clock::now();
 
   // Construct the PowerSystemNode publishers
-  m_SOC_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge", 1);
-  m_RUL_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life", 1);
-  m_temp_bat_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature", 1);
+  m_state_of_charge_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature", 1);
 
   // Finally subscribe to mechanical power topic (Watts)
-  m_mech_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
+  m_mechanical_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
 
   ROS_INFO("Power system node running");
   ros::spin();
