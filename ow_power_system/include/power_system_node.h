@@ -11,7 +11,7 @@ class PowerSystemNode
 public:
   PowerSystemNode();
 
-  int Run(int argc, char* argv[]);
+  void Run();
 
 private:
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
@@ -22,12 +22,14 @@ private:
   ros::Publisher m_RUL_pub; // Remaining Useful Life Publisher
   ros::Publisher m_temp_bat_pub; // Battery Temperature Publisher
   ros::Subscriber m_mech_power_sub; // Mechanical Power Subscriber
-
-  double m_battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
-
-  std::chrono::high_resolution_clock::time_point m_init_time; // Timestep initialization
-
   std::unique_ptr<PCOE::Prognoser> m_prognoser; // Prognoser initialization
+
+  std::chrono::time_point<std::chrono::system_clock> m_init_time;
+
+  // declare set constants .. hardcoded for now. TODO: read from config file
+  static constexpr double m_min_temp = 17.5; // minimum temp = 17.5 deg. C
+  static constexpr double m_max_temp = 21.5; // maximum temp = 21.5 deg. C
+  static constexpr double m_battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
 };
 
 #endif

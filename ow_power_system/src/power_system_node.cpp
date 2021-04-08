@@ -18,34 +18,20 @@ using namespace std::chrono;
 
 PowerSystemNode::PowerSystemNode()
 {
-  m_SOC_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge",1);
-  m_RUL_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life",1);
-  m_temp_bat_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature",1);
-
-  //Construct our Average Mechanical Power subsriber (Watts)
-  m_mech_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
 }
 
 void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
-  //using namespace std::chrono;
   // Set mechanical power value to rostopic subscription
   double mech_power = msg->data; // [W]
 
-  // Determine timestamp for current callback
-  auto timestamp = system_clock::now();
-
-  // Create temperature estimate with pseudorandom noise generator
-  double min_temp = 17.5; // minimum temp = 17.5 deg. C
-  double max_temp = 21.5; // maximum temp = 21.5 deg. C
-
   // Temperature estimate based on pseudorandom noise and fixed range
-  double temp_est = min_temp + static_cast <double> (rand()) / RAND_MAX * (max_temp - min_temp);
+  double temp_est = m_min_temp + static_cast <double> (rand()) / RAND_MAX * (m_max_temp - m_min_temp);
 
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
   double base_voltage = 3.2; // [V] estimate
   double voltage_range = 0.1; // [V]
-  double timelapse = duration<double>(timestamp - m_init_time).count(); // [s]
+  double timelapse = (system_clock::now() - m_init_time).count(); // [s]
   double min_V = base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
   double max_V = base_voltage + voltage_range + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
   
@@ -62,34 +48,24 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   // Voltage estimate based on pseudorandom noise and moving range
   double voltage_est = min_V + static_cast <double> (rand()) / RAND_MAX * (max_V - min_V);
 
-  //individual msgs to be published
-  std_msgs::Int16 rul_msg;
-  rul_msg.data = 0;  // immediately set to a good default
-  std_msgs::Float64 soc_msg;
-  soc_msg.data = 0.0;
-  std_msgs::Float64 temp_bat_msg;
-  temp_bat_msg.data = 0.0;
-
   int temp_index = 1; // Set to 1 for now. This will change to median SOC or RUL index or fixed percentile
 
-  map<MessageId, Datum<double>> current_data; // GSAP Input Data at Current Timestep
-  
-  // Assign input parameters and corresponding timestamp
-  Datum<double> power = mech_power;
-  power.setTime(timestamp);
-  Datum<double> temperature = temp_est;
-  temperature.setTime(timestamp);
-  Datum<double> voltage = voltage_est;
-  voltage.setTime(timestamp);
+  // Initialize the GSAP prognoser
+  auto current_data = map<MessageId, Datum<double>> {
+    {MessageId::Watts, Datum<double>{mech_power}},
+    {MessageId::Centigrade, Datum<double>{temp_est}},
+    {MessageId::Volts, Datum<double>{voltage_est}}
+  };
 
-  // Populate current timestep data structure
-  current_data.insert({MessageId::Watts, power});
-  current_data.insert({MessageId::Centigrade, temperature});
-  current_data.insert({MessageId::Volts, voltage});
   // Get a new prediction
   auto prediction = m_prognoser->step(current_data);
-  ROS_INFO("IS THIS THING ON?");
-  // Get the event for battery EoD. 
+
+  // Individual msgs to be published
+  std_msgs::Int16 rul_msg;
+  std_msgs::Float64 soc_msg;
+  std_msgs::Float64 temp_bat_msg;
+
+  // Get the event for battery EoD.
   auto eod_event = prediction.getEvents().front();
   // The time of event is a `UData` structure, which represents a data
   // point while maintaining uncertainty. For the MonteCarlo predictor
@@ -99,8 +75,9 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   if (eod_time.uncertainty() != UType::Samples) {
     // Log warning and don't update the last value
     ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
-  } else { // valid prediction
-    
+  }
+  else // valid prediction
+  {
     // Determine the median RUL.
     auto samplesRUL = eod_time.getVec();
     std::sort(samplesRUL.begin(), samplesRUL.end());
@@ -135,28 +112,8 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   m_temp_bat_pub.publish(temp_bat_msg);
 }
 
-int PowerSystemNode::Run(int argc, char* argv[])
+void PowerSystemNode::Run()
 {
-  ros::init(argc, argv, "power_system_node");
-
-  // Initialize GSAP
-  Datum<double> init_power = 0.00; // Power initialization
-  Datum<double> init_temp = 20.00; // Temperature initialization
-  Datum<double> init_voltage = 4.10; // Voltage initialization
-  high_resolution_clock::time_point m_init_time = system_clock::now(); // Timestep initialization
-
-  // Set timestamp for initialization data to initialization time
-  init_power.setTime(m_init_time);
-  init_temp.setTime(m_init_time);
-  init_voltage.setTime(m_init_time);
-
-  map<MessageId, Datum<double>> initialization_data; // GSAP Initialization Data Structure
-
-  // Populate initialization data structure
-  initialization_data.insert({MessageId::Watts, init_power});
-  initialization_data.insert({MessageId::Centigrade, init_temp});
-  initialization_data.insert({MessageId::Volts, init_voltage});
-
   // Create a configuration from a file
   string config_path = ros::package::getPath("ow_power_system") + "/config/example.cfg";
   ConfigMap config(config_path);
@@ -166,16 +123,33 @@ int PowerSystemNode::Run(int argc, char* argv[])
   // based on the values specified in the config.
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
 
+  // Initialize the GSAP prognoser
+  auto init_data = map<MessageId, Datum<double>> {
+    {MessageId::Watts, Datum<double>{0.0}},
+    {MessageId::Centigrade, Datum<double>{20.0}},
+    {MessageId::Volts, Datum<double>{4.1}}
+  };
+  
   // Initial (Empty) GSAP Prediction
-  auto init_prediction = m_prognoser->step(initialization_data);
+  m_prognoser->step(init_data);
+  this->m_init_time = system_clock::now();
+
+  // Construct the PowerSystemNode publishers
+  m_SOC_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge",1);
+  m_RUL_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life",1);
+  m_temp_bat_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature",1);
+
+  // Finally subscribe to mechanical power topic (Watts)
+  m_mech_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
 
   ROS_INFO ("Power system node running");
   ros::spin();
-  return 0;
 }
 
 int main(int argc, char* argv[])
 {
+  ros::init(argc, argv, "power_system_node");
   PowerSystemNode psn;
-  return psn.Run(argc, argv);
+  psn.Run();
+  return 0;
 }
