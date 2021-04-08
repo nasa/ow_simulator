@@ -74,29 +74,29 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   {
     // Determine the median RUL.
     auto samplesRUL = eod_time.getVec();
-    std::sort(samplesRUL.begin(), samplesRUL.end());
+    sort(samplesRUL.begin(), samplesRUL.end());
     double eod_median = samplesRUL.at(samplesRUL.size() / 2);
     auto now = MessageClock::now();
-    auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
+    auto now_s = duration_cast<chrono::seconds>(now.time_since_epoch());
     double rul_median = eod_median - now_s.count();
     rul_msg.data = rul_median;
 
     // Determine the median SOC.
     UData currentSOC = eod_event.getState()[0];
     auto samplesSOC = currentSOC.getVec();
-    std::sort(samplesSOC.begin(), samplesSOC.end());
+    sort(samplesSOC.begin(), samplesSOC.end());
     double soc_median = samplesSOC.at(samplesSOC.size() / 2);
     soc_msg.data = soc_median;
 
     // Determine the Battery Temperature
     auto stateSamples = eod_event.getSystemState()[0];
-    std::vector<double> state;
+    vector<double> state;
     for (auto sample : stateSamples)
     {
       state.push_back(sample[0]);
     }
     auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
-    auto model_output = model.outputEqn(now_s.count(), (PrognosticsModel::state_type)state);
+    auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
     battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
   }
 

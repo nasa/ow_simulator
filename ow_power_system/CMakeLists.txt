@@ -17,11 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(roslaunch)
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-include(${GSAP_DIR}/compiler_flags.cmake) ## TODO: Is this really needed?
-
 link_directories(
   ${GSAP_DIR}/build
 )
