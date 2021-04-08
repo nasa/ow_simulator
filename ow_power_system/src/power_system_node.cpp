@@ -29,26 +29,22 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   double temp_est = m_min_temp + static_cast <double> (rand()) / RAND_MAX * (m_max_temp - m_min_temp);
 
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-  double base_voltage = 3.2; // [V] estimate
-  double voltage_range = 0.1; // [V]
   double timelapse = (system_clock::now() - m_init_time).count(); // [s]
-  double min_V = base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
-  double max_V = base_voltage + voltage_range + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
+  double min_V = m_base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
+  double max_V = m_base_voltage + m_voltage_range + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8; // [V]
   
   // If voltage limits dip below baseline, set to baseline values
-  if (min_V < base_voltage)
+  if (min_V < m_base_voltage)
   {
-    min_V = base_voltage;
+    min_V = m_base_voltage;
   }
-  if (max_V < (base_voltage + voltage_range))
+  if (max_V < (m_base_voltage + m_voltage_range))
   {
-    max_V = base_voltage + voltage_range;
+    max_V = m_base_voltage + m_voltage_range;
   }
 
   // Voltage estimate based on pseudorandom noise and moving range
   double voltage_est = min_V + static_cast <double> (rand()) / RAND_MAX * (max_V - min_V);
-
-  int temp_index = 1; // Set to 1 for now. This will change to median SOC or RUL index or fixed percentile
 
   // Initialize the GSAP prognoser
   auto current_data = map<MessageId, Datum<double>> {
@@ -102,8 +98,7 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
     }
     auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
     auto z = model.outputEqn(now_s.count(), (PrognosticsModel::state_type) state);
-    double batt_temperature = z[temp_index];
-    temp_bat_msg.data = batt_temperature;
+    temp_bat_msg.data = z[TEMPERATURE_INDEX];
   }
 
   //publish current SOC, RUL, and battery temperature

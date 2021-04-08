@@ -26,10 +26,15 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
-  // declare set constants .. hardcoded for now. TODO: read from config file
+  // declare set constants .. hardcoded for now.
+  // TODO: read from config file
   static constexpr double m_min_temp = 17.5; // minimum temp = 17.5 deg. C
   static constexpr double m_max_temp = 21.5; // maximum temp = 21.5 deg. C
   static constexpr double m_battery_lifetime = 2738.0; // Estimate of battery lifetime (seconds)
+  static constexpr double m_base_voltage = 3.2; // [V] estimate
+  static constexpr double m_voltage_range = 0.1; // [V]
+
+  static constexpr int TEMPERATURE_INDEX = 1; // Set to 1 for now. This will change to median SOC or RUL index or fixed percentile
 };
 
 #endif
