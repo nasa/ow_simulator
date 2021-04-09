@@ -14,10 +14,6 @@
 using namespace std;
 using namespace std::chrono;
 
-PowerSystemNode::PowerSystemNode()
-{
-}
-
 void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
   // Set mechanical power value to rostopic subscription

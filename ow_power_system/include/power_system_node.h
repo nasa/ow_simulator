@@ -9,14 +9,11 @@
 class PowerSystemNode
 {
 public:
-  PowerSystemNode();
-
   void Run();
 
 private:
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
 
-private:
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
   ros::Publisher m_remaining_useful_life_pub;    // Remaining Useful Life Publisher
