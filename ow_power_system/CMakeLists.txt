@@ -17,11 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(roslaunch)
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-include(${GSAP_DIR}/compiler_flags.cmake) ## TODO: Is this really needed?
-
 link_directories(
   ${GSAP_DIR}/build
 )
@@ -140,7 +135,6 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(power_system_node
-  src/power_system_util.cpp
   src/power_system_node.cpp)
 
 ## Rename C++ executable without prefix
