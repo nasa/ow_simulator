@@ -275,7 +275,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     // power faults
   if (m_faults.low_state_of_charge_power_failure || m_faults.instantaneous_capacity_loss_power_failure || m_faults.thermal_power_failure) {
     systemFaultsBitmask |= isPowerSystemFault;
-    setFaultsMessage(power_faults_msg, hardwareFault);
+    setComponentFaultsMessage(power_faults_msg, hardwareFault);
   } 
 
   setSystemFaultsMessage(system_faults_msg, systemFaultsBitmask);
