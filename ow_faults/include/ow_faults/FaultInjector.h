@@ -58,6 +58,7 @@ public:
     NoForceData = 8
     };
 
+  //system
 	static constexpr std::bitset<10> isSystem{		0b00'0000'0001 };
 	static constexpr std::bitset<10> isArmGoalError{		0b00'0000'0010 };
 	static constexpr std::bitset<10> isArmExecutionError{		0b00'0000'0100 };
@@ -69,6 +70,10 @@ public:
 	static constexpr std::bitset<10> isLanderExecutionError{	0b01'0000'0000 };
 	static constexpr std::bitset<10> isPowerSystemFault{	0b10'0000'0000 };
   
+  //power
+  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
+	static constexpr std::bitset<3> isCapLossError{	0b010 };
+	static constexpr std::bitset<3> isThermalError{	0b100 };
 
 private:
   float powerTemperatureOverloadValue;
@@ -82,10 +87,13 @@ private:
   float m_faultPanValue;
   float m_faultTiltValue;
 
-  // renders new temperature when thermal power fault is re-triggered
+  // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
   void setPowerFaultValues(const std::string& powerType, float min_val, float max_val);
   void powerFaultCb();
+  void publishPowerSystemFault();
+  void powerSOCListener(const std_msgs::Float64& msg);
+  void powerTempListener(const std_msgs::Float64& msg);
 
   // Antennae functions
   void antennaePanFaultCb(const std_msgs::Float64& msg);
@@ -95,17 +103,17 @@ private:
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
-  void powerSOCListener(const std_msgs::Float64& msg);
-
+  
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
 
   //Setting the correct values for faults messages via function overloading
-
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  void setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+
+  template<typename bitsetFaultsMsg, typename bitmask>
+  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
 
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
@@ -125,22 +133,27 @@ private:
 
   ow_faults::FaultsConfig m_faults;
 
+
   //component faults
   bool m_armFault;
   bool m_antFault;
+
+  //system
+  std::bitset<10> systemFaultsBitset;
 
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
+  //power
   ros::Subscriber m_power_soc_sub;
+  ros::Subscriber m_power_temp_sub;
+  ros::Publisher m_power_fault_trigger_pub;
+
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
   ros::Publisher m_dist_pitch_ft_sensor_pub;
 
-  // temporary placeholder publishers until power feautre is finished
-  ros::Publisher m_fault_power_state_of_charge_pub;
-  ros::Publisher m_fault_power_temp_pub;
   // publishers for sending ros messages for component failures
   ros::Publisher m_fault_status_pub;
   ros::Publisher m_arm_fault_status_pub;
