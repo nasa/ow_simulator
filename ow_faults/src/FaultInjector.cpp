@@ -256,8 +256,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     powerFaultsBitmask |= islowVoltageError;
   } 
   if (m_faults.instantaneous_capacity_loss_power_failure){
-    std::cout << "what" << std::endl;
-    std::cout << isCapLossError << std::endl;
     powerFaultsBitmask |= isCapLossError;
   } 
   if (m_faults.thermal_power_failure) {

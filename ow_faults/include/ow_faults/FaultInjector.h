@@ -76,11 +76,6 @@ public:
 	static constexpr std::bitset<3> isThermalError{	0b100 };
 
 private:
-  float powerTemperatureOverloadValue;
-  float powerStateOfChargeValue;
-  float originalSOC;
-  bool powerLowVoltage;
-  bool powerCapLoss;
   
   std_msgs::Float64 m_realPanMsg;
   std_msgs::Float64 m_realTiltMsg;
@@ -88,9 +83,8 @@ private:
   float m_faultTiltValue;
 
   // power functions
+  float originalSOC;
   float getRandomFloatFromRange(float min_val, float max_val);
-  void setPowerFaultValues(const std::string& powerType, float min_val, float max_val);
-  void powerFaultCb();
   void publishPowerSystemFault();
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTempListener(const std_msgs::Float64& msg);
