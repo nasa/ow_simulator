@@ -124,13 +124,15 @@ depends on GSAP, an open-source battery prognostics executive. GSAP  must be ins
 
 * Check out the source code:
 ```
-git clone --branch v2.0.0 https://github.com/nasa/GSAP.git gsap
+git clone --branch v1.0-OW https://github.com/nasa/GSAP.git gsap
 ```
 
-The default git branch is v2.0.0, which is the latest stable version
-of GSAP.  On rare occasions the latest version of this branch won't be
-compatible with OceanWATERS and you will need to check out a particular commit.
-We plan to simplify the workflow needed to keep these two software systems compatible.
+The git branch used is v1.0-OW, which is the latest stable version of GSAP for use with OceanWATERS.
+Please note that this is not the default branch for GSAP and the two may differ.
+This implementation strategy is required to utilize essential functionality developed after the most 
+recent offical release of GSAP and to prevent compatibility issues that may arise due to continuing 
+updates made within the GSAP framework. The latest stable version of GSAP for use with OceanWATERS will
+be updated as necessary and will revert to the default branch of GSAP pending its next scheduled release.
 
 * Define the `GSAP_HOME` environment variable as the location of your GSAP
   installation, e.g.
