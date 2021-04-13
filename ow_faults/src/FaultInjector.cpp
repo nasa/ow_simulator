@@ -272,40 +272,11 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
-<<<<<<< HEAD
     // power faults
   if (m_faults.low_state_of_charge_power_failure || m_faults.instantaneous_capacity_loss_power_failure || m_faults.thermal_power_failure) {
     systemFaultsBitmask |= isPowerSystemFault;
     setFaultsMessage(power_faults_msg, hardwareFault);
   } 
-=======
-  // power faults
-  if(m_faults.low_state_of_charge_power_failure) {
-    // Fault is a range ( anything < 10%)
-    soc_msg.data = 2.2;
-    m_fault_power_state_of_charge_pub.publish(soc_msg);
-    setComponentFaultsMessage(power_faults_msg, hardwareFault);
-    systemFaultsBitmask |= isPowerSystemFault;
-  }
-  if(m_faults.instantaneous_capacity_loss_power_failure) {
-    // (most recent and current). If the % difference is > 5% and no other tasks in progress, then fault. 
-    soc_msg.data = 98.5; //random now but should be >5% more than the previous value
-    m_fault_power_state_of_charge_pub.publish(soc_msg);
-    setComponentFaultsMessage(power_faults_msg, hardwareFault);
-    systemFaultsBitmask |= isPowerSystemFault;
-  }
-  if(m_faults.thermal_power_failure){
-    // if > 50 degrees C, then consider fault. 
-    std_msgs::Float64 thermal_msg;
-    setPowerTemperatureFaultValue(true);
-    thermal_msg.data = powerTemperatureOverloadValue;
-    m_fault_power_temp_pub.publish(thermal_msg);
-    setComponentFaultsMessage(power_faults_msg, hardwareFault);
-    systemFaultsBitmask |= isPowerSystemFault;
-  } else {
-    setPowerTemperatureFaultValue(false);
-  }
->>>>>>> melodic-devel
 
   setSystemFaultsMessage(system_faults_msg, systemFaultsBitmask);
   
