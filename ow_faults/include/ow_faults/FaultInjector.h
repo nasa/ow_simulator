@@ -133,13 +133,10 @@ private:
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-<<<<<<< HEAD
   ros::Subscriber m_power_soc_sub;
-=======
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
   ros::Publisher m_dist_pitch_ft_sensor_pub;
->>>>>>> melodic-devel
 
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
