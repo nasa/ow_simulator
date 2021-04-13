@@ -113,7 +113,7 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
   return min_val + (max_val - min_val) * (rand() / float(RAND_MAX));
 }
 
-void FaultInjector::publishPowerSystemFault(){
+void FaultInjector::publishPowerSystemFault(bool fault){
   //power
   ow_faults::PowerFaults power_faults_msg;
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
@@ -122,26 +122,34 @@ void FaultInjector::publishPowerSystemFault(){
   ow_faults::SystemFaults system_faults_msg;
 
   systemFaultsBitmask |= systemFaultsBitset;
-  systemFaultsBitmask |= isPowerSystemFault;
-  systemFaultsBitset = systemFaultsBitmask;
-
+  //update if fault
+  if (fault) {
+    //system
+    systemFaultsBitmask |= isPowerSystemFault;
+    systemFaultsBitset = systemFaultsBitmask;
+    //power
+    setComponentFaultsMessage(power_faults_msg, hardwareFault);
+  }
+  //publish
   setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
   m_fault_status_pub.publish(system_faults_msg);
-
-  setComponentFaultsMessage(power_faults_msg, hardwareFault);
   m_power_fault_status_pub.publish(power_faults_msg);
 
 }
 
 void FaultInjector::powerTempListener(const std_msgs::Float64& msg)
 {
+  bool fault = false;
   if(m_faults.thermal_power_failure && msg.data > 50){
-    publishPowerSystemFault();
+    fault = true;
   }
+  publishPowerSystemFault(fault);
+
 }
 
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
 {
+  bool fault = false;
   float newSOC = msg.data;
   if (isnan(originalSOC)){
     originalSOC = newSOC;
@@ -150,8 +158,9 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
         (m_faults.instantaneous_capacity_loss_power_failure && 
         !isnan(originalSOC) && 
         ((abs(originalSOC - newSOC) / originalSOC) >= .05 ))) {
-    publishPowerSystemFault();
+    fault = true;
   }
+  publishPowerSystemFault(fault);
   originalSOC = newSOC;
 }
 

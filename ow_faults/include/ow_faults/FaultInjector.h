@@ -85,7 +85,7 @@ private:
   // power functions
   float originalSOC;
   float getRandomFloatFromRange(float min_val, float max_val);
-  void publishPowerSystemFault();
+  void publishPowerSystemFault(bool fault);
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTempListener(const std_msgs::Float64& msg);
 

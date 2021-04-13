@@ -8,7 +8,6 @@
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
-
 #include "power_system_node.h"
 
 using namespace std;
@@ -17,8 +16,8 @@ using namespace std::chrono;
 void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
   // Set mechanical power value to rostopic subscription
-  double mechanical_power = msg->data;  // [W]
-
+  double mechanical_power = checkForFaults(msg->data);  // [W]
+  
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate =
       m_min_temperature + static_cast<double>(rand()) / RAND_MAX * (m_max_temperature - m_min_temperature);
@@ -102,6 +101,32 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   m_battery_temperature_pub.publish(battery_temperature_msg);
 }
 
+double PowerSystemNode::checkForFaults(double originalValue)
+{
+  //will likely need to modify after Chetan's feedback
+  // assuming that we can only have one power fault triggered at a time.
+  if (m_lowVoltageFault) {
+    std::cout << "low volt" << std::endl;
+    // return 30.0;
+  }
+  if (m_capLossFault) {
+    std::cout << "cap loss" << std::endl;
+    // return 20.0;
+  }
+  if (m_thermalFault) {
+    std::cout << "thermal" << std::endl;
+    // return 10.0;
+  }
+  return originalValue;
+}
+
+void PowerSystemNode::powerFaultsCallback(const ow_faults::SystemFaults::ConstPtr& msg)
+{
+  m_lowVoltageFault = ((msg->value & LOW_VOLTAGE) == LOW_VOLTAGE);
+  m_capLossFault = ((msg->value & CAP_LOSS) == CAP_LOSS);
+  m_thermalFault = ((msg->value & THERMAL_FAULT) == THERMAL_FAULT);
+}
+
 void PowerSystemNode::Run()
 {
   // Create a configuration from a file
@@ -128,6 +153,7 @@ void PowerSystemNode::Run()
 
   // Finally subscribe to mechanical power topic (Watts)
   m_mechanical_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
+  m_power_fault_sub = m_nh.subscribe("/faults/power_fault", 1, &PowerSystemNode::powerFaultsCallback, this);
 
   ROS_INFO("Power system node running");
   ros::spin();

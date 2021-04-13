@@ -5,20 +5,33 @@
 #include <chrono>
 
 #include "PrognoserFactory.h"
+// #include "ow_faults/FaultInjector.h"
+#include <ow_faults/SystemFaults.h>
 
 class PowerSystemNode
 {
 public:
   void Run();
 
+  int LOW_VOLTAGE = 1;
+  int CAP_LOSS = 2;
+  int THERMAL_FAULT = 4;
+
 private:
+  bool m_lowVoltageFault = false;
+  bool m_capLossFault = false;
+  bool m_thermalFault = false;
+  
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
+  void powerFaultsCallback(const ow_faults::SystemFaults::ConstPtr& msg);
+  double checkForFaults(double originalValue);
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
   ros::Publisher m_remaining_useful_life_pub;    // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;      // Battery Temperature Publisher
   ros::Subscriber m_mechanical_power_sub;        // Mechanical Power Subscriber
+  ros::Subscriber m_power_fault_sub;             // Faults Power Subscriber
 
   std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 
