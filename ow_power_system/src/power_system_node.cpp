@@ -153,7 +153,7 @@ void PowerSystemNode::Run()
 
   // Finally subscribe to mechanical power topic (Watts)
   m_mechanical_power_sub = m_nh.subscribe("/mechanical_power/average", 1, &PowerSystemNode::powerCallback, this);
-  m_power_fault_sub = m_nh.subscribe("/faults/power_fault", 1, &PowerSystemNode::powerFaultsCallback, this);
+  m_power_fault_sub = m_nh.subscribe("/faults/power_faults", 1, &PowerSystemNode::powerFaultsCallback, this);
 
   ROS_INFO("Power system node running");
   ros::spin();

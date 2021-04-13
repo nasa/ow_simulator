@@ -32,7 +32,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
     // will return to checking state of charge once that returns
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this); 
   m_power_temp_sub = node_handle.subscribe("/power_system_node/battery_temperature", 1000, &FaultInjector::powerTempListener, this); 
-  m_power_fault_trigger_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/power_fault", 10);
+  m_power_fault_trigger_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/power_faults", 10);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 
