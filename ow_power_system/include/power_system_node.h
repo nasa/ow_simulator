@@ -5,7 +5,6 @@
 #include <chrono>
 
 #include "PrognoserFactory.h"
-// #include "ow_faults/FaultInjector.h"
 #include <ow_faults/SystemFaults.h>
 
 class PowerSystemNode
