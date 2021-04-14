@@ -1,24 +1,35 @@
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
-#include <ros/ros.h>
+#include <deque>
 #include <chrono>
+#include <random>
+#include <ros/ros.h>
+#include <sensor_msgs/JointState.h>
+
 
 #include "PrognoserFactory.h"
 
 class PowerSystemNode
 {
 public:
+  PowerSystemNode();
   void Run();
 
 private:
-  void powerCallback(const std_msgs::Float64::ConstPtr& msg);
+  void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  void powerCb(double elecrtical_power);
+
+  double generateVoltageEstimate();
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
   ros::Publisher m_remaining_useful_life_pub;    // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;      // Battery Temperature Publisher
-  ros::Subscriber m_mechanical_power_sub;        // Mechanical Power Subscriber
+  ros::Subscriber m_joint_states_sub;            // Mechanical Power Subscriber
+
+  static constexpr int  m_moving_average_window = 10;
+  std::deque<double>   m_power_values;
 
   std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 
@@ -35,9 +46,10 @@ private:
   static constexpr double m_base_voltage = 3.2;         // [V] estimate
   static constexpr double m_voltage_range = 0.1;        // [V]
 
-  // The index use to access temperature information.
-  // This might change to median SOC or RUL index or fixed percentile
-  static constexpr int TEMPERATURE_INDEX = 1;
+  static constexpr double m_efficiency = 0.9;           // 90% efficiency for now
+
+  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
+  std::uniform_real_distribution<double> m_temperature_dist;
 };
 
 #endif
