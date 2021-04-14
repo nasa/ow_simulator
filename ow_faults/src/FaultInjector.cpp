@@ -110,7 +110,7 @@ void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
 }
 
 float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
-  return min_val + (max_val - min_val) * (rand() / float(RAND_MAX));
+  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }
 
 void FaultInjector::publishPowerSystemFault(bool fault){
@@ -140,7 +140,7 @@ void FaultInjector::publishPowerSystemFault(bool fault){
 void FaultInjector::powerTempListener(const std_msgs::Float64& msg)
 {
   bool fault = false;
-  if(m_faults.thermal_power_failure && msg.data > 50){
+  if(m_faults.thermal_power_failure && msg.data > THERMAL_MAX){
     fault = true;
   }
   publishPowerSystemFault(fault);
@@ -154,10 +154,10 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   if (isnan(originalSOC)){
     originalSOC = newSOC;
   }
-  if ((m_faults.low_state_of_charge_power_failure && newSOC <= 10)  ||  
+  if ((m_faults.low_state_of_charge_power_failure && newSOC <= SOC_MIN)  ||  
         (m_faults.instantaneous_capacity_loss_power_failure && 
         !isnan(originalSOC) && 
-        ((abs(originalSOC - newSOC) / originalSOC) >= .05 ))) {
+        ((abs(originalSOC - newSOC) / originalSOC) >= SOC_MAX_DIFF ))) {
     fault = true;
   }
   publishPowerSystemFault(fault);

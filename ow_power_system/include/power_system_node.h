@@ -12,9 +12,9 @@ class PowerSystemNode
 public:
   void Run();
 
-  int LOW_VOLTAGE = 1;
-  int CAP_LOSS = 2;
-  int THERMAL_FAULT = 4;
+  static constexpr int LOW_VOLTAGE = 1;
+  static constexpr int CAP_LOSS = 2;
+  static constexpr int THERMAL_FAULT = 4;
 
 private:
   bool m_lowVoltageFault = false;
