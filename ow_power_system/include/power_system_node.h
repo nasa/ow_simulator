@@ -21,7 +21,7 @@ private:
   
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
   void powerFaultsCallback(const ow_faults::SystemFaults::ConstPtr& msg);
-  double checkForFaults(double originalValue);
+  double adjustMechPowerForFaults(double originalValue);
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher

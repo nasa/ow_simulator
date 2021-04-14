@@ -16,7 +16,7 @@ using namespace std::chrono;
 void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
   // Set mechanical power value to rostopic subscription
-  double mechanical_power = checkForFaults(msg->data);  // [W]
+  double mechanical_power = adjustMechPowerForFaults(msg->data);  // [W]
   
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate =
@@ -101,7 +101,7 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
   m_battery_temperature_pub.publish(battery_temperature_msg);
 }
 
-double PowerSystemNode::checkForFaults(double originalValue)
+double PowerSystemNode::adjustMechPowerForFaults(double originalValue)
 {
   //will likely need to modify after Chetan's feedback
   // assuming that we can only have one power fault triggered at a time.
