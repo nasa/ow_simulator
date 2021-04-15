@@ -20,6 +20,8 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void powerCb(double elecrtical_power);
 
+  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double temperature, double voltage);
+
   double generateVoltageEstimate();
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization

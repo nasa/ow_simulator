@@ -51,7 +51,14 @@ double PowerSystemNode::generateVoltageEstimate()
 
   // Voltage estimate based on pseudorandom noise and moving range
   uniform_real_distribution<double> m_voltage_dist(min_V, max_V);
-  double voltage_estimate = m_voltage_dist(m_random_generator);
+  return m_voltage_dist(m_random_generator);
+}
+
+map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double temperature, double voltage)
+{
+  return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
+                                        { MessageId::Centigrade, Datum<double>{ temperature } },
+                                        { MessageId::Volts, Datum<double>{ voltage } } };
 }
 
 void PowerSystemNode::powerCb(double elecrtical_power)
@@ -59,13 +66,7 @@ void PowerSystemNode::powerCb(double elecrtical_power)
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate = m_temperature_dist(m_random_generator);
   double voltage_estimate = generateVoltageEstimate();
-
-  // Initialize the GSAP prognoser
-  auto current_data = map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ elecrtical_power } },
-                                                     { MessageId::Centigrade, Datum<double>{ temperature_estimate } },
-                                                     { MessageId::Volts, Datum<double>{ voltage_estimate } } };
-
-  // Get a new prediction
+  auto current_data = composePrognoserData(elecrtical_power, temperature_estimate, voltage_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
@@ -126,15 +127,13 @@ void PowerSystemNode::Run()
   string config_path = ros::package::getPath("ow_power_system") + "/config/example.cfg";
   ConfigMap config(config_path);
 
-  // Initialize the GSAP prognoser
-  auto init_data = map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ m_initial_power } },
-                                                  { MessageId::Centigrade, Datum<double>{ m_initial_temperature } },
-                                                  { MessageId::Volts, Datum<double>{ m_initial_voltage } } };
-
   // Contruct a new prognoser using the prognoser factory. The prognoser
   // will automatically construct an appropriate model, observer and predictor
   // based on the values specified in the config.
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
+
+  // Initialize the GSAP prognoser
+  auto init_data =  composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
   m_prognoser->step(init_data);
 
   this->m_init_time = system_clock::now();
