@@ -39,8 +39,6 @@ public:
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
 
-  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
-
   enum Nominal { None=0 };
   
   enum class ComponentFaults : uint {
@@ -71,6 +69,13 @@ public:
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
 	static constexpr std::bitset<3> isCapLossError{  	 0b010 };
 	static constexpr std::bitset<3> isThermalError{	   0b100 };
+
+  static constexpr float THERMAL_MAX = 50;
+  static constexpr float SOC_MIN = 10;
+  static constexpr float SOC_MAX_DIFF = 0.05;
+
+  //arm
+  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
   
