@@ -17,12 +17,10 @@ public:
   void Run();
 
 private:
+  double generateVoltageEstimate();
+  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double temperature, double voltage);
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void powerCb(double elecrtical_power);
-
-  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double temperature, double voltage);
-
-  double generateVoltageEstimate();
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
@@ -30,8 +28,8 @@ private:
   ros::Publisher m_battery_temperature_pub;      // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;            // Mechanical Power Subscriber
 
-  static constexpr int  m_moving_average_window = 10;
-  std::deque<double>   m_power_values;
+  static constexpr int m_moving_average_window = 10;
+  std::deque<double> m_power_values;
 
   std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 

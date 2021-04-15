@@ -22,22 +22,6 @@ m_temperature_dist(m_min_temperature, m_max_temperature)
 {
 }
 
-void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
-{
-  auto power_watts = 0; // This includes the arm + antenna
-  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts = msg->velocity[i] * msg->effort[i];
-
-  m_power_values.push_back(power_watts);
-  if (m_power_values.size() > m_moving_average_window)
-    m_power_values.pop_front(); // remove the oldest extra item
-  
-  auto mean_mechanical_power =
-    accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();    // [W]
-
-  powerCb(mean_mechanical_power / m_efficiency);
-}
-
 double PowerSystemNode::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
@@ -59,6 +43,22 @@ map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power
   return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
                                         { MessageId::Centigrade, Datum<double>{ temperature } },
                                         { MessageId::Volts, Datum<double>{ voltage } } };
+}
+
+void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
+{
+  auto power_watts = 0; // This includes the arm + antenna
+  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
+    power_watts = msg->velocity[i] * msg->effort[i];
+
+  m_power_values.push_back(power_watts);
+  if (m_power_values.size() > m_moving_average_window)
+    m_power_values.pop_front(); // remove the oldest extra item
+  
+  auto mean_mechanical_power =
+    accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();    // [W]
+
+  powerCb(mean_mechanical_power / m_efficiency);
 }
 
 void PowerSystemNode::powerCb(double elecrtical_power)
@@ -143,7 +143,7 @@ void PowerSystemNode::Run()
   m_remaining_useful_life_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life", 1);
   m_battery_temperature_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature", 1);
 
-  // Finally subscribe to mechanical power topic (Watts)
+  // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
 
   ROS_INFO("Power system node running");
