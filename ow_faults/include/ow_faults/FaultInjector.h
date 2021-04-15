@@ -18,7 +18,9 @@
 #include "ow_faults/PTFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
+#include <random>
 
 
 // This class injects simple message faults that don't need to be simulated
@@ -37,8 +39,10 @@ public:
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
 
-  enum Nominal { None=0 };
+  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
+  enum Nominal { None=0 };
+  
   enum class ComponentFaults : uint {
     // general
     Hardware = 1, 
@@ -68,22 +72,40 @@ public:
 private:
   float powerTemperatureOverloadValue;
   
+
+  std_msgs::Float64 m_realPanMsg;
+  std_msgs::Float64 m_realTiltMsg;
+  float m_faultPanValue;
+  float m_faultTiltValue;
+
   // renders new temperature when thermal power fault is re-triggered
   void setPowerTemperatureFaultValue(bool getTempBool);
+
+  // Antennae functions
+  void antennaePanFaultCb(const std_msgs::Float64& msg);
+  void antennaeTiltFaultCb(const std_msgs::Float64& msg);
+  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher);
 
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
 
+  // Output /faults/joint_states, a modified version of /joint_states, injecting
+  // simple message faults that don't need to be simulated at their source.
+  void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
+
   //Setting the correct values for faults messages via function overloading
-  //System Faults
-  void setFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
-  // Arm Faults
-  void setFaultsMessage(ow_faults::ArmFaults& msg, ComponentFaults value);
-  //Power Faults
-  void setFaultsMessage(ow_faults::PowerFaults& msg, ComponentFaults value);
-  //Pan Tilt Faults
-  void setFaultsMessage(ow_faults::PTFaults& msg, ComponentFaults value);
+
+  template<typename fault_msg>
+  void setFaultsMessageHeader(fault_msg& msg);
+  void setSystemFaultsMessage(ow_faults::SystemFaults& msg, std::bitset<10> systemFaultsBitmask);
+
+  template<typename fault_msg>
+  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
+
+  //checking faults
+  void checkArmFaults();
+  void checkAntFaults();
 
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -96,9 +118,17 @@ private:
 
   ow_faults::FaultsConfig m_faults;
 
+  //component faults
+  bool m_armFault;
+  bool m_antFault;
+
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
+
+  // ft sensor
+  ros::Subscriber m_dist_pitch_ft_sensor_sub;
+  ros::Publisher m_dist_pitch_ft_sensor_pub;
 
   // temporary placeholder publishers until power feautre is finished
   ros::Publisher m_fault_power_state_of_charge_pub;
@@ -110,8 +140,16 @@ private:
   ros::Publisher m_power_fault_status_pub;
   ros::Publisher m_antennae_fault_status_pub;
 
+  //antenna pub and subs
+  ros::Subscriber m_fault_ant_pan_sub;
+  ros::Subscriber m_fault_ant_tilt_sub;
+  ros::Publisher m_fault_ant_pan_pub;
+  ros::Publisher m_fault_ant_tilt_pub;
+
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
+
+  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
 };
 
 #endif

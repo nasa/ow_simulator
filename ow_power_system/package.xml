@@ -4,16 +4,15 @@
   <version>0.1.0</version>
   <description>The ow_power_system package. Simulates (or will simulate) the lander's power system, taking in power use and future loading and outputting state of charge and a predicted remaining useful life.</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per --> 
-  <maintainer email="jason.fugate@nasa.gov">Jason Fugate</maintainer>
+  <license>NASA OPEN SOURCE AGREEMENT VERSION 1.3</license>
 
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <license>NASA Internal - OpenSourcing is TODO</license>
-
-  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
   <author email="jason.fugate@nasa.gov">Jason Fugate</author>
   <author email="molly.c.oconnor@nasa.gov">Molly O'Connor</author>
   <author email="chetan.s.kulkarni@nasa.gov">Chetan Kulkarni</author>
+
+  <maintainer email="jason.fugate@nasa.gov">Jason Fugate</maintainer>
+  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
