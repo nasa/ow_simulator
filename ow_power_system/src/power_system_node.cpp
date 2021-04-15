@@ -41,16 +41,13 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 double PowerSystemNode::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-  double timelapse = duration<double>(system_clock::now() - m_init_time).count();                                 // [s]
-  double min_V = m_base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8;                    // [V]
-  double max_V = m_base_voltage + m_voltage_range + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8;  // [V]
+  double timelapse = duration<double>(system_clock::now() - m_init_time).count();               // [s]
+  double min_V = m_base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8;  // [V]
+  double max_V = min_V + m_voltage_range;                                                       // [V]
 
   // If voltage limits dip below baseline, set to baseline values
   if (min_V < m_base_voltage)
     min_V = m_base_voltage;
-
-  if (max_V < m_base_voltage + m_voltage_range)
-    max_V = m_base_voltage + m_voltage_range;
 
   // Voltage estimate based on pseudorandom noise and moving range
   uniform_real_distribution<double> m_voltage_dist(min_V, max_V);
