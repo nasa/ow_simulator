@@ -1,7 +1,7 @@
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
-#include <deque>
+#include <vector>
 #include <chrono>
 #include <random>
 #include <ros/ros.h>
@@ -29,7 +29,8 @@ private:
   ros::Subscriber m_joint_states_sub;            // Mechanical Power Subscriber
 
   static constexpr int m_moving_average_window = 10;
-  std::deque<double> m_power_values;
+  std::vector<double> m_power_values;
+  size_t m_power_values_index = 0;
 
   std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 

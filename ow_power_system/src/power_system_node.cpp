@@ -9,7 +9,6 @@
 #include <ow_lander/lander_joints.h>
 #include "power_system_node.h"
 
-
 using namespace std;
 using namespace std::chrono;
 
@@ -18,7 +17,8 @@ using namespace std::chrono;
 static constexpr int TEMPERATURE_INDEX = 1;
 
 PowerSystemNode::PowerSystemNode() :
-m_temperature_dist(m_min_temperature, m_max_temperature)
+m_temperature_dist(m_min_temperature, m_max_temperature),
+m_power_values(m_moving_average_window, 0)
 {
 }
 
@@ -47,16 +47,13 @@ map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power
 
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  auto power_watts = 0; // This includes the arm + antenna
+  auto power_watts = 0;  // This includes the arm + antenna
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts = msg->velocity[i] * msg->effort[i];
 
-  m_power_values.push_back(power_watts);
-  if (m_power_values.size() > m_moving_average_window)
-    m_power_values.pop_front(); // remove the oldest extra item
-  
+  m_power_values[++m_power_values_index % m_power_values.size()] = (power_watts);
   auto mean_mechanical_power =
-    accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();    // [W]
+      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();  // [W]
 
   powerCb(mean_mechanical_power / m_efficiency);
 }
@@ -133,7 +130,7 @@ void PowerSystemNode::Run()
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
 
   // Initialize the GSAP prognoser
-  auto init_data =  composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
+  auto init_data = composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
   m_prognoser->step(init_data);
 
   this->m_init_time = system_clock::now();
