@@ -22,6 +22,24 @@ m_power_values(m_moving_average_window, 0)
 {
 }
 
+void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
+{
+  auto power_watts = 0;  // This includes the arm + antenna
+  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
+    power_watts = msg->velocity[i] * msg->effort[i];
+
+  m_power_values[++m_power_values_index % m_power_values.size()] = (power_watts);
+  auto mean_mechanical_power =
+      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();  // [W]
+
+  powerCb(mean_mechanical_power / m_efficiency);
+}
+
+double PowerSystemNode::generateTemperatureEstimate()
+{
+  return m_temperature_dist(m_random_generator);
+}
+
 double PowerSystemNode::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
@@ -38,6 +56,25 @@ double PowerSystemNode::generateVoltageEstimate()
   return m_voltage_dist(m_random_generator);
 }
 
+void PowerSystemNode::injectFaults(double& power, double& temperature, double& voltage)
+{
+  bool low_state_of_charge_power_failure;
+  ros::param::param("/faults/low_state_of_charge_power_failure", low_state_of_charge_power_failure, false);
+  if (low_state_of_charge_power_failure)
+    ROS_INFO("low_state_of_charge_power_failure active!");
+
+  bool instantaneous_capacity_loss_power_failure;
+  ros::param::param("/faults/instantaneous_capacity_loss_power_failure", instantaneous_capacity_loss_power_failure,
+                    false);
+  if (instantaneous_capacity_loss_power_failure)
+    ROS_INFO("instantaneous_capacity_loss_power_failure active!");
+
+  bool thermal_power_failure;
+  ros::param::param("/faults/thermal_power_failure", thermal_power_failure, false);
+  if (thermal_power_failure)
+    ROS_INFO("thermal_power_failure active!");
+}
+
 map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double temperature, double voltage)
 {
   return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
@@ -45,25 +82,13 @@ map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power
                                         { MessageId::Volts, Datum<double>{ voltage } } };
 }
 
-void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
-{
-  auto power_watts = 0;  // This includes the arm + antenna
-  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts = msg->velocity[i] * msg->effort[i];
-
-  m_power_values[++m_power_values_index % m_power_values.size()] = (power_watts);
-  auto mean_mechanical_power =
-      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();  // [W]
-
-  powerCb(mean_mechanical_power / m_efficiency);
-}
-
-void PowerSystemNode::powerCb(double elecrtical_power)
+void PowerSystemNode::powerCb(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  double temperature_estimate = m_temperature_dist(m_random_generator);
+  double temperature_estimate = generateTemperatureEstimate();
   double voltage_estimate = generateVoltageEstimate();
-  auto current_data = composePrognoserData(elecrtical_power, temperature_estimate, voltage_estimate);
+  injectFaults(electrical_power, temperature_estimate, voltage_estimate);
+  auto current_data = composePrognoserData(electrical_power, temperature_estimate, voltage_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
