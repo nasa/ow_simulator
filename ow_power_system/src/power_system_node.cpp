@@ -178,7 +178,7 @@ void PowerSystemNode::Run()
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
   // Initialize the GSAP prognoser
-  auto init_data = composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
+  auto init_data = composePrognoserData(m_initial_power, m_initial_voltage, m_initial_temperature);
   m_prognoser->step(init_data);
 
   this->m_init_time = system_clock::now();
