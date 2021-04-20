@@ -20,6 +20,9 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
+  void injectFault(const std::string& power_fault_name, bool& fault_activated,
+                   const std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>>& sequence, size_t& sequence_index,
+                   double& power, double& voltage, double& temperature);
   void injectFaults(double& power, double& temperature, double& voltage);
   std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double voltage, double temperature);
   void powerCb(double electrical_power);
@@ -52,9 +55,17 @@ private:
   std::mt19937 m_random_generator;  // Utilize a Mersenne Twister pesduo random generation
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  bool m_low_state_of_charge_failure_activated = false;
-  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_low_state_of_charge_failure_sequence;
-  size_t m_low_state_of_charge_failure_sequence_index = 0;
+  bool m_low_state_of_charge_power_failure_activated = false;
+  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_low_state_of_charge_power_failure_sequence;
+  size_t m_low_state_of_charge_power_failure_sequence_index = 0;
+
+  bool m_instantaneous_capacity_loss_power_failure_activated = false;
+  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_instantaneous_capacity_loss_power_failure_sequence;
+  size_t m_instantaneous_capacity_loss_power_failure_sequence_index = 0;
+
+  bool m_thermal_power_failure_activated = false;
+  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_thermal_power_failure_sequence;
+  size_t m_thermal_power_failure_sequence_index = 0;
 };
 
 #endif
