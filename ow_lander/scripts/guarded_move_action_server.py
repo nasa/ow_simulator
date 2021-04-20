@@ -49,7 +49,6 @@ class GuardedMoveActionServer(object):
         """
         ground_detected = state == GoalStatus.PREEMPTED
         ground_position = self.ground_detector.ground_position if ground_detected else Point()
-        #print (self.ground_detector)
         rospy.loginfo("Ground Detected ? {}".format(ground_detected))
         self.guarded_move_pub.publish(
         ground_detected, 'base_link', ground_position)
@@ -59,7 +58,6 @@ class GuardedMoveActionServer(object):
         :type feedback: FollowJointTrajectoryFeedback
         """
         if self.ground_detector.detect():
-          print ( self.ground_detector.ground_position.z)
           if (self.ground_detector.ground_position.z) > 0.1 :
             self.ground_detector.reset()
           else:
@@ -69,9 +67,6 @@ class GuardedMoveActionServer(object):
     def _update_feedback(self):
  
         self._ls =  self._current_link_state._link_value
-        self.pos = self.ground_detector.ground_position 
-        #print (self.pos)
-        #if ground_detected else Point()
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
         self._fdbk.current.z = self._ls.z
