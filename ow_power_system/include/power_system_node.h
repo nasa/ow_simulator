@@ -5,7 +5,6 @@
 #include <chrono>
 
 #include "PrognoserFactory.h"
-#include <ow_faults/SystemFaults.h>
 
 class PowerSystemNode
 {
@@ -13,8 +12,6 @@ public:
   void Run();
 
 private:
-  
-  
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
@@ -27,9 +24,6 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
-  bool m_lowVoltageFault = false;
-  bool m_capLossFault = false;
-  bool m_thermalFault = false;
   // declare set constants .. hardcoded for now.
   // TODO: read from config file
   static constexpr double m_initial_power = 0.0;        // This is probably always zero

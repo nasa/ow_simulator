@@ -17,7 +17,6 @@ void PowerSystemNode::powerCallback(const std_msgs::Float64::ConstPtr& msg)
 {
   // Set mechanical power value to rostopic subscription
   double mechanical_power = msg->data;  // [W]
-  
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate =
       m_min_temperature + static_cast<double>(rand()) / RAND_MAX * (m_max_temperature - m_min_temperature);
