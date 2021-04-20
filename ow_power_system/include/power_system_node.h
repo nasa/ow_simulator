@@ -51,6 +51,10 @@ private:
 
   std::mt19937 m_random_generator;  // Utilize a Mersenne Twister pesduo random generation
   std::uniform_real_distribution<double> m_temperature_dist;
+
+  bool m_low_state_of_charge_failure_activated = false;
+  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_low_state_of_charge_failure_sequence;
+  size_t m_low_state_of_charge_failure_sequence_index = 0;
 };
 
 #endif

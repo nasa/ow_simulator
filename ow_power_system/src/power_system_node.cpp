@@ -43,6 +43,9 @@ bool PowerSystemNode::Initialize()
 
   m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
 
+  auto path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_failure.csv";
+  m_low_state_of_charge_failure_sequence = loadPowerProfile(path);
+
   return true;
 }
 
@@ -50,7 +53,7 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
 {
     ifstream file(filename);
     if (file.fail()) {
-        cerr << "Unable to open data file" << endl;
+        cerr << "Unable to open data file" << filename << endl;
     }
     // Skip header line
     file.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -130,19 +133,35 @@ void PowerSystemNode::injectFaults(double& power, double& voltage, double& tempe
 {
   bool low_state_of_charge_power_failure;
   ros::param::param("/faults/low_state_of_charge_power_failure", low_state_of_charge_power_failure, false);
-  if (low_state_of_charge_power_failure)
-    ROS_INFO("low_state_of_charge_power_failure active!");
+  if (!m_low_state_of_charge_failure_activated && low_state_of_charge_power_failure)
+  {
+    ROS_INFO("instantaneous_capacity_loss_power_failure activated!");
+    m_low_state_of_charge_failure_sequence_index = 0;
+    m_low_state_of_charge_failure_activated = true;
+  }
 
-  bool instantaneous_capacity_loss_power_failure;
-  ros::param::param("/faults/instantaneous_capacity_loss_power_failure", instantaneous_capacity_loss_power_failure,
-                    false);
-  if (instantaneous_capacity_loss_power_failure)
-    ROS_INFO("instantaneous_capacity_loss_power_failure active!");
+  if (m_low_state_of_charge_failure_activated && !low_state_of_charge_power_failure)
+  {
+    ROS_INFO("instantaneous_capacity_loss_power_failure de-activated!");
+    m_low_state_of_charge_failure_activated = false;
+  }
 
-  bool thermal_power_failure;
-  ros::param::param("/faults/thermal_power_failure", thermal_power_failure, false);
-  if (thermal_power_failure)
-    ROS_INFO("thermal_power_failure active!");
+  if (m_low_state_of_charge_failure_activated && low_state_of_charge_power_failure)
+  {
+    auto data = m_low_state_of_charge_failure_sequence[++m_low_state_of_charge_failure_sequence_index % m_low_state_of_charge_failure_sequence.size()];
+    power += 10 * data[MessageId::Watts];
+  }
+
+  // bool instantaneous_capacity_loss_power_failure;
+  // ros::param::param("/faults/instantaneous_capacity_loss_power_failure", instantaneous_capacity_loss_power_failure,
+  //                   false);
+  // if (instantaneous_capacity_loss_power_failure)
+  //   ROS_INFO("instantaneous_capacity_loss_power_failure active!");
+
+  // bool thermal_power_failure;
+  // ros::param::param("/faults/thermal_power_failure", thermal_power_failure, false);
+  // if (thermal_power_failure)
+  //   ROS_INFO("thermal_power_failure active!");
 }
 
 map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double voltage, double temperature)
