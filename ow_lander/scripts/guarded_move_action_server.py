@@ -16,7 +16,7 @@ from moveit_msgs.msg import RobotTrajectory
 from ground_detection import GroundDetector
 from ow_lander.msg import *
 from actionlib_msgs.msg import GoalStatus
-
+from geometry_msgs.msg import Point, WrenchStamped
 
 
 class GuardedMoveActionServer(object):
@@ -38,6 +38,7 @@ class GuardedMoveActionServer(object):
         self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
         self.ground_detector = GroundDetector()
+        self.pos = Point()
         self.guarded_move_pub = rospy.Publisher(
         '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
         
@@ -58,7 +59,8 @@ class GuardedMoveActionServer(object):
         :type feedback: FollowJointTrajectoryFeedback
         """
         if self.ground_detector.detect():
-          if (self.ground_detector._last_position[2]) > 0.05 :
+          print ( self.ground_detector.ground_position.z)
+          if (self.ground_detector.ground_position.z) > 0.1 :
             self.ground_detector.reset()
           else:
             self.trajectory_async_executer.stop()    
@@ -67,6 +69,9 @@ class GuardedMoveActionServer(object):
     def _update_feedback(self):
  
         self._ls =  self._current_link_state._link_value
+        self.pos = self.ground_detector.ground_position 
+        #print (self.pos)
+        #if ground_detected else Point()
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
         self._fdbk.current.z = self._ls.z
@@ -113,9 +118,9 @@ class GuardedMoveActionServer(object):
         
             
         if success:
-            self._result.final.x = self.ground_detector._last_position[0]
-            self._result.final.y = self.ground_detector._last_position[1]
-            self._result.final.z = self.ground_detector._last_position[2]
+            self._result.final.x = self.ground_detector.ground_position.x
+            self._result.final.y = self.ground_detector.ground_position.y
+            self._result.final.z = self.ground_detector.ground_position.z
             self._result.success = True
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)

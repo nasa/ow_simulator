@@ -22,6 +22,7 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 import tf2_ros
 from moveit_msgs.srv import GetPositionFK
+#from geometry_msgs.msg import Point, WrenchStamped
 
 
 class MoveItInterface(object):
@@ -56,6 +57,7 @@ class LinkStateSubscriber:
     self._listener = tf2_ros.TransformListener(self._buffer)
     self._link_value = None
     self.subscriber = rospy.Subscriber("/gazebo/link_states", LinkStates, self._handle_link_states)
+    
     
   def _handle_link_states(self, data):
     # position of the end of scoop can be obtained either from raw Gazebo readings

@@ -151,29 +151,12 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
   p = 90  # 45 worked get
   y = -90
   q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-  
-  #start_state = plan_a.joint_trajectory.points[len(plan_a.joint_trajectory.points)-1].positions
-  
-  #cs = robot.get_current_state()
 
-  ## adding antenna state and grinder state  to the robot states.
-  ## grider state obstained from rviz
-  
-  #new_value =  (0,0) + start_state[:5] + (-0.1407739555464298,) + (start_state [5],)
-  
-  
-  #cs.joint_state.position = new_value # modify current state of robot to the end state of the previous plan
-  
   cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   
   move_arm.set_start_state(cs)
 
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-  
-  #position value obtained from rviz scoop
-  #goal_pose.position.x = 0.55127
-  #goal_pose.position.y = -0.4213
-  #goal_pose.position.z = 0.77815
   
   move_arm.set_pose_target(goal_pose)
   plan_b = move_arm.plan()

@@ -14,8 +14,6 @@ from trajectory_msgs.msg import JointTrajectoryPoint
 from action_deliver_sample import cascade_plans
 import action_dig_linear
 import action_grind
-from action_deliver_sample import cascade_plans
-#from action_dig_circular import calculate_starting_state_arm
 from action_dig_circular import calculate_joint_state_end_pose_from_plan_arm
 from std_msgs.msg import Header
 
@@ -24,8 +22,8 @@ guarded_move_traj = RobotTrajectory()
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
     
-  robot_state = robot.get_current_state()
-  move_arm.set_start_state(robot_state)
+  #robot_state = robot.get_current_state()
+  #move_arm.set_start_state(robot_state)
     
   ### pre-guarded move starts here ### 
     
