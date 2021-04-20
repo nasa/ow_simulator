@@ -16,6 +16,7 @@ public:
   void Run();
 
 private:
+  std::vector<std::map<MessageId, Datum<double>>> loadPowerProfile(const std::string& filename);
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();

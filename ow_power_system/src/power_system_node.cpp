@@ -3,6 +3,7 @@
 // this repository.
 
 #include <numeric>
+#include <fstream>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -40,9 +41,55 @@ bool PowerSystemNode::Initialize()
 
   m_efficiency = system_config.getDouble("efficiency");
 
-  m_temperature_dist = std::uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
 
   return true;
+}
+
+vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const string& filename)
+{
+    ifstream file(filename);
+    if (file.fail()) {
+        cerr << "Unable to open data file" << endl;
+    }
+    // Skip header line
+    file.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    auto now = system_clock::now();
+
+    vector<map<MessageId, Datum<double>>> result;
+    while (file.good()) {
+        map<MessageId, Datum<double>> data;
+        string line;
+        getline(file, line);
+        if (line.empty()) {
+            continue;
+        }
+        stringstream line_stream(line);
+        string cell;
+        getline(line_stream, cell, ',');
+        double file_time = stod(cell);
+        auto timestamp = now + milliseconds(static_cast<unsigned>(file_time * 1000));
+
+        getline(line_stream, cell, ',');
+        Datum<double> power(stod(cell));
+        power.setTime(timestamp);
+
+        getline(line_stream, cell, ',');
+        Datum<double> temperature(stod(cell));
+        temperature.setTime(timestamp);
+
+        getline(line_stream, cell, ',');
+        Datum<double> voltage(stod(cell));
+        voltage.setTime(timestamp);
+
+        data.insert({MessageId::Watts, power});
+        data.insert({MessageId::Centigrade, temperature});
+        data.insert({MessageId::Volts, voltage});
+
+        result.push_back(data);
+    }
+    return result;
 }
 
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
