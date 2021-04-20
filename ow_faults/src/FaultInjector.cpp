@@ -18,6 +18,7 @@ constexpr std::bitset<3> FaultInjector::isThermalError;
 
 FaultInjector::FaultInjector(ros::NodeHandle node_handle)
 {
+  //  arm pub and subs
   auto joint_states_str = "joint_states";
   m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
     &FaultInjector::jointStateCb, this);
@@ -29,7 +30,6 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //power fault publishers and subs
-    // will return to checking state of charge once that returns
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this); 
   m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature", 1000, &FaultInjector::powerTemperatureListener, this); 
 
@@ -45,7 +45,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
-  // topic for system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/jpl/system_faults_status", 10); 
   m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/jpl/arm_faults_status", 10); 
   m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/jpl/power_faults_status", 10); 
