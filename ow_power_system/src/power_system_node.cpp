@@ -3,6 +3,7 @@
 // this repository.
 
 #include <numeric>
+#include <fstream>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -40,9 +41,68 @@ bool PowerSystemNode::Initialize()
 
   m_efficiency = system_config.getDouble("efficiency");
 
-  m_temperature_dist = std::uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+
+  string path;
+  path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_power_failure.csv";
+  m_low_state_of_charge_power_failure_sequence = loadPowerProfile(path);
+
+  path = ros::package::getPath("ow_power_system") + "/data/instantaneous_capacity_loss_power_failure.csv";
+  m_instantaneous_capacity_loss_power_failure_sequence = loadPowerProfile(path);
+
+  path = ros::package::getPath("ow_power_system") + "/data/thermal_power_failure.csv";
+  m_thermal_power_failure_sequence = loadPowerProfile(path);
 
   return true;
+}
+
+vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const string& filename)
+{
+  ifstream file(filename);
+  if (file.fail())
+  {
+    cerr << "Unable to open data file" << filename << endl;
+  }
+  // Skip header line
+  file.ignore(numeric_limits<streamsize>::max(), '\n');
+
+  auto now = system_clock::now();
+
+  vector<map<MessageId, Datum<double>>> result;
+  while (file.good())
+  {
+    map<MessageId, Datum<double>> data;
+    string line;
+    getline(file, line);
+    if (line.empty())
+    {
+      continue;
+    }
+    stringstream line_stream(line);
+    string cell;
+    getline(line_stream, cell, ',');
+    double file_time = stod(cell);
+    auto timestamp = now + milliseconds(static_cast<unsigned>(file_time * 1000));
+
+    getline(line_stream, cell, ',');
+    Datum<double> power(stod(cell));
+    power.setTime(timestamp);
+
+    getline(line_stream, cell, ',');
+    Datum<double> temperature(stod(cell));
+    temperature.setTime(timestamp);
+
+    getline(line_stream, cell, ',');
+    Datum<double> voltage(stod(cell));
+    voltage.setTime(timestamp);
+
+    data.insert({ MessageId::Watts, power });
+    data.insert({ MessageId::Centigrade, temperature });
+    data.insert({ MessageId::Volts, voltage });
+
+    result.push_back(data);
+  }
+  return result;
 }
 
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -79,23 +139,47 @@ double PowerSystemNode::generateVoltageEstimate()
   return m_voltage_dist(m_random_generator);
 }
 
+void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_activated,
+                                  const vector<map<MessageId, Datum<double>>>& sequence, size_t& sequence_index,
+                                  double& power, double& voltage, double& temperature)
+{
+  bool fault_enabled;
+  ros::param::param("/faults/" + power_fault_name, fault_enabled, false);
+  if (!fault_activated && fault_enabled)
+  {
+    ROS_INFO_STREAM(power_fault_name << " activated!");
+    sequence_index = 0;
+    fault_activated = true;
+  }
+
+  if (fault_activated && !fault_enabled)
+  {
+    ROS_INFO_STREAM(power_fault_name << " de-activated!");
+    fault_activated = false;
+  }
+
+  if (fault_activated && fault_enabled)
+  {
+    auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
+                                                               // the This is unlikely the end case. Re-visit
+    power += data[MessageId::Watts];
+    voltage += data[MessageId::Volts];
+    temperature += data[MessageId::Centigrade];
+  }
+}
+
 void PowerSystemNode::injectFaults(double& power, double& voltage, double& temperature)
 {
-  bool low_state_of_charge_power_failure;
-  ros::param::param("/faults/low_state_of_charge_power_failure", low_state_of_charge_power_failure, false);
-  if (low_state_of_charge_power_failure)
-    ROS_INFO("low_state_of_charge_power_failure active!");
+  injectFault("low_state_of_charge_power_failure", m_low_state_of_charge_power_failure_activated,
+              m_low_state_of_charge_power_failure_sequence, m_low_state_of_charge_power_failure_sequence_index, power,
+              voltage, temperature);
 
-  bool instantaneous_capacity_loss_power_failure;
-  ros::param::param("/faults/instantaneous_capacity_loss_power_failure", instantaneous_capacity_loss_power_failure,
-                    false);
-  if (instantaneous_capacity_loss_power_failure)
-    ROS_INFO("instantaneous_capacity_loss_power_failure active!");
+  injectFault("instantaneous_capacity_loss_power_failure", m_instantaneous_capacity_loss_power_failure_activated,
+              m_instantaneous_capacity_loss_power_failure_sequence,
+              m_instantaneous_capacity_loss_power_failure_sequence_index, power, voltage, temperature);
 
-  bool thermal_power_failure;
-  ros::param::param("/faults/thermal_power_failure", thermal_power_failure, false);
-  if (thermal_power_failure)
-    ROS_INFO("thermal_power_failure active!");
+  injectFault("thermal_power_failure", m_thermal_power_failure_activated, m_thermal_power_failure_sequence,
+              m_thermal_power_failure_sequence_index, power, voltage, temperature);
 }
 
 map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double voltage, double temperature)
@@ -178,7 +262,7 @@ void PowerSystemNode::Run()
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
   // Initialize the GSAP prognoser
-  auto init_data = composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
+  auto init_data = composePrognoserData(m_initial_power, m_initial_voltage, m_initial_temperature);
   m_prognoser->step(init_data);
 
   this->m_init_time = system_clock::now();
