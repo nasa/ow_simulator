@@ -12,23 +12,16 @@ class PowerSystemNode
 public:
   void Run();
 
-  static constexpr int LOW_VOLTAGE = 1;
-  static constexpr int CAP_LOSS = 2;
-  static constexpr int THERMAL_FAULT = 4;
-
 private:
   
   
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
-  void powerFaultsCallback(const ow_faults::SystemFaults::ConstPtr& msg);
-  double adjustMechPowerForFaults(double originalValue);
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
   ros::Publisher m_remaining_useful_life_pub;    // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;      // Battery Temperature Publisher
   ros::Subscriber m_mechanical_power_sub;        // Mechanical Power Subscriber
-  ros::Subscriber m_power_fault_sub;             // Faults Power Subscriber
 
   std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 
