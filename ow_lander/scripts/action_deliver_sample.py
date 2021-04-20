@@ -87,10 +87,10 @@ def cascade_plans (plan1, plan2):
     point.positions = plan2.joint_trajectory.points[i].positions
     traj_msg.points.append(point)
     
-    traj_msg.joint_names = plan1.joint_trajectory.joint_names
-    traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
-    new_traj.joint_trajectory = traj_msg
-    return new_traj   
+  traj_msg.joint_names = plan1.joint_trajectory.joint_names
+  traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
+  new_traj.joint_trajectory = traj_msg
+  return new_traj   
 
 
 def deliver_sample(move_arm, robot, moveit_fk, args):
