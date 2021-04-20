@@ -163,8 +163,8 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
     auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
                                                                // the This is unlikely the end case. Re-visit
     power += data[MessageId::Watts];
-    // voltage += data[MessageId::Volts];           // TODO: enable it later
-    // temperature += data[MessageId::Centigrade];  // TODO: enable it later
+    voltage += data[MessageId::Volts];
+    temperature += data[MessageId::Centigrade];
   }
 }
 
