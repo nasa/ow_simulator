@@ -117,6 +117,7 @@ private:
   //checking rqt faults
   void checkArmFaults();
   void checkAntFaults();
+  void checkPowerFaults();
 
   ///////publishers and subsscribers
   // arm faults
@@ -151,6 +152,7 @@ private:
   //general component faults
   bool m_armFault;
   bool m_antFault;
+  bool m_powerFault;
 
   //arm joint faults
   ow_faults::FaultsConfig m_faults;

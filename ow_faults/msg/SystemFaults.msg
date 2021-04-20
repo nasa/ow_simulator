@@ -9,6 +9,7 @@
 # PtGoalError=64, 
 # PtExecutionError=128, 
 # LanderExecutionError = 256
+# PowerExecutionError = 512
 Header header
 uint64 value
 

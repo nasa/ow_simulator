@@ -32,7 +32,6 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
     // will return to checking state of charge once that returns
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this); 
   m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature", 1000, &FaultInjector::powerTemperatureListener, this); 
-  m_power_fault_trigger_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/trigger/power_faults", 10);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 
@@ -156,8 +155,8 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   }
   if ((m_faults.low_state_of_charge_power_failure && newSOC <= SOC_MIN)  ||  
         (m_faults.instantaneous_capacity_loss_power_failure && 
-        !isnan(originalSOC) && 
-        ((abs(originalSOC - newSOC) / originalSOC) >= SOC_MAX_DIFF ))) {
+        !isnan(m_originalSOC) && 
+        ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF ))) {
     fault = true;
   }
   publishPowerSystemFault(fault);
@@ -181,11 +180,9 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
   ow_faults::PTFaults pt_faults_msg;
-  ow_faults::SystemFaults power_faults_trigger_msg;
 
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
   std::bitset<10> systemFaultsBitmask{};
-  std::bitset<3> powerFaultsBitmask{};
 
   // Set failed sensor values to 0
   unsigned int index;
@@ -260,17 +257,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
-    // power faults
-  if (m_faults.low_state_of_charge_power_failure) {
-    powerFaultsBitmask |= islowVoltageError;
-  } 
-  if (m_faults.instantaneous_capacity_loss_power_failure){
-    powerFaultsBitmask |= isCapLossError;
-  } 
-  if (m_faults.thermal_power_failure) {
-    powerFaultsBitmask |= isThermalError;
-  } 
-
   setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
   systemFaultsBitset = systemFaultsBitmask;
   m_joint_state_pub.publish(output);
@@ -278,9 +264,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   m_arm_fault_jpl_msg_pub.publish(arm_faults_msg);
   m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
-
-  setBitsetFaultsMessage(power_faults_trigger_msg, powerFaultsBitmask);
-  m_power_fault_trigger_pub.publish(power_faults_trigger_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
@@ -324,6 +307,12 @@ void FaultInjector::checkArmFaults(){
 void FaultInjector::checkAntFaults(){
   m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure || 
                 m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
+}
+
+void FaultInjector::checkPowerFaults(){
+  m_powerFault =  ( m_faults.low_state_of_charge_power_failure || 
+                    m_faults.instantaneous_capacity_loss_power_failure ||
+                    m_faults.thermal_power_failure);
 }
 
 template<typename group_t, typename item_t>
