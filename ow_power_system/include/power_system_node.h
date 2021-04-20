@@ -17,13 +17,11 @@ public:
   static constexpr int THERMAL_FAULT = 4;
 
 private:
-  bool m_lowVoltageFault = false;
-  bool m_capLossFault = false;
-  bool m_thermalFault = false;
+  
   
   void powerCallback(const std_msgs::Float64::ConstPtr& msg);
   void powerFaultsCallback(const ow_faults::SystemFaults::ConstPtr& msg);
-  double checkForFaults(double originalValue);
+  double adjustMechPowerForFaults(double originalValue);
 
   ros::NodeHandle m_nh;                          // Node Handle Initialization
   ros::Publisher m_state_of_charge_pub;          // State of Charge Publisher
@@ -36,6 +34,9 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
+  bool m_lowVoltageFault = false;
+  bool m_capLossFault = false;
+  bool m_thermalFault = false;
   // declare set constants .. hardcoded for now.
   // TODO: read from config file
   static constexpr double m_initial_power = 0.0;        // This is probably always zero
