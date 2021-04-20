@@ -17,9 +17,32 @@ using namespace std::chrono;
 static constexpr int TEMPERATURE_INDEX = 1;
 
 PowerSystemNode::PowerSystemNode() :
-m_temperature_dist(m_min_temperature, m_max_temperature),
 m_power_values(m_moving_average_window, 0)
 {
+}
+
+bool PowerSystemNode::Initialize()
+{
+  auto system_config_path = ros::package::getPath("ow_power_system") + "/config/system.cfg";
+  auto system_config = ConfigMap(system_config_path);
+
+  m_initial_power = system_config.getDouble("initial_power");
+  m_initial_voltage = system_config.getDouble("initial_voltage");
+  m_initial_temperature = system_config.getDouble("initial_temperature");
+
+  m_base_voltage = system_config.getDouble("base_voltage");
+  m_voltage_range = system_config.getDouble("voltage_range");
+
+  m_min_temperature = system_config.getDouble("min_temperature");
+  m_max_temperature = system_config.getDouble("max_temperature");
+
+  m_battery_lifetime = system_config.getDouble("battery_lifetime");
+
+  m_efficiency = system_config.getDouble("efficiency");
+
+  m_temperature_dist = std::uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+
+  return true;
 }
 
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -56,7 +79,7 @@ double PowerSystemNode::generateVoltageEstimate()
   return m_voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFaults(double& power, double& temperature, double& voltage)
+void PowerSystemNode::injectFaults(double& power, double& voltage, double& temperature)
 {
   bool low_state_of_charge_power_failure;
   ros::param::param("/faults/low_state_of_charge_power_failure", low_state_of_charge_power_failure, false);
@@ -75,20 +98,20 @@ void PowerSystemNode::injectFaults(double& power, double& temperature, double& v
     ROS_INFO("thermal_power_failure active!");
 }
 
-map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double temperature, double voltage)
+map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double voltage, double temperature)
 {
   return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
-                                        { MessageId::Centigrade, Datum<double>{ temperature } },
-                                        { MessageId::Volts, Datum<double>{ voltage } } };
+                                        { MessageId::Volts, Datum<double>{ voltage } },
+                                        { MessageId::Centigrade, Datum<double>{ temperature } } };
 }
 
 void PowerSystemNode::powerCb(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  double temperature_estimate = generateTemperatureEstimate();
   double voltage_estimate = generateVoltageEstimate();
-  injectFaults(electrical_power, temperature_estimate, voltage_estimate);
-  auto current_data = composePrognoserData(electrical_power, temperature_estimate, voltage_estimate);
+  double temperature_estimate = generateTemperatureEstimate();
+  injectFaults(electrical_power, voltage_estimate, temperature_estimate);
+  auto current_data = composePrognoserData(electrical_power, voltage_estimate, temperature_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
@@ -146,13 +169,13 @@ void PowerSystemNode::powerCb(double electrical_power)
 void PowerSystemNode::Run()
 {
   // Create a configuration from a file
-  string config_path = ros::package::getPath("ow_power_system") + "/config/example.cfg";
-  ConfigMap config(config_path);
+  string prognoser_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
+  ConfigMap prognoser_config(prognoser_config_path);
 
   // Contruct a new prognoser using the prognoser factory. The prognoser
   // will automatically construct an appropriate model, observer and predictor
   // based on the values specified in the config.
-  m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", config);
+  m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
   // Initialize the GSAP prognoser
   auto init_data = composePrognoserData(m_initial_power, m_initial_temperature, m_initial_voltage);
@@ -176,6 +199,11 @@ int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "power_system_node");
   PowerSystemNode psn;
+  if (!psn.Initialize())
+  {
+    ROS_ERROR("Power system node failed to initialize");
+    return -1;
+  }
   psn.Run();
   return 0;
 }

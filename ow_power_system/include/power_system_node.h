@@ -12,6 +12,7 @@ class PowerSystemNode
 {
 public:
   PowerSystemNode();
+  bool Initialize();
   void Run();
 
 private:
@@ -19,7 +20,7 @@ private:
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void injectFaults(double& power, double& temperature, double& voltage);
-  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double temperature, double voltage);
+  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double voltage, double temperature);
   void powerCb(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -36,18 +37,16 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
-  // declare set constants .. hardcoded for now.
-  // TODO: read from config file
-  static constexpr double m_initial_power = 0.0;         // This is probably always zero
-  static constexpr double m_initial_temperature = 20.0;  // 20.0 deg. C
-  static constexpr double m_initial_voltage = 4.1;       // Volts
-  static constexpr double m_min_temperature = 17.5;      // minimum temp = 17.5 deg. C
-  static constexpr double m_max_temperature = 21.5;      // maximum temp = 21.5 deg. C
-  static constexpr double m_battery_lifetime = 2738.0;   // Estimate of battery lifetime (seconds)
-  static constexpr double m_base_voltage = 3.2;          // [V] estimate
-  static constexpr double m_voltage_range = 0.1;         // [V]
-
-  static constexpr double m_efficiency = 0.9;  // 90% efficiency for now
+  // main system configuration
+  double m_initial_power = 0.0;         // This is probably always zero
+  double m_initial_temperature = 20.0;  // 20.0 deg. C
+  double m_initial_voltage = 4.1;       // Volts
+  double m_min_temperature = 17.5;      // minimum temp = 17.5 deg. C
+  double m_max_temperature = 21.5;      // maximum temp = 21.5 deg. C
+  double m_battery_lifetime = 2738.0;   // Estimate of battery lifetime (seconds)
+  double m_base_voltage = 3.2;          // [V] estimate
+  double m_voltage_range = 0.1;         // [V]
+  double m_efficiency = 0.9;            // default 90% efficiency
 
   std::mt19937 m_random_generator;  // Utilize a Mersenne Twister pesduo random generation
   std::uniform_real_distribution<double> m_temperature_dist;
