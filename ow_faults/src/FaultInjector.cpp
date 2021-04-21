@@ -139,7 +139,7 @@ void FaultInjector::publishPowerSystemFault(bool fault){
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   bool fault = false;
-  if(m_faults.thermal_power_failure && msg.data > THERMAL_MAX){
+  if( msg.data > THERMAL_MAX){
     fault = true;
   }
   publishPowerSystemFault(fault);
@@ -153,9 +153,8 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   if (isnan(m_originalSOC)){
     m_originalSOC = newSOC;
   }
-  if ((m_faults.low_state_of_charge_power_failure && newSOC <= SOC_MIN)  ||  
-        (m_faults.instantaneous_capacity_loss_power_failure && 
-        !isnan(m_originalSOC) && 
+  if ((newSOC <= SOC_MIN)  ||  
+        (!isnan(m_originalSOC) && 
         ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF ))) {
     fault = true;
   }
