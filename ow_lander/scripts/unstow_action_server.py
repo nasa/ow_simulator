@@ -28,7 +28,10 @@ class UnstowActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.UnstowAction, execute_cb=self.on_unstow_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, 
+                                                    ow_lander.msg.UnstowAction, 
+                                                    execute_cb=self.on_unstow_action, 
+                                                    auto_start = False)
         self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()

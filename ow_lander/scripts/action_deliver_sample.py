@@ -13,7 +13,6 @@ from shape_msgs.msg import SolidPrimitive
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
-#from action_dig_linear import calculate_joint_state_end_pose_from_plan_arm
 from std_msgs.msg import Header
 
 

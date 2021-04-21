@@ -37,7 +37,10 @@ class DigCircularActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.DigCircularAction, execute_cb=self.on_DigCircular_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, 
+                                                    ow_lander.msg.DigCircularAction, 
+                                                    execute_cb=self.on_DigCircular_action, 
+                                                    auto_start = False)
         self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.DigCircularFeedback()
