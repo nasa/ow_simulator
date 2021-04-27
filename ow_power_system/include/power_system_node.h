@@ -30,6 +30,8 @@ private:
   void powerCb(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
+  ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
+  ros::Publisher m_mechanical_power_avg_pub;   // Mechanical Power Averaged
   ros::Publisher m_state_of_charge_pub;        // State of Charge Publisher
   ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher

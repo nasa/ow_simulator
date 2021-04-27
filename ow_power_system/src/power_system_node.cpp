@@ -108,13 +108,19 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
 
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  auto power_watts = 0;  // This includes the arm + antenna
+  auto power_watts = 0.0;  // This includes the arm + antenna
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts = msg->velocity[i] * msg->effort[i];
 
-  m_power_values[++m_power_values_index % m_power_values.size()] = (power_watts);
+  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
   auto mean_mechanical_power =
-      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();  // [W]
+      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
+
+  Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+  mechanical_power_raw_msg.data = power_watts;
+  mechanical_power_avg_msg.data = mean_mechanical_power;
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
   powerCb(mean_mechanical_power / m_efficiency);
 }
@@ -152,8 +158,7 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
     sequence_index = 0;
     fault_activated = true;
   }
-
-  if (fault_activated && !fault_enabled)
+  else if (fault_activated && !fault_enabled)
   {
     ROS_INFO_STREAM(power_fault_name << " de-activated!");
     fault_activated = false;
@@ -277,6 +282,8 @@ void PowerSystemNode::Run()
   this->m_init_time = system_clock::now();
 
   // Construct the PowerSystemNode publishers
+  m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
+  m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
   m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
   m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
   m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
