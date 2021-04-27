@@ -25,6 +25,8 @@ private:
                    double& power, double& voltage, double& temperature);
   void injectFaults(double& power, double& temperature, double& voltage);
   std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double voltage, double temperature);
+  void parseEoD_Event(const ProgEvent& eod_event,
+                      std_msgs::Float64& soc_msg, std_msgs::Int16& rul_msg, std_msgs::Float64& battery_temperature_msg);
   void powerCb(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization

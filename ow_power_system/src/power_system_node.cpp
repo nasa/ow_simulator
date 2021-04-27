@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace std::chrono;
+using namespace std_msgs;
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile
@@ -189,22 +190,8 @@ map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power
                                         { MessageId::Centigrade, Datum<double>{ temperature } } };
 }
 
-void PowerSystemNode::powerCb(double electrical_power)
+void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event, Float64& soc_msg, Int16& rul_msg, Float64& battery_temperature_msg)
 {
-  // Temperature estimate based on pseudorandom noise and fixed range
-  double voltage_estimate = generateVoltageEstimate();
-  double temperature_estimate = generateTemperatureEstimate();
-  injectFaults(electrical_power, voltage_estimate, temperature_estimate);
-  auto current_data = composePrognoserData(electrical_power, voltage_estimate, temperature_estimate);
-  auto prediction = m_prognoser->step(current_data);
-
-  // Individual msgs to be published
-  std_msgs::Float64 soc_msg;
-  std_msgs::Int16 rul_msg;
-  std_msgs::Float64 battery_temperature_msg;
-
-  // Get the event for battery EoD.
-  auto eod_event = prediction.getEvents().front();
   // The time of event is a `UData` structure, which represents a data
   // point while maintaining uncertainty. For the MonteCarlo predictor
   // used by this example, the uncertainty is captured by storing the
@@ -243,6 +230,28 @@ void PowerSystemNode::powerCb(double electrical_power)
     auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
     battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
   }
+}
+
+void PowerSystemNode::powerCb(double electrical_power)
+{
+  // Temperature estimate based on pseudorandom noise and fixed range
+  double voltage_estimate = generateVoltageEstimate();
+  double temperature_estimate = generateTemperatureEstimate();
+  injectFaults(electrical_power, voltage_estimate, temperature_estimate);
+  auto current_data = composePrognoserData(electrical_power, voltage_estimate, temperature_estimate);
+  auto prediction = m_prognoser->step(current_data);
+
+  // Individual msgs to be published
+  Float64 soc_msg;
+  Int16 rul_msg;
+  Float64 battery_temperature_msg;
+
+  auto& eod_events = prediction.getEvents();
+  if (!eod_events.empty())
+  {
+    auto eod_event = eod_events.front();
+    parseEoD_Event(eod_event, soc_msg, rul_msg, battery_temperature_msg);
+  }
 
   // publish current SOC, RUL, and battery temperature
   m_state_of_charge_pub.publish(soc_msg);
@@ -268,9 +277,9 @@ void PowerSystemNode::Run()
   this->m_init_time = system_clock::now();
 
   // Construct the PowerSystemNode publishers
-  m_state_of_charge_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature", 1);
+  m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
 
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
