@@ -112,7 +112,7 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
   return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }
 
-void FaultInjector::publishPowerSystemFault(bool fault){
+void FaultInjector::publishPowerSystemFault(){
   //power
   ow_faults::PowerFaults power_faults_msg;
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
@@ -122,7 +122,7 @@ void FaultInjector::publishPowerSystemFault(bool fault){
 
   systemFaultsBitmask |= systemFaultsBitset;
   //update if fault
-  if (fault) {
+  if (m_temperatureFault || m_socFault) {
     //system
     systemFaultsBitmask |= isPowerSystemFault;
     systemFaultsBitset = systemFaultsBitmask;
@@ -138,17 +138,15 @@ void FaultInjector::publishPowerSystemFault(bool fault){
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  bool fault = false;
   if( msg.data > THERMAL_MAX){
-    fault = true;
+    m_temperatureFault = true;
   }
-  publishPowerSystemFault(fault);
+  publishPowerSystemFault();
 
 }
 
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
 {
-  bool fault = false;
   float newSOC = msg.data;
   if (isnan(m_originalSOC)){
     m_originalSOC = newSOC;
@@ -156,9 +154,9 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   if ((newSOC <= SOC_MIN)  ||  
         (!isnan(m_originalSOC) && 
         ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF ))) {
-    fault = true;
+    m_socFault = true;
   }
-  publishPowerSystemFault(fault);
+  publishPowerSystemFault();
   m_originalSOC = newSOC;
 }
 
@@ -306,12 +304,6 @@ void FaultInjector::checkArmFaults(){
 void FaultInjector::checkAntFaults(){
   m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure || 
                 m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
-}
-
-void FaultInjector::checkPowerFaults(){
-  m_powerFault =  ( m_faults.low_state_of_charge_power_failure || 
-                    m_faults.instantaneous_capacity_loss_power_failure ||
-                    m_faults.thermal_power_failure);
 }
 
 template<typename group_t, typename item_t>

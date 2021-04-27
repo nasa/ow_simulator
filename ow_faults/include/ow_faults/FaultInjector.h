@@ -97,7 +97,7 @@ private:
 
   // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
-  void publishPowerSystemFault(bool fault);
+  void publishPowerSystemFault();
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
@@ -117,7 +117,6 @@ private:
   //checking rqt faults
   void checkArmFaults();
   void checkAntFaults();
-  void checkPowerFaults();
 
   ///////publishers and subsscribers
   // arm faults
@@ -152,7 +151,8 @@ private:
   //general component faults
   bool m_armFault;
   bool m_antFault;
-  bool m_powerFault;
+  bool m_socFault = false;
+  bool m_temperatureFault = false;
 
   //arm joint faults
   ow_faults::FaultsConfig m_faults;
