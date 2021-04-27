@@ -145,6 +145,7 @@ void FaultInjector::publishPowerSystemFault(){
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   m_temperatureFault = ( msg.data > THERMAL_MAX);
+  cout << "temp " << msg.data << " > "<<  THERMAL_MAX << m_temperatureFault << endl;
   publishPowerSystemFault();
 
 }
@@ -158,6 +159,9 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   m_socFault = ((newSOC <= SOC_MIN)  ||  
         (!isnan(m_originalSOC) && 
         ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF )));
+  bool a = (newSOC <= SOC_MIN) ;
+  cout << "soc " << newSOC  << " <= "  << SOC_MIN <<  !isnan(m_originalSOC) << " && " <<
+        (abs(m_originalSOC - newSOC) / m_originalSOC) << " >= " << SOC_MAX_DIFF << m_socFault << endl;
   publishPowerSystemFault();
   m_originalSOC = newSOC;
 }
