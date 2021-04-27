@@ -30,8 +30,14 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //power fault publishers and subs
-  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 1000, &FaultInjector::powerSOCListener, this); 
-  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature", 1000, &FaultInjector::powerTemperatureListener, this); 
+  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 
+                                          1000, 
+                                          &FaultInjector::powerSOCListener, 
+                                          this); 
+  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature", 
+                                                  1000, 
+                                                  &FaultInjector::powerTemperatureListener, 
+                                                  this); 
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command", 
@@ -138,11 +144,7 @@ void FaultInjector::publishPowerSystemFault(){
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  if( msg.data > THERMAL_MAX){
-    m_temperatureFault = true;
-  }else {
-    m_temperatureFault = false;
-  }
+  m_temperatureFault = ( msg.data > THERMAL_MAX);
   publishPowerSystemFault();
 
 }
@@ -153,13 +155,9 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   if (isnan(m_originalSOC)){
     m_originalSOC = newSOC;
   }
-  if ((newSOC <= SOC_MIN)  ||  
+  m_socFault = ((newSOC <= SOC_MIN)  ||  
         (!isnan(m_originalSOC) && 
-        ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF ))) {
-    m_socFault = true;
-  } else {
-    m_socFault = false;
-  }
+        ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF )));
   publishPowerSystemFault();
   m_originalSOC = newSOC;
 }
