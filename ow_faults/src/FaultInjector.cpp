@@ -52,10 +52,10 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/jpl/system_faults_status", 10); 
-  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/jpl/arm_faults_status", 10); 
-  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/jpl/power_faults_status", 10); 
-  m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/jpl/pt_faults_status", 10);
+  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10); 
+  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10); 
+  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10); 
+  m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
 
   srand (static_cast <unsigned> (time(0)));
 }
@@ -145,7 +145,6 @@ void FaultInjector::publishPowerSystemFault(){
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   m_temperatureFault = ( msg.data > THERMAL_MAX);
-  cout << "temp " << msg.data << " > "<<  THERMAL_MAX << m_temperatureFault << endl;
   publishPowerSystemFault();
 
 }
@@ -159,9 +158,6 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   m_socFault = ((newSOC <= SOC_MIN)  ||  
         (!isnan(m_originalSOC) && 
         ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF )));
-  bool a = (newSOC <= SOC_MIN) ;
-  cout << "soc " << newSOC  << " <= "  << SOC_MIN <<  !isnan(m_originalSOC) << " && " <<
-        (abs(m_originalSOC - newSOC) / m_originalSOC) << " >= " << SOC_MAX_DIFF << m_socFault << endl;
   publishPowerSystemFault();
   m_originalSOC = newSOC;
 }
