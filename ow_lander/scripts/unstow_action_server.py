@@ -87,8 +87,7 @@ class UnstowActionServer(object):
            self._update_feedback()
            
         success = self.trajectory_async_executer.success() & self.trajectory_async_executer.wait()        
-        rospy.loginfo(' Success is ')
-        rospy.loginfo(success)
+
         if success:
             self._result.final.x = self._fdbk.current.x
             self._result.final.y = self._fdbk.current.y 

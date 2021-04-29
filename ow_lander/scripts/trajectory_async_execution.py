@@ -42,7 +42,6 @@ class TrajectoryAsyncExecuter:
       self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
         
   def success(self):
-    print("success ", not self.arm_fault)
     return (not self.arm_fault)
 
   def connect(self, controller):
