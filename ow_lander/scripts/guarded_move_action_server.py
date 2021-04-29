@@ -19,6 +19,7 @@ from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, WrenchStamped
 
 
+
 class GuardedMoveActionServer(object):
     
     def __init__(self,name):
@@ -41,7 +42,8 @@ class GuardedMoveActionServer(object):
         self.pos = Point()
         self.guarded_move_pub = rospy.Publisher(
         '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
-        
+        self.arm_fault = False
+
     def handle_guarded_move_done(self, state, result):
         """
         :type state: int
@@ -57,6 +59,8 @@ class GuardedMoveActionServer(object):
         """
         :type feedback: FollowJointTrajectoryFeedback
         """
+        self.trajectory_async_executer.stop_arm_if_fault(feedback)
+
         if self.ground_detector.detect():
           if (self.ground_detector.ground_position.z) > 0.1 :
             self.ground_detector.reset()
@@ -109,8 +113,7 @@ class GuardedMoveActionServer(object):
 
            self._update_feedback()
            
-        success = self.trajectory_async_executer.wait()
-        
+        success = self.trajectory_async_executer.success() & self.trajectory_async_executer.wait()
             
         if success:
             self._result.final.x = self.ground_detector.ground_position.x
@@ -119,10 +122,10 @@ class GuardedMoveActionServer(object):
             self._result.success = True
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
-    
+        else:
+            rospy.loginfo('%s: Failed' % self._action_name)
+
 if __name__ == '__main__':
     rospy.init_node('Guarded_move')
     server = GuardedMoveActionServer(rospy.get_name())
     rospy.spin()
-        
-  

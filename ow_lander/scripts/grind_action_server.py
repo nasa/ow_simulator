@@ -95,7 +95,7 @@ class GrindActionServer(object):
         self.trajectory_async_executer.execute(self.current_traj.joint_trajectory,
                                            done_cb=None,
                                            active_cb=None,
-                                           feedback_cb=None)
+                                           feedback_cb=self.trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -106,8 +106,7 @@ class GrindActionServer(object):
         while ((now_from_start(start_time) < self._timeout)):
            self._update_feedback()
            
-        success = self.trajectory_async_executer.wait()
-        
+        success = self.trajectory_async_executer.success() & self.trajectory_async_executer.wait()        
             
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -118,6 +117,8 @@ class GrindActionServer(object):
                 return False, "Failed Switching Controllers"
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
+        else:
+            rospy.loginfo('%s: Failed' % self._action_name)
     
 if __name__ == '__main__':
     rospy.init_node('Grind')

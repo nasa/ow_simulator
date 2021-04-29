@@ -73,7 +73,7 @@ class DeliverActionServer(object):
         self.trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
                                            done_cb=None,
                                            active_cb=None,
-                                           feedback_cb=None)
+                                           feedback_cb=self.trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -86,15 +86,16 @@ class DeliverActionServer(object):
 
            self._update_feedback()
            
-        success = self.trajectory_async_executer.wait()
+        success = self.trajectory_async_executer.success() & self.trajectory_async_executer.wait()        
         
-            
         if success:
             self._result.final.x = self._fdbk.current.x
             self._result.final.y = self._fdbk.current.y 
             self._result.final.z = self._fdbk.current.z 
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
+        else:
+            rospy.loginfo('%s: Failed' % self._action_name)
     
 if __name__ == '__main__':
     rospy.init_node('Deliver')
