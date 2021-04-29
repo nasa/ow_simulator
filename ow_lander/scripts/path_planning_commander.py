@@ -59,7 +59,7 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
-                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
+                                          feedback_cb=None)
     self.trajectory_async_executer.wait()
     return self.return_message("Stow arm")
 
@@ -76,7 +76,7 @@ class PathPlanningCommander(object):
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                          feedback_cb=self.stop_arm_if_fault_feedback_cb)
+                                          feedback_cb=None)
     self.trajectory_async_executer.wait()
     return self.return_message("Unstow arm")
 
@@ -167,7 +167,6 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
-    self.stop_arm_if_fault_feedback_cb(feedback)
 
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
@@ -227,12 +226,6 @@ class PathPlanningCommander(object):
     print("path_planning_commander has started!")
 
     rospy.spin()
-
-  def stop_arm_if_fault_feedback_cb(self, feedback):
-    """
-    stops arm if arm fault exists during feedback callback
-    """
-    if self.arm_fault: self.trajectory_async_executer.stop()
 
   def return_message(self, action_name, success=True):
     if not self.arm_fault:
