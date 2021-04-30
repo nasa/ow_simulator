@@ -106,7 +106,7 @@ class GrindActionServer(object):
         while ((now_from_start(start_time) < self._timeout)):
            self._update_feedback()
            
-        success = self.trajectory_async_executer.success() & self.trajectory_async_executer.wait()        
+        success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()        
             
         if success:
             self._result.final.x = self._fdbk.current.x
