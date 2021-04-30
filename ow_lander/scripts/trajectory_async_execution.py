@@ -7,7 +7,9 @@
 import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from ow_faults.msg import SystemFaults
 
+ARM_EXECUTION_ERROR = 4
 
 class TrajectoryAsyncExecuter:
   """
@@ -19,6 +21,28 @@ class TrajectoryAsyncExecuter:
     self._connected = False
     self._goal_time_tolerance = rospy.Time(0.1)
     self._client = None
+    self.arm_fault = False
+
+    # rospy.init_node('trajectoryAsyncExecuter')
+     # subscribe to system_fault_status for any arm faults
+    rospy.Subscriber("/system_faults_status", SystemFaults, self.faultCheckCallback)
+
+    # rospy.spin()
+  
+  def stop_arm_if_fault(self, feedback):
+        """
+        stops arm if arm fault exists during feedback callback
+        """
+        if self.arm_fault: self.stop()
+
+  def faultCheckCallback(self, data):
+      """
+      If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+      """
+      self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
+        
+  def success(self):
+    return not self.arm_fault
 
   def connect(self, controller):
     """
