@@ -125,6 +125,6 @@ class GuardedMoveActionServer(object):
             rospy.loginfo('%s: Failed' % self._action_name)
 
 if __name__ == '__main__':
-    rospy.init_node('Guarded_move')
+    rospy.init_node('GuardedMove')
     server = GuardedMoveActionServer(rospy.get_name())
     rospy.spin()

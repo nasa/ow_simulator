@@ -12,7 +12,7 @@ import sys
 
 def guarded_move_client():
  
-    client = actionlib.SimpleActionClient('Guarded_move', ow_lander.msg.GuardedMoveAction)
+    client = actionlib.SimpleActionClient('GuardedMove', ow_lander.msg.GuardedMoveAction)
 
     client.wait_for_server()
 
