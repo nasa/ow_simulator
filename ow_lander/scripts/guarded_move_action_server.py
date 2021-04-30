@@ -121,7 +121,7 @@ class GuardedMoveActionServer(object):
             self._server.set_succeeded(self._result)
     
 if __name__ == '__main__':
-    rospy.init_node('Guarded_move')
+    rospy.init_node('GuardedMove')
     server = GuardedMoveActionServer(rospy.get_name())
     rospy.spin()
         
