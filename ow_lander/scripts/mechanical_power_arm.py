@@ -43,9 +43,8 @@ class MechanicalPower:
     self._value = len(ros_data.name)
     num_joints = len(ros_data.name)
     power = 0
-    for x in range(0,num_joints):
+    for x in range(0,num_joints-1):
         power = power + abs(ros_data.velocity[x]*ros_data.effort[x])
-
         # Publish total power
     power_avg =  self._moving_average(power)
         

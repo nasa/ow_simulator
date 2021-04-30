@@ -18,7 +18,8 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roslaunch</build_depend>
   <build_depend>message_generation</build_depend>
-  
+  <build_depend>actionlib_msgs</build_depend>
+    
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>gazebo</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
@@ -44,8 +45,9 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>xacro</exec_depend>
+  <exec_depend>message_generation</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>joint_trajectory_controller</exec_depend>
-
   <export>
     <architecture_independent />
   </export>
