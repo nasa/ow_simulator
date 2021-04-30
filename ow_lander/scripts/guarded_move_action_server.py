@@ -42,7 +42,6 @@ class GuardedMoveActionServer(object):
         self.pos = Point()
         self.guarded_move_pub = rospy.Publisher(
         '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
-        self.arm_fault = False
 
     def handle_guarded_move_done(self, state, result):
         """
