@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   roslib
+  ow_lander
+  ow_faults
 )
 find_package(roslaunch)
 
