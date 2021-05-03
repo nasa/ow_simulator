@@ -51,7 +51,7 @@
       <arg name="rviz_config" value="$(find ow_lander)/config/moveit.rviz"/>
       <arg name="debug" value="$(arg debug)"/>
     </include>
-
+    
   </group>
 
 </launch>
