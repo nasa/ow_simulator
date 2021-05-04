@@ -147,25 +147,23 @@ private:
 
   ////////// vars
   //system
-  std::bitset<10> systemFaultsBitset;
+  std::bitset<10> m_system_faults_bitset;
 
   //general component faults
-  bool m_armFault;
-  bool m_antFault;
-  bool m_socFault = false;
-  bool m_temperatureFault = false;
+  bool m_arm_fault;
+  bool m_ant_fault;
+  bool m_soc_fault = false;
+  bool m_temperature_fault = false;
 
   //arm joint faults
   ow_faults::FaultsConfig m_faults;
 
   //power vars
-  float m_originalSOC;
+  float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
 
   // antenna vars
-  std_msgs::Float64 m_realPanMsg;
-  std_msgs::Float64 m_realTiltMsg;
-  float m_faultPanValue;
-  float m_faultTiltValue;
+  float m_fault_pan_value;
+  float m_fault_tilt_value;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;

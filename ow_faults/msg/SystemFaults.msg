@@ -1,5 +1,5 @@
 # System Fault Status Mask
-# Value is the fault classification. See bitmask in FaultInjector.h for implementation of the following:
+# Value is the fault classification. Internally within faults, we use a bitmask to set the different faults such that different faults can occur at the same time (ie. arm and antenna). To translate the bitmask in the message, we translate the bitmask value to an integer to send it to the corresponding topic. See bitmask in FaultInjector.h for implementation of the following:
 # System=1, 
 # ArmGoalError=2, 
 # ArmExecutionError=4,

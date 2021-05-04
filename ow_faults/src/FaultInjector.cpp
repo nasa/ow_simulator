@@ -29,13 +29,23 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
+  
+  m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
+  m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
+
+  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10); 
+  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10); 
+  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10); 
+  m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+
   //power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge", 
-                                          1000, 
+                                          10, 
                                           &FaultInjector::powerSOCListener, 
                                           this); 
   m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature", 
-                                                  1000, 
+                                                  10, 
                                                   &FaultInjector::powerTemperatureListener, 
                                                   this); 
 
@@ -48,15 +58,7 @@ FaultInjector::FaultInjector(ros::NodeHandle node_handle)
                                               3, 
                                               &FaultInjector::antennaeTiltFaultCb, 
                                               this);
-  m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
-  m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
-
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10); 
-  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10); 
-  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10); 
-  m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
-
+                                              
   srand (static_cast <unsigned> (time(0)));
 }
 
@@ -104,14 +106,14 @@ void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg, 
                         m_faults.ant_pan_encoder_failure, 
                         m_faults.ant_pan_effort_failure, 
-                        m_faultPanValue, m_fault_ant_pan_remapped_pub );
+                        m_fault_pan_value, m_fault_ant_pan_remapped_pub );
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg, 
                         m_faults.ant_tilt_encoder_failure, 
                         m_faults.ant_tilt_effort_failure, 
-                        m_faultTiltValue, m_fault_ant_tilt_remapped_pub );
+                        m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
 }
 
 float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
@@ -121,19 +123,18 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
 void FaultInjector::publishPowerSystemFault(){
   //power
   ow_faults::PowerFaults power_faults_msg;
-  ComponentFaults hardwareFault =  ComponentFaults::Hardware;
   //system
   std::bitset<10> systemFaultsBitmask{};
   ow_faults::SystemFaults system_faults_msg;
 
-  systemFaultsBitmask |= systemFaultsBitset;
+  systemFaultsBitmask |= m_system_faults_bitset;
   //update if fault
-  if (m_temperatureFault || m_socFault) {
+  if (m_temperature_fault || m_soc_fault) {
     //system
     systemFaultsBitmask |= isPowerSystemFault;
-    systemFaultsBitset = systemFaultsBitmask;
+    m_system_faults_bitset = systemFaultsBitmask;
     //power
-    setComponentFaultsMessage(power_faults_msg, hardwareFault);
+    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   }
   //publish
   setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
@@ -144,7 +145,7 @@ void FaultInjector::publishPowerSystemFault(){
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  m_temperatureFault = ( msg.data > THERMAL_MAX);
+  m_temperature_fault = ( msg.data > THERMAL_MAX);
   publishPowerSystemFault();
 
 }
@@ -152,14 +153,14 @@ void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
 {
   float newSOC = msg.data;
-  if (isnan(m_originalSOC)){
-    m_originalSOC = newSOC;
+  if (isnan(m_last_SOC)){
+    m_last_SOC = newSOC;
   }
-  m_socFault = ((newSOC <= SOC_MIN)  ||  
-        (!isnan(m_originalSOC) && 
-        ((abs(m_originalSOC - newSOC) / m_originalSOC) >= SOC_MAX_DIFF )));
+  m_soc_fault = ((newSOC <= SOC_MIN)  ||  
+        (!isnan(m_last_SOC) && 
+        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
   publishPowerSystemFault();
-  m_originalSOC = newSOC;
+  m_last_SOC = newSOC;
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -203,7 +204,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  if (m_antFault){
+  if (m_ant_fault){
     systemFaultsBitmask |= isPanTiltExecutionError;
     setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
@@ -251,13 +252,13 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  if (m_armFault) {
+  if (m_arm_fault) {
     systemFaultsBitmask |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg, hardwareFault);
   }
 
   setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
-  systemFaultsBitset = systemFaultsBitmask;
+  m_system_faults_bitset = systemFaultsBitmask;
   m_joint_state_pub.publish(output);
   m_system_fault_jpl_msg_pub.publish(system_faults_msg);
 
@@ -295,7 +296,7 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
 }
 
 void FaultInjector::checkArmFaults(){
-  m_armFault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||             
+  m_arm_fault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||             
                 m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_effort_failure ||
                 m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_effort_failure || 
                 m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_effort_failure ||
@@ -304,7 +305,7 @@ void FaultInjector::checkArmFaults(){
 }
 
 void FaultInjector::checkAntFaults(){
-  m_antFault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure || 
+  m_ant_fault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure || 
                 m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
 }
 
