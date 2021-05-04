@@ -93,8 +93,6 @@
     <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
     <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
   </node>
-  <!-- == launch the mechanical power publishing node ========= -->
-  <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen" />
 
   <!-- == start bag_recorder_node =========== -->
   <node if="$(arg record_bag)" name="bag_recorder_node" 
