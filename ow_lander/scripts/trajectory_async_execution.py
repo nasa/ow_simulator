@@ -25,7 +25,7 @@ class TrajectoryAsyncExecuter:
 
     # rospy.init_node('trajectoryAsyncExecuter')
      # subscribe to system_fault_status for any arm faults
-    rospy.Subscriber("/system_faults_status", SystemFaults, self.faultCheckCallback)
+    rospy.Subscriber("/faults/system_faults_status", SystemFaults, self.faultCheckCallback)
 
     # rospy.spin()
   
