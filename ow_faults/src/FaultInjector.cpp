@@ -16,10 +16,10 @@ constexpr std::bitset<3> FaultInjector::islowVoltageError;
 constexpr std::bitset<3> FaultInjector::isCapLossError;
 constexpr std::bitset<3> FaultInjector::isThermalError;
 
-FaultInjector::FaultInjector(ros::NodeHandle node_handle)
+FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
 {
   //  arm pub and subs
-  auto joint_states_str = "joint_states";
+  const char* joint_states_str = "joint_states";
   m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
     &FaultInjector::jointStateCb, this);
   m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>(joint_states_str, 10);
@@ -121,23 +121,17 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
 }
 
 void FaultInjector::publishPowerSystemFault(){
-  //power
   ow_faults::PowerFaults power_faults_msg;
-  //system
-  std::bitset<10> systemFaultsBitmask{};
   ow_faults::SystemFaults system_faults_msg;
-
-  systemFaultsBitmask |= m_system_faults_bitset;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
-    systemFaultsBitmask |= isPowerSystemFault;
-    m_system_faults_bitset = systemFaultsBitmask;
+    m_system_faults_bitset |= isPowerSystemFault;
     //power
     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   }
   //publish
-  setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
   m_system_fault_jpl_msg_pub.publish(system_faults_msg);
   m_power_fault_jpl_msg_pub.publish(power_faults_msg);
 
@@ -145,7 +139,7 @@ void FaultInjector::publishPowerSystemFault(){
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  m_temperature_fault = ( msg.data > THERMAL_MAX);
+  m_temperature_fault = msg.data > THERMAL_MAX;
   publishPowerSystemFault();
 
 }
