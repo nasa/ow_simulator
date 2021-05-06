@@ -201,7 +201,7 @@ class PathPlanningCommander(object):
     rospy.init_node('path_planning_commander', anonymous=True)
 
     # subscribe to system_fault_status for any arm faults
-    rospy.Subscriber("/system_faults_status", SystemFaults, self.callback)
+    rospy.Subscriber("/faults/system_faults_status", SystemFaults, self.callback)
 
     self.stop_srv = rospy.Service(
         'arm/stop', Stop, self.handle_stop)
