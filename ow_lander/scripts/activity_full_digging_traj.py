@@ -48,7 +48,9 @@ def change_joint_value(move_group, joint_index, target_value):
   """
   joint_goal = move_group.get_current_joint_values()
   joint_goal[joint_index] = target_value
-  move_group.go(joint_goal, wait=True)
+  plan = move_group.plan(joint_goal)
+  move_group.execute(plan, wait=True)
+  #move_group.go(joint_goal, wait=True)
   move_group.stop()
 
 
@@ -77,7 +79,10 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
-  move_arm.go(joint_goal, wait=True)
+  plan = move_arm.plan(joint_goal)
+  #move_arm.asyncExecute(plan, wait=True)
+  move_arm.execute(plan, wait=True)
+  #move_arm.go(joint_goal, wait=True)
   move_arm.stop()
 
   return True

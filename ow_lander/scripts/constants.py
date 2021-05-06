@@ -48,3 +48,7 @@ WRIST_SCOOP_PERP = 0.3
 # Radii in dig_circular
 R_PARALLEL_TRUE = 0.46
 R_PARALLEL_FALSE = 0.25
+
+# Radii in dig_circular for actions
+R_PARALLEL_TRUE_A = 0.46
+R_PARALLEL_FALSE_A = 0.10
