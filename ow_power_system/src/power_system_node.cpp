@@ -25,35 +25,35 @@ m_power_values(m_moving_average_window, 0)
 
 bool PowerSystemNode::Initialize()
 {
+  if (!loadSystemConfig())
+    return false;
+
+  if (!loadFaultPowerProfiles())
+    return false;
+
+  if (!initPrognoser())
+    return false;
+
+  if (!initTopics())
+    return false;
+
+  return true;
+}
+
+bool PowerSystemNode::loadSystemConfig()
+{
   auto system_config_path = ros::package::getPath("ow_power_system") + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
-
   m_initial_power = system_config.getDouble("initial_power");
   m_initial_voltage = system_config.getDouble("initial_voltage");
   m_initial_temperature = system_config.getDouble("initial_temperature");
-
   m_base_voltage = system_config.getDouble("base_voltage");
   m_voltage_range = system_config.getDouble("voltage_range");
-
   m_min_temperature = system_config.getDouble("min_temperature");
   m_max_temperature = system_config.getDouble("max_temperature");
-
   m_battery_lifetime = system_config.getDouble("battery_lifetime");
-
   m_efficiency = system_config.getDouble("efficiency");
-
   m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
-
-  string path;
-  path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_power_failure.csv";
-  m_low_state_of_charge_power_failure_sequence = loadPowerProfile(path);
-
-  path = ros::package::getPath("ow_power_system") + "/data/instantaneous_capacity_loss_power_failure.csv";
-  m_instantaneous_capacity_loss_power_failure_sequence = loadPowerProfile(path);
-
-  path = ros::package::getPath("ow_power_system") + "/data/thermal_power_failure.csv";
-  m_thermal_power_failure_sequence = loadPowerProfile(path);
-
   return true;
 }
 
@@ -106,6 +106,59 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
   return result;
 }
 
+bool PowerSystemNode::loadFaultPowerProfiles()
+{
+  string path;
+  path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_power_failure.csv";
+  m_low_state_of_charge_power_failure_sequence = loadPowerProfile(path);
+
+  path = ros::package::getPath("ow_power_system") + "/data/instantaneous_capacity_loss_power_failure.csv";
+  m_instantaneous_capacity_loss_power_failure_sequence = loadPowerProfile(path);
+
+  path = ros::package::getPath("ow_power_system") + "/data/thermal_power_failure.csv";
+  m_thermal_power_failure_sequence = loadPowerProfile(path);
+
+  return true;
+}
+
+bool PowerSystemNode::initPrognoser()
+{
+  // Create a configuration from a file
+  auto prognoser_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
+  ConfigMap prognoser_config(prognoser_config_path);
+
+  // Contruct a new prognoser using the prognoser factory. The prognoser
+  // will automatically construct an appropriate model, observer and predictor
+  // based on the values specified in the config.
+  m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
+
+  if (m_prognoser == nullptr)
+    return false;
+
+  // Initialize the GSAP prognoser
+  auto init_data = composePrognoserData(m_initial_power, m_initial_voltage, m_initial_temperature);
+  m_prognoser->step(init_data);
+
+  m_init_time = system_clock::now();
+
+  return true;
+}
+
+bool PowerSystemNode::initTopics()
+{
+  // Construct the PowerSystemNode publishers
+  m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
+  m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
+  m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
+
+  // Finally subscribe to the joint_states to estimate the mechanical power
+  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
+
+  return true;
+}
+
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   auto power_watts = 0.0;  // This includes the arm + antenna
@@ -122,7 +175,14 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
-  powerCb(mean_mechanical_power / m_efficiency);
+  m_unprocessed_mechanical_power += power_watts;
+
+  if (!m_processing_power_batch)
+  {
+    m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
+    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
+    m_trigger_processing_new_power_batch = true;
+  }
 }
 
 double PowerSystemNode::generateTemperatureEstimate()
@@ -168,9 +228,12 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
   {
     auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
                                                                // the This is unlikely the end case. Re-visit
-    power += data[MessageId::Watts];
-    voltage += data[MessageId::Volts];
-    temperature += data[MessageId::Centigrade];
+
+    auto m = 1.0 / m_power_node_processing_rate; // multiplier that should be applied since this profile data are given in seconds
+                                      // but the processing rate can be lesser or higher than that
+    power += m * data[MessageId::Watts];
+    voltage += m * data[MessageId::Volts];
+    temperature += m * data[MessageId::Centigrade];
   }
 }
 
@@ -266,33 +329,24 @@ void PowerSystemNode::powerCb(double electrical_power)
 
 void PowerSystemNode::Run()
 {
-  // Create a configuration from a file
-  string prognoser_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
-  ConfigMap prognoser_config(prognoser_config_path);
-
-  // Contruct a new prognoser using the prognoser factory. The prognoser
-  // will automatically construct an appropriate model, observer and predictor
-  // based on the values specified in the config.
-  m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
-
-  // Initialize the GSAP prognoser
-  auto init_data = composePrognoserData(m_initial_power, m_initial_voltage, m_initial_temperature);
-  m_prognoser->step(init_data);
-
-  this->m_init_time = system_clock::now();
-
-  // Construct the PowerSystemNode publishers
-  m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
-  m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
-
-  // Finally subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
-
   ROS_INFO("Power system node running");
-  ros::spin();
+
+  ros::Rate rate(m_power_node_processing_rate);
+
+  while (ros::ok())
+  {
+    ros::spinOnce();
+
+    if (m_trigger_processing_new_power_batch)
+    {
+      m_trigger_processing_new_power_batch = false;
+      m_processing_power_batch = true;
+      powerCb(m_mechanical_power_to_be_processed / m_efficiency);
+      m_processing_power_batch = false;
+    }
+
+    rate.sleep();
+  }
 }
 
 int main(int argc, char* argv[])
