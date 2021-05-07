@@ -29,9 +29,10 @@ required):
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
 - Generic Software Architecture for Prognostics (GSAP) v2.0
 
-Note on virtual machines (e.g. VMWare, Parallels, VirtualBox, Windows Subsystem
-for Linux): These have all worked to some degree, but tend to not support the
-Gazebo simulator very well or at all. They are not recommended for OceanWATERS.
+IMPORTANT NOTE: Virtual machines (in particular VMWare, Parallels, VirtualBox,
+Windows Subsystem for Linux v2) have all worked to some degree, but tend to not
+support the Gazebo simulator very well or at all. *Virtual machines are not
+recommended for OceanWATERS.*
 
 
 Prerequisites
@@ -42,14 +43,17 @@ In the following instructions, we assume the default command shell is Bash.
 
 ### PLEXIL
 
-The OceanWATERS distribution includes an autonomy module (`ow_autonomy`) that at present
-depends on PLEXIL, an open-source plan authoring language and autonomy executive (see
-[*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).  PLEXIL must be installed
-*prior* to building the `ow_autonomy` package.
+The OceanWATERS distribution includes an autonomy module (`ow_autonomy`) that at
+present uses PLEXIL, an open-source plan authoring language and autonomy
+executive (see [*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).
+PLEXIL must be installed and built *prior* to building the `ow_autonomy`
+package.
 
-PLEXIL is hosted on sourceforge.net, which provides both source code and binary
-distributions. PLEXIL should be built from source code, as the binary
-distributions on sourceforge.net are not always kept up to date.
+Note that both source code and binary distributions of PLEXIL are available at
+the Sourceforge link above. However, only the source code distribution should be
+used with OceanWATERS, because the binaries are out of date or might not be
+compatible.
+
 
 * Check out the source code:
 ```
@@ -60,10 +64,16 @@ The default git branch of PLEXIL is `releases/plexil-4`, which is maintained as
 a stable version of PLEXIL compatible with OceanWATERS and suitable for general
 use.
 
+NOTE: At the time of this writing, OceanWATERS has been tested with a version of
+this branch tagged `OceanWATERS-v7.1`.  Its git commit hash begins with `df7ed1e`.
+Newer versions of this branch should work with the newest version of the
+`master` branches of OceanWATERS.
+
 * Install any of the following build prerequisites needed. If you're not sure
-which are missing, try the build, see where it breaks, and install new packages
-as you go. All of the following may be installed with: `sudo apt install
-<package-name>`
+which, if any, are missing on your system, try the build, and if there are
+errors that indicate missing software packages, install them and try again.  All
+packages needed can be installed with: `sudo apt install <package-name>`.
+Here's one command to get them all.
 
 ```
 sudo apt install make \
@@ -113,8 +123,6 @@ make universalExec plexil-compiler checkpoint
 OceanWATERS.  Additional build information is available
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
 
-* Also note that the latest version of this branch tested with OceanWATERS is tagged `OceanWATERS-v7.1`. 
-
 ### GSAP
 
 The OceanWATERS distribution includes a power system  module (`ow_power_system`) that at present
@@ -129,8 +137,8 @@ git clone --branch v1.0-OW https://github.com/nasa/GSAP.git gsap
 
 The git branch used is v1.0-OW, which is the latest stable version of GSAP for use with OceanWATERS.
 Please note that this is not the default branch for GSAP and the two may differ.
-This implementation strategy is required to utilize essential functionality developed after the most 
-recent offical release of GSAP and to prevent compatibility issues that may arise due to continuing 
+This implementation strategy is required to utilize essential functionality developed after the most
+recent offical release of GSAP and to prevent compatibility issues that may arise due to continuing
 updates made within the GSAP framework. The latest stable version of GSAP for use with OceanWATERS will
 be updated as necessary and will revert to the default branch of GSAP pending its next scheduled release.
 
@@ -153,12 +161,11 @@ cmake ..
 make
 ```
 
-NOTE: Configuration files can be used to tune the prognostics algorithm and/or adjust the prognostics model used to perform calculations.
-An example configuration file can be found at:
-```
-ow_power_system/config/example.cfg
-```
-Additional information about mapping configuration files and modifying their contents can be found [here](https://github.com/nasa/GSAP/wiki/Getting-Started).
+NOTE: Configuration files can be used to tune the prognostics algorithm and/or
+adjust the prognostics model used to perform calculations.  An example
+configuration file can be found at: ``` ow_power_system/config/example.cfg ```
+Additional information about mapping configuration files and modifying their
+contents can be found [here](https://github.com/nasa/GSAP/wiki/Getting-Started).
 
 * If you have problems, see additional build information
 [here](https://github.com/nasa/GSAP/wiki).
@@ -202,7 +209,9 @@ sudo apt-get upgrade
 
 ### Additional Packages
 
-* In addition to the above, OceanWATERS requires the following list of packages:
+* In addition to the above, OceanWATERS requires packages listed in the
+  following installation command.
+
 ```
 sudo apt install git \
                  python-wstool \
