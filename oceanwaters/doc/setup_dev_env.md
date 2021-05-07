@@ -230,6 +230,7 @@ sudo apt install git \
                  ros-melodic-cmake-modules \
                  ros-melodic-stereo-msgs \
                  ros-melodic-stereo-image-proc \
+                 ros-melodic-kdl-parser-py \
                  libgtk2.0-dev \
                  libglew-dev
 ```
