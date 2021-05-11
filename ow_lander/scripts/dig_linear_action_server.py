@@ -104,7 +104,8 @@ class DigLinearActionServer(object):
             self._server.set_succeeded(self._result)
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
-    
+            self._server.set_succeeded(self._result)
+
 if __name__ == '__main__':
     rospy.init_node('DigLinear')
     server = DigLinearActionServer(rospy.get_name())
