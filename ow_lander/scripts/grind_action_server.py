@@ -120,6 +120,10 @@ class GrindActionServer(object):
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
+            switch_success = self.switch_controllers('arm_controller','grinder_controller')
+            if not switch_success:
+                return False, "Failed Switching Controllers"
+            rospy.loginfo('%s: Succeeded' % self._action_name)
 
     
 if __name__ == '__main__':
