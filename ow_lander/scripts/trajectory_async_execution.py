@@ -76,7 +76,8 @@ class TrajectoryAsyncExecuter:
       rospy.logwarn_throttle(
           1, "TrajectoryAsyncExecuter: Client failed to connect to the action server .. nothing will be executed!")
       return False
-
+    if self.arm_fault:
+      return False
     goal = FollowJointTrajectoryGoal()
     goal.goal_time_tolerance = self._goal_time_tolerance
     goal.trajectory = trajectory
