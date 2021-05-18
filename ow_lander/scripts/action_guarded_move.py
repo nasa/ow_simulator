@@ -65,7 +65,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   joint_goal[constants.J_SCOOP_YAW] = 0
   
   plan_a = move_arm.plan(joint_goal)
-
+  if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+    return False
   
   # Once aligned to move goal and offset, place scoop tip at surface target offset
   cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
