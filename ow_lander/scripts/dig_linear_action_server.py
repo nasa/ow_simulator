@@ -66,16 +66,22 @@ class DigLinearActionServer(object):
         self.current_traj  = action_dig_linear.dig_linear(self._interface.move_arm,
                                                           self._interface.robot,  
                                                           self._interface.moveit_fk, goal)
-        #plan = self._interface.move_arm.plan(goal)
-        n_points = len(self.current_traj.joint_trajectory.points)
-        start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
-        end_time = self.current_traj.joint_trajectory.points[n_points-1].time_from_start
-        self._timeout = end_time -start_time
+        if self.current_traj == False: 
+            return 
+        else:
+            n_points = len(self.current_traj.joint_trajectory.points)
+            start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
+            end_time =      self.current_traj.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout =  (end_time -start_time)
         
 
         
     def on_DigLinear_action(self,goal):
         plan = self._update_motion(goal)
+        if self.current_traj == False: 
+            self._server.set_aborted(self._result)
+            return 
+        
         success = False
 
         self.trajectory_async_executer.execute(self.current_traj.joint_trajectory,
