@@ -110,9 +110,8 @@ rossrv show -r foo
 
 ## MoveIt Setup Assistant
 The moveit setup assistant can now be easily launched using the command:
-* Unstow
 ```bash
-python unstow_action_client.py
+roslaunch ow_lander setup_assistant.launch
 ```
 
 Once the assistant is launched call the **Load Files** to load the current configuration.
@@ -127,9 +126,26 @@ There are various reasons why you may need to re-run the setup assistant:
 
 ## ROS Actions
 All the motion planning services have been converted into ROS Actions. With ROS actions we can dynamically interact with the arm while performing any of the above mentioned tasks and also receive real-time feedback about the end effector's position. 
-
 ```bash
-rosservice call /arm/unstow "{}"
+python unstow_action_client.py
+```
+```bash
+python guarded_move_action_client.py
+```
+```bash
+python grind_action_client.py
+```
+```bash
+python dig_circular_action_client.py
+```
+```bash
+python dig_linear_action_client.py
+```
+```bash
+python deliver_action_client.py
+```
+```bash
+python stow_action_client.py
 ```
 ## Misc Information
 
