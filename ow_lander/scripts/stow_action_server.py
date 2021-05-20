@@ -54,19 +54,27 @@ class UnstowActionServer(object):
         
         
     def _update_motion(self):
-        print("Stow arm activity started")
+
+        print("Unstow arm activity started")
+        goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_stowed")
         plan = self._interface.move_arm.plan(goal)
-        n_points = len(plan.joint_trajectory.points)
-        start_time =   plan.joint_trajectory.points[0].time_from_start
-        end_time = plan.joint_trajectory.points[n_points-1].time_from_start
-        self._timeout = end_time -start_time
-        return plan
+        if len(plan.joint_trajectory.points) < 1: 
+            return 
+        else:
+            n_points = len(plan.joint_trajectory.points)
+            start_time =   plan.joint_trajectory.points[0].time_from_start
+            end_time = plan.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout = end_time -start_time
+            return plan
         
 
         
     def on_unstow_action(self,goal):
         plan = self._update_motion()
+        if plan is None: 
+            self._server.set_aborted(self._result)
+            return 
         success = False
 
         self.trajectory_async_executer.execute(plan.joint_trajectory,

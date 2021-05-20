@@ -167,6 +167,8 @@ def dig_linear(move_arm, robot, moveit_fk, args):
   
   plan_a= move_to_pre_trench_configuration(
       move_arm, robot, x_start, y_start)
+  if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+    return False
 
   cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
   #################### Rotate hand yaw to dig in#################################
