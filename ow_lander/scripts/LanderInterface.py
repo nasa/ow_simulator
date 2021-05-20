@@ -47,7 +47,7 @@ class MoveItInterface(object):
     rospy.wait_for_service('compute_fk')
     try:
       self.moveit_fk = rospy.ServiceProxy('compute_fk', GetPositionFK)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
       rospy.logerror("Service call failed: %s"%e)
     
 class LinkStateSubscriber:
