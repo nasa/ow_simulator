@@ -16,7 +16,11 @@ public:
   void Run();
 
 private:
+  bool loadSystemConfig();
   std::vector<std::map<MessageId, Datum<double>>> loadPowerProfile(const std::string& filename);
+  bool loadFaultPowerProfiles();
+  bool initPrognoser();
+  bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
@@ -70,6 +74,12 @@ private:
   bool m_thermal_power_failure_activated = false;
   std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_thermal_power_failure_sequence;
   size_t m_thermal_power_failure_sequence_index = 0;
+
+  double m_power_node_processing_rate = 0.5;   // [Hz] hard code processing rate for now 
+  bool m_processing_power_batch = false;        // flag that indicates that the prognoser is handling current batch
+  bool m_trigger_processing_new_power_batch = false;
+  double m_unprocessed_mechanical_power = 0.0;
+  double m_mechanical_power_to_be_processed = 0.0;
 };
 
 #endif

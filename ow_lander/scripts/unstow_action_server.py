@@ -96,6 +96,8 @@ class UnstowActionServer(object):
             self._server.set_succeeded(self._result)
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
+            self._server.set_aborted(self._result)
+
 
 if __name__ == '__main__':
     rospy.init_node('Unstow')
