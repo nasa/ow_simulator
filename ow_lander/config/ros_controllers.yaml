@@ -90,7 +90,7 @@ arm_controller:
   stop_trajectory_duration: &traj_stop_duration 0.5
   gains:
     j_shou_yaw: 
-      p: &j_shou_yaw_p 9000.0
+      p: &j_shou_yaw_p 8300.0
       d: &j_shou_yaw_d 300.0
       i: &j_shou_yaw_i 10.0
       i_clamp: &ki_clamp_default 2
@@ -105,13 +105,13 @@ arm_controller:
       i: &j_prox_pitch_i 2.0
       i_clamp: 1
     j_dist_pitch:
-      p: &j_dist_pitch_p 1400.0
+      p: &j_dist_pitch_p 2000.0
       d: &j_dist_pitch_d 20.0
       i: &j_dist_pitch_i 0.06
       i_clamp: 1
     j_hand_yaw:
-      p: &j_hand_yaw_p 200.0
-      d: &j_hand_yaw_d 10.0
+      p: &j_hand_yaw_p 1000.0
+      d: &j_hand_yaw_d 60.0
       i: &j_hand_yaw_i 0.01
       i_clamp: 1
     j_scoop_yaw:
