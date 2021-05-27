@@ -123,6 +123,16 @@ make universalExec plexil-compiler checkpoint
 OceanWATERS.  Additional build information is available
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
 
+* Rebuiding PLEXIL.
+
+At a later date, if you update (e.g. `git pull`) your PLEXIL installation, it is
+safest to rebuild it from scratch:
+```
+cd $PLEXIL_HOME
+make squeaky-clean
+make universalExec plexil-compiler checkpoint
+```
+
 ### GSAP
 
 The OceanWATERS distribution includes a power system  module (`ow_power_system`) that at present

@@ -179,7 +179,8 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   if not parallel:
      
     plan_a= move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start) 
-    
+    if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+      return False
     # Once aligned to move goal and offset, place scoop tip at surface target offset
     
     cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
@@ -219,7 +220,9 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   else:
       
     plan_a= action_dig_linear.move_to_pre_trench_configuration(
-      move_arm, robot, x_start, y_start)  
+      move_arm, robot, x_start, y_start) 
+    if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+      return False
     # Rotate hand so scoop is in middle point
     cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
     plan_b = action_dig_linear.change_joint_value(move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)

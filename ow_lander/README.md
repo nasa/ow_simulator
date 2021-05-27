@@ -124,8 +124,38 @@ There are various reasons why you may need to re-run the setup assistant:
  joints or their types.
 * Define new arm/antenna poses or revise existing ones.
 
+## ROS Actions
+All the motion planning services have been converted into ROS Actions. With ROS actions we can dynamically interact with the arm while performing any of the above mentioned tasks and also receive real-time feedback about the end effector's position.
 
+A series if ROS Action client files have been added to the scripts folder 
 
+```bash
+cd ow_simulator/ow_lander/scripts
+```
+
+Each individual arm action can be invoked using the cleint scripts. 
+
+```bash
+python unstow_action_client.py
+```
+```bash
+python guarded_move_action_client.py
+```
+```bash
+python grind_action_client.py
+```
+```bash
+python dig_circular_action_client.py
+```
+```bash
+python dig_linear_action_client.py
+```
+```bash
+python deliver_action_client.py
+```
+```bash
+python stow_action_client.py
+```
 ## Misc Information
 
 ### Common Code
@@ -144,3 +174,5 @@ edits. Refer to PR: [Oceanwater 518 switch to using effort controllers joint tra
 * A force torque (FT) sensor was added to the arm on the distal pitch joint. For more information
 refer to the the following PRs [Oceanwater 614 implement a force torque sensor for the lander arm](https://github.com/nasa/ow_simulator/pull/95) and refer to the 
 related wiki page [Lander Simulation / Force Torque Sensor](https://github.com/nasa/ow_simulator/wiki/Lander-Simulation#force-torque-sensor) 
+
+* ROS Action support was added to the package. For more information refer to [Oceanwater 534 implement current arm services as rosaction](https://github.com/nasa/ow_simulator/pull/66)

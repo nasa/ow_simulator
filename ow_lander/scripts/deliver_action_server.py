@@ -60,14 +60,19 @@ class DeliverActionServer(object):
         self.deliver_sample_traj = action_deliver_sample.deliver_sample(self._interface.move_arm,
                                              self._interface.robot, 
                                              self._interface.moveit_fk, goal)
-        #plan = self._interface.move_arm.plan(goal)
-        n_points = len(self.deliver_sample_traj.joint_trajectory.points)
-        start_time =   self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
-        end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
-        self._timeout = end_time -start_time
+        if self.deliver_sample_traj == False: 
+            return 
+        else:
+            n_points = len(self.deliver_sample_traj.joint_trajectory.points)
+            start_time =   self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
+            end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout = end_time -start_time
         
     def on_deliver_action(self,goal):
         plan = self._update_motion(goal)
+        if self.deliver_sample_traj == False: 
+            self._server.set_aborted(self._result)
+            return 
         success = False
 
         self.trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,

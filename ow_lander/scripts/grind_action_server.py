@@ -64,7 +64,7 @@ class GrindActionServer(object):
           '/controller_manager/switch_controller', SwitchController)
           success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
           print("switch_controllers error: %s" % e)
         finally:
           # This sleep is a workaround for "start point deviates from current robot
@@ -78,15 +78,21 @@ class GrindActionServer(object):
         self.current_traj  = action_grind.grind(self._interface.move_grinder,
                                                 self._interface.robot, 
                                                 self._interface.moveit_fk, goal)
-        n_points = len(self.current_traj.joint_trajectory.points)
-        start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
-        end_time = self.current_traj.joint_trajectory.points[n_points-1].time_from_start
-        self._timeout =  (end_time -start_time)
+        if self.current_traj == False: 
+            return 
+        else:
+            n_points = len(self.current_traj.joint_trajectory.points)
+            start_time =   self.current_traj.joint_trajectory.points[0].time_from_start
+            end_time =      self.current_traj.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout =  (end_time -start_time)
         
 
         
     def on_Grind_action(self,goal):
         plan = self._update_motion(goal)
+        if self.current_traj == False: 
+            self._server.set_aborted(self._result)
+            return 
         success = False
         switch_success = self.switch_controllers('grinder_controller', 'arm_controller')
         if not switch_success:
@@ -120,6 +126,10 @@ class GrindActionServer(object):
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
+            switch_success = self.switch_controllers('arm_controller','grinder_controller')
+            if not switch_success:
+                return False, "Failed Switching Controllers"
+            rospy.loginfo('%s: Succeeded' % self._action_name)
 
     
 if __name__ == '__main__':

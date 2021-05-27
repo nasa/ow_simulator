@@ -76,7 +76,7 @@ def publish_image(args):
                 rospy.loginfo("modify_terrain_patch message sent")
                 break
             time.sleep(0.1)
-    except rospy.ROSInterruptException, e:
+    except rospy.ROSInterruptException as e:
         raise e
 
 
