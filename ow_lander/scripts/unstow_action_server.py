@@ -58,7 +58,7 @@ class UnstowActionServer(object):
         print("Unstow arm activity started")
         goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        plan = self._interface.move_arm.plan(goal)
+        success, plan, planning_time, error_code = self._interface.move_arm.plan(goal)
         if len(plan.joint_trajectory.points) < 1: 
             return 
         else:
