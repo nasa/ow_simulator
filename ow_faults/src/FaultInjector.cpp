@@ -95,16 +95,6 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
-  std_msgs::Float64 out_msg;
-
-  if (!(encoder || torque)) {
-    m_faultValue = msg.data;
-  }
-  out_msg.data = m_faultValue;
-  m_publisher.publish(out_msg);
-}
-
 void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::CamFaults camera_faults_msg;
@@ -121,9 +111,26 @@ void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
   m_system_fault_jpl_msg_pub.publish(system_faults_msg);
 }
 
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
+  std_msgs::Float64 out_msg;
+  ow_faults::PTFaults pt_faults_msg;
+
+  if (!(encoder || torque)) {
+    m_faultValue = msg.data;
+  } 
+  out_msg.data = m_faultValue;
+  m_publisher.publish(out_msg);
+
+  if (m_ant_fault) {
+    setComponentFaultsMessage(pt_faults_msg, ComponentFaults::Hardware);
+  }
+  m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
+}
+
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
+  checkAntFaults();
   publishAntennaeFaults(msg,
                         m_faults.ant_pan_encoder_failure,
                         m_faults.ant_pan_effort_failure,
@@ -131,6 +138,7 @@ void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
 }
 
 void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
+  checkAntFaults();
   publishAntennaeFaults(msg,
                         m_faults.ant_tilt_encoder_failure,
                         m_faults.ant_tilt_effort_failure,
@@ -193,7 +201,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
-  ow_faults::PTFaults pt_faults_msg;
 
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
   std::bitset<10> systemFaultsBitmask{};
@@ -220,7 +227,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   if (m_ant_fault){
     systemFaultsBitmask |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   }
 
   //arm faults
@@ -278,7 +284,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // m_system_fault_jpl_msg_pub.publish(system_faults_msg);
 
   m_arm_fault_jpl_msg_pub.publish(arm_faults_msg);
-  m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
+  // m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
