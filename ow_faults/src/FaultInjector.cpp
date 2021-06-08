@@ -38,7 +38,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+  m_antenna_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
   m_camera_fault_jpl_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
@@ -57,11 +57,11 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
                                               3,
-                                              &FaultInjector::antennaePanFaultCb,
+                                              &FaultInjector::antennaPanFaultCb,
                                               this);
   m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
                                               3,
-                                              &FaultInjector::antennaeTiltFaultCb,
+                                              &FaultInjector::antennaTiltFaultCb,
                                               this);
 
   srand (static_cast <unsigned> (time(0)));
@@ -122,14 +122,14 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
-void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
+void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg,
                         m_faults.ant_pan_encoder_failure,
                         m_faults.ant_pan_effort_failure,
                         m_fault_pan_value, m_fault_ant_pan_remapped_pub );
 }
 
-void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
+void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
   publishAntennaeFaults(msg,
                         m_faults.ant_tilt_encoder_failure,
                         m_faults.ant_tilt_effort_failure,
@@ -278,7 +278,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   publishSystemFaultsMessage();
 
   m_arm_fault_jpl_msg_pub.publish(arm_faults_msg);
-  m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
+  m_antenna_fault_jpl_msg_pub.publish(pt_faults_msg);
 }
 
 void FaultInjector::publishSystemFaultsMessage(){
