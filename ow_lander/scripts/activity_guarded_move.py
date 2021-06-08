@@ -85,7 +85,7 @@ def pre_guarded_move(move_arm, args):
   goal_pose.position.y = targ_y
   goal_pose.position.z = targ_z
   move_arm.set_pose_target(goal_pose)
-  success, plan, planning_time, error_code = move_arm.plan()
+  _, plan, _, _ = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
