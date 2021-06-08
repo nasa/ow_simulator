@@ -80,6 +80,8 @@ public:
 private:
   
   ////////// functions
+  void publishSystemFaultsMessage();
+
   //Arm functions
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
@@ -155,7 +157,7 @@ private:
 
   ////////// vars
   //system
-  std::bitset<10> m_system_faults_bitset;
+  std::bitset<10> m_system_faults_bitset{};
 
   //general component faults
   bool m_arm_fault;

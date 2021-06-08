@@ -95,18 +95,7 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
-  std_msgs::Float64 out_msg;
-
-  if (!(encoder || torque)) {
-    m_faultValue = msg.data;
-  }
-  out_msg.data = m_faultValue;
-  m_publisher.publish(out_msg);
-}
-
 void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
-  ow_faults::SystemFaults system_faults_msg;
   ow_faults::CamFaults camera_faults_msg;
 
   if (m_faults.camera_left_trigger_failure) {// if fault
@@ -115,10 +104,20 @@ void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
   } else { //no fault
     std_msgs::Empty msg;
     m_camera_trigger_remapped_pub.publish(msg);
+    m_system_faults_bitset &= ~isCamExecutionError;
   }
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  // publishSystemFaultsMessage();
   m_camera_fault_jpl_msg_pub.publish(camera_faults_msg);
-  m_system_fault_jpl_msg_pub.publish(system_faults_msg);
+}
+
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
+  std_msgs::Float64 out_msg;
+
+  if (!(encoder || torque)) {
+    m_faultValue = msg.data;
+  }
+  out_msg.data = m_faultValue;
+  m_publisher.publish(out_msg);
 }
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
@@ -143,19 +142,17 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
 
 void FaultInjector::publishPowerSystemFault(){
   ow_faults::PowerFaults power_faults_msg;
-  ow_faults::SystemFaults system_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
     m_system_faults_bitset |= isPowerSystemFault;
     //power
     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isPowerSystemFault;
   }
-  //publish
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_jpl_msg_pub.publish(system_faults_msg);
+  publishSystemFaultsMessage();
   m_power_fault_jpl_msg_pub.publish(power_faults_msg);
-
 }
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
@@ -196,7 +193,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   ow_faults::PTFaults pt_faults_msg;
 
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
-  std::bitset<10> systemFaultsBitmask{};
 
   // Set failed sensor values to 0
   unsigned int index;
@@ -219,8 +215,10 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   if (m_ant_fault){
-    systemFaultsBitmask |= isPanTiltExecutionError;
+    m_system_faults_bitset |= isPanTiltExecutionError;
     setComponentFaultsMessage(pt_faults_msg, hardwareFault);
+  } else {
+    m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
 
   //arm faults
@@ -267,18 +265,26 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   if (m_arm_fault) {
-    systemFaultsBitmask |= isArmExecutionError;
+    m_system_faults_bitset |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg, hardwareFault);
+  } else {
+    m_system_faults_bitset &= ~isArmExecutionError;
   }
 
-  setBitsetFaultsMessage(system_faults_msg, systemFaultsBitmask);
-  m_system_faults_bitset = systemFaultsBitmask;
+  if (!m_faults.camera_left_trigger_failure) {// if fault
+    m_system_faults_bitset &= ~isCamExecutionError;
+  }
   m_joint_state_pub.publish(output);
-  // MD: don't publish here, because power faults are not included.
-  // m_system_fault_jpl_msg_pub.publish(system_faults_msg);
+  publishSystemFaultsMessage();
 
   m_arm_fault_jpl_msg_pub.publish(arm_faults_msg);
   m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
+}
+
+void FaultInjector::publishSystemFaultsMessage(){
+  ow_faults::SystemFaults system_faults_msg;
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  m_system_fault_jpl_msg_pub.publish(system_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
