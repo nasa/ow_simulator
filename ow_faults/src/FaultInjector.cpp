@@ -8,6 +8,7 @@
 using namespace std;
 using namespace ow_lander;
 
+constexpr std::bitset<10> FaultInjector::isCamExecutionError;
 constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
 constexpr std::bitset<10> FaultInjector::isArmExecutionError;
 constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
@@ -29,15 +30,19 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
+  m_camera_trigger_sub = node_handle.subscribe("/_original/StereoCamera/left/image_trigger",
+    10, &FaultInjector::cameraTriggerCb, this);
+  m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>("/StereoCamera/left/image_trigger", 10);
 
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
-  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
   m_antennae_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+  m_arm_fault_jpl_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
+  m_camera_fault_jpl_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_jpl_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_jpl_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
@@ -100,6 +105,22 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
   m_publisher.publish(out_msg);
 }
 
+void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
+  ow_faults::SystemFaults system_faults_msg;
+  ow_faults::CamFaults camera_faults_msg;
+
+  if (m_faults.camera_left_trigger_failure) {// if fault
+    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+    m_system_faults_bitset |= isCamExecutionError;
+  } else { //no fault
+    std_msgs::Empty msg;
+    m_camera_trigger_remapped_pub.publish(msg);
+  }
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  m_camera_fault_jpl_msg_pub.publish(camera_faults_msg);
+  m_system_fault_jpl_msg_pub.publish(system_faults_msg);
+}
+
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
 void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
@@ -141,7 +162,6 @@ void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   m_temperature_fault = msg.data > THERMAL_MAX;
   publishPowerSystemFault();
-
 }
 
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
