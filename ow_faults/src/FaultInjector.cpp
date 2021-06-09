@@ -112,16 +112,6 @@ void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
   std_msgs::Float64 out_msg;
-
-  if (!(encoder || torque)) {
-    m_faultValue = msg.data;
-  }
-  out_msg.data = m_faultValue;
-  m_publisher.publish(out_msg);
-}
-
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
-  std_msgs::Float64 out_msg;
   ow_faults::PTFaults pt_faults_msg;
 
   if (!(encoder || torque)) {
@@ -138,7 +128,7 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
-void FaultInjector::antennaePanFaultCb(const std_msgs::Float64& msg){
+void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
   checkAntFaults();
   publishAntennaeFaults(msg,
                         m_faults.ant_pan_encoder_failure,
@@ -233,7 +223,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   if (m_ant_fault){
     m_system_faults_bitset |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
+    // setComponentFaultsMessage(pt_faults_msg, hardwareFault);
   } else {
     m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
