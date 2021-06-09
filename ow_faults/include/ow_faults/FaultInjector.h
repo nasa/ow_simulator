@@ -80,6 +80,8 @@ public:
 private:
   
   ////////// functions
+  void publishSystemFaultsMessage();
+
   //Arm functions
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
@@ -105,8 +107,8 @@ private:
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
   // Antennae functions
-  void antennaePanFaultCb(const std_msgs::Float64& msg);
-  void antennaeTiltFaultCb(const std_msgs::Float64& msg);
+  void antennaPanFaultCb(const std_msgs::Float64& msg);
+  void antennaTiltFaultCb(const std_msgs::Float64& msg);
   void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
                              bool torque, float& m_faultValue, ros::Publisher& m_publisher);
 
@@ -147,7 +149,7 @@ private:
   ros::Publisher m_fault_ant_tilt_remapped_pub;
 
   // jpl message publishers
-  ros::Publisher m_antennae_fault_jpl_msg_pub;
+  ros::Publisher m_antenna_fault_jpl_msg_pub;
   ros::Publisher m_arm_fault_jpl_msg_pub;
   ros::Publisher m_camera_fault_jpl_msg_pub;
   ros::Publisher m_power_fault_jpl_msg_pub;
@@ -155,7 +157,7 @@ private:
 
   ////////// vars
   //system
-  std::bitset<10> m_system_faults_bitset;
+  std::bitset<10> m_system_faults_bitset{};
 
   //general component faults
   bool m_arm_fault;
