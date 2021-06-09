@@ -122,8 +122,11 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
 
   if (m_ant_fault) {
     setComponentFaultsMessage(pt_faults_msg, ComponentFaults::Hardware);
+    m_system_faults_bitset |= isPanTiltExecutionError;
+  } else {
+    m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
-  m_antennae_fault_jpl_msg_pub.publish(pt_faults_msg);
+  m_antenna_fault_jpl_msg_pub.publish(pt_faults_msg);
 }
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
@@ -136,7 +139,7 @@ void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
                         m_fault_pan_value, m_fault_ant_pan_remapped_pub );
 }
 
-void FaultInjector::antennaeTiltFaultCb(const std_msgs::Float64& msg){
+void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
   checkAntFaults();
   publishAntennaeFaults(msg,
                         m_faults.ant_tilt_encoder_failure,
@@ -221,10 +224,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  if (m_ant_fault){
-    m_system_faults_bitset |= isPanTiltExecutionError;
-    // setComponentFaultsMessage(pt_faults_msg, hardwareFault);
-  } else {
+  if (!m_ant_fault){
     m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
 
@@ -278,15 +278,13 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     m_system_faults_bitset &= ~isArmExecutionError;
   }
 
-  if (!m_faults.camera_left_trigger_failure) {// if fault
+  if (!m_faults.camera_left_trigger_failure) {
     m_system_faults_bitset &= ~isCamExecutionError;
   }
   m_joint_state_pub.publish(output);
   publishSystemFaultsMessage();
 
   m_arm_fault_jpl_msg_pub.publish(arm_faults_msg);
-
-  //m_antenna_fault_jpl_msg_pub.publish(pt_faults_msg);
 }
 
 void FaultInjector::publishSystemFaultsMessage(){
