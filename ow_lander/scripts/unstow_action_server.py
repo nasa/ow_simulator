@@ -56,7 +56,6 @@ class UnstowActionServer(object):
     def _update_motion(self):
 
         print("Unstow arm activity started")
-        goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
         self._interface.move_arm.set_joint_value_target(goal)
         _, plan, _, _ = self._interface.move_arm.plan()
