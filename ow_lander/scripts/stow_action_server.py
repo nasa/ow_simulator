@@ -24,7 +24,7 @@ from trajectory_async_execution import TrajectoryAsyncExecuter
 
 
 
-class UnstowActionServer(object):
+class StowActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
@@ -55,10 +55,10 @@ class UnstowActionServer(object):
         
     def _update_motion(self):
 
-        print("Unstow arm activity started")
-        goal = self._interface.move_arm.get_current_pose().pose
+        print("Stow arm activity started")
         goal = self._interface.move_arm.get_named_target_values("arm_stowed")
-        plan = self._interface.move_arm.plan(goal)
+        self._interface.move_arm.set_joint_value_target(goal)
+        _, plan, _, _ = self._interface.move_arm.plan()
         if len(plan.joint_trajectory.points) < 1: 
             return 
         else:
@@ -107,7 +107,7 @@ class UnstowActionServer(object):
 
 if __name__ == '__main__':
     rospy.init_node('Stow')
-    server = UnstowActionServer(rospy.get_name())
+    server = StowActionServer(rospy.get_name())
     rospy.spin()
         
   
