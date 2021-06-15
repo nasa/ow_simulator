@@ -11,11 +11,13 @@
 #include <ros/ros.h>
 #include <cstdint>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Empty.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
 #include "ow_faults/PowerFaults.h"
 #include "ow_faults/PTFaults.h"
+#include "ow_faults/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -78,6 +80,8 @@ public:
 private:
   
   ////////// functions
+  void publishSystemFaultsMessage();
+
   //Arm functions
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
@@ -93,6 +97,9 @@ private:
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
+  //camera function
+  void cameraTriggerCb(const std_msgs::Empty& msg);
+
   // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
   void publishPowerSystemFault();
@@ -100,8 +107,8 @@ private:
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
   // Antennae functions
-  void antennaePanFaultCb(const std_msgs::Float64& msg);
-  void antennaeTiltFaultCb(const std_msgs::Float64& msg);
+  void antennaPanFaultCb(const std_msgs::Float64& msg);
+  void antennaTiltFaultCb(const std_msgs::Float64& msg);
   void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
                              bool torque, float& m_faultValue, ros::Publisher& m_publisher);
 
@@ -131,6 +138,10 @@ private:
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
   ros::Publisher m_dist_pitch_ft_sensor_pub;
 
+  // camera
+  ros::Subscriber m_camera_trigger_sub;
+  ros::Publisher m_camera_trigger_remapped_pub;
+
   //antenna 
   ros::Subscriber m_fault_ant_pan_sub;
   ros::Subscriber m_fault_ant_tilt_sub;
@@ -138,14 +149,15 @@ private:
   ros::Publisher m_fault_ant_tilt_remapped_pub;
 
   // jpl message publishers
-  ros::Publisher m_system_fault_jpl_msg_pub;
-  ros::Publisher m_arm_fault_jpl_msg_pub;
-  ros::Publisher m_power_fault_jpl_msg_pub;
-  ros::Publisher m_antennae_fault_jpl_msg_pub;
+  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
 
   ////////// vars
   //system
-  std::bitset<10> m_system_faults_bitset;
+  std::bitset<10> m_system_faults_bitset{};
 
   //general component faults
   bool m_arm_fault;
