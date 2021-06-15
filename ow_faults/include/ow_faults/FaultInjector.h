@@ -123,6 +123,7 @@ private:
   //checking rqt faults
   void checkArmFaults();
   void checkAntFaults();
+  void checkCamFaults();
 
   ///////publishers and subsscribers
   // arm faults
@@ -162,6 +163,7 @@ private:
   //general component faults
   bool m_arm_fault;
   bool m_ant_fault;
+  bool m_cam_fault = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
 
