@@ -149,11 +149,11 @@ private:
   ros::Publisher m_fault_ant_tilt_remapped_pub;
 
   // jpl message publishers
-  ros::Publisher m_antenna_fault_jpl_msg_pub;
-  ros::Publisher m_arm_fault_jpl_msg_pub;
-  ros::Publisher m_camera_fault_jpl_msg_pub;
-  ros::Publisher m_power_fault_jpl_msg_pub;
-  ros::Publisher m_system_fault_jpl_msg_pub;
+  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
 
   ////////// vars
   //system
