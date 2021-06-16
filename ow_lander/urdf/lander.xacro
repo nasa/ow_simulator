@@ -579,6 +579,24 @@
           <box size="0.06234 0.0818 0.002"/>
       </geometry>
     </collision>
+    <!-- scoop wide tip -->
+    <collision>
+      <origin 
+        xyz="0.090908 0 0.079513"
+        rpy="0 -0.254542712 0" />
+      <geometry>
+          <box size="0.008122 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop wide tip -->
+    <collision>
+      <origin 
+        xyz="0.092572 0 0.079946"
+        rpy="0 -0.254542712 0" />
+      <geometry>
+          <box size="0.01156 0.04346 0.001"/>
+      </geometry>
+    </collision>
   </link>
   <gazebo reference="l_scoop">
     <visual>
