@@ -504,6 +504,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+
   <link name="l_scoop">
     <inertial>
       <origin
@@ -533,13 +534,49 @@
           rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
       </material>
     </visual>
+    <!-- scoop bottom -->
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin 
+        xyz="0.030115 0 0.076505"
+        rpy="0 -0.0349040838 0" />
       <geometry>
-        <mesh
-          filename="package://ow_lander/meshes/l_scoop.STL" />
+          <box size="0.1273 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop backing (flat) -->
+    <collision>
+      <origin 
+        xyz="-0.032195 0 0.036854"
+        rpy="0 -1.60570041059 0" />
+      <geometry>
+          <box size="0.0749 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop left sidewall -->
+    <collision>
+      <origin 
+        xyz="0.025676 -0.0409 0.038875"
+        rpy="1.5708 -0.0349040838 0" />
+      <geometry>
+          <box size="0.1158 0.0749 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop right sidewall -->
+    <collision>
+      <origin 
+        xyz="0.025676 0.0409 0.038875"
+        rpy="1.5708 -0.0349040838 0" />
+      <geometry>
+          <box size="0.1158 0.0749 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop top -->
+    <collision>
+      <origin 
+        xyz="0.000264 0 0.000512"
+        rpy="0 -0.0349040838 0" />
+      <geometry>
+          <box size="0.06234 0.0818 0.002"/>
       </geometry>
     </collision>
   </link>
