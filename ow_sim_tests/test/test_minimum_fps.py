@@ -10,7 +10,7 @@ import unittest
 import time
 from std_msgs.msg import Float32
 
-PKG = 'ow_fps_monitor'
+PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
 
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_fps_monitor)
+project(ow_sim_tests)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -136,16 +136,16 @@ catkin_package(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-add_library(${PROJECT_NAME}
+add_library(ow_fps_monitor
   src/fps_monitor.cpp
 )
 
-add_dependencies(${PROJECT_NAME}
+add_dependencies(ow_fps_monitor
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(ow_fps_monitor
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
 )
@@ -166,7 +166,7 @@ target_link_libraries(${PROJECT_NAME}
 
 ## Mark executables and/or libraries for installation
 install(TARGETS
-  ${PROJECT_NAME}
+  ow_fps_monitor
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
