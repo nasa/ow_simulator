@@ -269,8 +269,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if (m_cam_fault){
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, hardwareFault);
-  }
-  else {
+  } else {
     m_system_faults_bitset &= ~isCamExecutionError;
   }
 
