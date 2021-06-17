@@ -97,18 +97,10 @@ void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 }
 
 void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
-  ow_faults::CamFaults camera_faults_msg;
-
-  if (m_faults.camera_left_trigger_failure) {// if fault
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
-    m_system_faults_bitset |= isCamExecutionError;
-  } else { //no fault
+  if (!m_cam_fault) {// if no fault
     std_msgs::Empty msg;
     m_camera_trigger_remapped_pub.publish(msg);
-    m_system_faults_bitset &= ~isCamExecutionError;
   }
-  // publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
@@ -192,6 +184,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
   ow_faults::PTFaults pt_faults_msg;
+  ow_faults::CamFaults camera_faults_msg;
 
   ComponentFaults hardwareFault =  ComponentFaults::Hardware;
 
@@ -200,6 +193,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   checkArmFaults();
   checkAntFaults();
+  checkCamFaults();
 
   //pant tilt faults
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
@@ -272,14 +266,19 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     m_system_faults_bitset &= ~isArmExecutionError;
   }
 
-  if (!m_faults.camera_left_trigger_failure) {// if fault
+  if (m_cam_fault){
+    m_system_faults_bitset |= isCamExecutionError;
+    setComponentFaultsMessage(camera_faults_msg, hardwareFault);
+  } else {
     m_system_faults_bitset &= ~isCamExecutionError;
   }
+
   m_joint_state_pub.publish(output);
   publishSystemFaultsMessage();
 
   m_arm_fault_msg_pub.publish(arm_faults_msg);
   m_antenna_fault_msg_pub.publish(pt_faults_msg);
+  m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 void FaultInjector::publishSystemFaultsMessage(){
@@ -329,6 +328,10 @@ void FaultInjector::checkArmFaults(){
 void FaultInjector::checkAntFaults(){
   m_ant_fault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure ||
                 m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
+}
+
+void FaultInjector::checkCamFaults(){
+  m_cam_fault = m_faults.camera_left_trigger_failure ;
 }
 
 template<typename group_t, typename item_t>
