@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
+    <arg name="world_name" default="$(find ow_europa)/worlds/atacama_y1a.world"/>
     <arg name="gzclient" default="true"/>
 
     <!-- Initial pose arguments -->
