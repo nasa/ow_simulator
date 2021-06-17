@@ -533,7 +533,7 @@
           rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
       </material>
     </visual>
-    <collision>
+    <!--collision>
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
@@ -541,7 +541,7 @@
         <mesh
           filename="package://ow_lander/meshes/l_scoop.STL" />
       </geometry>
-    </collision>
+    </collision-->
   </link>
   <gazebo reference="l_scoop">
     <visual>
@@ -639,7 +639,7 @@
          rgba="0.6 0.6 0.6 1" />
      </material>
     </visual>
-    <collision>
+    <!--collision>
       <origin
         xyz="0.08 0 0"
         rpy="1.57 1.57 1.57" />
@@ -678,7 +678,7 @@
       <geometry>
         <cylinder radius="0.075" length="0.01"/>
       </geometry>
-    </collision>
+    </collision-->
   </link>
   <gazebo reference="l_grinder">
     <visual>
@@ -692,17 +692,17 @@
       </plugin>
     </visual>
     <selfCollide>1</selfCollide>
-    <collision>
+    <!--collision>
       <surface>
         <contact>
-          <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
+          <collide_bitmask>0x0001</collide_bitmask> <Enable collision with the terrain by matching the bitmask>
           <ode>
             <kp>1e+10</kp>
             <kd>1e+10</kd>
           </ode>
         </contact>
       </surface>
-    </collision>
+    </collision-->
   </gazebo>
   <joint 
     name="j_grinder" 
