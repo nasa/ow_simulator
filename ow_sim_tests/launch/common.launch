@@ -1,67 +1,105 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="world_name" default="$(find ow_europa)/worlds/atacama_y1a.world"/>
-    <arg name="gzclient" default="true"/>
+  <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
+  <arg name="arm_sim_enable" default="false" />
+  <arg name="gazebo" default="true"/>
+  <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states" />
+  <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
+  <arg name="record_bag" default="false"/>
 
-    <!-- Initial pose arguments -->
-    <arg name="init_x" default="0" />
-    <arg name="init_y" default="0" />
-    <arg name="init_z" default="0" />
-    <arg name="init_R" default="0" />
-    <arg name="init_P" default="0" />
-    <arg name="init_Y" default="0" />
-    <arg name="freeze_base_link" default="false" />
+  <!-- Initial pose arguments -->
+  <arg name="init_x" default="0" />
+  <arg name="init_y" default="0" />
+  <arg name="init_z" default="0" />
+  <arg name="init_R" default="0" />
+  <arg name="init_P" default="0" />
+  <arg name="init_Y" default="0" />
+  <arg name="freeze_base_link" default="false" />
 
-    <!-- == launch gazebo with the chosen world ==================== -->
-    <include file="$(find ow_fps_monitor)/launch/empty_world.launch">
-        <arg name="world_name" value="$(arg world_name)"/>
-        <arg name="paused" value="true"/>
-        <arg name="use_sim_time" value="true"/>
-        <arg name="gui" value="$(arg gzclient)"/>
-        <arg name="headless" value="false"/>
-        <arg name="debug" value="false"/>
-        <arg name="verbose" value="true"/>
-        <!--<arg name="extra_gazebo_args" value="-s libow_fps_monitor.so"/>-->
-    </include>
+  <!-- == launch gazebo with the chosen world ==================== -->
+  <include file="$(find ow_sim_tests)/launch/empty_world.launch" if="$(arg gazebo)">
+    <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="paused" value="true"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="$(arg gzclient)"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+    <arg name="verbose" value="true"/>
+    <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states"/>
+  </include>
 
-    <!-- == publish celestial body frames ==================== -->
-    <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" output="screen">
-        <rosparam command="load" file="$(find ow_ephemeris)/config/europa.yaml" subst_value="true"/>
-    </node>
+  <!-- == publish celestial body frames ==================== -->
+  <node name="ephemeris" pkg="irg_planetary_ephemeris" type="publisher" output="screen">
+    <rosparam command="load" file="$(find ow_ephemeris)/config/europa.yaml" subst_value="true"/>
+  </node>
 
-    <!-- == compute sunlight values for shaders ==================== -->
-    <node name="sunlight_values" pkg="ow_ephemeris" type="sunlight_values_for_shaders.py" output="screen">
-        <rosparam command="load" file="$(find ow_ephemeris)/config/europa.yaml" subst_value="true"/>
-    </node>
+  <!-- == compute sunlight values for shaders ==================== -->
+  <node name="sunlight_values" pkg="ow_ephemeris" type="sunlight_values_for_shaders.py" output="screen">
+    <rosparam command="load" file="$(find ow_ephemeris)/config/europa.yaml" subst_value="true"/>
+  </node>
 
-    <!-- == add celestial bodies to tf-tree ==================== -->
-    <node name="world_to_celestial_bodies" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 world celestial_body_origin 1000" />
-    <node name="celestial_bodies_to_europa" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 celestial_body_origin europa 1000" />
-<?ignore
-    <!-- == add lander model to scene ==================== -->
-    <include file="$(find ow_lander)/launch/spawn.launch">
-        <arg name="init_x" value="$(arg init_x)"/>
-        <arg name="init_y" value="$(arg init_y)"/>
-        <arg name="init_z" value="$(arg init_z)"/>
-        <arg name="init_R" value="$(arg init_R)"/>
-        <arg name="init_P" value="$(arg init_P)"/>
-        <arg name="init_Y" value="$(arg init_Y)"/>
-        <arg name="freeze_base_link" value="$(arg freeze_base_link)"/>
-    </include>
-?>
+  <!-- == add celestial bodies to tf-tree ==================== -->
+  <node name="world_to_celestial_bodies" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 world celestial_body_origin 1000" />
+  <node name="celestial_bodies_to_europa" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 celestial_body_origin europa 1000" />
 
-    <!-- == add lander to tf-tree ==================== -->
-    <!-- This is necessary for rviz but not gazebo. We only do this if freeze_base_link=false. If true, the same link is made with a fixed joint in
+  <!-- == add lander model to scene ==================== -->
+  <include file="$(find ow_lander)/launch/spawn.launch" >
+    <arg name="init_x" value="$(arg init_x)"/>
+    <arg name="init_y" value="$(arg init_y)"/>
+    <arg name="init_z" value="$(arg init_z)"/>
+    <arg name="init_R" value="$(arg init_R)"/>
+    <arg name="init_P" value="$(arg init_P)"/>
+    <arg name="init_Y" value="$(arg init_Y)"/>
+    <arg name="freeze_base_link" value="$(arg freeze_base_link)"/>
+  </include>
+
+  <!-- == add lander to tf-tree ==================== -->
+  <!-- This is necessary for rviz but not gazebo. We only do this if
+    freeze_base_link=false. If true, the same link is made with a fixed joint in
     lander.xacro. Rigidly fixing a robot to the world requires the name "world"
     and is explained here http://gazebosim.org/tutorials/?tut=ros_urdf#RigidlyFixingAModeltotheWorld
     and here http://sdformat.org/tutorials?tut=pose_frame_semantics&cat=specification&#specifying-parent-and-child-link-names-for-joints-in-sdf-1-4 -->
-    <node name="world_to_base_link" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
+  <node name="world_to_base_link" pkg="tf" type="static_transform_publisher"
+    args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
-    <!-- Start power_system_node -->
-    <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+  <!-- Start power_system_node -->
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
-    <!-- Start faults node -->
-    <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+  <!-- Start faults node -->
+  <node name="faults" pkg="ow_faults" type="faults" output="screen" />
+
+  <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
+  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
+
+  <!-- ====== simulate changes to the terrain caused by the grinder ======= -->
+  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
+
+  <!-- == start rviz ==================== -->
+  <!--group unless="$(arg arm_sim_enable)">
+    <node name="rviz" pkg="rviz" type="rviz"
+      args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
+  </group-->
+
+  <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
+  <!-- Starting without a .perspective file will reload the last used configuration. -->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
+  <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
+    <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
+    <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
+    <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
+  </node>
+
+  <!-- == start bag_recorder_node =========== -->
+  <node if="$(arg record_bag)" name="bag_recorder_node" 
+      pkg="ow_bag_recorder" type="bag_recorder_node" output="screen">
+    <rosparam file="$(find ow_bag_recorder)/config/options.yaml"/>
+    <rosparam file="$(find ow_bag_recorder)/config/topics.yaml"/>
+  </node>
 
 </launch>
