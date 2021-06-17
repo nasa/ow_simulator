@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="gzclient" default="true" />
+
+    <include file="$(find ow_sim_tests)/launch/atacama_y1a.launch" />
+
+    <test test-name="arm_check" pkg="ow_sim_tests" type="arm_check.py" time-limit="120.0">
+        <param name="test_duration" value="60.0"/>
+    </test>
+
+</launch>
