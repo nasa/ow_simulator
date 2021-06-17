@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- encoding: utf-8 -*-
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
@@ -76,7 +76,7 @@ def publish_image(args):
                 rospy.loginfo("modify_terrain_patch message sent")
                 break
             time.sleep(0.1)
-    except rospy.ROSInterruptException, e:
+    except rospy.ROSInterruptException as e:
         raise e
 
 

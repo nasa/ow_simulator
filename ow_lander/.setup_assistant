@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: ow_lander
+    relative_path: urdf/lander.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/lander.srdf
+  CONFIG:
+    author_name: Ussama Naal
+    author_email: ussama.naal@nasa.gov
+    generated_timestamp: 1604459304

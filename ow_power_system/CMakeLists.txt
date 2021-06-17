@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_power_system)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+if(DEFINED ENV{GSAP_HOME})
+  set(GSAP_DIR $ENV{GSAP_HOME})
+else()
+  message(FATAL_ERROR, "GSAP_HOME environment variable is not set")
+endif()
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,11 +13,15 @@ project(ow_power_system)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  roslib
+  ow_lander
+  ow_faults
 )
 find_package(roslaunch)
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+link_directories(
+  ${GSAP_DIR}/build
+)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -110,9 +117,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
+  ${GSAP_DIR}/inc
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 
 ## Declare a C++ library
@@ -128,7 +136,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME} power_system_node src/power_system_node.cpp)
+add_executable(power_system_node
+  src/power_system_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -141,9 +150,10 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(power_system_node
+  ${catkin_LIBRARIES}
+  gsap
+)
 
 #############
 ## Install ##
@@ -161,9 +171,9 @@ include_directories(
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS power_system_node
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -199,5 +209,3 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-add_subdirectory(src)

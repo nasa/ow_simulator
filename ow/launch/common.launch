@@ -4,7 +4,9 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
+  <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
+  <arg name="record_bag" default="false"/>
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -24,6 +26,7 @@
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
+    <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states"/>
   </include>
 
   <!-- == publish celestial body frames ==================== -->
@@ -63,10 +66,16 @@
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node"/>
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
   <!-- Start faults node -->
-  <node name="faults" pkg="ow_faults" type="faults" output="screen"/>
+  <node name="faults" pkg="ow_faults" type="faults" output="screen" />
+
+  <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
+  <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
+
+  <!-- ====== simulate changes to the terrain caused by the grinder ======= -->
+  <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
 
   <!-- == start rviz ==================== -->
   <!--group unless="$(arg arm_sim_enable)">
@@ -74,10 +83,23 @@
       args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
   </group-->
 
-  <!-- == start rqt ===================== -->
+  <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
-  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"/-->
+  <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
+    launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
-      args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
+    launch-prefix="bash -c 'sleep 5; $0 $@' "
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
+    <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
+    <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
+    <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
+  </node>
+
+  <!-- == start bag_recorder_node =========== -->
+  <node if="$(arg record_bag)" name="bag_recorder_node" 
+      pkg="ow_bag_recorder" type="bag_recorder_node" output="screen">
+    <rosparam file="$(find ow_bag_recorder)/config/options.yaml"/>
+    <rosparam file="$(find ow_bag_recorder)/config/topics.yaml"/>
+  </node>
 
 </launch>

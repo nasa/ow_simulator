@@ -1,9 +1,9 @@
-bool use_defaults
-float32 trench_x
-float32 trench_y
-float32 trench_d #desired depth
-bool radial #True=desired trenching along radial direction, False=perpendicular to radial
-bool delete_prev_traj
+bool use_defaults       # Set to true to use the default trench location
+float32 x               # Trench starting point - X coordinate
+float32 y               # Trench starting point - Y coordinate
+float32 depth           # Desired depth
+bool parallel           # If True, resulting trench is parallel to arm. If False, perpendicular to arm
+float32 ground_position # Z coordinate of ground level in base_link frame
 ---
 bool success
 string message

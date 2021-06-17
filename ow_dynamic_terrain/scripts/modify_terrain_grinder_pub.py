@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- encoding: utf-8 -*-
 """
 The modify_terrain_grinder_pub module updates the terrain in line with the  
@@ -21,15 +21,26 @@ class ModifyTerrainGrinder:
   def __init__(self, *args):
     rospy.init_node("modify_terrain_grinder_pub", anonymous=True)
     self.last_translation = np.zeros(3)
-    self.pub = rospy.Publisher(
-        'ow_dynamic_terrain/modify_terrain_circle', modify_terrain_circle, queue_size=1)
+    self.pub_visual = rospy.Publisher(
+        'ow_dynamic_terrain/modify_terrain_circle/visual', modify_terrain_circle, queue_size=1)
+    self.pub_collision = rospy.Publisher(
+        'ow_dynamic_terrain/modify_terrain_circle/collision', modify_terrain_circle, queue_size=1)
     self.states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
-  def compose_modify_terrain_circle_message(self, position):
+  def compose_modify_terrain_circle_message(self, position, depth, scale=1.0):
+    """ Composes a modify_terrain_circle that matches the grinder end effector
+    it is positioned downwards ready for digging. When the grinder is position
+    downward for digging the shape it projects on the terrain as a circle.
+
+    Parameters:
+      position: Corresponds to the center of the modify_terrain_circle operation
+      scale: A value that uniformaly scales the generated modify_terrain_circle
+        message
+    """
     return modify_terrain_circle(position=Point(position.x, position.y, position.z),
-                                 outer_radius=0.008, inner_radius=0.001,
-                                 weight=-0.2, merge_method="min")
+                                 outer_radius=0.08*scale, inner_radius=0.04*scale,
+                                 weight=depth*scale, merge_method="min")
 
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
@@ -46,12 +57,12 @@ class ModifyTerrainGrinder:
     if all(np.isclose(current_translation, self.last_translation, atol=1.e-4)):
       return  # no significant change, abort
 
-
-
     self.last_translation = current_translation
 
-    msg = self.compose_modify_terrain_circle_message(new_position)
-    self.pub.publish(msg)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.16, scale=2.0)
+    self.pub_collision.publish(msg)
+    msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.06, scale=1.0)
+    self.pub_visual.publish(msg)
     
     rospy.logdebug_throttle(1, "modify_terrain_grinder message:\n" + str(msg))
 

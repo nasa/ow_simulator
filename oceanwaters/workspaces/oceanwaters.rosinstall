@@ -1,0 +1,12 @@
+## Top-level repo and ROS/Gazebo packages
+- git: { local-name: ow_simulator,    uri: 'https://github.com/nasa/ow_simulator.git' }
+
+## Gazebo world files and the big data that accompanies them
+- git: { local-name: ow_europa,       uri: 'https://github.com/nasa/ow_europa.git'    }
+
+## Autonomy
+- git: { local-name: ow_autonomy,     uri: 'https://github.com/nasa/ow_autonomy.git'  }
+
+## misc
+- git: { local-name: irg_open,        uri: 'https://github.com/nasa/irg_open.git'     }
+

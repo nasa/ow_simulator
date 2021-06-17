@@ -1,10 +1,65 @@
-Notices:
---------
+
+# Ocean Worlds Autonomy Testbed for Exploration Research & Simulation (OceanWATERS)
+[Overview](#overview) |
+[Code Organization](#code-Organization) |
+[Getting Started](#getting-started) |
+[Contributing](#contributing) |
+[License](#license)
+
+## Overview
+OceanWATERS is a physical and visual simulation of a lander on Europa. It is intended as a
+testbed to aid in producing software that could fly on lander missions to ocean
+worlds, such as Europa and Enceladus.
+
+
+<p align="center"><img width="80%" src="oceanwaters/doc/lander_europa.jpg" /></p>
+
+
+## Code Organization
+
+The [ow_simulator](https://github.com/nasa/ow_simulator) is the top level repository
+for OceanWATERS. It primarily contains ROS/Gazebo packages related to visual and
+physical simulation for OceanWATERS. It also contains workspace files for
+setting up the rest of the OceanWATERS repositories:
+- [ow_autonomy](https://github.com/nasa/ow_autonomy)
+- [ow_europa](https://github.com/nasa/ow_europa)
+- [irg_open](https://github.com/nasa/irg_open)
+
+## Getting Started
+- [Install software prerequisites](oceanwaters/doc/setup_dev_env.md)
+- [Download and build OceanWATERS](oceanwaters/doc/setup_oceanwaters.md)
+- [User Guide](https://github.com/nasa/ow_simulator/wiki/Using-OceanWATERS)
+
+## Contributing
+Please review [current bugs and features requests](https://github.com/nasa/ow_simulator/issues)
+before submitting a new one. If we are unable to accomodate your request and you
+want to contribute to this project yourself, follow these instructions:
+
+Contributions must be the original work of the contributor with no conflicting
+license or copyright restrictions. See our [license](LICENSE.txt) for more
+details.
+
+If you wish to contribute code or a bug fix please:
+- Create your own fork of this repository. In the upper-right corner of the
+[ow_simulator front page](https://github.com/nasa/ow_simulator) click `Fork`.
+Your fork will be called `<your_username>/ow_simulator`.
+- In your newly forked repository, create a branch with an appropriate name for
+your feature or bug fix.
+- Make changes to your new branch.
+- Create a pull request against the `master` branch of `nasa/ow_simulator`.
+
+## Citation
+Coming soon
+
+## License
+OceanWATERS is open source software licensed under the
+[NASA Open Source Agreement version 1.3](LICENSE.txt).
+
+## Notices
 Copyright © 2020 United States Government as represented by the Administrator of
 the National Aeronautics and Space Administration.  All Rights Reserved.
 
-Disclaimers
------------
+## Disclaimers
 No Warranty: THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF
 ANY KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED
 TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO SPECIFICATIONS, ANY
@@ -27,11 +82,3 @@ OF THE SUBJECT SOFTWARE, RECIPIENT SHALL INDEMNIFY AND HOLD HARMLESS THE UNITED
 STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS, AS WELL AS ANY PRIOR
 RECIPIENT, TO THE EXTENT PERMITTED BY LAW.  RECIPIENT'S SOLE REMEDY FOR ANY SUCH
 MATTER SHALL BE THE IMMEDIATE, UNILATERAL TERMINATION OF THIS AGREEMENT.
-
-
-ow_simulator
-============
-Primarily contains ROS/Gazebo packages related to visual and
-physical simulation for OceanWATERS.
-
-

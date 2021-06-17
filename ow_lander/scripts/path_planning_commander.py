@@ -1,256 +1,246 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
 import sys
-import rosbag
-import copy
 import rospy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
-from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from moveit_commander.conversions import pose_to_list
-from ow_lander.srv import *
-import datetime
 import time
+import moveit_commander
+from geometry_msgs.msg import Point
+from controller_manager_msgs.srv import SwitchController
+from actionlib_msgs.msg import GoalStatus
+from ow_faults.msg import SystemFaults
 
-import constants
-import utils
+from ow_lander.srv import *
+from ow_lander.msg import *
 import activity_full_digging_traj
 import activity_guarded_move
 import activity_deliver_sample
 import activity_grind
 
-# === MAIN COMMANDER CLASS =============================
-class MoveGroupPythonInteface(object):
+from trajectory_async_execution import TrajectoryAsyncExecuter
+from ground_detection import GroundDetector
+
+ARM_EXECUTION_ERROR = 4
+
+class PathPlanningCommander(object):
+
   def __init__(self):
-    super(MoveGroupPythonInteface, self).__init__()
+    super(PathPlanningCommander, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    robot = moveit_commander.RobotCommander()
-    scene = moveit_commander.PlanningSceneInterface()
+    self.arm_move_group = moveit_commander.MoveGroupCommander("arm", wait_for_servers=20.0)
+    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=20.0)
+    self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=20.0)
+    self.trajectory_async_executer = TrajectoryAsyncExecuter()
+    self.arm_fault = False
 
-    move_arm = moveit_commander.MoveGroupCommander("arm")
-    move_limbs = moveit_commander.MoveGroupCommander("limbs")
-    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
-                                                   moveit_msgs.msg.DisplayTrajectory,
-                                                   queue_size=20)
-    self.move_arm = move_arm
-    self.move_limbs = move_limbs
+  # === SERVICE ACTIVITIES - Stow =============================
+  def handle_stop(self, req):
+    """
+    :type req: class 'ow_lander.srv._Stow.StopRequest'
+    """
+    print("Stop arm activity started")
+    self.trajectory_async_executer.stop()
+    print("Stop arm activity completed")
+    return True, "Done"
 
-# === SERVICE ACTIVITIES - guarded move =============================
-def handle_guarded_move(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting guarded move planning session"
-    args = activity_guarded_move.arg_parsing(req)
+  # === SERVICE ACTIVITIES - Stow =============================
+  def handle_stow(self, req):
+    """
+    :type req: class 'ow_lander.srv._Stow.StowRequest'
+    """
+    print("Stow arm activity started")
+    goal = self.arm_move_group.get_named_target_values("arm_stowed")
+    self.arm_move_group.set_joint_value_target(goal)
 
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "pre_guarded_move_traj_"
-    bagname = location + currentDT
-
-    # Approach
-    utils.start_traj_recording(args[1], bagname)
-    result = activity_guarded_move.pre_guarded_move(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname)
-
-    # Safe move, monitoring torques
-    location = "guarded_move_traj_"
-    bagname = location + currentDT
-    utils.start_traj_recording(False, bagname)
-    result = activity_guarded_move.guarded_move(interface.move_arm,interface.move_limbs,args)
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished guarded move planning session succesfully..."
-  return True, "Done"
-
-# === SERVICE ACTIVITIES - Dig circular trench =============================
-def handle_dig_circular(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_circ(req)
-
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      return
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
-
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_full_digging_traj.dig_circular(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished planning session succesfully..."
-  return True, "Done"
-
-# === SERVICE ACTIVITIES - Dig Linear Trench =============================
-def handle_dig_linear(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_lin(req)
-
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      return
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
-
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_full_digging_traj.dig_linear(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished planning session for linear trenching succesfully..."
-  return True, "Done"
-
-# === SERVICE ACTIVITIES - deliver sample =============================
-def handle_deliver_sample(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting sample delivery session"
-    args = activity_deliver_sample.arg_parsing(req)
-
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid sample delivery input arguments. Exiting path_planning_commander..."
-      return
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
-
-    utils.start_traj_recording(args[4], bagname)
-    result = activity_deliver_sample.deliver_sample(interface.move_arm,interface.move_limbs,args[1],args[2],args[3])
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished planning session for linear trenching succesfully..."
-  return True, "Done"
-
-# === SERVICE ACTIVITIES - Stow =============================
-def handle_stow(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting full traj planning session"
-    args = activity_full_digging_traj.arg_parsing_stow(req)
-
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid trench input arguments. Exiting path_planning_commander..."
-      return
-
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
-
-    utils.start_traj_recording(args[4], bagname)
-    result = activity_full_digging_traj.go_home(interface.move_arm)#,interface.move_limbs,args[1],args[2],args[3])
-    utils.stop_traj_recording(result, bagname)
-
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
-
-  print "Finished planning stow succesfully..."
-  return True, "Done"
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory, 
+                                          feedback_cb=None)
+    self.trajectory_async_executer.wait()
+    return self.return_message("Stow arm")
 
 
-# === SERVICE ACTIVITIES - Unstow =============================
-def handle_unstow(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Moving to unstowed configuration..."
+  # === SERVICE ACTIVITIES - Unstow =============================
+  def handle_unstow(self, req):
+    """
+    :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
+    """
+    print("Unstow arm activity started")
+    goal = self.arm_move_group.get_named_target_values("arm_unstowed")
+    self.arm_move_group.set_joint_value_target(goal)
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          feedback_cb=None)
+    self.trajectory_async_executer.wait()
+    return self.return_message("Unstow arm")
 
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
+  # === SERVICE ACTIVITIES - deliver sample =============================
+  def handle_deliver_sample(self, req):
+    """
+    :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
+    """
+    print("Deliver Sample arm activity started")
+    deliver_sample_args = activity_deliver_sample.arg_parsing(req)
+    success = activity_deliver_sample.deliver_sample(
+        self.arm_move_group, deliver_sample_args)
+    print("Deliver Sample arm activity completed")
+    return success, "Done"
 
-    utils.start_traj_recording(False, bagname)
-    result = activity_full_digging_traj.unstow(interface.move_arm)
-    utils.stop_traj_recording(result, bagname)
+  # === SERVICE ACTIVITIES - Dig Linear Trench =============================
+  def handle_dig_circular(self, req):
+    """
+    :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest'
+    """
+    print("Dig Cicular arm activity started")
+    dig_circular_args = activity_full_digging_traj.arg_parsing_circ(req)
+    success = activity_full_digging_traj.dig_circular(
+        self.arm_move_group,
+        self.limbs_move_group,
+        dig_circular_args,
+        self.switch_controllers)
+    print("Dig Circular arm activity completed")
+    return success, "Done"
 
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
+  # === SERVICE ACTIVITIES - Dig Linear Trench =============================
+  def handle_dig_linear(self, req):
+    """
+    :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
+    """
+    dig_linear_args = activity_full_digging_traj.arg_parsing_lin(req)
+    success = activity_full_digging_traj.dig_linear(
+        self.arm_move_group,
+        dig_linear_args)
+    print("Dig linear arm motion executed!")
+    return success, "Done"
 
-  print "Moved to unstowed configuration succesfully..."
-  return True, "Done"
-
-
-
-
-
+  def switch_controllers(self, start_controller, stop_controller):
+    rospy.wait_for_service('/controller_manager/switch_controller')
+    success = False
+    try:
+      switch_controller = rospy.ServiceProxy(
+          '/controller_manager/switch_controller', SwitchController)
+      success = switch_controller(
+          [start_controller], [stop_controller], 2, False, 1.0)
+    except rospy.ServiceException as e:
+      print("switch_controllers error: %s" % e)
+    finally:
+      # This sleep is a workaround for "start point deviates from current robot
+      # state" error on dig_circular trajectory execution.
+      time.sleep(0.2)
+      return success
 
   # === SERVICE ACTIVITIES - Grind =============================
-def handle_grind(req):
-  try:
-    interface = MoveGroupPythonInteface()
-    print "Starting grinder planning session"
-    args = activity_full_digging_traj.arg_parsing_lin(req)
+  def handle_grind(self, req):
+    """
+    :type req: class 'ow_lander.srv._Grind.GrindRequest'
+    """
+    print("Grind arm activity started")
+    grind_args = activity_grind.arg_parsing(req)
+    success = self.switch_controllers('grinder_controller', 'arm_controller')
+    if not success:
+      return False, "Failed"
+    success = activity_grind.grind(
+        self.grinder_move_group,
+        grind_args)
+    self.switch_controllers('arm_controller', 'grinder_controller')
+    print("Grind arm activity completed")
+    return success, "Done"
 
-    if utils.check_arguments(args[1],args[2],args[3]) != True:
-      print "[ERROR] Invalid grinder trajectory input arguments. Exiting path_planning_commander..."
-      return
+  def handle_guarded_move_done(self, state, result):
+    """
+    :type state: int
+    :type result: FollowJointTrajectoryResult
+    """
+    ground_detected = state == GoalStatus.PREEMPTED
+    ground_position = self.ground_detector.ground_position if ground_detected else Point()
+    rospy.loginfo("Ground Detected ? {}".format(ground_detected))
+    self.guarded_move_pub.publish(
+        ground_detected, 'base_link', ground_position)
 
-    currentDT = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    location = "full_traj_"
-    bagname = location + currentDT
+  def handle_guarded_move_feedback(self, feedback):
+    """
+    :type feedback: FollowJointTrajectoryFeedback
+    """
 
-    utils.start_traj_recording(args[5], bagname)
-    result = activity_grind.grind(interface.move_arm,interface.move_limbs,args[1],args[2],args[3],args[4])
-    utils.stop_traj_recording(result, bagname)
+    if self.ground_detector.detect():
+      self.trajectory_async_executer.stop()
 
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
+  # === SERVICE ACTIVITIES - guarded move =============================
+  def handle_guarded_move(self, req):
+    """
+    :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
+    """
+    print("Guarded Move arm activity started")
 
-  print "Grinder planning succesfully finished..."
-  return True, "Done"
+    guarded_move_args = activity_guarded_move.arg_parsing(req)
+    success = activity_guarded_move.pre_guarded_move(
+        self.arm_move_group, guarded_move_args)
+    if not success:
+      return False, "pre_guarded_move failed"
+    plan = activity_guarded_move.guarded_move_plan(
+        self.arm_move_group, guarded_move_args)
+    if len(plan.joint_trajectory.points) == 0:
+      return False, "guarded_move_plan failed"
+    self.ground_detector.reset()
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          done_cb=self.handle_guarded_move_done,
+                                          feedback_cb=self.handle_guarded_move_feedback)
+    # To preserve the previous behaviour we are adding a blocking call till the
+    # execution of the trajectory is completed
+    self.trajectory_async_executer.wait()
+    
+    return self.return_message( "Guarded Move arm activity", success)
 
+  def run(self):
+    rospy.init_node('path_planning_commander', anonymous=True)
 
+    # subscribe to system_fault_status for any arm faults
+    rospy.Subscriber("/faults/system_faults_status", SystemFaults, self.callback)
 
-# === MAIN ================================================
-def main():
-  rospy.init_node('path_planning_commander', anonymous=True)
+    self.stop_srv = rospy.Service(
+        'arm/stop', Stop, self.handle_stop)
+    self.stow_srv = rospy.Service(
+        'arm/stow', Stow, self.handle_stow)
+    self.unstow_srv = rospy.Service(
+        'arm/unstow', Unstow, self.handle_unstow)
+    self.dig_circular_srv = rospy.Service(
+        'arm/dig_circular', DigCircular, self.handle_dig_circular)
+    self.dig_linear_srv = rospy.Service(
+        'arm/dig_linear', DigLinear, self.handle_dig_linear)
+    self.deliver_sample_srv = rospy.Service(
+        'arm/deliver_sample', DeliverSample, self.handle_deliver_sample)
+    self.grind_srv = rospy.Service(
+        'arm/grind', Grind, self.handle_grind)
+    self.ground_detector = GroundDetector()
+    self.trajectory_async_executer.connect("arm_controller")
+    self.guarded_move_pub = rospy.Publisher(
+        '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
+    self.guarded_move_srv = rospy.Service(
+        'arm/guarded_move', GuardedMove, self.handle_guarded_move)
+    print("path_planning_commander has started!")
 
-  # Setup planner triggering service
-  dig_circular_srv = rospy.Service('arm/dig_circular', DigCircular, handle_dig_circular)
-  dig_linear_srv = rospy.Service('arm/dig_linear', DigLinear, handle_dig_linear)
-  guarded_move_srv = rospy.Service('arm/guarded_move', GuardedMove, handle_guarded_move)
-  stow_srv = rospy.Service('arm/stow', Stow, handle_stow)
-  unstow_srv = rospy.Service('arm/unstow', Unstow, handle_unstow)
-  deliver_sample_srv = rospy.Service('arm/deliver_sample', DeliverSample, handle_deliver_sample)
-  grind_srv = rospy.Service('arm/grind', Grind, handle_grind)
+    rospy.spin()
 
-  rospy.spin()
+  def return_message(self, action_name, success=True):
+    if not self.arm_fault:
+      print(action_name + " activity completed")
+      return success, "Done"
+    else:
+      print(action_name + " activity incomplete")
+      return False,  action_name + " failed"
+
+  def callback(self, data):
+    """
+    If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+    """
+    self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
 
 if __name__ == '__main__':
-  main()
+  ppc = PathPlanningCommander()
+  ppc.run()

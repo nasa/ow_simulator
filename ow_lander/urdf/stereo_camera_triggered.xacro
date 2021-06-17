@@ -155,10 +155,11 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/>
+      <!-- TODO: Figure out why lens flare is causing black camera images. -->
+      <!--plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/-->
       <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
-        <exposure>0.02</exposure>
-        <energy_conversion>0.01625</energy_conversion>
+        <exposure>0.05</exposure>
+        <energy_conversion>0.005</energy_conversion>
       </plugin>
     </sensor>
   </gazebo>  
@@ -193,7 +194,8 @@
           <far>200000</far>
         </clip>
       </camera>
-      <plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/>
+      <!-- TODO: Figure out why lens flare is causing black camera images. -->
+      <!--plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/-->
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
         <updateRate>0.0</updateRate>

@@ -34,7 +34,7 @@ protected:
 private:
   // Cosimulator class that interfaces with external physics simulation
   Cosimulator m_cosim;
-  // Timestep the cosimulaiton is iterated at
+  // Timestep the cosimulation is iterated at
   double m_timestep;
   // True if Cosimulator has begun updating its physics
   bool m_started;

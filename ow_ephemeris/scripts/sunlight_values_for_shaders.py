@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -44,7 +44,7 @@ class SunValues:
     # Ratio of 1 AU over distance
     dist_ratio = 149597870700.0 / dist
     # Use the solar illuminance constant to compute lux at this distance from sun
-    lux = 128000.0 * dist_ratio * dist_ratio
+    lux = 133000.0 * dist_ratio * dist_ratio
 
     self.lux_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
     self.lux_msg.paramName = "sunIntensity"

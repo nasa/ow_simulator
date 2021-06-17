@@ -55,10 +55,8 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   }
 
   auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
-
-  auto heightmap_size = terrain->getSize();
-  auto image =
-      TerrainBrush::circle(heightmap_size * msg->outer_radius, heightmap_size * msg->inner_radius, msg->weight);
+  auto h_scale = terrain->getSize() / terrain->getWorldSize();  // horizontal scale factor
+  auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
                         *merge_method);
@@ -102,10 +100,10 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
 
   auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
 
-  auto heightmap_size = terrain->getSize();
+  auto h_scale = terrain->getSize() / terrain->getWorldSize();  // horizontal scale factor
   auto image =
-      TerrainBrush::ellipse(heightmap_size * msg->outer_radius_a, heightmap_size * msg->inner_radius_a,
-                            heightmap_size * msg->outer_radius_b, heightmap_size * msg->inner_radius_b, msg->weight);
+      TerrainBrush::ellipse(h_scale * msg->outer_radius_a, h_scale * msg->inner_radius_a,
+                            h_scale * msg->outer_radius_b, h_scale * msg->inner_radius_b, msg->weight);
 
   if (!ignition::math::equal<float>(msg->orientation, 0.0f))  // Avoid performing the rotation if orientation is zero
   {
