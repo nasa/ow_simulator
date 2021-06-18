@@ -111,6 +111,8 @@ def grind(move_grinder, args):
 
   # grinding ice forward
   cartesian_plan, fraction = plan_cartesian_path(move_grinder, length, alpha, parallel)
+  print (cartesian_plan)
+  print (fraction)
   move_grinder.execute(cartesian_plan, wait=True)
   move_grinder.stop()
 

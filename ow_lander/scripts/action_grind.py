@@ -26,6 +26,48 @@ import kdl_parser_py.urdf
 
 grind_traj = RobotTrajectory()
 
+def retime_plan(plan1):
+  # Create a new trajectory object
+  new_traj = RobotTrajectory()
+  # Initialize the new trajectory to be the same as the planned trajectory
+  traj_msg = JointTrajectory()
+  # Get the number of joints involved
+  n_joints = len(plan1.joint_trajectory.joint_names)
+  # Get the number of points on the trajectory
+  n_points = len(plan1.joint_trajectory.points)
+  # Store the trajectory points
+  points1 = list(plan1.joint_trajectory.points)
+
+  end_time = plan1.joint_trajectory.points[n_points-1].time_from_start
+  start_time =  plan1.joint_trajectory.points[0].time_from_start
+  duration =  end_time - start_time
+  # add a time toleracne between  successive plans
+  time_tolerance = rospy.Duration.from_sec(0.1)
+
+  for i in range(n_points):
+    point = JointTrajectoryPoint()
+    #t = plan1.joint_trajectory.points[i].time_from_start
+    #seconds = t.to_sec() #floating point
+    #d = rospy.Duration.from_sec(seconds)  
+    #point.time_from_start = d * 2
+    point.time_from_start = plan1.joint_trajectory.points[i].time_from_start *2
+    point.velocities = list(plan1.joint_trajectory.points[i].velocities)
+    #print (plan1.joint_trajectory.points[i].velocities)
+    #point.velocities = list(0.1, )
+    point.accelerations = list(plan1.joint_trajectory.points[i].accelerations)
+    #point.accelerations = list(0.0)
+    point.positions = plan1.joint_trajectory.points[i].positions
+    points1[i] = point
+    traj_msg.points.append(point)
+    end_time = plan1.joint_trajectory.points[i].time_from_start
+    
+    
+  traj_msg.joint_names = plan1.joint_trajectory.joint_names
+  traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
+  new_traj.joint_trajectory = traj_msg
+  return new_traj  
+
+
 def calculate_starting_state_grinder (plan,robot):
   #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
   #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
@@ -90,6 +132,8 @@ def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs)
                                waypoints,   # waypoints to follow
                                0.01,        # end effector follow step (meters)
                                0.0)         # jump threshold
+  
+  plan = retime_plan (plan)
 
   return plan, fraction
 
@@ -155,7 +199,7 @@ def grind(move_grinder, robot, moveit_fk, args):
   ## grinding ice forward
   cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_grinder (robot, grind_traj, move_grinder, moveit_fk)
   cartesian_plan, fraction = plan_cartesian_path(move_grinder, goal_pose, length, alpha, parallel, z_start, cs)
-  
+  print (cartesian_plan)
   grind_traj = cascade_plans (grind_traj , cartesian_plan)
 
   ## grinding sideways

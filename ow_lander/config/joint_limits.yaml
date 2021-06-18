@@ -4,46 +4,46 @@
 joint_limits:
   j_ant_pan:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_ant_tilt:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_dist_pitch:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_grinder:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_hand_yaw:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_prox_pitch:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_scoop_yaw:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_shou_pitch:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0
   j_shou_yaw:
     has_velocity_limits: true
-    max_velocity: 1.0
+    max_velocity: 3.0
     has_acceleration_limits: true
-    max_acceleration: 1.0
+    max_acceleration: 5.0

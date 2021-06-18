@@ -19,7 +19,7 @@ class TrajectoryAsyncExecuter:
 
   def __init__(self):
     self._connected = False
-    self._goal_time_tolerance = rospy.Time(0.1)
+    self._goal_time_tolerance = rospy.Time(1.1)
     self._client = None
     self.arm_fault = False
 

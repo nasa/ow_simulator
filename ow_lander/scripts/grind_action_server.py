@@ -23,10 +23,11 @@ from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
+from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectoryPoint
 from controller_manager_msgs.srv import SwitchController
 
-
-
+ 
 
 class GrindActionServer(object):
     
@@ -90,6 +91,15 @@ class GrindActionServer(object):
         
     def on_Grind_action(self,goal):
         plan = self._update_motion(goal)
+        #file = open("final_plan.txt", "w")
+        #file.write("%s = %s\n" %("plan", self.current_traj))
+        #file.close()
+        
+        ##self.current_traj = smooth_plan (self.current_traj)
+        
+        #file = open("smooth_plan.txt", "w")
+        #file.write("%s = %s\n" %("plan", self.current_traj))
+        #file.close()
         if self.current_traj == False: 
             self._server.set_aborted(self._result)
             return 
