@@ -7,7 +7,6 @@ and issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
 import rospy
-import time
 from math import degrees
 import numpy as np
 from geometry_msgs.msg import Point
@@ -64,7 +63,7 @@ class ModifyTerrainGrinder:
     msg = self.compose_modify_terrain_circle_message(new_position, depth=-0.06, scale=1.0)
     self.pub_visual.publish(msg)
     
-    rospy.logdebug_throttle(1, "modify_terrain_grinder message:\n" + str(msg))
+    rospy.logdebug_throttle(1, f"modify_terrain_grinder message:\n{str(msg)}")
 
   def handle_link_states(self, data):
     try:
