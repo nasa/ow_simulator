@@ -9,7 +9,6 @@ import os
 import argparse
 import time
 import rospy
-import rospkg
 
 import cv2
 from cv_bridge import CvBridge
@@ -76,7 +75,7 @@ def publish_image(args):
                 rospy.loginfo("modify_terrain_patch message sent")
                 break
             time.sleep(0.1)
-    except rospy.ROSInterruptException, e:
+    except rospy.ROSInterruptException as e:
         raise e
 
 
