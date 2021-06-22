@@ -46,14 +46,14 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   // m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //power fault publishers and subs
-  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
-                                          10,
-                                          &FaultInjector::powerSOCListener,
-                                          this);
-  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
-                                                  10,
-                                                  &FaultInjector::powerTemperatureListener,
-                                                  this);
+  // m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
+  //                                         10,
+  //                                         &FaultInjector::powerSOCListener,
+  //                                         this);
+  // m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
+  //                                                 10,
+  //                                                 &FaultInjector::powerTemperatureListener,
+  //                                                 this);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
@@ -129,43 +129,43 @@ void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
                         m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
 }
 
-float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
-  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
-}
+// float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
+//   return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
+// }
 
-void FaultInjector::publishPowerSystemFault(){
-  ow_faults::PowerFaults power_faults_msg;
-  //update if fault
-  if (m_temperature_fault || m_soc_fault) {
-    //system
-    m_system_faults_bitset |= isPowerSystemFault;
-    //power
-    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
-  }
-  // publishSystemFaultsMessage();
-  // m_power_fault_msg_pub.publish(power_faults_msg);
-}
+// void FaultInjector::publishPowerSystemFault(){
+//   ow_faults::PowerFaults power_faults_msg;
+//   //update if fault
+//   if (m_temperature_fault || m_soc_fault) {
+//     //system
+//     m_system_faults_bitset |= isPowerSystemFault;
+//     //power
+//     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
+//   } else {
+//     m_system_faults_bitset &= ~isPowerSystemFault;
+//   }
+//   // publishSystemFaultsMessage();
+//   // m_power_fault_msg_pub.publish(power_faults_msg);
+// }
 
-void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
-{
-  m_temperature_fault = msg.data > THERMAL_MAX;
-  publishPowerSystemFault();
-}
+// void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
+// {
+//   m_temperature_fault = msg.data > THERMAL_MAX;
+//   publishPowerSystemFault();
+// }
 
-void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
-{
-  float newSOC = msg.data;
-  if (isnan(m_last_SOC)){
-    m_last_SOC = newSOC;
-  }
-  m_soc_fault = ((newSOC <= SOC_MIN)  ||
-        (!isnan(m_last_SOC) &&
-        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
-  publishPowerSystemFault();
-  m_last_SOC = newSOC;
-}
+// void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
+// {
+//   float newSOC = msg.data;
+//   if (isnan(m_last_SOC)){
+//     m_last_SOC = newSOC;
+//   }
+//   m_soc_fault = ((newSOC <= SOC_MIN)  ||
+//         (!isnan(m_last_SOC) &&
+//         ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+//   publishPowerSystemFault();
+//   m_last_SOC = newSOC;
+// }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {

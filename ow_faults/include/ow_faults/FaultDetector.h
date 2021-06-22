@@ -96,10 +96,10 @@ private:
   void cameraTriggerCb(const std_msgs::Empty& msg);
 
   // // power functions
-  // float getRandomFloatFromRange(float min_val, float max_val);
-  // void publishPowerSystemFault();
-  // void powerSOCListener(const std_msgs::Float64& msg);
-  // void powerTemperatureListener(const std_msgs::Float64& msg);
+  float getRandomFloatFromRange(float min_val, float max_val);
+  void publishPowerSystemFault();
+  void powerSOCListener(const std_msgs::Float64& msg);
+  void powerTemperatureListener(const std_msgs::Float64& msg);
 
   // // Antennae functions
   // void antennaPanFaultCb(const std_msgs::Float64& msg);
@@ -126,9 +126,9 @@ private:
   // ros::Publisher m_joint_state_pub;
 
   // //power
-  // ros::Subscriber m_power_soc_sub;
-  // ros::Subscriber m_power_temperature_sub;
-  // ros::Publisher m_power_fault_trigger_pub;
+  ros::Subscriber m_power_soc_sub;
+  ros::Subscriber m_power_temperature_sub;
+  ros::Publisher m_power_fault_trigger_pub;
 
   // // ft sensor
   // ros::Subscriber m_dist_pitch_ft_sensor_sub;
@@ -149,7 +149,7 @@ private:
   // ros::Publisher m_antenna_fault_msg_pub;
   // ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
-  // ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
   // ////////// vars
@@ -160,14 +160,14 @@ private:
   // bool m_arm_fault;
   // bool m_ant_fault;
   bool m_cam_trigger_on = false;
-  // bool m_soc_fault = false;
-  // bool m_temperature_fault = false;
+  bool m_soc_fault = false;
+  bool m_temperature_fault = false;
 
   // //arm joint faults
   // ow_faults::FaultsConfig m_faults;
 
   // //power vars
-  // float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
+  float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
 
   // // antenna vars
   // float m_fault_pan_value;

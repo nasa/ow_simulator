@@ -22,10 +22,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   srand (static_cast <unsigned> (time(0)));
 
  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_original_trigger_sub = = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultInjector::cameraTriggerOriginalCb, this);
+  m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+    10, &FaultDetector::cameraTriggerOriginalCb, this);
   m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
-    10, &FaultInjector::cameraTriggerCb, this);
+    10, &FaultDetector::cameraTriggerCb, this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
@@ -33,6 +33,16 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
   // m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
   m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+
+  //  power fault publishers and subs
+  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
+                                          10,
+                                          &FaultDetector::powerSOCListener,
+                                          this);
+  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
+                                                  10,
+                                                  &FaultDetector::powerTemperatureListener,
+                                                  this);
 }
 
 // void FaultDetector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -65,18 +75,13 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 
 void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
   ow_faults::CamFaults camera_faults_msg;
-
-  if (!msg) {// if no fault
-    m_cam_trigger_on = true;
-  }else {
-    m_cam_trigger_on = false;
-  }
+  m_cam_trigger_on = true;
 }
 
 void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
   ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_trigger_on && !msg){
+  if (m_cam_trigger_on){
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   } else {
@@ -113,43 +118,43 @@ void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
 //                         m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
 // }
 
-// float FaultDetector::getRandomFloatFromRange( float min_val, float max_val){
-//   return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
-// }
+float FaultDetector::getRandomFloatFromRange( float min_val, float max_val){
+  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
+}
 
-// void FaultDetector::publishPowerSystemFault(){
-//   ow_faults::PowerFaults power_faults_msg;
-//   //update if fault
-//   if (m_temperature_fault || m_soc_fault) {
-//     //system
-//     m_system_faults_bitset |= isPowerSystemFault;
-//     //power
-//     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
-//   } else {
-//     m_system_faults_bitset &= ~isPowerSystemFault;
-//   }
-//   publishSystemFaultsMessage();
-//   m_power_fault_msg_pub.publish(power_faults_msg);
-// }
+void FaultDetector::publishPowerSystemFault(){
+  ow_faults::PowerFaults power_faults_msg;
+  //update if fault
+  if (m_temperature_fault || m_soc_fault) {
+    //system
+    m_system_faults_bitset |= isPowerSystemFault;
+    //power
+    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isPowerSystemFault;
+  }
+  publishSystemFaultsMessage();
+  m_power_fault_msg_pub.publish(power_faults_msg);
+}
 
-// void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
-// {
-//   m_temperature_fault = msg.data > THERMAL_MAX;
-//   publishPowerSystemFault();
-// }
+void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
+{
+  m_temperature_fault = msg.data > THERMAL_MAX;
+  publishPowerSystemFault();
+}
 
-// void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
-// {
-//   float newSOC = msg.data;
-//   if (isnan(m_last_SOC)){
-//     m_last_SOC = newSOC;
-//   }
-//   m_soc_fault = ((newSOC <= SOC_MIN)  ||
-//         (!isnan(m_last_SOC) &&
-//         ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
-//   publishPowerSystemFault();
-//   m_last_SOC = newSOC;
-// }
+void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
+{
+  float newSOC = msg.data;
+  if (isnan(m_last_SOC)){
+    m_last_SOC = newSOC;
+  }
+  m_soc_fault = ((newSOC <= SOC_MIN)  ||
+        (!isnan(m_last_SOC) &&
+        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+  publishPowerSystemFault();
+  m_last_SOC = newSOC;
+}
 
 // void FaultDetector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 // {
