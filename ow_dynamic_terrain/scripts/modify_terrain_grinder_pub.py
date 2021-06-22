@@ -7,7 +7,6 @@ and issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
 import rospy
-import time
 from math import degrees
 import numpy as np
 from geometry_msgs.msg import Point
