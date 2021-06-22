@@ -6,7 +6,6 @@ movement. It accomplishes this by subscribing to link poses of the scoop and
 issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
-import time
 from math import degrees
 import rospy
 import numpy as np
@@ -58,7 +57,7 @@ class ModifyTerrainScoop:
     msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw))
     self.visual_pub.publish(msg)
     
-    rospy.logdebug_throttle(1, "modify_terrain_scoop message:\n" + str(msg))
+    rospy.logdebug_throttle(1, f"modify_terrain_scoop message:\n{str(msg)}")
 
   def handle_link_states(self, data):
     try:
