@@ -39,9 +39,6 @@ public:
   FaultDetector(ros::NodeHandle& node_handle);
   ~FaultDetector(){}
 
-//   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
-
-
 private:
     ros::Publisher m_pub;
 
