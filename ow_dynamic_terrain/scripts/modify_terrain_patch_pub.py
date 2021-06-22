@@ -9,7 +9,6 @@ import os
 import argparse
 import time
 import rospy
-import rospkg
 
 import cv2
 from cv_bridge import CvBridge
