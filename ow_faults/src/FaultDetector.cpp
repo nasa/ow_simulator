@@ -81,7 +81,7 @@ void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
 void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
   ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_trigger_on){
+  if (m_cam_trigger_on) {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   } else {
