@@ -65,18 +65,13 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 
 void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
   ow_faults::CamFaults camera_faults_msg;
-
-  if (!msg) {// if no fault
-    m_cam_trigger_on = true;
-  }else {
-    m_cam_trigger_on = false;
-  }
+  m_cam_trigger_on = true;
 }
 
 void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
   ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_trigger_on && !msg){
+  if (m_cam_trigger_on) {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   } else {
