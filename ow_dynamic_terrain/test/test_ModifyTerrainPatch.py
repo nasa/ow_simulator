@@ -9,7 +9,6 @@ import unittest
 import sys
 import os
 import numpy as np
-from ow_dynamic_terrain.msg import modify_terrain_patch
 sys.path.append(os.path.abspath('../scripts'))
 from modify_terrain_patch_pub import scale_image_intensities
 
