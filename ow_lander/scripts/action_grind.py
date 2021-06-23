@@ -90,7 +90,6 @@ def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs)
                                waypoints,   # waypoints to follow
                                0.01,        # end effector follow step (meters)
                                0.0)         # jump threshold
-
   return plan, fraction
 
 
