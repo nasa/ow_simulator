@@ -22,16 +22,16 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   srand (static_cast <unsigned> (time(0)));
 
  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultDetector::cameraTriggerOriginalCb, this);
-  m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
-    10, &FaultDetector::cameraTriggerCb, this);
+  // m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+  //   10, &FaultDetector::cameraTriggerOriginalCb, this);
+  // m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
+  //   10, &FaultDetector::cameraTriggerCb, this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  // m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
+  // m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
   m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //  power fault publishers and subs
@@ -73,24 +73,24 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
-void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
-  ow_faults::CamFaults camera_faults_msg;
-  m_cam_trigger_on = true;
-}
+// void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
+//   ow_faults::CamFaults camera_faults_msg;
+//   m_cam_trigger_on = true;
+// }
 
-void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
-  ow_faults::CamFaults camera_faults_msg;
+// void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
+//   ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_trigger_on) {
-    m_system_faults_bitset |= isCamExecutionError;
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isCamExecutionError;
-  }
+//   if (m_cam_trigger_on) {
+//     m_system_faults_bitset |= isCamExecutionError;
+//     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+//   } else {
+//     m_system_faults_bitset &= ~isCamExecutionError;
+//   }
 
-  publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
-}
+//   publishSystemFaultsMessage();
+//   m_camera_fault_msg_pub.publish(camera_faults_msg);
+// }
 
 // void FaultDetector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
 //   std_msgs::Float64 out_msg;

@@ -30,10 +30,10 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
-  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultInjector::cameraTriggerCb, this);
-  m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
+  // auto image_trigger_str = "/StereoCamera/left/image_trigger";
+  // m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+  //   10, &FaultInjector::cameraTriggerCb, this);
+  // m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
 
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);

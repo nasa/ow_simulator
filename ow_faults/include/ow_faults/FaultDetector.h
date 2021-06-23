@@ -92,8 +92,8 @@ private:
   // bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   // //camera function
-  void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
-  void cameraTriggerCb(const std_msgs::Empty& msg);
+  // void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
+  // void cameraTriggerCb(const std_msgs::Empty& msg);
 
   // // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
@@ -135,8 +135,8 @@ private:
   // ros::Publisher m_dist_pitch_ft_sensor_pub;
 
   // // camera
-  ros::Subscriber m_camera_original_trigger_sub;
-  ros::Subscriber m_camera_trigger_sub;
+  // ros::Subscriber m_camera_original_trigger_sub;
+  // ros::Subscriber m_camera_trigger_sub;
   // ros::Publisher m_camera_trigger_remapped_pub;
 
   // //antenna 
@@ -148,7 +148,7 @@ private:
   // // jpl message publishers
   // ros::Publisher m_antenna_fault_msg_pub;
   // ros::Publisher m_arm_fault_msg_pub;
-  ros::Publisher m_camera_fault_msg_pub;
+  // ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
@@ -159,7 +159,7 @@ private:
   // //general component faults
   // bool m_arm_fault;
   // bool m_ant_fault;
-  bool m_cam_trigger_on = false;
+  // bool m_cam_trigger_on = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
 
