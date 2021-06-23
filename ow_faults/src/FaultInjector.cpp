@@ -90,11 +90,11 @@ void FaultInjector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) {
   msg.value = bm.to_ullong();
 }
 
-// template<typename fault_msg>
-// void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
-//   setFaultsMessageHeader(msg);
-//   msg.value = static_cast<uint>(value);
-// }
+template<typename fault_msg>
+void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
+  setFaultsMessageHeader(msg);
+  msg.value = static_cast<uint>(value);
+}
 
 void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
   if (!m_cam_fault) {// if no fault

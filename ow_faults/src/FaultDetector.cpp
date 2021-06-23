@@ -22,12 +22,12 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   srand (static_cast <unsigned> (time(0)));
 
  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_original_trigger_sub = = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultInjector::cameraTriggerOriginalCb, this);
+  m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+    10, &FaultDetector::cameraTriggerOriginalCb, this);
   m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
-    10, &FaultInjector::cameraTriggerCb, this);
+    10, &FaultDetector::cameraTriggerCb, this);
   
-  m_cameraTriggerTimer = n.createTimer(ros::Duration(0.1), cameraTriggerPublishCb);
+  m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
@@ -68,7 +68,11 @@ void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
   m_cam_og_trigger_time = ros::Time::now();
 }
 
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent&){
+void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
+  m_cam_trigger_time = ros::Time::now();
+}
+
+void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
   ow_faults::CamFaults camera_faults_msg;
 
   if (m_cam_og_trigger_time != m_cam_trigger_time) {
@@ -80,10 +84,6 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent&){
 
   publishSystemFaultsMessage();
   m_camera_fault_msg_pub.publish(camera_faults_msg);
-}
-
-void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
-  m_cam_trigger_time = ros::Time::now();
 }
 
 // void FaultDetector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
