@@ -10,6 +10,8 @@ using namespace std;
 
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
+  
   srand (static_cast <unsigned> (time(0)));
   m_pub = node_handle.advertise<ow_faults::SystemFaults>("/test", 10);
 }
+
