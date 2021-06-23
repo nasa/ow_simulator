@@ -26,7 +26,8 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
     10, &FaultInjector::cameraTriggerOriginalCb, this);
   m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
     10, &FaultInjector::cameraTriggerCb, this);
-
+  
+  m_cameraTriggerTimer = n.createTimer(ros::Duration(0.1), cameraTriggerPublishCb);
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
@@ -64,14 +65,13 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 }
 
 void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
-  ow_faults::CamFaults camera_faults_msg;
-  m_cam_trigger_on = true;
+  m_cam_og_trigger_time = ros::Time::now();
 }
 
-void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
+void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent&){
   ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_trigger_on) {
+  if (m_cam_og_trigger_time != m_cam_trigger_time) {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   } else {
@@ -80,6 +80,10 @@ void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
 
   publishSystemFaultsMessage();
   m_camera_fault_msg_pub.publish(camera_faults_msg);
+}
+
+void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
+  m_cam_trigger_time = ros::Time::now();
 }
 
 // void FaultDetector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){

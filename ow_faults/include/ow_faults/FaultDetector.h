@@ -94,6 +94,7 @@ private:
   // //camera function
   void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
   void cameraTriggerCb(const std_msgs::Empty& msg);
+  void cameraTriggerPublishCb(const ros::TimerEvent&);
 
   // // power functions
   // float getRandomFloatFromRange(float min_val, float max_val);
@@ -135,6 +136,7 @@ private:
   // ros::Publisher m_dist_pitch_ft_sensor_pub;
 
   // // camera
+  ros::Timer m_cameraTriggerTimer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_trigger_sub;
   // ros::Publisher m_camera_trigger_remapped_pub;
@@ -159,9 +161,11 @@ private:
   // //general component faults
   // bool m_arm_fault;
   // bool m_ant_fault;
-  bool m_cam_trigger_on = false;
+  // bool m_cam_trigger_on = false;
   // bool m_soc_fault = false;
   // bool m_temperature_fault = false;
+  ros::Time m_cam_trigger_on;
+  ros::Time m_cam_og_trigger_time;
 
   // //arm joint faults
   // ow_faults::FaultsConfig m_faults;
