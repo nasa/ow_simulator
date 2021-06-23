@@ -38,6 +38,10 @@ class FaultDetector
 public:
   FaultDetector(ros::NodeHandle& node_handle);
   ~FaultDetector(){}
+  
+  FaultDetector (const FaultDetector&) = delete;
+  FaultDetector& operator= (const FaultDetector&) = delete;
+
 
   enum class ComponentFaults : uint {
     Hardware = 1, 
