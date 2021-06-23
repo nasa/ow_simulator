@@ -19,6 +19,7 @@ constexpr std::bitset<3> FaultDetector::isThermalError;
 
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
+  
   srand (static_cast <unsigned> (time(0)));
 
  auto image_trigger_str = "/StereoCamera/left/image_trigger";
