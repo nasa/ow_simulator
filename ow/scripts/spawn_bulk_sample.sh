@@ -12,8 +12,8 @@ USAGE="./spawn_bulk_sample RSDF_FILE DIAMETER TOTAL_MASS [-t|--test]
     bulk material properties of the model should be specified in the RSDF_FILE.
     
     Caveats:
-    1) Before running this script ensure the Gazebo sim is not paused. Particles
-       are spawned one at a time into the sim to avoid colliding, but that only 
+    1) Before running this script ensure the Gazebo sim is not paused. Models
+       are spawned one at a time into the sim to avoid collisions, but that only 
        works if they are able to fall after they spawn.
     2) Spawning a large number of models takes a long time, so it is always good
        practice to use the the -t option flag on a set of arguments to see how 
@@ -38,16 +38,16 @@ RSDF_FILE=$1
 DIAMETER=$2
 TARGET_MASS=$3
 
-# time between link spawns
-# NOTE: This waits on system time, not Gazebo time. So if you see particles 
-#       spawning over each other, then this value may need to be adjusted higher
+# time between each model spawns
+# NOTE: This waits on system time, not Gazebo time, so if you see models 
+#       spawning over each other, then this value may need to be made larger
 SPAWN_WAIT=0.05 # seconds
 SPAWN_OFFSET="-z -0.05"
 SPAWN_REFERENCE_FRAME="lander::l_scoop_tip"
 
 GENERATED_SDF=`erb diameter=$DIAMETER $RSDF_FILE`
 
-# grab particle mass from the newly generated SDF
+# grab model mass from the newly generated SDF
 MASS_PER_MODEL=`echo $GENERATED_SDF | grep -oP '<mass>\s*\K\d+\.?\d*(?=\s*</mass>)'`
 
 SPAWN_NUM=`awk -v M=$TARGET_MASS -v m=$MASS_PER_MODEL 'BEGIN {
@@ -74,19 +74,20 @@ echo "Totaling to a mass of ................................... $ACTUAL_TOTAL_MA
 echo "This total mass value differs from the target mass by ... $MASS_DEFICIT kg"
 
 if [ "$4" == "-t" ] || [ "$4" == "--test" ]; then
-    echo "This is just a test. Skipping particle spawn step."
+    echo "This is just a test. Skipping spawn step."
     exit 0
 fi
 
-echo "Spawning particles into Gazebo world one at a time..."
+echo "Spawning models into Gazebo world one at a time..."
 
 for (( i=0; i<$SPAWN_NUM; i++ ))
 do
     NOW=`date +%s%3N`
     echo $GENERATED_SDF | rosrun gazebo_ros spawn_model -sdf -stdin -reference_frame $SPAWN_REFERENCE_FRAME $SPAWN_OFFSET -model regolith_$NOW;
-    sleep $SPAWN_WAIT # allow previous particle to fall before spawning the next
+    # allow previous model to fall before spawning the next one
+    sleep $SPAWN_WAIT
 done
 
-echo "All particles have been spawned"
+echo "All models have been spawned"
 
 exit 0
