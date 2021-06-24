@@ -95,12 +95,18 @@ class ArmCheck(unittest.TestCase):
 
     self.assertTrue(goal_state_achieved)
 
-  def test_unstow(self):
+  def test_1_unstow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
     joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
       service_name = '/arm/unstow', service_type = Unstow, joints_goal = joints_goal)
 
+  def test_2_stow(self):
+    joints_target = self._arm_move_group.get_named_target_values("arm_stowed")
+    joints_goal = self._map_named_joint_target_to_list(joints_target)
+    self._test_activity(
+      service_name = '/arm/stow', service_type = Stow, joints_goal = joints_goal)
+
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'test_unstow', ArmCheck)
+  rostest.rosrun(PKG, 'arm_check', ArmCheck)
