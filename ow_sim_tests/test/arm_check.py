@@ -21,7 +21,6 @@ class ArmCheck(unittest.TestCase):
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
     rospy.init_node("arm_check_test", anonymous=True)
-    self._test_duration = rospy.get_param("/arm_check/test_duration")
     moveit_commander.roscpp_initialize(sys.argv)
     self._robot = moveit_commander.RobotCommander()
     self._joint_names = self._robot.get_joint_names("arm")
@@ -58,7 +57,7 @@ class ArmCheck(unittest.TestCase):
     return True
 
   def _test_activity(self,
-    service_name, service_type, joints_goal):
+    service_name, service_type, joints_goal, test_duration, service_args = None):
     """
     A helper method that does validates a any arm operation
     @param service_name:
@@ -68,11 +67,11 @@ class ArmCheck(unittest.TestCase):
 
     rospy.wait_for_service(service_name)
     success = False
-    self._test_start_time = time.time()
+    test_start_time = time.time()
 
     try:
       arm_activity = rospy.ServiceProxy(service_name, service_type)
-      success = arm_activity()
+      success = arm_activity() if service_args is None else arm_activity(*service_args)
     except rospy.ServiceException as e:
       rospy.logerr("{} threw an error: {}".format(service_name, e))
 
@@ -81,16 +80,12 @@ class ArmCheck(unittest.TestCase):
     goal_state_achieved = False
 
     while not rospy.is_shutdown() and \
-        (time.time() - self._test_start_time < self._test_duration) and \
+        (time.time() - test_start_time < test_duration) and \
         not goal_state_achieved:
 
       joints_state = self._arm_move_group.get_current_joint_values()
-      rospy.loginfo("joints_goal = {}".format(joints_goal))
       normalized_joints_state = [ self._normalize_angle(e) for e in joints_state ]
-      formatted_joints_state = [ '%.2f' % e for e in normalized_joints_state ]
-      rospy.loginfo("joints_state = {}".format(formatted_joints_state))
       goal_state_achieved = self._all_close(joints_goal, normalized_joints_state)
-      rospy.loginfo("achieved? {}".format(goal_state_achieved))
       time.sleep(0.2)
 
     self.assertTrue(goal_state_achieved)
@@ -99,13 +94,27 @@ class ArmCheck(unittest.TestCase):
     joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
     joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
-      service_name = '/arm/unstow', service_type = Unstow, joints_goal = joints_goal)
+      service_name = '/arm/unstow',
+      service_type = Unstow,
+      joints_goal = joints_goal,
+      test_duration = rospy.get_param("/arm_check/unstow_duration"))
 
   def test_2_stow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_stowed")
     joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
-      service_name = '/arm/stow', service_type = Stow, joints_goal = joints_goal)
+      service_name = '/arm/stow',
+      service_type = Stow,
+      joints_goal = joints_goal,
+      test_duration = rospy.get_param("/arm_check/stow_duration"))
+
+  def test_3_deliver_sample(self):
+    self._test_activity(
+      service_name = '/arm/deliver_sample',
+      service_type = DeliverSample,
+      joints_goal = ['0.74', '1.34', '1.85', '-0.28', '-2.87', '2.37'],
+      test_duration = rospy.get_param("/arm_check/deliver_sample_duration"),
+      service_args = [True, 0, 0, 0])
 
 if __name__ == '__main__':
   import rostest
