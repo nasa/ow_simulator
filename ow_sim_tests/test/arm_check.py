@@ -60,23 +60,19 @@ class ArmCheck(unittest.TestCase):
     service_name, service_type, joints_goal, test_duration, service_args = None):
     """
     A helper method that does validates a any arm operation
-    @param service_name:
-    @param service_type:
-    @param joints_goal:
+    @param service_name: Name of the ros service to be invoked
+    @param service_type: Type of the service
+    @param joints_goal: Expected joints values when the activity is completed
+    @param test_duration: How long the operation needs to complete
+    @param service_args: [optional] Args to be passed to the service when invoked
     """
 
     rospy.wait_for_service(service_name)
     success = False
     test_start_time = time.time()
-
-    try:
-      arm_activity = rospy.ServiceProxy(service_name, service_type)
-      success = arm_activity() if service_args is None else arm_activity(*service_args)
-    except rospy.ServiceException as e:
-      rospy.logerr("{} threw an error: {}".format(service_name, e))
-
+    arm_activity = rospy.ServiceProxy(service_name, service_type)
+    success = arm_activity() if service_args is None else arm_activity(*service_args)
     self.assertTrue(success, "submitted request to " + service_name)
-
     goal_state_achieved = False
 
     while not rospy.is_shutdown() and \
