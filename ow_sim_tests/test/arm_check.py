@@ -69,22 +69,22 @@ class ArmCheck(unittest.TestCase):
 
     rospy.wait_for_service(service_name)
     success = False
-    test_start_time = time.time()
+    test_start_time = rospy.get_time()
     arm_activity = rospy.ServiceProxy(service_name, service_type)
     success = arm_activity() if service_args is None else arm_activity(*service_args)
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
 
     while not rospy.is_shutdown() and \
-        (time.time() - test_start_time < test_duration) and \
+        (rospy.get_time() - test_start_time < test_duration) and \
         not goal_state_achieved:
 
       joints_state = self._arm_move_group.get_current_joint_values()
       normalized_joints_state = [ self._normalize_angle(e) for e in joints_state ]
       goal_state_achieved = self._all_close(joints_goal, normalized_joints_state)
-      time.sleep(0.2)
+      rospy.sleep(0.2)
 
-    self.assertTrue(goal_state_achieved)
+    self.assertTrue(goal_state_achieved, "expected joint states don't match")
 
   def test_1_unstow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
@@ -108,7 +108,7 @@ class ArmCheck(unittest.TestCase):
     self._test_activity(
       service_name = '/arm/deliver_sample',
       service_type = DeliverSample,
-      joints_goal = ['0.74', '1.34', '1.85', '-0.28', '-2.87', '2.37'],
+      joints_goal = [0.98, 1.78, 0.96,1.98, 2.55,1.58],
       test_duration = rospy.get_param("/arm_check/deliver_sample_duration"),
       service_args = [True, 0, 0, 0])
 
