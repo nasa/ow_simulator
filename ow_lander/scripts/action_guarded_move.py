@@ -76,7 +76,6 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   goal_pose.position.z = targ_z
 
   move_arm.set_pose_target(goal_pose)
-  move_arm.set_max_velocity_scaling_factor(0.5)
   plan_b = move_arm.plan()
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
