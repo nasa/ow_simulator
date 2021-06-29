@@ -21,8 +21,6 @@
 // #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
-#include <unordered_map>
-#include <random>
 
 
 // This class injects simple message faults that don't need to be simulated
