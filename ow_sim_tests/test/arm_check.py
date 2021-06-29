@@ -27,6 +27,10 @@ class ArmCheck(unittest.TestCase):
     self._arm_move_group = moveit_commander.MoveGroupCommander(
         "arm", wait_for_servers=20.0)
 
+    # proceed with test only when ros clock has been initialized
+    while rospy.get_time() == 0:
+      rospy.sleep(0.1)
+
   def _map_named_joint_target_to_list(self, joints_target):
     return [joints_target[n] for n in self._joint_names]
 
@@ -75,16 +79,19 @@ class ArmCheck(unittest.TestCase):
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
 
+    elapsed = 0
     while not rospy.is_shutdown() and \
-        (rospy.get_time() - test_start_time < test_duration) and \
+        elapsed < test_duration and \
         not goal_state_achieved:
 
       joints_state = self._arm_move_group.get_current_joint_values()
       normalized_joints_state = [ self._normalize_angle(e) for e in joints_state ]
       goal_state_achieved = self._all_close(joints_goal, normalized_joints_state)
       rospy.sleep(0.2)
+      elapsed = rospy.get_time() - test_start_time
 
-    self.assertTrue(goal_state_achieved, "expected joint states don't match")
+    self.assertTrue(elapsed < test_duration, "arm operation timed-out! condition: {} < {}".format(elapsed, test_duration))
+    self.assertTrue(goal_state_achieved, "expected joint states don't match!")
 
   def test_1_unstow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
