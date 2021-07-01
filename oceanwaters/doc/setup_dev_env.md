@@ -135,22 +135,20 @@ make universalExec plexil-compiler checkpoint
 
 ### GSAP
 
-The OceanWATERS distribution includes a power system  module (`ow_power_system`) that at present
-depends on GSAP, an open-source battery prognostics executive. GSAP  must be installed
-*prior* to building the `ow_power_system` package.
-
+The OceanWATERS distribution includes a power system module (`ow_power_system`)
+that at present depends on GSAP, an open-source battery prognostics
+executive. GSAP must be installed *prior* to building the `ow_power_system`
+package.
 
 * Check out the source code:
 ```
-git clone --branch v1.0-OW https://github.com/nasa/GSAP.git gsap
+git clone -b v1.0-OW https://github.com/nasa/GSAP.git gsap
 ```
 
-The git branch used is v1.0-OW, which is the latest stable version of GSAP for use with OceanWATERS.
-Please note that this is not the default branch for GSAP and the two may differ.
-This implementation strategy is required to utilize essential functionality developed after the most
-recent offical release of GSAP and to prevent compatibility issues that may arise due to continuing
-updates made within the GSAP framework. The latest stable version of GSAP for use with OceanWATERS will
-be updated as necessary and will revert to the default branch of GSAP pending its next scheduled release.
+This checks out the git _tag_ `v1.0-OW` of GSAP's `master` branch, which is a
+tested version of GSAP for use with OceanWATERS.  Note that checking out a
+specific tag leaves your local repository in a "detached HEAD" state; this is of
+no concern.
 
 * Define the `GSAP_HOME` environment variable as the location of your GSAP
   installation, e.g.
@@ -159,8 +157,9 @@ be updated as necessary and will revert to the default branch of GSAP pending it
 export GSAP_HOME=/home/<username>/gsap
 ```
 
-NOTE: for convenience, you may wish to add the previous command to your
-shell initialization file (e.g. `.profile` or '.bashrc'), since they are needed every time
+NOTE: for convenience, you may wish to add the previous command to your shell
+initialization file (e.g. `.profile` or '.bashrc'), since they are needed every
+time.
 
 * Build GSAP.
 ```
