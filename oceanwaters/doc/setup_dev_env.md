@@ -158,7 +158,7 @@ export GSAP_HOME=/home/<username>/gsap
 ```
 
 NOTE: for convenience, you may wish to add the previous command to your shell
-initialization file (e.g. `.profile` or '.bashrc'), since they are needed every
+initialization file (e.g. `.profile` or `.bashrc`), since they are needed every
 time.
 
 * Build GSAP.
