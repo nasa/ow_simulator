@@ -3,7 +3,7 @@
 
     <arg name="gzclient" default="true" />
 
-    <include file="$(find ow_sim_tests)/launch/europa_terminator_workspace.launch" />
+    <include file="$(find ow)/launch/europa_terminator_workspace.launch" />
 
     <test test-name="arm_check" pkg="ow_sim_tests" type="arm_check.py" time-limit="150.0">
         <param name="unstow_duration" value="30.0" />

@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="gazebo_launch_file" default="$(find gazebo_ros)/launch/empty_world.launch" />
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
-  <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states" />
+  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
 
@@ -18,7 +19,7 @@
   <arg name="freeze_base_link" default="false" />
 
   <!-- == launch gazebo with the chosen world ==================== -->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg gazebo)">
+  <include file="$(arg gazebo_launch_file)" if="$(arg gazebo)">
     <arg name="world_name" value="$(arg world_name)"/>
     <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
@@ -26,7 +27,7 @@
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
-    <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states"/>
+    <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
   </include>
 
   <!-- == publish celestial body frames ==================== -->
@@ -76,12 +77,6 @@
 
   <!-- ====== simulate changes to the terrain caused by the grinder ======= -->
   <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
-
-  <!-- == start rviz ==================== -->
-  <!--group unless="$(arg arm_sim_enable)">
-    <node name="rviz" pkg="rviz" type="rviz"
-      args="-d $(find ow_lander)/config/lander.rviz" output="screen"/>
-  </group-->
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
