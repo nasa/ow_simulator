@@ -18,7 +18,7 @@
   <arg name="freeze_base_link" default="false" />
 
   <!-- == launch gazebo with the chosen world ==================== -->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg gazebo)">
+  <include file="$(find ow_sim_tests)/launch/empty_world.launch" if="$(arg gazebo)">
     <arg name="world_name" value="$(arg world_name)"/>
     <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
@@ -87,6 +87,7 @@
   <!-- Starting without a .perspective file will reload the last used configuration. -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
+  <!--
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
@@ -94,6 +95,7 @@
     <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
     <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
   </node>
+  -->
 
   <!-- == start bag_recorder_node =========== -->
   <node if="$(arg record_bag)" name="bag_recorder_node" 
