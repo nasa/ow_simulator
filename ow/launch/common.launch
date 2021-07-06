@@ -7,7 +7,6 @@
   <arg name="extra_gazebo_args" value="joint_states:=/_original/joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
-  <arg name="power_draw_csv_file" default="onewatt.csv"/>  <!-- options: onewatt.csv, eightwatt.csv, sixteenwatt.csv -->
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -67,9 +66,7 @@
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
   <!-- Start power_system_node -->
-  <node name="power_system_node" pkg="ow_power_system" type="power_system_node">
-    <param name="power_draw_csv_path" value="$(find ow_power_system)/data/$(arg power_draw_csv_file)"/>
-  </node>
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
   <!-- Start faults node -->
   <node name="faults" pkg="ow_faults" type="faults" output="screen" />
@@ -92,9 +89,11 @@
     launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
-    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective"/>
-  <!-- == launch the mechanical power publishing node ========= -->
-  <node pkg="ow_lander" name="mechanical_power_arm" type="mechanical_power_arm.py" output="screen" />
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
+    <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
+    <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
+    <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
+  </node>
 
   <!-- == start bag_recorder_node =========== -->
   <node if="$(arg record_bag)" name="bag_recorder_node" 
