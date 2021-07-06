@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_sim_tests)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
-add_compile_options(-std=c++11)
+## libiginition-math6-dev which is a dependency of this module seem to require
+## the C++17 standard when compiling against ros noetic distro.
+if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+  add_compile_options(-std=c++17)
+endif()
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
