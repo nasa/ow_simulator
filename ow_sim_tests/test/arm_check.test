@@ -5,10 +5,6 @@
 
     <include file="$(find ow_sim_tests)/launch/europa_terminator_workspace.launch" />
 
-    <test test-name="arm_check" pkg="ow_sim_tests" type="arm_check.py" time-limit="150.0">
-        <param name="unstow_duration" value="30.0" />
-        <param name="stow_duration" value="25.0" />
-        <param name="deliver_sample_duration" value="70.0" />
-    </test>
+    <test test-name="arm_check" pkg="ow_sim_tests" type="arm_check.py" time-limit="700.0" />
 
 </launch>

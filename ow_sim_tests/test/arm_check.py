@@ -79,6 +79,8 @@ class ArmCheck(unittest.TestCase):
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
 
+    rospy.loginfo("testing service: " + service_name)
+
     elapsed = 0
     while not rospy.is_shutdown() and \
         elapsed < test_duration and \
@@ -86,38 +88,99 @@ class ArmCheck(unittest.TestCase):
 
       joints_state = self._arm_move_group.get_current_joint_values()
       normalized_joints_state = [ self._normalize_angle(e) for e in joints_state ]
+      rospy.loginfo("goal: " + ",".join([str(j) for j in joints_goal]))
+      rospy.loginfo("state: " + ",".join([str(j) for j in normalized_joints_state]))
       goal_state_achieved = self._all_close(joints_goal, normalized_joints_state)
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
 
+    rospy.loginfo("{} service reported: {}".format(service_name, goal_state_achieved))
     self.assertTrue(elapsed < test_duration, "arm operation timed-out! condition: {} < {}".format(elapsed, test_duration))
     self.assertTrue(goal_state_achieved, "expected joint states don't match!")
 
-  def test_1_unstow(self):
+  def test_01_unstow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
     joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
       service_name = '/arm/unstow',
       service_type = Unstow,
       joints_goal = joints_goal,
-      test_duration = rospy.get_param("/arm_check/unstow_duration"))
+      test_duration = 30)
 
-  def test_2_stow(self):
+  def test_02_guarded_move(self):
+    self._test_activity(
+      service_name = '/arm/guarded_move',
+      service_type = GuardedMove,
+      joints_goal = [-0.02, 0.68, -1.39, 0.75, -0.01, -0.053],
+      test_duration = 45,
+      service_args = [True, 0, 0, 0, 0, 0, 0, 0])
+
+  def test_03_unstow(self):
+    joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
+    joints_goal = self._map_named_joint_target_to_list(joints_target)
+    self._test_activity(
+      service_name = '/arm/unstow',
+      service_type = Unstow,
+      joints_goal = joints_goal,
+      test_duration = 30)
+
+  def test_04_grind(self):
+    self._test_activity(
+      service_name = '/arm/grind',
+      service_type = Grind,
+      joints_goal = [-0.12, 1.91, -2.33, 0.40, -2.10, 0.37],
+      test_duration = 90,
+      service_args = [True, 0, 0, 0, 0, False, 0])
+
+  def test_05_dig_circular(self):
+    self._test_activity(
+      service_name = '/arm/dig_circular',
+      service_type = DigCircular,
+      joints_goal = [-0.03, 0.96, -1.64, 1.66, 0.0, 1.57],
+      test_duration = 100,
+      service_args = [True, 0, 0, 0, False, 0])
+
+  def test_06_grind(self):
+    self._test_activity(
+      service_name = '/arm/grind',
+      service_type = Grind,
+      joints_goal = [-0.13, 2.14, -2.46, 0.30, -2.10, 1.56],
+      test_duration = 100,
+      service_args = [False, 1.55, 0, 0.15, 0.85, True, -0.155])
+
+  def test_07_dig_linear(self):
+    self._test_activity(
+      service_name = '/arm/dig_linear',
+      service_type = DigLinear,
+      joints_goal = [-0.04, 0.55, -1.17, 1.57, 0.0,1.57],
+      test_duration = 120,
+      service_args = [True, 0, 0, 0, 0, 0])
+
+  def test_08_deliver_sample(self):
+    self._test_activity(
+      service_name = '/arm/deliver_sample',
+      service_type = DeliverSample,
+      joints_goal = [0.98, 1.78, 0.96,1.98, 2.55,1.58],
+      test_duration = 70,
+      service_args = [True, 0, 0, 0])
+
+  def test_09_unstow(self):
+    joints_target = self._arm_move_group.get_named_target_values("arm_unstowed")
+    joints_goal = self._map_named_joint_target_to_list(joints_target)
+    self._test_activity(
+      service_name = '/arm/unstow',
+      service_type = Unstow,
+      joints_goal = joints_goal,
+      test_duration = 30)
+
+  def test_10_stow(self):
     joints_target = self._arm_move_group.get_named_target_values("arm_stowed")
     joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
       service_name = '/arm/stow',
       service_type = Stow,
       joints_goal = joints_goal,
-      test_duration = rospy.get_param("/arm_check/stow_duration"))
-
-  def test_3_deliver_sample(self):
-    self._test_activity(
-      service_name = '/arm/deliver_sample',
-      service_type = DeliverSample,
-      joints_goal = [0.98, 1.78, 0.96,1.98, 2.55,1.58],
-      test_duration = rospy.get_param("/arm_check/deliver_sample_duration"),
-      service_args = [True, 0, 0, 0])
+      test_duration = 25)
 
 if __name__ == '__main__':
   import rostest
