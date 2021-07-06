@@ -8,6 +8,8 @@
   <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
+  <arg name="rqt_gui" default="true" />
+  <arg name="use_rviz" default="true" />
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -55,6 +57,7 @@
     <arg name="init_P" value="$(arg init_P)"/>
     <arg name="init_Y" value="$(arg init_Y)"/>
     <arg name="freeze_base_link" value="$(arg freeze_base_link)"/>
+    <arg name="use_rviz" value="$(arg use_rviz)"/>
   </include>
 
   <!-- == add lander to tf-tree ==================== -->
@@ -84,7 +87,7 @@
     launch-prefix="bash -c 'sleep 5; $0 $@' "/-->
   <node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
-    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
+    args="&#45;&#45;perspective-file $(find ow)/config/default.perspective" if="$(arg rqt_gui)">
     <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
     <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
     <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
