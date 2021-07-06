@@ -88,8 +88,6 @@ class ArmCheck(unittest.TestCase):
 
       joints_state = self._arm_move_group.get_current_joint_values()
       normalized_joints_state = [ self._normalize_angle(e) for e in joints_state ]
-      rospy.loginfo("goal: " + ",".join([str(j) for j in joints_goal]))
-      rospy.loginfo("state: " + ",".join([str(j) for j in normalized_joints_state]))
       goal_state_achieved = self._all_close(joints_goal, normalized_joints_state)
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
