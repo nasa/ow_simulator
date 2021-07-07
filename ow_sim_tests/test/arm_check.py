@@ -47,7 +47,7 @@ class ArmCheck(unittest.TestCase):
         angle -= 2*pi
     return angle
 
-  def _all_close(self, goal, actual, tolerance=0.01):
+  def _all_close(self, goal, actual, tolerance=0.02):
     """
     Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
     @param goal: A list of floats
