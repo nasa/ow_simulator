@@ -137,7 +137,7 @@ class ArmCheck(unittest.TestCase):
         service_type=Grind,
         joints_goal=[-0.12, 1.91, -2.33, 0.40, -2.10, 0.37],
         test_duration=270,
-        tolerance=0.05,
+        tolerance=0.06,
         service_args=[True, 0, 0, 0, 0, False, 0])
 
   def test_05_dig_circular(self):
