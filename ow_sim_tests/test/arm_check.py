@@ -117,7 +117,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/guarded_move',
         service_type=GuardedMove,
         joints_goal=[-0.02, 0.68, -1.39, 0.75, -0.01, -0.053],
-        test_duration=45,
+        test_duration=60,
         tolerance=0.05,
         service_args=[True, 0, 0, 0, 0, 0, 0, 0])
 
@@ -136,7 +136,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/grind',
         service_type=Grind,
         joints_goal=[-0.12, 1.91, -2.33, 0.40, -2.10, 0.37],
-        test_duration=90,
+        test_duration=270,
         tolerance=0.05,
         service_args=[True, 0, 0, 0, 0, False, 0])
 
@@ -145,7 +145,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/dig_circular',
         service_type=DigCircular,
         joints_goal=[-0.03, 0.96, -1.64, 1.66, 0.0, 1.57],
-        test_duration=100,
+        test_duration=160,
         tolerance=0.05,
         service_args=[True, 0, 0, 0, False, 0])
 
@@ -154,7 +154,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/grind',
         service_type=Grind,
         joints_goal=[-0.13, 2.14, -2.46, 0.30, -2.10, 1.56],
-        test_duration=100,
+        test_duration=160,
         tolerance=0.05,
         service_args=[False, 1.55, 0, 0.15, 0.85, True, -0.155])
 
@@ -163,7 +163,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/dig_linear',
         service_type=DigLinear,
         joints_goal=[-0.04, 0.55, -1.17, 1.57, 0.0, 1.57],
-        test_duration=120,
+        test_duration=180,
         tolerance=0.05,
         service_args=[True, 0, 0, 0, 0, 0])
 
@@ -172,7 +172,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/deliver_sample',
         service_type=DeliverSample,
         joints_goal=[0.98, 1.78, 0.96, 1.98, 2.55, 1.58],
-        test_duration=70,
+        test_duration=90,
         service_args=[True, 0, 0, 0])
 
   def test_09_unstow(self):
@@ -192,7 +192,7 @@ class ArmCheck(unittest.TestCase):
         service_name='/arm/stow',
         service_type=Stow,
         joints_goal=joints_goal,
-        test_duration=25)
+        test_duration=30)
 
 
 if __name__ == '__main__':
