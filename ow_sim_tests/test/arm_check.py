@@ -58,7 +58,9 @@ class ArmCheck(unittest.TestCase):
     @param service_type: Type of the service
     @param joints_goal: Expected joints values when the activity is completed
     @param test_duration: How long the operation needs to complete
-    @param tolerance: [optional] How much tolerance is allowed against the specified joints_goal
+    @param tolerance: [optional] How much tolerance is allowed against the
+      specified joints_goal. The tolerance can be passed as an array of same size
+      as joints_goal.
     @param service_args: [optional] Args to be passed to the service when invoked
     """
 
@@ -92,8 +94,8 @@ class ArmCheck(unittest.TestCase):
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
 
-    rospy.loginfo("operation {} took {}s, time-limit={}s".format(
-        service_name, round(elapsed), test_duration))
+    rospy.loginfo("operation {} took {}s, time-limit is {}s".format(
+        service_name, int(round(elapsed)), test_duration))
     rospy.loginfo("maximum difference between expected/current: {}".format(
         np.max(joints_abs_diff_array)))
 
@@ -135,9 +137,9 @@ class ArmCheck(unittest.TestCase):
     self._test_activity(
         service_name='/arm/grind',
         service_type=Grind,
-        joints_goal=[-0.12, 1.91, -2.33, 0.40, -2.10, 0.37],
+        joints_goal=[-0.12, 1.91, -2.33, 0.40, -2.10, 0.32],
         test_duration=270,
-        tolerance=0.06,
+        tolerance=[0.05, 0.05, 0.05, 0.05, 0.05, 0.15],
         service_args=[True, 0, 0, 0, 0, False, 0])
 
   def test_05_dig_circular(self):
@@ -155,7 +157,7 @@ class ArmCheck(unittest.TestCase):
         service_type=Grind,
         joints_goal=[-0.13, 2.14, -2.46, 0.30, -2.10, 1.56],
         test_duration=160,
-        tolerance=0.05,
+        tolerance=[0.05, 0.05, 0.05, 0.05, 0.05, 0.15],
         service_args=[False, 1.55, 0, 0.15, 0.85, True, -0.155])
 
   def test_07_dig_linear(self):
