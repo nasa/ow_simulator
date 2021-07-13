@@ -65,13 +65,19 @@ class ArmCheck(unittest.TestCase):
     """
 
     rospy.wait_for_service(service_name)
-    success = False
     test_start_time = rospy.get_time()
+    joints_goal_array = np.array(joints_goal)
+    rospy.loginfo("""
+    test info:
+    ----------
+    service name: {}
+    joints goal: {}
+    start time: {}""".format(
+      service_name, np.round(joints_goal_array, 2), test_start_time))
     arm_activity = rospy.ServiceProxy(service_name, service_type)
     success = arm_activity() if service_args is None else arm_activity(*service_args)
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
-    joints_goal_array = np.array(joints_goal)
     joints_abs_diff_array = np.full(joints_goal_array.shape, np.inf)
 
     elapsed = 0
@@ -82,24 +88,23 @@ class ArmCheck(unittest.TestCase):
       joints_state = self._arm_move_group.get_current_joint_values()
       norm_joints_state_array = np.array(
           [self._normalize_angle(e) for e in joints_state])
-      rospy.loginfo("expected joints state: {}".format(
-          np.round(joints_goal_array, 2)))
-      rospy.loginfo("current joints state: {}".format(
-          np.round(norm_joints_state_array, 2)))
       joints_abs_diff_array = np.abs(
           joints_goal_array - norm_joints_state_array)
-      rospy.loginfo("diff joints state: {}".format(
-          np.round(joints_abs_diff_array, 2)))
       goal_state_achieved = all(joints_abs_diff_array < tolerance)
+      rospy.loginfo("""
+      current joints state: {}
+      diff joints state: {}
+      maximum diff between expected/current: {}""".format(
+        np.round(norm_joints_state_array, 2),
+        np.round(joints_abs_diff_array, 2),
+        np.round(np.max(joints_abs_diff_array), 2)
+      ))
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
 
     rospy.loginfo("operation {} took {}s, time-limit is {}s".format(
         service_name, int(round(elapsed)), test_duration))
-    rospy.loginfo("maximum difference between expected/current: {}".format(
-        np.max(joints_abs_diff_array)))
-
-    self.assertTrue(elapsed < test_duration,
+    self.assertTrue(elapsed < test_duration or goal_state_achieved,
                     "arm operation timed-out! condition: {} < {}".format(
                         elapsed, test_duration))
     self.assertTrue(goal_state_achieved, "expected joint states don't match!")
