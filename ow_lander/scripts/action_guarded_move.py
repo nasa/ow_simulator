@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -64,7 +64,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
 
   joint_goal[constants.J_SCOOP_YAW] = 0
   
-  plan_a = move_arm.plan(joint_goal)
+  move_arm.set_joint_value_target(joint_goal)
+  _, plan_a, _, _ = move_arm.plan()
   if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   
@@ -76,7 +77,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   goal_pose.position.z = targ_z
 
   move_arm.set_pose_target(goal_pose)
-  plan_b = move_arm.plan()
+  _, plan_b, _, _ = move_arm.plan()
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   pre_guarded_move_traj = cascade_plans (plan_a, plan_b)
@@ -95,7 +96,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   goal_pose.position.z -= direction_z*search_distance
 
   move_arm.set_pose_target(goal_pose)
-  plan_c  = move_arm.plan()
+  _, plan_c, _, _  = move_arm.plan()
   
   guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
   

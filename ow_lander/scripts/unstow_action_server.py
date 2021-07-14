@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -56,9 +56,9 @@ class UnstowActionServer(object):
     def _update_motion(self):
 
         print("Unstow arm activity started")
-        goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
-        plan = self._interface.move_arm.plan(goal)
+        self._interface.move_arm.set_joint_value_target(goal)
+        _, plan, _, _ = self._interface.move_arm.plan()
         if len(plan.joint_trajectory.points) < 1: 
             return 
         else:

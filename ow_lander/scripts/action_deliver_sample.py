@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -124,7 +124,7 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
 
   move_arm.set_pose_target(goal_pose)
 
-  plan_a = move_arm.plan()
+  _, plan_a, _, _ = move_arm.plan()
   
 
   if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -158,7 +158,7 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
   goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
   
   move_arm.set_pose_target(goal_pose)
-  plan_b = move_arm.plan()
+  _, plan_b, _, _ = move_arm.plan()
 
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
     return plan_a

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -81,8 +81,7 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
   else:
     move_arm.set_pose_target(goal_pose)
 
-  plan = move_arm.plan()
-  print (plan)
+  _, plan, _, _ = move_arm.plan()
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
@@ -116,7 +115,7 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
   else:
     move_arm.set_pose_target(goal_pose)
 
-  plan = move_arm.plan()
+  _, plan, _, _ = move_arm.plan()
   
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -154,8 +153,9 @@ def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start)
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
-  
-  plan = move_arm.plan(joint_goal)
+
+  move_arm.set_joint_value_target(joint_goal)
+  _, plan, _, _ = move_arm.plan()
   return plan
 
 
@@ -191,7 +191,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     
     move_arm.set_start_state(cs)
     move_arm.set_pose_target(end_pose)
-    plan_b = move_arm.plan()
+    _, plan_b, _, _ = move_arm.plan()
     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
       return False
     circ_traj = cascade_plans (plan_a, plan_b)

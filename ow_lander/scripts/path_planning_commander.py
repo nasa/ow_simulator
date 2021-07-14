@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -55,7 +55,7 @@ class PathPlanningCommander(object):
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
     self.arm_move_group.set_joint_value_target(goal)
 
-    plan = self.arm_move_group.plan()
+    _, plan, _, _ = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
@@ -72,7 +72,7 @@ class PathPlanningCommander(object):
     print("Unstow arm activity started")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
     self.arm_move_group.set_joint_value_target(goal)
-    plan = self.arm_move_group.plan()
+    _, plan, _, _ = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
     self.trajectory_async_executer.execute(plan.joint_trajectory,

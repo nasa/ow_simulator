@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -79,7 +79,8 @@ def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
-  plan = move_arm.plan(joint_goal)
+  move_arm.set_joint_value_target(joint_goal)
+  _, plan, _, _ = move_arm.plan()
   return plan
 
 
@@ -120,7 +121,8 @@ def change_joint_value(move_arm, cs, start_state, joint_index, target_value):
       
       
   joint_goal[joint_index] = target_value
-  plan = move_arm.plan(joint_goal)
+  move_arm.set_joint_value_target(joint_goal)
+  _, plan, _, _ = move_arm.plan()
   return plan
 
 def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
@@ -146,7 +148,7 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
     move_arm.set_joint_value_target(goal_pose, True)
   else:
     move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
+  _, plan, _, _ = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   return plan

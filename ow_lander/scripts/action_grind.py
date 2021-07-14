@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -141,7 +141,7 @@ def grind(move_grinder, robot, moveit_fk, args):
   goal_pose.orientation.z = -0.706723318474
   goal_pose.orientation.w = 0.0307192507001
   move_grinder.set_pose_target(goal_pose)
-  plan_a = move_grinder.plan()
+  _, plan_a, _, _ = move_grinder.plan()
   if len(plan_a.joint_trajectory.points) == 0: # If no plan found, abort
     return False
 
