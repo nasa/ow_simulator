@@ -8,6 +8,7 @@ import rospy
 import actionlib
 import ow_lander.msg
 import sys
+import math
 import action_guarded_move
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
@@ -17,7 +18,7 @@ from ground_detection import GroundDetector
 from ow_lander.msg import *
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, WrenchStamped
-
+#from pilz_robot_programming import *
 
 
 class GuardedMoveActionServer(object):
@@ -35,6 +36,7 @@ class GuardedMoveActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
+        self._plan_fraction = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
@@ -61,7 +63,9 @@ class GuardedMoveActionServer(object):
         self.trajectory_async_executer.stop_arm_if_fault(feedback)
 
         if self.ground_detector.detect():
-          if (self.ground_detector.ground_position.z) > 0.1 :
+          #if (self.ground_detector.ground_position.z) > 0.1 and self._plan_fraction < 0.8 :
+          #if (self.ground_detector.ground_position.z) > 0.1:    
+          if (self._plan_fraction) < 0.9:       
             self.ground_detector.reset()
           else:
             self.trajectory_async_executer.stop()    
@@ -83,7 +87,19 @@ class GuardedMoveActionServer(object):
                                               self._interface.robot, 
                                               self._interface.moveit_fk, goal)
         
-        #print (self.guarded_move_traj)
+        print (self.guarded_move_traj.joint_trajectory.points[1].velocities)
+        
+
+        #ref_state = self._interface.robot.get_current_state() # I don't know this is OK
+        #plan_retimed = self._interface.move_arm.retime_trajectory(ref_state, self.guarded_move_traj, velocity_scaling_factor=0.1, acceleration_scaling_factor=0.1)
+        #print (plan_retimed)
+        
+        #file = open("original_plan.yaml", "w")
+        #file.write("%s = %s\n" %("plan_a", self.guarded_move_traj))
+        #file.close()
+        #file = open("modified_plan.yaml", "w")
+        #file.write("%s = %s\n" %("plan_b", plan_retimed))
+        #file.close()
         
         if self.guarded_move_traj == False: 
             return 
@@ -113,13 +129,26 @@ class GuardedMoveActionServer(object):
 
         # Record start time
         start_time = rospy.get_time()
+        
+        def euclidean_distance (start, end): 
+            return math.sqrt ((start.x - end.position.x)^2 + (start.y - end.position.y)^2+ (start.z - end.position.z)^2)
+        
 
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
-
+        #calculate end state from plan 
+        #cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (self._interface.robot, self.guarded_move_traj.joint_trajectory, self._interface.move_arm, self._interface.moveit_fk)
+        
         while ((now_from_start(start_time) < self._timeout)):
 
            self._update_feedback()
+           self._plan_fraction  = now_from_start(start_time)/self._timeout
+           print (self._plan_fraction)
+           #print (self._timeout)
+           #print (self.ground_detector.ground_position.x)
+           #distance =  euclidean_distance (self.ground_detector.ground_position, goal_pose)
+           #print (distance)
+           print ('_______________')
            
         success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()
             

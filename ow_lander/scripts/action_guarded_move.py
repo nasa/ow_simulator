@@ -16,9 +16,70 @@ import action_dig_linear
 import action_grind
 from action_dig_circular import calculate_joint_state_end_pose_from_plan_arm
 from std_msgs.msg import Header
+import numpy as np
+from scipy import interpolate
 
 pre_guarded_move_traj = RobotTrajectory()
 guarded_move_traj = RobotTrajectory()
+
+
+def interpolate_traj(vel):
+  y = np.array(vel)
+  x = np.linspace (0, y.size,num = y.size, endpoint=True )
+  tck = interpolate.splrep(x, y, s=0.0)
+  ynew = interpolate.splev(x, tck, der=0)
+  return ynew
+
+def smooth_plans (plan1):
+  # Create a new trajectory object
+  new_traj = RobotTrajectory()
+  # Initialize the new trajectory to be the same as the planned trajectory
+  traj_msg = JointTrajectory()
+  # Get the number of joints involved
+  n_joints1 = len(plan1.joint_trajectory.joint_names)
+  # Get the number of points on the trajectory
+  n_points1 = len(plan1.joint_trajectory.points)
+  # Store the trajectory points
+  points1 = list(plan1.joint_trajectory.points)
+  vel = []
+  j_shou_yaw_vel = []
+  j_shou_pitch_vel =[] 
+  j_prox_pitch_vel = [] 
+  j_dist_pitch_vel = [] 
+  j_hand_yaw_vel = []
+  j_scoop_yaw_vel = []
+  for i in range(n_points1):
+    j_shou_yaw_vel.append ( plan1.joint_trajectory.points[i].velocities[0])
+    j_shou_pitch_vel.append ( plan1.joint_trajectory.points[i].velocities[1])
+    j_prox_pitch_vel.append ( plan1.joint_trajectory.points[i].velocities[2])
+    j_dist_pitch_vel.append ( plan1.joint_trajectory.points[i].velocities[3])
+    j_hand_yaw_vel.append ( plan1.joint_trajectory.points[i].velocities[4])
+    j_scoop_yaw_vel.append ( plan1.joint_trajectory.points[i].velocities[5])
+    
+  j_shou_yaw_vel_s = interpolate_traj(j_shou_yaw_vel)
+  j_shou_pitch_vel_s = interpolate_traj(j_shou_pitch_vel)
+  j_prox_pitch_vel_s = interpolate_traj(j_prox_pitch_vel)
+  j_dist_pitch_vel_s = interpolate_traj(j_dist_pitch_vel)
+  j_hand_yaw_vel_s = interpolate_traj(j_hand_yaw_vel)
+  j_scoop_yaw_vel_s = interpolate_traj(j_scoop_yaw_vel)
+    
+    
+  for i in range(n_points1):
+    point = JointTrajectoryPoint()
+    point.time_from_start = plan1.joint_trajectory.points[i].time_from_start
+    velocity_smooth = interpolate_traj(plan1.joint_trajectory.points[i].velocities)
+    #point.velocities = list(plan1.joint_trajectory.points[i].velocities)
+    point.velocities = ( j_shou_yaw_vel_s[i], j_shou_pitch_vel_s[i], j_prox_pitch_vel_s[i], j_dist_pitch_vel_s[i] ,j_hand_yaw_vel_s[i], j_scoop_yaw_vel_s[i])
+    point.accelerations = list(plan1.joint_trajectory.points[i].accelerations)
+    point.positions = plan1.joint_trajectory.points[i].positions
+    points1[i] = point
+    traj_msg.points.append(point)
+
+    
+  traj_msg.joint_names = plan1.joint_trajectory.joint_names
+  traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
+  new_traj.joint_trajectory = traj_msg
+  return new_traj   
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
     
@@ -80,6 +141,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   pre_guarded_move_traj = cascade_plans (plan_a, plan_b)
+
   
   ### pre-guarded move ends here ###  
   
@@ -99,4 +161,5 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   
   guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
   
+  guarded_move_traj =  smooth_plans (guarded_move_traj)
   return guarded_move_traj
