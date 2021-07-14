@@ -10,7 +10,7 @@
     </include>
 
     <test test-name="minimum_fps" pkg="ow_sim_tests" type="test_minimum_fps.py">
-        <param name="min_fps" value="50.0"/>
+        <param name="min_fps" value="45.0"/>
         <param name="warmup_period" value="10.0" />  <!-- how much to wait before observing avg fps -->
         <param name="test_duration" value="20.0"/>  <!-- total test duration, must be larger than warmup period -->
     </test>

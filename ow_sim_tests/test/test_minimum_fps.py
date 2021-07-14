@@ -56,7 +56,8 @@ class MonitorMinimumFPS(unittest.TestCase):
                     "no intel on fps was received!!!!")
 
     self.assertGreater(self.min_observed_fps, self.min_expected_fps,
-                       "observed fps fell below the lowest threshold")
+                       "observed fps: {} fell below the lowest threshold: {}".format(
+                        round(self.min_observed_fps), round(self.min_expected_fps)))
 
 
 if __name__ == '__main__':
