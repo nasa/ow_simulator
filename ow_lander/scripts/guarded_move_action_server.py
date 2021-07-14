@@ -35,6 +35,7 @@ class GuardedMoveActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
+        self._estimated_plan_fraction = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
@@ -61,7 +62,7 @@ class GuardedMoveActionServer(object):
         self.trajectory_async_executer.stop_arm_if_fault(feedback)
 
         if self.ground_detector.detect():
-          if (self.ground_detector.ground_position.z) > 0.1 :
+          if (self._estimated_plan_fraction < 0.9):    
             self.ground_detector.reset()
           else:
             self.trajectory_async_executer.stop()    
@@ -118,8 +119,8 @@ class GuardedMoveActionServer(object):
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):
-
            self._update_feedback()
+           self._estimated_plan_fraction  = now_from_start(start_time)/self._timeout
            
         success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()
             
