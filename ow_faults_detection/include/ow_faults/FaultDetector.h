@@ -18,7 +18,7 @@
 #include "ow_faults/PowerFaults.h"
 #include "ow_faults/PTFaults.h"
 #include "ow_faults/CamFaults.h"
-// #include <ow_lander/lander_joints.h>
+#include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
 

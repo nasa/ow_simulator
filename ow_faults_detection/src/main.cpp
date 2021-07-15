@@ -2,7 +2,7 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "ow_faults/FaultDetector.h"
+#include "ow_faults_detection/FaultDetector.h"
 #include <dynamic_reconfigure/server.h>
 
 

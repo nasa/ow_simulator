@@ -138,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${EXEC_NAME} src/main.cpp src/FaultInjector.cpp src/FaultDetector.cpp)
+add_executable(${EXEC_NAME} src/main.cpp src/FaultInjector.cpp)
 
 # make sure configure headers are built before any node using them
 add_dependencies (
