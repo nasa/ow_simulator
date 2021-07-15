@@ -2,7 +2,7 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "FaultDetector.h"
+#include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
 
 using namespace std;
