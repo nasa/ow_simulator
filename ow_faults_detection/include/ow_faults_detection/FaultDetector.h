@@ -40,6 +40,38 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
+  enum class ComponentFaults : uint {
+    Hardware = 1, 
+    JointLimit = 2,
+    TrajectoryGeneration = 2,
+    Collision = 3, 
+    Estop = 4, 
+    PositionLimit = 5, 
+    TorqueLimit = 6, 
+    VelocityLimit = 7, 
+    NoForceData = 8
+    };
+
+  //system
+  static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
+  static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
+  static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
+  static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
+  static constexpr std::bitset<10> isCamGoalError{          0b00'0001'0000 };
+  static constexpr std::bitset<10> isCamExecutionError{     0b00'0010'0000 };
+  static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
+  static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
+  static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
+  static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
+  
+  //power
+  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
+  static constexpr std::bitset<3> isCapLossError{    0b010 };
+  static constexpr std::bitset<3> isThermalError{    0b100 };
+
+  static constexpr float THERMAL_MAX = 50;
+  static constexpr float SOC_MIN = 0.1;
+  static constexpr float SOC_MAX_DIFF = 0.05;
 
 private:
     ros::Publisher m_pub;
