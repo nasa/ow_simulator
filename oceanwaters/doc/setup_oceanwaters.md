@@ -62,10 +62,11 @@ wstool update
 ```
 
 NOTE: At this point you will have cloned the `master` branch of all OceanWATERS
-repositories, and they are compatible with ROS Melodic on Ubuntu 18.04. If you
-prefer to use ROS Noetic on Ubuntu 20.04, you can checkout our experimental
-`noetic-devel` branch in the `ow_simulator` repository. Other repositories can
-remain on `master` branch for now.
+repositories. `master` branch is a stable snapshot of `melodic-devel` branch,
+both compatible with ROS Melodic on Ubuntu 18.04. If you prefer to use ROS
+Noetic on Ubuntu 20.04, you can checkout our experimental `noetic-devel` branch
+in the `ow_simulator` repository. Other repositories can remain on `master`
+branch for now.
 
 OceanWATERS Build
 -----------------
