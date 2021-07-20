@@ -64,15 +64,6 @@ public:
   static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
   static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
   static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
-  
-  //power
-  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
-  static constexpr std::bitset<3> isCapLossError{    0b010 };
-  static constexpr std::bitset<3> isThermalError{    0b100 };
-
-  static constexpr float THERMAL_MAX = 50;
-  static constexpr float SOC_MIN = 0.1;
-  static constexpr float SOC_MAX_DIFF = 0.05;
 
   //arm
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
@@ -100,26 +91,12 @@ private:
   //camera function
   void cameraTriggerCb(const std_msgs::Empty& msg);
 
-  // power functions
-  float getRandomFloatFromRange(float min_val, float max_val);
-  void publishPowerSystemFault();
-  void powerSOCListener(const std_msgs::Float64& msg);
-  void powerTemperatureListener(const std_msgs::Float64& msg);
-
   // Antennae functions
   void antennaPanFaultCb(const std_msgs::Float64& msg);
   void antennaTiltFaultCb(const std_msgs::Float64& msg);
   void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
                              bool torque, float& m_faultValue, ros::Publisher& m_publisher);
 
-  //Setting message values
-  template<typename fault_msg>
-  void setFaultsMessageHeader(fault_msg& msg);
-  template<typename bitsetFaultsMsg, typename bitmask>
-  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
-  template<typename fault_msg>
-  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
- 
   //checking rqt faults
   void checkArmFaults();
   void checkAntFaults();
@@ -129,11 +106,6 @@ private:
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
-
-  //power
-  ros::Subscriber m_power_soc_sub;
-  ros::Subscriber m_power_temperature_sub;
-  ros::Publisher m_power_fault_trigger_pub;
 
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
@@ -153,8 +125,6 @@ private:
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
-  ros::Publisher m_power_fault_msg_pub;
-  ros::Publisher m_system_fault_msg_pub;
 
   ////////// vars
   //system
@@ -164,14 +134,9 @@ private:
   bool m_arm_fault;
   bool m_ant_fault;
   bool m_cam_fault = false;
-  bool m_soc_fault = false;
-  bool m_temperature_fault = false;
 
   //arm joint faults
   ow_faults::FaultsConfig m_faults;
-
-  //power vars
-  float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
 
   // antenna vars
   float m_fault_pan_value;
