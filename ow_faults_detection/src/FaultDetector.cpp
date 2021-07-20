@@ -2,11 +2,11 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "ow_faults/FaultDetector.h"
+#include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
 
 using namespace std;
-// using namespace ow_lander;
+using namespace ow_lander;
 
 constexpr std::bitset<10> FaultDetector::isCamExecutionError;
 constexpr std::bitset<10> FaultDetector::isPanTiltExecutionError;

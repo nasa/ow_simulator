@@ -1,7 +1,7 @@
 ## Linked Issues:
-| EPIC ⚡| [OCEANWATER-XXX](url) |
+| EPIC ⚡ | [OCEANWATER-XXX](https://babelfish.arc.nasa.gov/jira/browse/OCEANWATER-XXX) |
 | :----------- | :----------- |
-| Jira Ticket 🎟️   | [OCEANWATER-XXX](url) |
+| Jira Ticket 🎟️ | [OCEANWATER-XXX](https://babelfish.arc.nasa.gov/jira/browse/OCEANWATER-XXX) |
 | Github :octocat:  | # |
 
 
