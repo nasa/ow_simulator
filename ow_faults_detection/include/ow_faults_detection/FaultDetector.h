@@ -63,15 +63,6 @@ public:
   static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
   static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
   static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
-  
-  //power
-  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
-  static constexpr std::bitset<3> isCapLossError{    0b010 };
-  static constexpr std::bitset<3> isThermalError{    0b100 };
-
-  static constexpr float THERMAL_MAX = 50;
-  static constexpr float SOC_MIN = 0.1;
-  static constexpr float SOC_MAX_DIFF = 0.05;
 
 private:
     ros::Publisher m_pub;
