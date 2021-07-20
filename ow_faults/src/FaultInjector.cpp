@@ -118,6 +118,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   checkArmFaults();
   checkAntFaults();
+  checkCamFaults();
 
   //pant tilt faults
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
@@ -238,6 +239,10 @@ void FaultInjector::checkArmFaults(){
 void FaultInjector::checkAntFaults(){
   m_ant_fault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure ||
                 m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
+}
+
+void FaultInjector::checkCamFaults(){
+  m_cam_fault = m_faults.camera_left_trigger_failure ;
 }
 
 template<typename group_t, typename item_t>

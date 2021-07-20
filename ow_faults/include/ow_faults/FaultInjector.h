@@ -100,6 +100,7 @@ private:
   //checking rqt faults
   void checkArmFaults();
   void checkAntFaults();
+  void checkCamFaults();
 
   ///////publishers and subscribers
   // arm faults
