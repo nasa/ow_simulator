@@ -105,12 +105,18 @@ private:
       return;
     }
 
+    cv_bridge::CvImage differential;
+
     modify_method(
         heightmap, msg, [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
-        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); });
+        [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); },
+        differential);
 
     // Re-enable physics updates for models that may have entered a standstill state
     m_model->GetWorld()->EnableAllModels();
+
+    // publish differential
+    m_differential_pub.publish(differential.toImageMsg());
   }
 
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override

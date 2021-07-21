@@ -21,6 +21,8 @@ public:
   static cv::Mat ellipse(float outer_radius_a, float inner_radius_a, float outer_radius_b, float inner_radius_b,
                          float weight);
 
+  static cv::Mat createZerosMatLike(cv::Mat const &mat);
+
 private:
   // solves for x the intersection of a ellipse and a line (where the line passes through the ellipse center)
   // for y value simply multiply by m

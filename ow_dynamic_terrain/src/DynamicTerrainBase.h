@@ -19,7 +19,7 @@ class DynamicTerrainBase
 protected:
   DynamicTerrainBase(const std::string& package_name, const std::string& plugin_name) :
     m_package_name{ package_name },
-    m_plugin_name{ plugin_name }
+    m_plugin_name{ plugin_name }  
   {
   }
 
@@ -44,6 +44,7 @@ protected:
   std::unique_ptr<ros::NodeHandle> m_node_handle;
   ros::CallbackQueue m_callback_queue;
   std::vector<ros::Subscriber> m_subscribers;
+  ros::Publisher m_differential_pub;
 };
 
 }  // namespace ow_dynamic_terrain

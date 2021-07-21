@@ -23,7 +23,8 @@ using namespace ow_dynamic_terrain;
 
 void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
                                    const function<float(int, int)>& get_height_value,
-                                   const function<void(int, int, float)>& set_height_value)
+                                   const function<void(int, int, float)>& set_height_value,
+                                   cv_bridge::CvImage& out_differential)
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
@@ -59,7 +60,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
-                        *merge_method);
+                        *merge_method, out_differential);
 
   gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -67,9 +68,10 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
 
 void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
                                     const function<float(int, int)>& get_height_value,
-                                    const function<void(int, int, float)>& set_height_value)
+                                    const function<void(int, int, float)>& set_height_value,
+                                    cv_bridge::CvImage& out_differential)
 {
-  GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
+  GZ_ASSERT(heightmap != nullptr, "heightmap is null!");
 
   if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
@@ -112,7 +114,7 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   }
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, true, get_height_value, set_height_value,
-                        *merge_method);
+                        *merge_method, out_differential);
 
   gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
@@ -120,7 +122,8 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
 
 void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
                                   const function<float(int, int)>& get_height_value,
-                                  const function<void(int, int, float)>& set_height_value)
+                                  const function<void(int, int, float)>& set_height_value,
+                                  cv_bridge::CvImage& out_differential)
 {
   GZ_ASSERT(heightmap != nullptr, "heightmapt is null!");
 
@@ -162,7 +165,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   }
 
   applyImageToHeightmap(heightmap, center, msg->position.z, image, false, get_height_value, set_height_value,
-                        *merge_method);
+                        *merge_method, out_differential);
 
   gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
 }
@@ -199,7 +202,8 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
                                             const Mat& image, bool skip_zeros,
                                             const function<float(int, int)>& get_height_value,
                                             const function<void(int, int, float)>& set_height_value,
-                                            const function<float(float, float)>& merge_method)
+                                            const function<float(float, float)>& merge_method,
+                                            cv_bridge::CvImage& out_differential)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
@@ -214,6 +218,7 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
   auto top = max(center.y - image.rows / 2, 0);
   auto right = min(center.x - image.cols / 2 + image.cols - 1, heightmap_size);
   auto bottom = min(center.y - image.rows / 2 + image.rows - 1, heightmap_size);
+  auto diff = TerrainBrush::createZerosMatLike(image);
 
   for (auto y = top; y <= bottom; ++y)
     for (auto x = left; x <= right; ++x)
@@ -221,7 +226,12 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
       auto pixel_value = image.at<float>(y - top, x - left);
       if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
         continue;
-      auto new_height = merge_method(get_height_value(x, y), pixel_value + z_bias);
+      auto old_height = get_height_value(x, y);
+      auto new_height = merge_method(old_height, pixel_value + z_bias);
       set_height_value(x, y, new_height);
+
+      diff.at<float>(y - top, x - left) = new_height - old_height;
     }
+
+    out_differential = cv_bridge::CvImage(std_msgs::Header(), "32FC1", diff);
 }

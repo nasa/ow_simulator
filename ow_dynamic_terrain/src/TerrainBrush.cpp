@@ -78,3 +78,7 @@ Mat TerrainBrush::ellipse(float outer_radius_a, float inner_radius_a, float oute
 
   return result;
 }
+
+cv::Mat TerrainBrush::createZerosMatLike(cv::Mat const &mat) {
+  return cv::Mat::zeros(mat.size(), mat.type());
+}

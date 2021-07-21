@@ -37,6 +37,9 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
   subscribe<modify_terrain_patch>("modify_terrain_patch", on_modify_terrain_patch);
   subscribe<modify_terrain_patch>("modify_terrain_patch/" + topic_extension, on_modify_terrain_patch);
 
+  m_differential_pub = m_node_handle->advertise<sensor_msgs::Image>(
+      m_package_name + "/modification_differential/" + topic_extension, 1);
+
   m_on_update_connection = gazebo::event::Events::ConnectPostRender([this]() {
     if (m_node_handle->ok())
       m_callback_queue.callAvailable();
@@ -52,6 +55,8 @@ void DynamicTerrainBase::subscribe(const std::string& topic,
   string topic_fqn = "/" + m_package_name + "/" + topic;
   m_subscribers.push_back(m_node_handle->subscribe<T>(topic_fqn, 10, callback));
 }
+
+
 
 gazebo::rendering::Heightmap* DynamicTerrainBase::getHeightmap(gazebo::rendering::ScenePtr scene)
 {
