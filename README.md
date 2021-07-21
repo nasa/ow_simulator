@@ -26,6 +26,7 @@ setting up the rest of the OceanWATERS repositories:
 - [irg_open](https://github.com/nasa/irg_open)
 
 ## Getting Started
+Default build instruction use ROS Melodic, but you will also find an option to use experimental ROS Noetic support.
 - [Install software prerequisites](oceanwaters/doc/setup_dev_env.md)
 - [Download and build OceanWATERS](oceanwaters/doc/setup_oceanwaters.md)
 - [User Guide](https://github.com/nasa/ow_simulator/wiki/Using-OceanWATERS)
