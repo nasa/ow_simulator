@@ -143,12 +143,12 @@ class GuardedMoveActionServer(object):
 
            self._update_feedback()
            self._plan_fraction  = now_from_start(start_time)/self._timeout
-           print (self._plan_fraction)
+           #print (self._plan_fraction)
            #print (self._timeout)
            #print (self.ground_detector.ground_position.x)
            #distance =  euclidean_distance (self.ground_detector.ground_position, goal_pose)
            #print (distance)
-           print ('_______________')
+           #print ('_______________')
            
         success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()
             
