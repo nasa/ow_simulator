@@ -126,6 +126,7 @@ private:
   void checkCamFaults();
 
   // publishers and subscribers
+
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
