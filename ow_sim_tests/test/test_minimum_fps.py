@@ -7,7 +7,6 @@
 import rospy
 import roslib
 import unittest
-import time
 from std_msgs.msg import Float32
 
 PKG = 'ow_sim_tests'
@@ -19,18 +18,20 @@ class MonitorMinimumFPS(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
-
+    rospy.init_node("test_minimum_fps", anonymous=True)
     self.min_expected_fps = rospy.get_param("/minimum_fps/min_fps")
     self.warmup_period = rospy.get_param("/minimum_fps/warmup_period")
     self.test_duration = rospy.get_param("/minimum_fps/test_duration")
     self.assertGreater(self.test_duration, self.warmup_period,
                        "test_duration must be larger than warmup_period")
-
     self.min_observed_fps = float('inf')
+    # proceed with test only when ros clock has been initialized
+    while rospy.get_time() == 0:
+      rospy.sleep(0.1)
 
   def handle_avg_fps(self, avg_fps):
 
-    if time.time() - self.test_start_time < self.warmup_period:
+    if rospy.get_time() - self.test_start_time < self.warmup_period:
       rospy.loginfo("fps value: " + str(avg_fps) + " skipped")
       return
 
@@ -41,15 +42,22 @@ class MonitorMinimumFPS(unittest.TestCase):
 
     rospy.init_node("test_minimum_fps", anonymous=True)
 
-    self.test_start_time = time.time()
+    self.test_start_time = rospy.get_time()
 
     self.avg_fps_sub = rospy.Subscriber(
         '/fps_monitor/avg_fps', Float32, self.handle_avg_fps)
 
-    while not rospy.is_shutdown() and (time.time() - self.test_start_time < self.test_duration):
-      time.sleep(0.1)
+    elapsed = 0
+    while not rospy.is_shutdown() and elapsed < self.test_duration:
+      elapsed = rospy.get_time() - self.test_start_time
+      rospy.sleep(0.1)
 
-    self.assertGreater(self.min_observed_fps, self.min_expected_fps)
+    self.assertLess(self.min_observed_fps, float('inf'),
+                    "no intel on fps was received!!!!")
+
+    self.assertGreater(self.min_observed_fps, self.min_expected_fps,
+                       "observed fps: {} fell below the lowest threshold: {}".format(
+                        round(self.min_observed_fps), round(self.min_expected_fps)))
 
 
 if __name__ == '__main__':
