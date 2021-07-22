@@ -66,8 +66,17 @@ def cascade_plans_smooth (plan1, plan2):
   new_traj.joint_trajectory = traj_msg
   
   
-  new_traj =  smooth_plans  (new_traj, n_points1)
-  return new_traj  
+  new_traj1 =  smooth_plans  (new_traj, n_points1)
+
+  file = open("gm_plan.yaml", "w")
+  file.write("%s = %s\n" %("plan_a", new_traj))
+  file.close()
+  file = open("gm_plan_smooth.yaml", "w")
+  file.write("%s = %s\n" %("plan_b", new_traj1))
+  file.close()
+
+
+  return new_traj1  
 
 
 def interp_cubic(p0, p1, t_abs):
@@ -129,7 +138,7 @@ def smooth_plans (plan1,n_points):
   j_hand_yaw_vel_s , j_hand_yaw_acc_s = interpolate_traj(j_hand_yaw_vel)
   j_scoop_yaw_vel_s, j_scoop_yaw_acc_s = interpolate_traj(j_scoop_yaw_vel)
     
-  smooth_radius =  5
+  smooth_radius =  3
   print (n_points)
   for i in range(n_points1):
     point = JointTrajectoryPoint()
@@ -137,7 +146,7 @@ def smooth_plans (plan1,n_points):
     #velocity_smooth = interpolate_traj(plan1.joint_trajectory.points[i].velocities)
     point.velocities = list(plan1.joint_trajectory.points[i].velocities)
     if (i > n_points-smooth_radius ) and (i < n_points + smooth_radius):
-      point.velocities = ( j_shou_yaw_vel_s[i], j_shou_pitch_vel_s[i], j_prox_pitch_vel_s[i], j_dist_pitch_vel_s[i] ,j_hand_yaw_vel_s[i], j_scoop_yaw_vel_s[i])
+      point.velocities = ( j_shou_yaw_vel[i], j_shou_pitch_vel_s[i], j_prox_pitch_vel_s[i], j_dist_pitch_vel[i] ,j_hand_yaw_vel[i], j_scoop_yaw_vel[i])
       point.accelerations = ( j_shou_yaw_acc_s[i], j_shou_pitch_acc_s[i], j_prox_pitch_acc_s[i], j_dist_pitch_acc_s[i] ,j_hand_yaw_acc_s[i], j_scoop_yaw_acc_s[i])
     else:
       point.velocities = ( j_shou_yaw_vel[i], j_shou_pitch_vel[i], j_prox_pitch_vel[i], j_dist_pitch_vel[i] ,j_hand_yaw_vel[i], j_scoop_yaw_vel[i])
