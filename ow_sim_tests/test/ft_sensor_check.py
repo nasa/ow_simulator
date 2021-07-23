@@ -21,6 +21,8 @@ class FT_Sensor_Check(unittest.TestCase):
     rospy.init_node("ft_sensor_check", anonymous=True)
     self._test_duration = rospy.get_param("/ft_sensor_check/test_duration")
     self._wrench_msg = None
+    self._dist_pitch_ft_sensor_sub = rospy.Subscriber(
+      "/ft_sensor_dist_pitch", WrenchStamped, self._ft_sensor_dist_pitch_callback)
 
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
@@ -31,9 +33,6 @@ class FT_Sensor_Check(unittest.TestCase):
 
   def test_01_check_ft_sensor_stowed(self):
 
-    self._dist_pitch_ft_sensor_sub = rospy.Subscriber(
-      "/ft_sensor_dist_pitch", WrenchStamped, self._ft_sensor_dist_pitch_callback)
-
     test_start_time = rospy.get_time()
     elapsed = 0
     while not rospy.is_shutdown() and elapsed < self._test_duration:
@@ -41,7 +40,12 @@ class FT_Sensor_Check(unittest.TestCase):
       rospy.sleep(0.1)
 
     self.assertIsNotNone(self._wrench_msg, "no ft sensor message was received")
-    self.assertAlmostEqual(self._wrench_msg.force.y, -14.74, 0)
+    self.assertAlmostEqual(self._wrench_msg.force.x, -4.25, delta=1.0)
+    self.assertAlmostEqual(self._wrench_msg.force.y, -14.74, delta=1.0)
+    self.assertAlmostEqual(self._wrench_msg.force.z, -0.15, delta=1.0)
+    self.assertAlmostEqual(self._wrench_msg.torque.x, -0.13, delta=1.0)
+    self.assertAlmostEqual(self._wrench_msg.torque.y, 0.16, delta=1.0)
+    self.assertAlmostEqual(self._wrench_msg.torque.z, -1.70, delta=1.0)
 
 if __name__ == '__main__':
   import rostest
