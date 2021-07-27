@@ -153,6 +153,7 @@ void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& 
 void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
   m_ant_tilt_set_point = msg.set_point;
 }
+
 //// Camera listeners
 void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
   m_cam_og_trigger_time = ros::Time::now();

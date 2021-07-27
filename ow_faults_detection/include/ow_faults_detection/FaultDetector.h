@@ -80,7 +80,7 @@ private:
   void antennaPanStateCb(const control_msgs::JointControllerState& msg);
   void antennaTiltCommandCb(const std_msgs::Float64& msg);
   void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
-  void antPublishFaultMessages(float command, float m_set_point ){
+  void antPublishFaultMessages(float command, float m_set_point );
 
   // //camera function
   void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
@@ -105,6 +105,8 @@ private:
   // antenna
   ros::Subscriber m_ant_pan_command_sub;
   ros::Subscriber m_ant_pan_state_sub;
+  ros::Subscriber m_ant_tilt_command_sub;
+  ros::Subscriber m_ant_tilt_state_sub;
 
   // camera
   ros::Timer m_camera_trigger_timer;
