@@ -20,7 +20,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
-
+  //camera sub and repub for remapped topic
   auto image_trigger_str = "/StereoCamera/left/image_trigger";
   m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
     10, &FaultInjector::cameraTriggerRepublishCb, this);
@@ -231,7 +231,7 @@ void FaultInjector::checkAntFaults(){
 }
 
 void FaultInjector::checkCamFaults(){
-  m_cam_fault = m_faults.camera_left_trigger_failure ;
+  m_cam_fault = m_faults.camera_left_trigger_failure;
 }
 
 template<typename group_t, typename item_t>
