@@ -20,18 +20,33 @@ constexpr std::bitset<3> FaultDetector::isThermalError;
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
-
- auto image_trigger_str = "/StereoCamera/left/image_trigger";
+  // antenna
+  auto original_str = "/_original";
+  auto ant_pan_str = "/ant_pan_position_controller";
+  auto ant_tilt_str = "/ant_tilt_position_controller";
+  m_ant_pan_command_sub = node_handle.subscribe( string("/_original") + ant_pan_str + string("/command"),
+                                          10,
+                                          &FaultDetector::antennaPanCommandCb,
+                                          this);
+  m_ant_pan_state_sub = node_handle.subscribe(ant_pan_str + string("/state"),
+                                          10,
+                                          &FaultDetector::antennaPanStateCb,
+                                          this);
+  m_ant_tilt_command_sub = node_handle.subscribe( string("/_original") + ant_tilt_str + string("/command"),
+                                          10,
+                                          &FaultDetector::antennaTiltCommandCb,
+                                          this);
+  m_ant_tilt_state_sub = node_handle.subscribe(ant_tilt_str + string("/state"),
+                                          10,
+                                          &FaultDetector::antennaTiltStateCb,
+                                          this);
+  // camera
+  auto image_trigger_str = "/StereoCamera/left/image_trigger";
   m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
     10, &FaultDetector::cameraTriggerOriginalCb, this);
   m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
     10, &FaultDetector::cameraTriggerCb, this);
-  
   m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //  power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
@@ -42,6 +57,13 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                                   10,
                                                   &FaultDetector::powerTemperatureListener,
                                                   this);
+
+  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+
 }
 
 // Creating Fault Messages
@@ -102,6 +124,35 @@ void FaultDetector::publishPowerSystemFault(){
 }
 
 // Listeners
+//// Antenna Listeners
+void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
+  antPublishFaultMessages( msg.data, m_ant_pan_set_point);
+}
+
+void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
+  antPublishFaultMessages(msg.data, m_ant_tilt_set_point);
+}
+
+void FaultDetector::antPublishFaultMessages(float command, float m_set_point ){
+  ow_faults::PTFaults ant_pan_fault_msg;
+
+  if (command != m_set_point) {
+    setComponentFaultsMessage(ant_pan_fault_msg, ComponentFaults::Hardware);
+    m_system_faults_bitset |= isPanTiltExecutionError;
+  }else {
+    m_system_faults_bitset &= ~isPanTiltExecutionError;
+  }
+  publishSystemFaultsMessage();
+  m_antenna_fault_msg_pub.publish(ant_pan_fault_msg);
+}
+
+void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& msg){
+  m_ant_pan_set_point = msg.set_point;
+}
+
+void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
+  m_ant_tilt_set_point = msg.set_point;
+}
 //// Camera listeners
 void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
   m_cam_og_trigger_time = ros::Time::now();

@@ -67,7 +67,7 @@ private:
   //camera function
   void cameraTriggerRepublishCb(const std_msgs::Empty& msg);
 
-  // Antennae functions
+  // // Antennae functions
   void antennaPanFaultCb(const std_msgs::Float64& msg);
   void antennaTiltFaultCb(const std_msgs::Float64& msg);
   void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
@@ -95,11 +95,10 @@ private:
   //antenna 
   ros::Subscriber m_fault_ant_pan_sub;
   ros::Subscriber m_fault_ant_tilt_sub;
-  ros::Publisher m_fault_ant_pan_remapped_pub;
-  ros::Publisher m_fault_ant_tilt_remapped_pub;
+  ros::Publisher m_ant_pan_remapped_pub;
+  ros::Publisher m_ant_tilt_remapped_pub;
 
   // jpl message publishers
-  // ros::Publisher m_antenna_fault_msg_pub;
   // ros::Publisher m_arm_fault_msg_pub;
 
   ////////// vars

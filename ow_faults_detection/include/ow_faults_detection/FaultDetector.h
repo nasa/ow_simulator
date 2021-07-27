@@ -21,7 +21,7 @@
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
-
+#include <control_msgs/JointControllerState.h>
 
 // This class injects simple message faults that don't need to be simulated
 // at their source. Modified topics are prefixed with "/faults". This could be
@@ -75,6 +75,13 @@ public:
   
 private:
 
+  // Antennae functions
+  void antennaPanCommandCb(const std_msgs::Float64& msg);
+  void antennaPanStateCb(const control_msgs::JointControllerState& msg);
+  void antennaTiltCommandCb(const std_msgs::Float64& msg);
+  void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
+  void antPublishFaultMessages(float command, float m_set_point ){
+
   // //camera function
   void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
   void cameraTriggerCb(const std_msgs::Empty& msg);
@@ -95,34 +102,41 @@ private:
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
  
-  // // camera
+  // antenna
+  ros::Subscriber m_ant_pan_command_sub;
+  ros::Subscriber m_ant_pan_state_sub;
+
+  // camera
   ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_trigger_sub;
 
-  // //power
+  // power
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
   ros::Publisher m_power_fault_trigger_pub;
 
-  // // jpl message publishers
+  // jpl message publishers
+  ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
 
-  // ////////// vars
-  // //system
+  // vars
+  // system
   std::bitset<10> m_system_faults_bitset{};
 
-  // //general component faults
+  // general component faults
+  float m_ant_pan_set_point;
+  float m_ant_tilt_set_point;
   bool m_cam_trigger_on = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
   ros::Time m_cam_trigger_time;
   ros::Time m_cam_og_trigger_time;
 
-  // //power vars
+  // power vars
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
 
 };
