@@ -8,11 +8,6 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<10> FaultInjector::isCamExecutionError;
-constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
-constexpr std::bitset<10> FaultInjector::isArmExecutionError;
-constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
-
 FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
 {
   //  arm pub and subs
@@ -38,7 +33,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
   // m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  // m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
@@ -108,13 +102,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   sensor_msgs::JointState output(*msg);
-
-  ow_faults::SystemFaults system_faults_msg;
-  ow_faults::ArmFaults arm_faults_msg;
-  ow_faults::PTFaults pt_faults_msg;
-  ow_faults::CamFaults camera_faults_msg;
-
-  ComponentFaults hardwareFault =  ComponentFaults::Hardware;
 
   // Set failed sensor values to 0
   unsigned int index;

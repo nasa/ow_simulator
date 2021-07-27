@@ -40,30 +40,6 @@ public:
   ~FaultInjector(){}
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
- 
-  enum class ComponentFaults : uint {
-    Hardware = 1, 
-    JointLimit = 2,
-    TrajectoryGeneration = 2,
-    Collision = 3, 
-    Estop = 4, 
-    PositionLimit = 5, 
-    TorqueLimit = 6, 
-    VelocityLimit = 7, 
-    NoForceData = 8
-    };
-
-  //system
-  static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
-  static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
-  static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
-  static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
-  static constexpr std::bitset<10> isCamGoalError{          0b00'0001'0000 };
-  static constexpr std::bitset<10> isCamExecutionError{     0b00'0010'0000 };
-  static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
-  static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
-  static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
-  static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
 
   //arm
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
@@ -102,7 +78,8 @@ private:
   void checkAntFaults();
   void checkCamFaults();
 
-  ///////publishers and subscribers
+  // publishers and subscribers
+
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
@@ -122,9 +99,11 @@ private:
   ros::Publisher m_fault_ant_tilt_remapped_pub;
 
   // jpl message publishers
-  ros::Publisher m_antenna_fault_msg_pub;
-  ros::Publisher m_arm_fault_msg_pub;
-  ros::Publisher m_camera_fault_msg_pub;
+  // ros::Publisher m_antenna_fault_msg_pub;
+  // ros::Publisher m_arm_fault_msg_pub;
+  // ros::Publisher m_camera_fault_msg_pub;
+  // ros::Publisher m_power_fault_msg_pub;
+  // ros::Publisher m_system_fault_msg_pub;
 
   ////////// vars
   //system
