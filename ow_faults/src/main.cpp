@@ -11,12 +11,12 @@ using namespace std;
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "fault");
-  ros::NodeHandle node_handle;
+  ros::NodeHandle node_handle_faults;
 
   dynamic_reconfigure::Server<ow_faults::FaultsConfig> server;
   dynamic_reconfigure::Server<ow_faults::FaultsConfig>::CallbackType f;
 
-  FaultInjector fault_injector(node_handle);
+  FaultInjector fault_injector(node_handle_faults);
 
   f = bind(&FaultInjector::faultsConfigCb, &fault_injector, placeholders::_1, placeholders::_2);
   server.setCallback(f);

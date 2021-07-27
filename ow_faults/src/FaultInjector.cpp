@@ -8,15 +8,6 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<10> FaultInjector::isCamExecutionError;
-constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
-constexpr std::bitset<10> FaultInjector::isArmExecutionError;
-constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
-
-constexpr std::bitset<3> FaultInjector::islowVoltageError;
-constexpr std::bitset<3> FaultInjector::isCapLossError;
-constexpr std::bitset<3> FaultInjector::isThermalError;
-
 FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
 {
   //  arm pub and subs
@@ -39,11 +30,11 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
-  m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+  // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+  // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
+  // m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
+  // m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
+  // m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
   //power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
@@ -75,25 +66,6 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
 
   // Store current set of faults for later use
   m_faults = faults;
-}
-
-// Creating Fault Messages
-template<typename fault_msg>
-void FaultInjector::setFaultsMessageHeader(fault_msg& msg){
-  msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "world";
-}
-
-template<typename bitsetFaultsMsg, typename bitmask>
-void FaultInjector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) {
-  setFaultsMessageHeader(msg);
-  msg.value = bm.to_ullong();
-}
-
-template<typename fault_msg>
-void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
-  setFaultsMessageHeader(msg);
-  msg.value = static_cast<uint>(value);
 }
 
 void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
@@ -133,25 +105,25 @@ float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
   return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }
 
-void FaultInjector::publishPowerSystemFault(){
-  ow_faults::PowerFaults power_faults_msg;
-  //update if fault
-  if (m_temperature_fault || m_soc_fault) {
-    //system
-    m_system_faults_bitset |= isPowerSystemFault;
-    //power
-    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
-  }
-  publishSystemFaultsMessage();
-  m_power_fault_msg_pub.publish(power_faults_msg);
-}
+// void FaultInjector::publishPowerSystemFault(){
+//   ow_faults::PowerFaults power_faults_msg;
+//   //update if fault
+//   if (m_temperature_fault || m_soc_fault) {
+//     //system
+//     m_system_faults_bitset |= isPowerSystemFault;
+//     //power
+//     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
+//   } else {
+//     m_system_faults_bitset &= ~isPowerSystemFault;
+//   }
+//   publishSystemFaultsMessage();
+//   m_power_fault_msg_pub.publish(power_faults_msg);
+// }
 
 void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   m_temperature_fault = msg.data > THERMAL_MAX;
-  publishPowerSystemFault();
+  // publishPowerSystemFault();
 }
 
 void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
@@ -163,7 +135,7 @@ void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
   m_soc_fault = ((newSOC <= SOC_MIN)  ||
         (!isnan(m_last_SOC) &&
         ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
-  publishPowerSystemFault();
+  // publishPowerSystemFault();
   m_last_SOC = newSOC;
 }
 
@@ -180,13 +152,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   sensor_msgs::JointState output(*msg);
-
-  ow_faults::SystemFaults system_faults_msg;
-  ow_faults::ArmFaults arm_faults_msg;
-  ow_faults::PTFaults pt_faults_msg;
-  ow_faults::CamFaults camera_faults_msg;
-
-  ComponentFaults hardwareFault =  ComponentFaults::Hardware;
 
   // Set failed sensor values to 0
   unsigned int index;
@@ -209,12 +174,12 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  if (m_ant_fault){
-    m_system_faults_bitset |= isPanTiltExecutionError;
-    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
-  } else {
-    m_system_faults_bitset &= ~isPanTiltExecutionError;
-  }
+  // if (m_ant_fault){
+  //   m_system_faults_bitset |= isPanTiltExecutionError;
+  //   setComponentFaultsMessage(pt_faults_msg, hardwareFault);
+  // } else {
+  //   m_system_faults_bitset &= ~isPanTiltExecutionError;
+  // }
 
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
@@ -259,33 +224,33 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  if (m_arm_fault) {
-    m_system_faults_bitset |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
-  } else {
-    m_system_faults_bitset &= ~isArmExecutionError;
-  }
+  // if (m_arm_fault) {
+  //   m_system_faults_bitset |= isArmExecutionError;
+  //   setComponentFaultsMessage(arm_faults_msg, hardwareFault);
+  // } else {
+  //   m_system_faults_bitset &= ~isArmExecutionError;
+  // }
 
-  if (m_cam_fault){
-    m_system_faults_bitset |= isCamExecutionError;
-    setComponentFaultsMessage(camera_faults_msg, hardwareFault);
-  } else {
-    m_system_faults_bitset &= ~isCamExecutionError;
-  }
+  // if (m_cam_fault){
+  //   m_system_faults_bitset |= isCamExecutionError;
+  //   setComponentFaultsMessage(camera_faults_msg, hardwareFault);
+  // } else {
+  //   m_system_faults_bitset &= ~isCamExecutionError;
+  // }
 
   m_joint_state_pub.publish(output);
-  publishSystemFaultsMessage();
+  // publishSystemFaultsMessage();
 
-  m_arm_fault_msg_pub.publish(arm_faults_msg);
-  m_antenna_fault_msg_pub.publish(pt_faults_msg);
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
+  // m_arm_fault_msg_pub.publish(arm_faults_msg);
+  // m_antenna_fault_msg_pub.publish(pt_faults_msg);
+  // m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
-void FaultInjector::publishSystemFaultsMessage(){
-  ow_faults::SystemFaults system_faults_msg;
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_msg_pub.publish(system_faults_msg);
-}
+// void FaultInjector::publishSystemFaultsMessage(){
+//   ow_faults::SystemFaults system_faults_msg;
+//   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+//   m_system_fault_msg_pub.publish(system_faults_msg);
+// }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
 {
