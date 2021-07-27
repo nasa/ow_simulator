@@ -8,11 +8,6 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<10> FaultInjector::isCamExecutionError;
-constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
-constexpr std::bitset<10> FaultInjector::isArmExecutionError;
-constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
-
 FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
 {
   //  arm pub and subs
@@ -106,12 +101,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   sensor_msgs::JointState output(*msg);
-
-  ow_faults::SystemFaults system_faults_msg;
-  ow_faults::ArmFaults arm_faults_msg;
-  ow_faults::PTFaults pt_faults_msg;
-
-  ComponentFaults hardwareFault =  ComponentFaults::Hardware;
 
   // Set failed sensor values to 0
   unsigned int index;
