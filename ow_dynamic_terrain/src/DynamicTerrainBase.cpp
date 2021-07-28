@@ -37,8 +37,8 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
   subscribe<modify_terrain_patch>("modify_terrain_patch", on_modify_terrain_patch);
   subscribe<modify_terrain_patch>("modify_terrain_patch/" + topic_extension, on_modify_terrain_patch);
 
-  m_differential_pub = m_node_handle->advertise<sensor_msgs::Image>(
-      m_package_name + "/modification_differential/" + topic_extension, 1);
+  m_differential_pub = m_node_handle->advertise<modified_terrain_diff>(
+      "/" + m_package_name + "/modification_differential/" + topic_extension, 1);
 
   m_on_update_connection = gazebo::event::Events::ConnectPostRender([this]() {
     if (m_node_handle->ok())

@@ -11,6 +11,7 @@
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
+#include "ow_dynamic_terrain/modified_terrain_diff.h"
 
 namespace ow_dynamic_terrain
 {
