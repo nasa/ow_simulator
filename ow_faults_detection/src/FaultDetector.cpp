@@ -55,7 +55,7 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
-float FaultDetector::getRandomFloatFromRange( float min_val, float max_val){
+float FaultDetector::getRandomFloatFromRange(float min_val, float max_val) {
   return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }
 
