@@ -21,10 +21,10 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
-  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultInjector::cameraTriggerCb, this);
-  m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
+  // auto image_trigger_str = "/StereoCamera/left/image_trigger";
+  // m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+  //   10, &FaultInjector::cameraTriggerCb, this);
+  // m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
 
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
@@ -33,18 +33,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
   // m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  // m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
-  // m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
-
-  //power fault publishers and subs
-  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
-                                          10,
-                                          &FaultInjector::powerSOCListener,
-                                          this);
-  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
-                                                  10,
-                                                  &FaultInjector::powerTemperatureListener,
-                                                  this);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
@@ -99,44 +87,6 @@ void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
                         m_faults.ant_tilt_encoder_failure,
                         m_faults.ant_tilt_effort_failure,
                         m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
-}
-
-float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
-  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
-}
-
-// void FaultInjector::publishPowerSystemFault(){
-//   ow_faults::PowerFaults power_faults_msg;
-//   //update if fault
-//   if (m_temperature_fault || m_soc_fault) {
-//     //system
-//     m_system_faults_bitset |= isPowerSystemFault;
-//     //power
-//     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
-//   } else {
-//     m_system_faults_bitset &= ~isPowerSystemFault;
-//   }
-//   publishSystemFaultsMessage();
-//   m_power_fault_msg_pub.publish(power_faults_msg);
-// }
-
-void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
-{
-  m_temperature_fault = msg.data > THERMAL_MAX;
-  // publishPowerSystemFault();
-}
-
-void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
-{
-  float newSOC = msg.data;
-  if (isnan(m_last_SOC)){
-    m_last_SOC = newSOC;
-  }
-  m_soc_fault = ((newSOC <= SOC_MIN)  ||
-        (!isnan(m_last_SOC) &&
-        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
-  // publishPowerSystemFault();
-  m_last_SOC = newSOC;
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -245,12 +195,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // m_antenna_fault_msg_pub.publish(pt_faults_msg);
   // m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
-
-// void FaultInjector::publishSystemFaultsMessage(){
-//   ow_faults::SystemFaults system_faults_msg;
-//   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-//   m_system_fault_msg_pub.publish(system_faults_msg);
-// }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
 {
