@@ -56,6 +56,12 @@ controller_list:
       - j_dist_pitch
       - j_hand_yaw
       - j_grinder
+  - name: antenna_controller   
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    joints:
+      - j_ant_pan
+      - j_ant_tilt
 ant_pan_position_controller:
   type: effort_controllers/JointPositionController
   joint: j_ant_pan
@@ -222,4 +228,28 @@ grinder_controller:
       d: 1.0
       i: 0.01
       i_clamp: 1
-
+antenna_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - j_ant_pan
+    - j_ant_tilt
+  constraints:
+    # If the timestamp of the goal trajectory point is t, then following the trajectory 
+    # succeeds if it reaches the goal within t +/- goal_time, and aborts otherwise.
+    goal_time: 50.0 
+    # Velocity to be considered approximately equal to zero.
+    stopped_velocity_tolerance: 0.001
+    # Position tolerance for a particular joint to reach the goal and throughout the trajectory
+    j_ant_pan: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+    j_ant_tilt: {trajectory: *traj_tolerance, goal: *goal_tolerance}
+  # Time it takes to bring the current state (position and velocity) to a stop
+  stop_trajectory_duration: *traj_stop_duration
+  gains:
+    j_ant_pan: 
+      p: 100.0
+      d: 15.0
+      i: 0.01
+    j_ant_tilt:
+      p: 550.0
+      d: 70.0
+      i: 0.01

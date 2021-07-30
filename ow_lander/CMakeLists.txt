@@ -35,6 +35,7 @@ add_action_files(
   FILES DigCircular.action
   FILES Grind.action
   FILES GuardedMove.action
+  FILES Antenna.action
 )
 
 
