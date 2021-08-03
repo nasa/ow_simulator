@@ -74,6 +74,12 @@ class AntennaActionServer(object):
 
         done = False
         while (done == False):
+            # check that preempt has not been requested by the client or Faults
+            if self._server.is_preempt_requested():
+               rospy.loginfo('%s: Preempted' % self._action_name)
+               self._server.set_preempted()
+               done = False
+               break
 
             self.pan_pub.publish(goal.pan) 
             self.tilt_pub.publish(goal.tilt) 
