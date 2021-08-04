@@ -248,18 +248,18 @@ bool FaultDetector::findArmFault(int jointName, names n, positions pos, effort e
     if (pos[index]  == FAULT_ZERO_TELEMETRY ){
       // if (m_current_arm_positions[joint_names[jointName]] != pos[index]) {
           result = true;
-          cout << "message name of index " << n[index] << endl;
-          // cout << "jointname name of jointName " << joint_names[jointName] << endl;
-          cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
-          cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
+          // cout << "message name of index " << n[index] << endl;
+          // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
+          // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
+          // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
         // }
     }
     if (eff[index]  == FAULT_ZERO_TELEMETRY){
         result = true;
-        cout << "message name of index " << n[index] << endl;
-        // cout << "jointname name of jointName " << joint_names[jointName] << endl;
-        cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
-        cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
+        // cout << "message name of index " << n[index] << endl;
+        // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
+        // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
+        // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
     }
   }
   return result;
