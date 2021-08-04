@@ -154,79 +154,12 @@ void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
         m_joint_state_indices.push_back(index);
     }
   }
-  bool arm_fault = false;
-  
-
-  // if (findJointIndex(J_SHOU_YAW, index)) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //     if (joint_names[J_SHOU_YAW] == msg->name[index]) {
-  //       // arm_fault = true;
-  //        cout << "message name of index " << msg->name[index] << endl;
-  //         cout << "jointname name of J_SHOU_YAW " << joint_names[J_SHOU_YAW] << endl;
-  //         cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //     }
-  //   }
-  // }
-  // if (findJointIndex(J_SHOU_PITCH, index)) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //     if (joint_names[J_SHOU_PITCH] == msg->name[index]) {
-  //       // arm_fault = true;
-  //       cout << "message name of index " << msg->name[index] << endl;
-  //       cout << "jointname name of J_SHOU_PITCH " << joint_names[J_SHOU_PITCH] << endl;
-  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //     }
-  //   }
-  // }
-  // if (findJointIndex(J_PROX_PITCH, index)) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //     if (joint_names[J_PROX_PITCH] == msg->name[index]) {
-  //       // arm_fault = true;
-  //       cout << "message name of index " << msg->name[index] << endl;
-  //       cout << "jointname name of J_PROX_PITCH " << joint_names[J_PROX_PITCH] << endl;
-  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //     }
-  //   }
-  // }
-  // if (findJointIndex(J_DIST_PITCH, index)) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //     if (joint_names[J_DIST_PITCH] == msg->name[index]) {
-  //       // arm_fault = true;
-  //       cout << "message name of index " << msg->name[index] << endl;
-  //       cout << "jointname name of J_DIST_PITCH " << joint_names[J_DIST_PITCH] << endl;
-  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //     }
-  //   }
-  // }
-  // if (findJointIndex(J_HAND_YAW, index)) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //     if (joint_names[J_HAND_YAW] == msg->name[index]) {
-  //       // arm_fault = true;
-  //       cout << "message name of index " << msg->name[index] << endl;
-  //       cout << "jointname name of J_HAND_YAW " << joint_names[J_HAND_YAW] << endl;
-  //       cout << "position 4  " << msg->position[4] << endl;
-  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //     }
-  //   }
-  // }
-  arm_fault = findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) && findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
-  // if (findJointIndex(J_SCOOP_YAW, index) && joint_names[J_SCOOP_YAW] == msg->name[index]) {
-  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY ){
-  //     if (m_current_arm_positions[joint_names[J_SCOOP_YAW]] != msg->position[index]) {
-  //         arm_fault = true;
-  //         cout << "message name of index " << msg->name[index] << endl;
-  //         // cout << "jointname name of J_SCOOP_YAW " << joint_names[J_SCOOP_YAW] << endl;
-  //         cout << "real position " << m_current_arm_positions[joint_names[J_SCOOP_YAW]] << " msg position " << msg->position[index] << endl;
-  //         cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //       }
-  //   }
-  //   if (msg->effort[index]  == FAULT_ZERO_TELEMETRY){
-  //       arm_fault = true;
-  //       cout << "message name of index " << msg->name[index] << endl;
-  //       // cout << "jointname name of J_SCOOP_YAW " << joint_names[J_SCOOP_YAW] << endl;
-  //       cout << "real position " << m_current_arm_positions[joint_names[J_SCOOP_YAW]] << " msg position " << msg->position[index] << endl;
-  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
-  //   }
-  // }
+  bool arm_fault = findArmFault( J_SHOU_YAW, msg->name, msg->position, msg->effort) ||
+                  findArmFault( J_SHOU_PITCH, msg->name, msg->position, msg->effort) ||
+                  findArmFault( J_PROX_PITCH, msg->name, msg->position, msg->effort) ||
+                  findArmFault( J_DIST_PITCH, msg->name, msg->position, msg->effort) ||
+                  findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) || 
+                  findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
   
   ow_faults::ArmFaults arm_faults_msg;
   if (arm_fault) {
@@ -243,16 +176,16 @@ void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 template<typename names, typename positions, typename effort>
 bool FaultDetector::findArmFault(int jointName, names n, positions pos, effort eff){
   unsigned int index;
-  bool result;
+  bool result = false;
   if (findJointIndex(jointName, index) && joint_names[jointName] == n[index]) {
     if (pos[index]  == FAULT_ZERO_TELEMETRY ){
-      // if (m_current_arm_positions[joint_names[jointName]] != pos[index]) {
+      if (m_current_arm_positions[joint_names[jointName]] != pos[index]) {
           result = true;
           // cout << "message name of index " << n[index] << endl;
           // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
           // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
           // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
-        // }
+        }
     }
     if (eff[index]  == FAULT_ZERO_TELEMETRY){
         result = true;
