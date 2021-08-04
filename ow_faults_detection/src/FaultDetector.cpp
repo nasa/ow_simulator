@@ -20,6 +20,15 @@ constexpr std::bitset<3> FaultDetector::isThermalError;
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
+  // arm
+  m_arm_joint_states_sub = node_handle.subscribe( "/joint_states",
+                                          10,
+                                          &FaultDetector::armJointStatesCb,
+                                          this);
+  m_arm_controller_states_sub = node_handle.subscribe( "/arm_controller/state",
+                                          10,
+                                          &FaultDetector::armControllerStateCb,
+                                          this);
   // antenna
   auto original_str = "/_original";
   auto ant_pan_str = "/ant_pan_position_controller";
@@ -59,6 +68,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                                   this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
   m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
@@ -124,6 +134,155 @@ void FaultDetector::publishPowerSystemFault(){
 }
 
 // Listeners
+// Arm listeners
+void FaultDetector::armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg){
+  int i = 0;
+  for (auto it : msg->joint_names){
+    m_current_arm_positions[it] = msg->actual.positions[i];
+    // cout << m_current_arm_positions["j_shou_yaw"] << endl;
+    i++;
+  }
+}
+
+void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg){
+  // Populate the map once here.
+  // This assumes the collection of joints will never change.
+  if (m_joint_state_indices.empty()) {
+    for (int j = 0; j < NUM_JOINTS; j ++) {
+      int index = findPositionInGroup(msg->name, joint_names[j]);
+      if (index >= 0)
+        m_joint_state_indices.push_back(index);
+    }
+  }
+  bool arm_fault = false;
+  
+
+  // if (findJointIndex(J_SHOU_YAW, index)) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //     if (joint_names[J_SHOU_YAW] == msg->name[index]) {
+  //       // arm_fault = true;
+  //        cout << "message name of index " << msg->name[index] << endl;
+  //         cout << "jointname name of J_SHOU_YAW " << joint_names[J_SHOU_YAW] << endl;
+  //         cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //     }
+  //   }
+  // }
+  // if (findJointIndex(J_SHOU_PITCH, index)) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //     if (joint_names[J_SHOU_PITCH] == msg->name[index]) {
+  //       // arm_fault = true;
+  //       cout << "message name of index " << msg->name[index] << endl;
+  //       cout << "jointname name of J_SHOU_PITCH " << joint_names[J_SHOU_PITCH] << endl;
+  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //     }
+  //   }
+  // }
+  // if (findJointIndex(J_PROX_PITCH, index)) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //     if (joint_names[J_PROX_PITCH] == msg->name[index]) {
+  //       // arm_fault = true;
+  //       cout << "message name of index " << msg->name[index] << endl;
+  //       cout << "jointname name of J_PROX_PITCH " << joint_names[J_PROX_PITCH] << endl;
+  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //     }
+  //   }
+  // }
+  // if (findJointIndex(J_DIST_PITCH, index)) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //     if (joint_names[J_DIST_PITCH] == msg->name[index]) {
+  //       // arm_fault = true;
+  //       cout << "message name of index " << msg->name[index] << endl;
+  //       cout << "jointname name of J_DIST_PITCH " << joint_names[J_DIST_PITCH] << endl;
+  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //     }
+  //   }
+  // }
+  // if (findJointIndex(J_HAND_YAW, index)) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY || msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //     if (joint_names[J_HAND_YAW] == msg->name[index]) {
+  //       // arm_fault = true;
+  //       cout << "message name of index " << msg->name[index] << endl;
+  //       cout << "jointname name of J_HAND_YAW " << joint_names[J_HAND_YAW] << endl;
+  //       cout << "position 4  " << msg->position[4] << endl;
+  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //     }
+  //   }
+  // }
+  arm_fault = findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) && findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
+  // if (findJointIndex(J_SCOOP_YAW, index) && joint_names[J_SCOOP_YAW] == msg->name[index]) {
+  //   if (msg->position[index]  == FAULT_ZERO_TELEMETRY ){
+  //     if (m_current_arm_positions[joint_names[J_SCOOP_YAW]] != msg->position[index]) {
+  //         arm_fault = true;
+  //         cout << "message name of index " << msg->name[index] << endl;
+  //         // cout << "jointname name of J_SCOOP_YAW " << joint_names[J_SCOOP_YAW] << endl;
+  //         cout << "real position " << m_current_arm_positions[joint_names[J_SCOOP_YAW]] << " msg position " << msg->position[index] << endl;
+  //         cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //       }
+  //   }
+  //   if (msg->effort[index]  == FAULT_ZERO_TELEMETRY){
+  //       arm_fault = true;
+  //       cout << "message name of index " << msg->name[index] << endl;
+  //       // cout << "jointname name of J_SCOOP_YAW " << joint_names[J_SCOOP_YAW] << endl;
+  //       cout << "real position " << m_current_arm_positions[joint_names[J_SCOOP_YAW]] << " msg position " << msg->position[index] << endl;
+  //       cout << " index " << index << " position: " << msg->position[index] << " effort: " << msg->effort[index]  << endl;
+  //   }
+  // }
+  
+  ow_faults::ArmFaults arm_faults_msg;
+  if (arm_fault) {
+    m_system_faults_bitset |= isArmExecutionError;
+    setComponentFaultsMessage(arm_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isArmExecutionError;
+  }
+  m_arm_fault_msg_pub.publish(arm_faults_msg);
+  publishSystemFaultsMessage();
+
+}
+
+template<typename names, typename positions, typename effort>
+bool FaultDetector::findArmFault(int jointName, names n, positions pos, effort eff){
+  unsigned int index;
+  bool result;
+  if (findJointIndex(jointName, index) && joint_names[jointName] == n[index]) {
+    if (pos[index]  == FAULT_ZERO_TELEMETRY ){
+      // if (m_current_arm_positions[joint_names[jointName]] != pos[index]) {
+          result = true;
+          cout << "message name of index " << n[index] << endl;
+          // cout << "jointname name of jointName " << joint_names[jointName] << endl;
+          cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
+          cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
+        // }
+    }
+    if (eff[index]  == FAULT_ZERO_TELEMETRY){
+        result = true;
+        cout << "message name of index " << n[index] << endl;
+        // cout << "jointname name of jointName " << joint_names[jointName] << endl;
+        cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
+        cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
+    }
+  }
+  return result;
+}
+
+template<typename group_t, typename item_t>
+int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
+{
+  auto iter = std::find(group.begin(), group.end(), item);
+  if (iter == group.end())
+    return -1;
+  return iter - group.begin();
+}
+
+bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_index)
+{
+  if(joint >= NUM_JOINTS)
+    return false;
+
+  out_index = m_joint_state_indices[joint];
+  return true;
+}
+
 //// Antenna Listeners
 void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
   antPublishFaultMessages( msg.data, m_ant_pan_set_point);

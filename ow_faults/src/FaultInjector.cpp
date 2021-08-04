@@ -165,17 +165,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  // if (m_arm_fault) {
-  //   m_system_faults_bitset |= isArmExecutionError;
-  //   setComponentFaultsMessage(arm_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isArmExecutionError;
-  // }
-
   m_joint_state_pub.publish(output);
-  // publishSystemFaultsMessage();
-
-  // m_arm_fault_msg_pub.publish(arm_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
