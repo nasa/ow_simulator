@@ -109,5 +109,5 @@
   <node pkg="ow_lander" name="DigCircular" type="dig_circular_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="Grind" type="grind_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="GuardedMove" type="guarded_move_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
-  <node pkg="ow_lander" name="AntennaAction" type="antenna_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>

@@ -7,28 +7,10 @@
 import rospy
 import actionlib
 import ow_lander.msg
-# import sys
-# import copy
-# import moveit_commander
-# import moveit_msgs.msg
-# import geometry_msgs.msg
-#from math import pi
-#from std_msgs.msg import String 
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
-# import math
-# import constants
-# import utils
-# import action_deliver_sample
-
-# from LanderInterface import MoveItInterface
-# from LanderInterface import LinkStateSubscriber
-# from trajectory_async_execution import TrajectoryAsyncExecuter
-# from moveit_msgs.msg import RobotTrajectory
-
-
 
 class AntennaActionServer(object):
     
@@ -39,9 +21,9 @@ class AntennaActionServer(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.AntennaFeedback()
         self._result = ow_lander.msg.AntennaResult()
-        self.tilt_pub = rospy.Publisher('/ant_tilt_position_controller/command', Float64, queue_size=10)
-        self.pan_pub = rospy.Publisher('/ant_pan_position_controller/command', Float64, queue_size=10)
-        self.subscriber = rospy.Subscriber("/joint_states", JointState, self._handle_joint_states)
+        self._tilt_pub = rospy.Publisher('/ant_tilt_position_controller/command', Float64, queue_size=10)
+        self._pan_pub = rospy.Publisher('/ant_pan_position_controller/command', Float64, queue_size=10)
+        self._subscriber = rospy.Subscriber("/joint_states", JointState, self._handle_joint_states)
         self._pan_value = None
         self._tilt_value = None
     
@@ -81,11 +63,11 @@ class AntennaActionServer(object):
                done = False
                break
 
-            self.pan_pub.publish(goal.pan) 
-            self.tilt_pub.publish(goal.tilt) 
+            self._pan_pub.publish(goal.pan) 
+            self._tilt_pub.publish(goal.tilt) 
             self._update_feedback()
 
-            if (abs(goal.pan - self._pan_value)< 0.01 and abs(goal.tilt - self._tilt_value)< 0.01):
+            if (abs(goal.pan - self._pan_value)< 0.05 and abs(goal.tilt - self._tilt_value)< 0.05):
                  done = True
         if done:
             self._result.pan_position =  self._fdbk.pan_position 
@@ -98,7 +80,7 @@ class AntennaActionServer(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('AntennaAction')
+    rospy.init_node('AntennaPanTiltAction')
     server = AntennaActionServer(rospy.get_name())
     rospy.spin()
         

@@ -13,7 +13,7 @@ import ow_lander.msg
 
 def antenna_client():
  
-    client = actionlib.SimpleActionClient('AntennaAction', ow_lander.msg.AntennaAction)
+    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaAction)
 
     client.wait_for_server()
 
