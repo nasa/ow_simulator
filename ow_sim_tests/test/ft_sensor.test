@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="gzclient" default="false" />
+
+    <include file="$(find ow)/launch/europa_terminator_workspace.launch">
+        <arg name="rqt_gui" value="false" />
+        <arg name="use_rviz" value="false"/>
+    </include>
+
+    <test test-name="ft_sensor_hz_check" pkg="rostest" type="hztest" name="ft_sensor_hz_check">
+        <param name="topic" value="ft_sensor_dist_pitch" />
+        <param name="hz" value="200.0" />
+        <param name="hzerror" value="1.0" />
+        <param name="test_duration" value="5.0" />
+    </test>
+
+    <test test-name="ft_sensor_check" pkg="ow_sim_tests" type="ft_sensor_check.py" name="ft_sensor_check">
+        <param name="test_duration" value="5.0" />
+    </test>
+
+</launch>
