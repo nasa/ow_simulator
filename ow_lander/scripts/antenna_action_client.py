@@ -8,7 +8,19 @@ from __future__ import print_function
 
 import rospy
 import actionlib
+from math import pi
 import ow_lander.msg
+
+def WrapAngle(angle):
+    """
+    :param angle: (float)
+    :return: (float) the angle in [-pi, pi]
+    """
+    while angle > pi:
+        angle -= 2 * pi
+    while angle < -pi:
+        angle += 2 * pi
+    return angle 
 
 
 def antenna_client():
@@ -19,8 +31,10 @@ def antenna_client():
 
     goal = ow_lander.msg.AntennaGoal()
 
-    goal.pan = 1.5
-    goal.tilt = 1.5 
+    goal.pan = -0.5
+    goal.tilt = 0
+    goal.tilt = WrapAngle(goal.tilt)
+    goal.pan = WrapAngle(goal.pan)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
