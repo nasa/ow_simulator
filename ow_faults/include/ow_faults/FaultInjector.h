@@ -20,6 +20,7 @@
 #include "ow_faults/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
+#include <sensor_msgs/Image.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
 #include <random>
@@ -65,7 +66,7 @@ private:
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   //camera function
-  void cameraTriggerRepublishCb(const std_msgs::Empty& msg);
+  void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
 
   // Antennae functions
   void antennaPanFaultCb(const std_msgs::Float64& msg);
