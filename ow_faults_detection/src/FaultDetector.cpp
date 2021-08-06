@@ -21,11 +21,11 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
 
- auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultDetector::cameraTriggerOriginalCb, this);
-  m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
-    10, &FaultDetector::cameraTriggerCb, this);
+ auto image_str = "/StereoCamera/left/image_";
+  m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
+    10, &FaultDetector::camerTriggerCb, this);
+  m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
+    10, &FaultDetector::cameraRawCb, this);
   
   m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
@@ -72,17 +72,17 @@ void FaultDetector::publishSystemFaultsMessage(){
 
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
-  ow_faults::CamFaults camera_faults_msg;
+  // ow_faults::CamFaults camera_faults_msg;
 
-  if (m_cam_og_trigger_time != m_cam_trigger_time) {
-    m_system_faults_bitset |= isCamExecutionError;
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isCamExecutionError;
-  }
+  // if (m_cam_trigger_time != m_cam_raw_time) {
+  //   m_system_faults_bitset |= isCamExecutionError;
+  //   setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  // } else {
+  //   m_system_faults_bitset &= ~isCamExecutionError;
+  // }
 
-  publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
+  // publishSystemFaultsMessage();
+  // m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 //// Publish Power Faults Messages
@@ -103,12 +103,23 @@ void FaultDetector::publishPowerSystemFault(){
 
 // Listeners
 //// Camera listeners
-void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
-  m_cam_og_trigger_time = ros::Time::now();
+void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
+  m_cam_trigger_time = ros::Time::now();
+  ow_faults::CamFaults camera_faults_msg;
+
+  if (m_cam_raw_time == m_cam_trigger_time) {
+    m_system_faults_bitset |= isCamExecutionError;
+    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isCamExecutionError;
+  }
+
+  publishSystemFaultsMessage();
+  m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
-void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
-  m_cam_trigger_time = ros::Time::now();
+void FaultDetector::cameraRawCb(const std_msgs::Empty& msg){
+  m_cam_raw_time = ros::Time::now();
 }
 
 //// Power Topic Listeners

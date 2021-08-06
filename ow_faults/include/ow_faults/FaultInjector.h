@@ -90,7 +90,7 @@ private:
   ros::Publisher m_dist_pitch_ft_sensor_pub;
 
   // camera
-  ros::Subscriber m_camera_trigger_sub;
+  ros::Subscriber m_camera_raw_sub;
   ros::Publisher m_camera_trigger_remapped_pub;
 
   //antenna 
