@@ -21,7 +21,15 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
 
+ auto image_str = "/StereoCamera/left/image_";
+  m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
+    10, &FaultDetector::camerTriggerCb, this);
+  m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
+    10, &FaultDetector::cameraRawCb, this);
+  
+  m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
   m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
 
@@ -55,11 +63,29 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
   msg.value = static_cast<uint>(value);
 }
 
-float FaultDetector::getRandomFloatFromRange(float min_val, float max_val) {
-  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
+// publish system messages
+void FaultDetector::publishSystemFaultsMessage(){
+  ow_faults::SystemFaults system_faults_msg;
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  m_system_fault_msg_pub.publish(system_faults_msg);
 }
 
-// Publish Power Faults Messages
+//// Publish Camera Messages
+void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
+  ow_faults::CamFaults camera_faults_msg;
+  auto diff = m_cam_raw_time - m_cam_trigger_time;
+  if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+    m_system_faults_bitset &= ~isCamExecutionError;
+  } else {
+    m_system_faults_bitset |= isCamExecutionError;
+    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  }
+
+  publishSystemFaultsMessage();
+  m_camera_fault_msg_pub.publish(camera_faults_msg);
+}
+
+//// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault(){
   ow_faults::PowerFaults power_faults_msg;
   //update if fault
@@ -75,13 +101,17 @@ void FaultDetector::publishPowerSystemFault(){
   m_power_fault_msg_pub.publish(power_faults_msg);
 }
 
-void FaultDetector::publishSystemFaultsMessage(){
-  ow_faults::SystemFaults system_faults_msg;
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_msg_pub.publish(system_faults_msg);
+// Listeners
+//// Camera listeners
+void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
+  m_cam_trigger_time = ros::Time::now();
 }
 
-// Power Topic Listeners
+void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg){
+  m_cam_raw_time = ros::Time::now();
+}
+
+//// Power Topic Listeners
 void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
   m_temperature_fault = msg.data > THERMAL_MAX;
@@ -99,4 +129,9 @@ void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
         ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
   publishPowerSystemFault();
   m_last_SOC = newSOC;
+}
+
+// helper functions
+float FaultDetector::getRandomFloatFromRange( float min_val, float max_val){
+  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }

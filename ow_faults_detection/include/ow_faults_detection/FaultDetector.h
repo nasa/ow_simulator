@@ -21,7 +21,7 @@
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
-
+#include <sensor_msgs/Image.h>
 
 // This class injects simple message faults that don't need to be simulated
 // at their source. Modified topics are prefixed with "/faults". This could be
@@ -63,7 +63,7 @@ public:
   static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
   static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
   static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
-  
+
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
   static constexpr std::bitset<3> isCapLossError{    0b010 };
@@ -74,8 +74,11 @@ public:
   static constexpr float SOC_MAX_DIFF = 0.05;
   
 private:
-  //  ////////// functions
-  void publishSystemFaultsMessage();
+
+  // //camera function
+  void camerTriggerCb(const std_msgs::Empty& msg);
+  void cameraRawCb(const sensor_msgs::Image& msg);
+  void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
   // // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
@@ -84,13 +87,18 @@ private:
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
   // //Setting message values
+  void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
   template<typename bitsetFaultsMsg, typename bitmask>
   void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
-
+ 
+  // // camera
+  ros::Timer m_camera_trigger_timer;
+  ros::Subscriber m_camera_original_trigger_sub;
+  ros::Subscriber m_camera_raw_sub;
 
   // //power
   ros::Subscriber m_power_soc_sub;
@@ -98,16 +106,21 @@ private:
   ros::Publisher m_power_fault_trigger_pub;
 
   // // jpl message publishers
+  ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
+
 
   // ////////// vars
   // //system
   std::bitset<10> m_system_faults_bitset{};
 
   // //general component faults
+  bool m_cam_trigger_on = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
+  ros::Time m_cam_raw_time;
+  ros::Time m_cam_trigger_time;
 
   // //power vars
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();

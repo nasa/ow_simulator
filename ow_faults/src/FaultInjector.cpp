@@ -20,11 +20,11 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
-
-  // auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  // m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-  //   10, &FaultInjector::cameraTriggerCb, this);
-  // m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
+  //camera sub and repub for remapped topic
+  auto image_raw_str = "/StereoCamera/left/image_raw";
+  m_camera_raw_sub = node_handle.subscribe(string("/_original") + image_raw_str,
+    10, &FaultInjector::cameraFaultRepublishCb, this);
+  m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
 
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
@@ -32,7 +32,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-  // m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
@@ -56,11 +55,10 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
+void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
   if (!m_cam_fault) {// if no fault
-    std_msgs::Empty msg;
     m_camera_trigger_remapped_pub.publish(msg);
-  }
+  } 
 }
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
@@ -181,19 +179,11 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   //   m_system_faults_bitset &= ~isArmExecutionError;
   // }
 
-  // if (m_cam_fault){
-  //   m_system_faults_bitset |= isCamExecutionError;
-  //   setComponentFaultsMessage(camera_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isCamExecutionError;
-  // }
-
   m_joint_state_pub.publish(output);
   // publishSystemFaultsMessage();
 
   // m_arm_fault_msg_pub.publish(arm_faults_msg);
   // m_antenna_fault_msg_pub.publish(pt_faults_msg);
-  // m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
@@ -240,7 +230,7 @@ void FaultInjector::checkAntFaults(){
 }
 
 void FaultInjector::checkCamFaults(){
-  m_cam_fault = m_faults.camera_left_trigger_failure ;
+  m_cam_fault = m_faults.camera_left_trigger_failure;
 }
 
 template<typename group_t, typename item_t>
