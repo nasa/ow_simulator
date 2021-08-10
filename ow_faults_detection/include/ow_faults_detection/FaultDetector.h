@@ -21,7 +21,7 @@
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
-
+#include <sensor_msgs/Image.h>
 
 // This class injects simple message faults that don't need to be simulated
 // at their source. Modified topics are prefixed with "/faults". This could be
@@ -77,7 +77,7 @@ private:
 
   // //camera function
   void camerTriggerCb(const std_msgs::Empty& msg);
-  void cameraRawCb(const std_msgs::Empty& msg);
+  void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
   // // power functions
