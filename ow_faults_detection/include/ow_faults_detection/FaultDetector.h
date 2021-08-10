@@ -23,6 +23,7 @@
 #include <geometry_msgs/WrenchStamped.h>
 #include <control_msgs/JointControllerState.h>
 #include <control_msgs/JointTrajectoryControllerState.h>
+#include <sensor_msgs/Image.h>
 
 // This class injects simple message faults that don't need to be simulated
 // at their source. Modified topics are prefixed with "/faults". This could be
@@ -98,8 +99,8 @@ private:
   void antPublishFaultMessages(float command, float m_set_point );
 
   // //camera function
-  void cameraTriggerOriginalCb(const std_msgs::Empty& msg);
-  void cameraTriggerCb(const std_msgs::Empty& msg);
+  void camerTriggerCb(const std_msgs::Empty& msg);
+  void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
   // // power functions
@@ -130,7 +131,7 @@ private:
   // camera
   ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
-  ros::Subscriber m_camera_trigger_sub;
+  ros::Subscriber m_camera_raw_sub;
 
   // power
   ros::Subscriber m_power_soc_sub;
@@ -156,8 +157,8 @@ private:
   bool m_cam_trigger_on = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
+  ros::Time m_cam_raw_time;
   ros::Time m_cam_trigger_time;
-  ros::Time m_cam_og_trigger_time;
 
   // power vars
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();

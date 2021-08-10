@@ -22,10 +22,10 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //camera sub and repub for remapped topic
-  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultInjector::cameraTriggerRepublishCb, this);
-  m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
+  auto image_raw_str = "/StereoCamera/left/image_raw";
+  m_camera_raw_sub = node_handle.subscribe(string("/_original") + image_raw_str,
+    10, &FaultInjector::cameraFaultRepublishCb, this);
+  m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
 
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
@@ -51,11 +51,10 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::cameraTriggerRepublishCb(const std_msgs::Empty& msg){
+void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
   if (!m_cam_fault) {// if no fault
-    std_msgs::Empty msg;
     m_camera_trigger_remapped_pub.publish(msg);
-  }
+  } 
 }
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
