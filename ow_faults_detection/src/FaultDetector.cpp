@@ -73,14 +73,10 @@ void FaultDetector::publishSystemFaultsMessage(){
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
   ow_faults::CamFaults camera_faults_msg;
-    // cout << m_cam_raw_time - m_cam_trigger_time << endl;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
-  // cout << typeid(diff).name() << endl;
   if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    cout << "OK " << m_cam_raw_time - m_cam_trigger_time << endl;
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
-    cout << "NOT OK " << m_cam_raw_time - m_cam_trigger_time << endl;
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
@@ -109,17 +105,6 @@ void FaultDetector::publishPowerSystemFault(){
 //// Camera listeners
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
   m_cam_trigger_time = ros::Time::now();
-  // ow_faults::CamFaults camera_faults_msg;
-
-  // if (m_cam_raw_time == m_cam_trigger_time) {
-  //   m_system_faults_bitset |= isCamExecutionError;
-  //   setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
-  // } else {
-  //   m_system_faults_bitset &= ~isCamExecutionError;
-  // }
-
-  // publishSystemFaultsMessage();
-  // m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg){
