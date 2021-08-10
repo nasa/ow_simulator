@@ -41,11 +41,12 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                           &FaultDetector::antennaTiltStateCb,
                                           this);
   // camera
-  auto image_trigger_str = "/StereoCamera/left/image_trigger";
-  m_camera_original_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
-    10, &FaultDetector::cameraTriggerOriginalCb, this);
-  m_camera_trigger_sub = node_handle.subscribe(image_trigger_str,
-    10, &FaultDetector::cameraTriggerCb, this);
+ auto image_str = "/StereoCamera/left/image_";
+  m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
+    10, &FaultDetector::camerTriggerCb, this);
+  m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
+    10, &FaultDetector::cameraRawCb, this);
+  
   m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
 
   //  power fault publishers and subs
@@ -95,12 +96,12 @@ void FaultDetector::publishSystemFaultsMessage(){
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
   ow_faults::CamFaults camera_faults_msg;
-
-  if (m_cam_og_trigger_time != m_cam_trigger_time) {
+  auto diff = m_cam_raw_time - m_cam_trigger_time;
+  if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+    m_system_faults_bitset &= ~isCamExecutionError;
+  } else {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isCamExecutionError;
   }
 
   publishSystemFaultsMessage();
@@ -155,12 +156,12 @@ void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState&
 }
 
 //// Camera listeners
-void FaultDetector::cameraTriggerOriginalCb(const std_msgs::Empty& msg){
-  m_cam_og_trigger_time = ros::Time::now();
+void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
+  m_cam_trigger_time = ros::Time::now();
 }
 
-void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg){
-  m_cam_trigger_time = ros::Time::now();
+void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg){
+  m_cam_raw_time = ros::Time::now();
 }
 
 //// Power Topic Listeners
