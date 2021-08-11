@@ -29,10 +29,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
-  // m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
                                               3,
@@ -104,8 +100,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // Set failed sensor values to 0
   unsigned int index;
 
-  checkArmFaults();
-  checkAntFaults();
   checkCamFaults();
 
   //pant tilt faults
@@ -121,13 +115,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   if (m_faults.ant_tilt_effort_failure && findJointIndex(J_ANT_TILT, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
-
-  // if (m_ant_fault){
-  //   m_system_faults_bitset |= isPanTiltExecutionError;
-  //   setComponentFaultsMessage(pt_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isPanTiltExecutionError;
-  // }
 
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
@@ -172,18 +159,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  // if (m_arm_fault) {
-  //   m_system_faults_bitset |= isArmExecutionError;
-  //   setComponentFaultsMessage(arm_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isArmExecutionError;
-  // }
-
   m_joint_state_pub.publish(output);
-  // publishSystemFaultsMessage();
-
-  // m_arm_fault_msg_pub.publish(arm_faults_msg);
-  // m_antenna_fault_msg_pub.publish(pt_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
@@ -213,20 +189,6 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   out_msg.wrench.torque.z += normal_dist(m_random_generator);
 
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
-}
-
-void FaultInjector::checkArmFaults(){
-  m_arm_fault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||
-                m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_effort_failure ||
-                m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_effort_failure ||
-                m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_effort_failure ||
-                m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_effort_failure ||
-                m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_effort_failure);
-}
-
-void FaultInjector::checkAntFaults(){
-  m_ant_fault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure ||
-                m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
 }
 
 void FaultInjector::checkCamFaults(){
