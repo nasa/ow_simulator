@@ -67,6 +67,7 @@ private:
 
   //camera function
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
+  void checkCamFaults();
 
   // // Antennae functions
   void antennaPanFaultCb(const std_msgs::Float64& msg);

@@ -100,6 +100,9 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // Set failed sensor values to 0
   unsigned int index;
 
+  // checking rqt
+  checkCamFaults();
+
   //pant tilt faults
   if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
     output.position[index] = FAULT_ZERO_TELEMETRY;
@@ -158,6 +161,10 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   m_joint_state_remapped_pub.publish(output);
+}
+
+void FaultInjector::checkCamFaults(){
+  m_cam_fault = m_faults.camera_left_trigger_failure;
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
