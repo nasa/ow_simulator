@@ -117,7 +117,7 @@ void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
   m_temperature_fault = msg.data > THERMAL_MAX;
   publishPowerSystemFault();
 }
-
+ 
 void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
 {
   float newSOC = msg.data;
