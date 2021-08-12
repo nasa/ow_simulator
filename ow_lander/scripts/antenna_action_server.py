@@ -12,15 +12,15 @@ from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
 
-class AntennaActionServer(object):
+class AntennaPanTiltActionServer(object):
     
     def __init__(self,name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.AntennaAction, execute_cb=self.on_antenna_action, auto_start = False)
+        self._server = actionlib.SimpleActionServer(self._action_name, ow_lander.msg.AntennaPanTiltAction, execute_cb=self.on_antenna_action, auto_start = False)
         self._server.start()
         # Action Feedback/Result
-        self._fdbk = ow_lander.msg.AntennaFeedback()
-        self._result = ow_lander.msg.AntennaResult()
+        self._fdbk = ow_lander.msg.AntennaPanTiltFeedback()
+        self._result = ow_lander.msg.AntennaPanTiltResult()
         self._tilt_pub = rospy.Publisher('/ant_tilt_position_controller/command', Float64, queue_size=10)
         self._pan_pub = rospy.Publisher('/ant_pan_position_controller/command', Float64, queue_size=10)
         self._subscriber = rospy.Subscriber("/joint_states", JointState, self._handle_joint_states)
@@ -81,7 +81,7 @@ class AntennaActionServer(object):
 
 if __name__ == '__main__':
     rospy.init_node('AntennaPanTiltAction')
-    server = AntennaActionServer(rospy.get_name())
+    server = AntennaPanTiltActionServer(rospy.get_name())
     rospy.spin()
         
   

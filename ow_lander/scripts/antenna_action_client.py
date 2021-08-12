@@ -25,14 +25,14 @@ def WrapAngle(angle):
 
 def antenna_client():
  
-    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaAction)
+    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
 
     client.wait_for_server()
 
-    goal = ow_lander.msg.AntennaGoal()
+    goal = ow_lander.msg.AntennaPanTiltGoal()
 
-    goal.pan = -0.5
-    goal.tilt = 0
+    goal.pan = -0.0
+    goal.tilt = 0.5
     goal.tilt = WrapAngle(goal.tilt)
     goal.pan = WrapAngle(goal.pan)
 
