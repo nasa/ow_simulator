@@ -35,6 +35,9 @@ class GuardedMoveActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
+        self._estimated_plan_fraction_completed = 0.0
+        #ratio between guarded pre-guarded move trajectory and the whole trajectory
+        self._guarded_move_plan_ratio = 0.0  
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
@@ -59,9 +62,11 @@ class GuardedMoveActionServer(object):
         :type feedback: FollowJointTrajectoryFeedback
         """
         self.trajectory_async_executer.stop_arm_if_fault(feedback)
+        execution_time_tollerance = 0.1 # added to compensate for slower than arm movement tan planned
 
-        if self.ground_detector.detect():
-          if (self.ground_detector.ground_position.z) > 0.1 :
+        if self.ground_detector.detect():   
+          if (self._estimated_plan_fraction_completed < self._guarded_move_plan_ratio 
+                                                        + execution_time_tollerance):       
             self.ground_detector.reset()
           else:
             self.trajectory_async_executer.stop()    
@@ -79,11 +84,10 @@ class GuardedMoveActionServer(object):
         
     def _update_motion(self, goal):
         print("Guarded move activity started")
-        self.guarded_move_traj = action_guarded_move.guarded_move_plan(self._interface.move_arm,
+        self.guarded_move_traj, self._guarded_move_plan_ratio = action_guarded_move.guarded_move_plan(
+                                              self._interface.move_arm,
                                               self._interface.robot, 
                                               self._interface.moveit_fk, goal)
-        
-        #print (self.guarded_move_traj)
         
         if self.guarded_move_traj == False: 
             return 
@@ -118,8 +122,8 @@ class GuardedMoveActionServer(object):
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):
-
            self._update_feedback()
+           self._estimated_plan_fraction_completed  = now_from_start(start_time)/self._timeout
            
         success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()
             

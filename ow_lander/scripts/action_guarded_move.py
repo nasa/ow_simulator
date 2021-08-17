@@ -98,5 +98,10 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   plan_c  = move_arm.plan()
   
   guarded_move_traj = cascade_plans (pre_guarded_move_traj, plan_c)
+
+  #n_points = len(pre_guarded_move_traj.joint_trajectory.points)
+  pre_guarded_move_end_time = pre_guarded_move_traj.joint_trajectory.points[len(pre_guarded_move_traj.joint_trajectory.points)-1].time_from_start
+  guarded_move_end_time = guarded_move_traj.joint_trajectory.points[len(guarded_move_traj.joint_trajectory.points)-1].time_from_start
+  estimated_time_ratio= pre_guarded_move_end_time/guarded_move_end_time 
   
-  return guarded_move_traj
+  return guarded_move_traj, estimated_time_ratio

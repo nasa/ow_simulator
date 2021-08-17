@@ -40,8 +40,6 @@ class MonitorMinimumFPS(unittest.TestCase):
 
   def test_minimum_fps(self):
 
-    rospy.init_node("test_minimum_fps", anonymous=True)
-
     self.test_start_time = rospy.get_time()
 
     self.avg_fps_sub = rospy.Subscriber(
