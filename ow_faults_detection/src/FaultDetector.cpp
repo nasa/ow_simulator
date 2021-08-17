@@ -8,20 +8,22 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<10> FaultDetector::isCamExecutionError;
-constexpr std::bitset<10> FaultDetector::isPanTiltExecutionError;
-constexpr std::bitset<10> FaultDetector::isArmExecutionError;
-constexpr std::bitset<10> FaultDetector::isPowerSystemFault;
+using std::bitset;
 
-constexpr std::bitset<3> FaultDetector::islowVoltageError;
-constexpr std::bitset<3> FaultDetector::isCapLossError;
-constexpr std::bitset<3> FaultDetector::isThermalError;
+constexpr bitset<10> FaultDetector::isCamExecutionError;
+constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
+constexpr bitset<10> FaultDetector::isArmExecutionError;
+constexpr bitset<10> FaultDetector::isPowerSystemFault;
+
+constexpr bitset<3> FaultDetector::islowVoltageError;
+constexpr bitset<3> FaultDetector::isCapLossError;
+constexpr bitset<3> FaultDetector::isThermalError;
 
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
 
- auto image_str = "/StereoCamera/left/image_";
+ string image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
     10, &FaultDetector::camerTriggerCb, this);
   m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
@@ -74,7 +76,9 @@ void FaultDetector::publishSystemFaultsMessage(){
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
   ow_faults_injection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+  if (m_cam_trigger_time <= m_cam_raw_time  
+    &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) 
+    || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
     m_system_faults_bitset |= isCamExecutionError;
