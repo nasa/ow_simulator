@@ -29,10 +29,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  // m_antenna_fault_msg_pub = node_handle.advertise<ow_faults_injection::PTFaults>("/faults/pt_faults_status", 10);
-  // m_arm_fault_msg_pub = node_handle.advertise<ow_faults_injection::ArmFaults>("/faults/arm_faults_status", 10);
-
   //antenna fault publishers and subs
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
                                               3,
@@ -122,13 +118,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  // if (m_ant_fault){
-  //   m_system_faults_bitset |= isPanTiltExecutionError;
-  //   setComponentFaultsMessage(pt_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isPanTiltExecutionError;
-  // }
-
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
@@ -172,18 +161,8 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
-  // if (m_arm_fault) {
-  //   m_system_faults_bitset |= isArmExecutionError;
-  //   setComponentFaultsMessage(arm_faults_msg, hardwareFault);
-  // } else {
-  //   m_system_faults_bitset &= ~isArmExecutionError;
-  // }
-
   m_joint_state_pub.publish(output);
-  // publishSystemFaultsMessage();
 
-  // m_arm_fault_msg_pub.publish(arm_faults_msg);
-  // m_antenna_fault_msg_pub.publish(pt_faults_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
