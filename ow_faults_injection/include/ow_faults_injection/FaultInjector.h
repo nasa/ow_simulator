@@ -12,12 +12,12 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <ow_faults/FaultsConfig.h>
-#include "ow_faults/SystemFaults.h"
-#include "ow_faults/ArmFaults.h"
-#include "ow_faults/PowerFaults.h"
-#include "ow_faults/PTFaults.h"
-#include "ow_faults/CamFaults.h"
+#include <ow_faults_injection/FaultsConfig.h>
+#include "ow_faults_injection/SystemFaults.h"
+#include "ow_faults_injection/ArmFaults.h"
+#include "ow_faults_injection/PowerFaults.h"
+#include "ow_faults_injection/PTFaults.h"
+#include "ow_faults_injection/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Image.h>
@@ -40,7 +40,7 @@ public:
   FaultInjector(ros::NodeHandle& node_handle);
   ~FaultInjector(){}
 
-  void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
+  void faultsConfigCb(ow_faults_injection::FaultsConfig& faults, uint32_t level);
 
   //arm
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
@@ -103,7 +103,7 @@ private:
   bool m_cam_fault = false;
 
   //arm joint faults
-  ow_faults::FaultsConfig m_faults;
+  ow_faults_injection::FaultsConfig m_faults;
 
   // antenna vars
   float m_fault_pan_value;

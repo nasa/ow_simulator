@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/ow_faults</url> -->
+  <!-- <url type="website">http://wiki.ros.org/ow_faults_injection</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -54,13 +54,13 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>ow_lander</build_depend>
-  <build_depend>ow_faults</build_depend>
+  <build_depend>ow_faults_injection</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
-  <exec_depend>ow_faults</exec_depend>
+  <exec_depend>ow_faults_injection</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

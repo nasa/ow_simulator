@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_faults)
+project(ow_faults_injection)
 
 set(EXEC_NAME faults)
 

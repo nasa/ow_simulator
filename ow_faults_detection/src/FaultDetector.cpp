@@ -8,14 +8,16 @@
 using namespace std;
 using namespace ow_lander;
 
-constexpr std::bitset<10> FaultDetector::isCamExecutionError;
-constexpr std::bitset<10> FaultDetector::isPanTiltExecutionError;
-constexpr std::bitset<10> FaultDetector::isArmExecutionError;
-constexpr std::bitset<10> FaultDetector::isPowerSystemFault;
+using std::bitset;
 
-constexpr std::bitset<3> FaultDetector::islowVoltageError;
-constexpr std::bitset<3> FaultDetector::isCapLossError;
-constexpr std::bitset<3> FaultDetector::isThermalError;
+constexpr bitset<10> FaultDetector::isCamExecutionError;
+constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
+constexpr bitset<10> FaultDetector::isArmExecutionError;
+constexpr bitset<10> FaultDetector::isPowerSystemFault;
+
+constexpr bitset<3> FaultDetector::islowVoltageError;
+constexpr bitset<3> FaultDetector::isCapLossError;
+constexpr bitset<3> FaultDetector::isThermalError;
 
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
@@ -30,9 +32,9 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                           &FaultDetector::armControllerStateCb,
                                           this);
   // antenna
-  auto original_str = "/_original";
-  auto ant_pan_str = "/ant_pan_position_controller";
-  auto ant_tilt_str = "/ant_tilt_position_controller";
+  string original_str = "/_original";
+  string ant_pan_str = "/ant_pan_position_controller";
+  string ant_tilt_str = "/ant_tilt_position_controller";
   m_ant_pan_command_sub = node_handle.subscribe( string("/_original") + ant_pan_str + string("/command"),
                                           10,
                                           &FaultDetector::antennaPanCommandCb,
@@ -50,7 +52,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                           &FaultDetector::antennaTiltStateCb,
                                           this);
   // camera
- auto image_str = "/StereoCamera/left/image_";
+ string image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
     10, &FaultDetector::camerTriggerCb, this);
   m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
@@ -98,16 +100,18 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage(){
-  ow_faults::SystemFaults system_faults_msg;
+  ow_faults_injection::SystemFaults system_faults_msg;
   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
   m_system_fault_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
-  ow_faults::CamFaults camera_faults_msg;
+  ow_faults_injection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+  if (m_cam_trigger_time <= m_cam_raw_time  
+    &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) 
+    || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
     m_system_faults_bitset |= isCamExecutionError;
@@ -120,7 +124,7 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
 
 //// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault(){
-  ow_faults::PowerFaults power_faults_msg;
+  ow_faults_injection::PowerFaults power_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system

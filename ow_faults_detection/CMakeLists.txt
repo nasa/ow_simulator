@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   ow_lander
   std_msgs
   message_generation
-  ow_faults
+  ow_faults_injection
 )
 
 ## System dependencies are found with CMake's conventions

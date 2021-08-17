@@ -2,14 +2,14 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "ow_faults/FaultInjector.h"
+#include "ow_faults_injection/FaultInjector.h"
 #include <algorithm>
 
 using namespace std;
 using namespace ow_lander;
 
 FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
-{
+{ 
   //  arm pub and subs
   const char* joint_states_str = "joint_states";
   m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
@@ -42,7 +42,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   srand (static_cast <unsigned> (time(0)));
 }
 
-void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
+void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, uint32_t level)
 {
   // This is where we would check to see if faults is different from m_faults
   // if we wanted to change some state based on that.
