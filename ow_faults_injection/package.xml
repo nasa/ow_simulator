@@ -1,18 +1,33 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ow_power_system</name>
-  <version>0.1.0</version>
-  <description>The ow_power_system package. Simulates (or will simulate) the lander's power system, taking in power use and future loading and outputting state of charge and a predicted remaining useful life.</description>
+  <name>ow_faults_injection</name>
+  <version>0.0.0</version>
+  <description>Manage the state of simulated faults in OceanWATERS</description>
 
-  <license>NASA OPEN SOURCE AGREEMENT VERSION 1.3</license>
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <!-- Example:  -->
+  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="terence.m.welsh@nasa.gov">Terry Welsh</maintainer>
+  <maintainer email="lanssie.ma@nasa.gov">Lanssie Ma</maintainer>
 
-  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
-  <author email="jason.fugate@nasa.gov">Jason Fugate</author>
-  <author email="molly.c.oconnor@nasa.gov">Molly O'Connor</author>
-  <author email="chetan.s.kulkarni@nasa.gov">Chetan Kulkarni</author>
 
-  <maintainer email="jason.fugate@nasa.gov">Jason Fugate</maintainer>
-  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+
+  <!-- Url tags are optional, but multiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://wiki.ros.org/ow_faults_injection</url> -->
+
+
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintainers, but could be -->
+  <!-- Example: -->
+  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
@@ -35,24 +50,23 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-
-  <build_depend>roslaunch</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>roslib</build_depend>
+  <build_depend>rospy</build_depend>
   <build_depend>ow_lander</build_depend>
-  <build_depend>ow_faults_injection</build_depend>
-  
+  <build_export_depend>dynamic_reconfigure</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
   <exec_depend>message_runtime</exec_depend>
-  <exec_depend>ow_faults_injection</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
+
   </export>
 </package>

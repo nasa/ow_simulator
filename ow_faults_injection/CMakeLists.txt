@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_faults_detection)
+project(ow_faults_injection)
 
-set(EXEC_NAME faults_detection)
+set(EXEC_NAME faults)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   ow_lander
   std_msgs
   message_generation
-  ow_faults_injection
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,9 +49,14 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-# )
+add_message_files(
+  FILES
+  SystemFaults.msg
+  ArmFaults.msg
+  PowerFaults.msg
+  PTFaults.msg
+  CamFaults.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -68,11 +72,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
-# ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -89,8 +93,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-# )
+generate_dynamic_reconfigure_options(
+  cfg/Faults.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -133,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${EXEC_NAME} src/main.cpp src/FaultDetector.cpp)
+add_executable(${EXEC_NAME} src/main.cpp src/FaultInjector.cpp)
 
 # make sure configure headers are built before any node using them
 add_dependencies (

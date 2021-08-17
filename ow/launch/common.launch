@@ -75,7 +75,7 @@
   <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
   <!-- Start faults node -->
-  <node name="faults" pkg="ow_faults" type="faults" output="screen" />
+  <node name="faults" pkg="ow_faults_injection" type="faults" output="screen" />
   
   <!-- Start faults detection node -->
   <node name="faults_detection" pkg="ow_faults_detection" type="faults_detection" output="screen" />

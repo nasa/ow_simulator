@@ -29,9 +29,9 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   
   m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults_injection::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults_injection::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = node_handle.advertise<ow_faults_injection::SystemFaults>("/faults/system_faults_status", 10);
 
   //  power fault publishers and subs
   m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
@@ -65,14 +65,14 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage(){
-  ow_faults::SystemFaults system_faults_msg;
+  ow_faults_injection::SystemFaults system_faults_msg;
   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
   m_system_fault_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
-  ow_faults::CamFaults camera_faults_msg;
+  ow_faults_injection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
   if (m_cam_trigger_time <= m_cam_raw_time  &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
     m_system_faults_bitset &= ~isCamExecutionError;
@@ -87,7 +87,7 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
 
 //// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault(){
-  ow_faults::PowerFaults power_faults_msg;
+  ow_faults_injection::PowerFaults power_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
