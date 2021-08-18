@@ -5,10 +5,10 @@
 #include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
 
-using namespace std;
 using namespace ow_lander;
 
 using std::bitset;
+using std::string;
 
 constexpr bitset<10> FaultDetector::isCamExecutionError;
 constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
@@ -23,7 +23,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
 
- string image_str = "/StereoCamera/left/image_";
+  const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
     10, &FaultDetector::camerTriggerCb, this);
   m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
