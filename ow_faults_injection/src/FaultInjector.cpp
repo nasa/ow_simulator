@@ -5,8 +5,9 @@
 #include "ow_faults_injection/FaultInjector.h"
 #include <algorithm>
 
-using namespace std;
 using namespace ow_lander;
+
+using std::string;
 
 FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
 { 
@@ -16,13 +17,13 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     &FaultInjector::jointStateCb, this);
   m_joint_state_remapped_pub = node_handle.advertise<sensor_msgs::JointState>(joint_states_str, 10);
 
-  auto ft_sensor_dist_pitch_str = "ft_sensor_dist_pitch";
+  const char* ft_sensor_dist_pitch_str = "ft_sensor_dist_pitch";
   m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
     10, &FaultInjector::distPitchFtSensorCb, this);
   m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //camera sub and repub for remapped topic
-  auto image_raw_str = "/StereoCamera/left/image_raw";
+  const char* image_raw_str = "/StereoCamera/left/image_raw";
   m_camera_raw_sub = node_handle.subscribe(string("/_original") + image_raw_str,
     10, &FaultInjector::cameraFaultRepublishCb, this);
   m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
