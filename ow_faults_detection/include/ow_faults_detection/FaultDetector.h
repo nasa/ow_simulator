@@ -73,6 +73,7 @@ public:
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
+  // COMPONENT FUNCTIONS
   // arm functions
   template<typename names, typename positions, typename effort>
   bool findArmFault(int jointName, names n, positions pos, effort eff);
@@ -86,25 +87,25 @@ private:
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
-  // Antennae functions
+  // antennae functions
   void antennaPanCommandCb(const std_msgs::Float64& msg);
   void antennaPanStateCb(const control_msgs::JointControllerState& msg);
   void antennaTiltCommandCb(const std_msgs::Float64& msg);
   void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
   void antPublishFaultMessages(float command, float m_set_point );
 
-  // //camera function
+  // camera functions
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
-  // // power functions
+  // power functions
   float getRandomFloatFromRange(float min_val, float max_val);
   void publishPowerSystemFault();
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
-  // //Setting message values
+  // JPL MESSAGE FUNCTIONS AND PUBLISHERS
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
@@ -112,7 +113,13 @@ private:
   void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
- 
+
+  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
+
   //arm
   ros::Subscriber m_arm_joint_states_sub;
   ros::Subscriber m_arm_controller_states_sub;
@@ -131,20 +138,12 @@ private:
   // power
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
-  ros::Publisher m_power_fault_trigger_pub;
 
-  // jpl message publishers
-  ros::Publisher m_arm_fault_msg_pub;
-  ros::Publisher m_antenna_fault_msg_pub;
-  ros::Publisher m_camera_fault_msg_pub;
-  ros::Publisher m_power_fault_msg_pub;
-  ros::Publisher m_system_fault_msg_pub;
-
-  // vars
-  // system
+  // VARIABLES
+  // system vars
   std::bitset<10> m_system_faults_bitset{};
 
-  // general component faults
+  // general component fault vars
   std::vector<unsigned int> m_joint_state_indices;
   std::map<std::string, float> m_current_arm_positions; 
   float m_ant_pan_set_point;
