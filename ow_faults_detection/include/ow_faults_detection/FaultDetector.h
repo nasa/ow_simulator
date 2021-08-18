@@ -25,13 +25,8 @@
 #include <control_msgs/JointTrajectoryControllerState.h>
 #include <sensor_msgs/Image.h>
 
-// This class injects simple message faults that don't need to be simulated
-// at their source. Modified topics are prefixed with "/faults". This could be
-// accomplished on the original topics, but, for example, in the case of
-// /joint_states, this would require forking and modifying joint_state_publisher.
-// Creating a modified version of the original message is simpler, and it
-// leaves the original message intact in case we want to use it as part of a
-// placeholder fault estimator.
+// This class detects system faults and publishes the relevant fault information to a series of topics. 
+// Fault topics are prefixed with "/faults".
 class FaultDetector
 {
 
