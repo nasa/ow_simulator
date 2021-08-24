@@ -19,7 +19,8 @@ class LanderServiceServer(object):
     rospy.init_node('lander_service_server', anonymous=True)
  
     # Create publishers and messages
-    self.light_pub = rospy.Publisher("/gazebo/global_shader_param", ShaderParamUpdate, queue_size=1)
+    self.light_pub = rospy.Publisher("/gazebo/global_shader_param",
+                                     ShaderParamUpdate, queue_size=1)
     self.light_msg = ShaderParamUpdate()
     self.light_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
 
@@ -36,12 +37,16 @@ class LanderServiceServer(object):
     :type req: class 'ow_lander.srv.Light.LightRequest'
     """
     if req.name != 'left' and req.name != 'right':
-      return False, 'Light intensity setting failed. "{}" is not a light identifier.'.format(req.name)
+      return False, 'Light intensity setting failed. "{}" is not a light '\
+             'identifier.'.format(req.name)
 
     if req.intensity < 0.0 or req.intensity > 1.0:
-      return False, 'Light intensity setting failed. Intensity = {} is out of range.'.format(req.intensity)
+      return False, 'Light intensity setting failed. Intensity = {} is out '\
+             'of range.'.format(req.intensity)
 
-    self.light_msg.paramName = 'spotlightIntensityScale0' if req.name == 'left' else 'spotlightIntensityScale1'
+    self.light_msg.paramName = 'spotlightIntensityScale0'
+    if req.name == 'right':
+        self.light_msg.paramName = 'spotlightIntensityScale1'
     self.light_msg.paramValue = str(req.intensity)
     self.light_pub.publish(self.light_msg)
     return True, '{} light intensity setting succeeded.'.format(req.name)
