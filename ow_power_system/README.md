@@ -13,6 +13,12 @@ rostopic echo /power_system_node/remaining_useful_life
 rostopic echo /power_system_node/battery_temperature
 ```
 
+state_of_charge : The SOC estimate provides amount of energy present in the battery. It varies from 0 - 100%. When the SOC levels goes below a certain set threshold and fault in detected. 
+
+remaining_useful_life: Remaining useful life(RUL) is the time reamining for the battery before it hits the set SOC threshold. 
+
+battery_temperature: The internal battery temperature changes based on the operating conditions. The battery temperature should not rise above a certain threshold to prevent the battery from going into thermal runaway. 
+
 The RUL, SOC, and battery temperature values are computed via the GSAP prognostics library based on power input
 values from a precomputed constant or variable load csv. The values are published every second.
 
