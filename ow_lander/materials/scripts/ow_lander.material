@@ -62,7 +62,6 @@ fragment_program ow_lander_frag glsl
     param_named_auto spotlightColor0      light_diffuse_colour 1
     param_named_auto spotlightAtten0      light_attenuation 1
     param_named_auto spotlightParams0     spotlight_params 1
-    //param_named spotlightColor0           float4 1.0 1.0 1.0 1.0
     // spotlight texture
     param_named spotlightMap              int 4
   }
