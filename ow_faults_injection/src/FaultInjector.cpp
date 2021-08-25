@@ -61,17 +61,19 @@ void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
 void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_pan_encoder_failure,
-                        m_faults.ant_pan_effort_failure,
-                        m_fault_pan_value, m_ant_pan_remapped_pub );
+  // publishAntennaeFaults(msg,
+  //                       m_faults.ant_pan_encoder_failure,
+  //                       m_faults.ant_pan_effort_failure,
+  //                       m_fault_pan_value, m_ant_pan_remapped_pub );
+  m_ant_pan_remapped_pub.publish(msg);
 }
 
 void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_tilt_encoder_failure,
-                        m_faults.ant_tilt_effort_failure,
-                        m_fault_tilt_value, m_ant_tilt_remapped_pub );
+  // publishAntennaeFaults(msg,
+  //                       m_faults.ant_tilt_encoder_failure,
+  //                       m_faults.ant_tilt_effort_failure,
+  //                       m_fault_tilt_value, m_ant_tilt_remapped_pub );
+  m_ant_tilt_remapped_pub.publish(msg);
 }
 
 void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_remapped_pub){

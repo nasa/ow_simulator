@@ -32,25 +32,24 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                           &FaultDetector::armControllerStateCb,
                                           this);
   // antenna
-  string original_str = "/_original";
   string ant_pan_str = "/ant_pan_position_controller";
   string ant_tilt_str = "/ant_tilt_position_controller";
-  m_ant_pan_command_sub = node_handle.subscribe( string("/_original") + ant_pan_str + string("/command"),
+  m_ant_pan_command_sub = node_handle.subscribe( ant_pan_str + string("/command"),
                                           10,
                                           &FaultDetector::antennaPanCommandCb,
                                           this);
-  m_ant_pan_state_sub = node_handle.subscribe(ant_pan_str + string("/state"),
-                                          10,
-                                          &FaultDetector::antennaPanStateCb,
-                                          this);
-  m_ant_tilt_command_sub = node_handle.subscribe( string("/_original") + ant_tilt_str + string("/command"),
+  // m_ant_pan_state_sub = node_handle.subscribe(ant_pan_str + string("/state"),
+  //                                         10,
+  //                                         &FaultDetector::antennaPanStateCb,
+  //                                         this);
+  m_ant_tilt_command_sub = node_handle.subscribe( ant_tilt_str + string("/command"),
                                           10,
                                           &FaultDetector::antennaTiltCommandCb,
                                           this);
-  m_ant_tilt_state_sub = node_handle.subscribe(ant_tilt_str + string("/state"),
-                                          10,
-                                          &FaultDetector::antennaTiltStateCb,
-                                          this);
+  // m_ant_tilt_state_sub = node_handle.subscribe(ant_tilt_str + string("/state"),
+  //                                         10,
+  //                                         &FaultDetector::antennaTiltStateCb,
+  //                                         this);
   // camera
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
@@ -159,6 +158,11 @@ void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
         m_joint_state_indices.push_back(index);
     }
   }
+
+  //store ant values
+  m_pan_fault = findAntFaults( J_ANT_PAN, msg->name, msg->position, msg->effort);
+  m_tilt_fault  = findAntFaults( J_ANT_TILT, msg->name, msg->position, msg->effort);
+
   bool arm_fault = findArmFault( J_SHOU_YAW, msg->name, msg->position, msg->effort) ||
                   findArmFault( J_SHOU_PITCH, msg->name, msg->position, msg->effort) ||
                   findArmFault( J_PROX_PITCH, msg->name, msg->position, msg->effort) ||
@@ -222,34 +226,56 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 }
 
 //// Antenna Listeners
+template<typename names, typename positions, typename effort>
+bool FaultDetector::findAntFaults(int jointName, names n, positions pos, effort eff){
+  unsigned int index;
+  bool result = false;
+  if (findJointIndex(jointName, index) && joint_names[jointName] == n[index]) {
+    if (pos[index]  == FAULT_ZERO_TELEMETRY || eff[index]  == FAULT_ZERO_TELEMETRY) {
+        result = true;
+        cout << "message name of index " << n[index] << endl;
+        // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
+        // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
+        // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
+    }
+  }
+  return result;
+}
+
+
 void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
-  antPublishFaultMessages( msg.data, m_ant_pan_set_point);
+  // antPublishFaultMessages( msg.data, m_ant_pan_set_point);
+  // m_pan_command_val = msg.data;
+  antPublishFaultMessages(msg->data);
 }
 
 void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
-  antPublishFaultMessages(msg.data, m_ant_tilt_set_point);
+  // antPublishFaultMessages(msg.data, m_ant_tilt_set_point);
+  // m_tilt_command_val = msg.data;
+  antPublishFaultMessages(msg->data);
 }
 
-void FaultDetector::antPublishFaultMessages(float command, float m_set_point ){
-  ow_faults::PTFaults ant_pan_fault_msg;
+void FaultDetector::antPublishFaultMessages(float msg_info ){
+  ow_faults::PTFaults ant_fault_msg;
 
-  if (command != m_set_point) {
-    setComponentFaultsMessage(ant_pan_fault_msg, ComponentFaults::Hardware);
+  if ((m_pan_fault && msg_info != FAULT_ZERO_TELEMETRY ) || 
+      (m_tilt_fault && msg_info != FAULT_ZERO_TELEMETRY )) {
+    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
     m_system_faults_bitset |= isPanTiltExecutionError;
   }else {
     m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
   publishSystemFaultsMessage();
-  m_antenna_fault_msg_pub.publish(ant_pan_fault_msg);
+  m_antenna_fault_msg_pub.publish(ant_fault_msg);
 }
 
-void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& msg){
-  m_ant_pan_set_point = msg.set_point;
-}
+// void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& msg){
+//   m_ant_pan_set_point = msg.set_point;
+// }
 
-void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
-  m_ant_tilt_set_point = msg.set_point;
-}
+// void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
+//   m_ant_tilt_set_point = msg.set_point;
+// }
 
 //// Camera listeners
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
