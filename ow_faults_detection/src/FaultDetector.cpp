@@ -70,11 +70,11 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                                   this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+  m_arm_fault_msg_pub = node_handle.advertise<ow_faults_injection::ArmFaults>("/faults/arm_faults_status", 10);
+  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults_injection::PTFaults>("/faults/pt_faults_status", 10);
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults_injection::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults_injection::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = node_handle.advertise<ow_faults_injection::SystemFaults>("/faults/system_faults_status", 10);
 
 }
 
@@ -170,7 +170,7 @@ void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
                   findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) || 
                   findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
   
-  ow_faults::ArmFaults arm_faults_msg;
+  ow_faults_injection::ArmFaults arm_faults_msg;
   if (arm_fault) {
     m_system_faults_bitset |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg, ComponentFaults::Hardware);
@@ -233,7 +233,7 @@ bool FaultDetector::findAntFaults(int jointName, names n, positions pos, effort 
   if (findJointIndex(jointName, index) && joint_names[jointName] == n[index]) {
     if (pos[index]  == FAULT_ZERO_TELEMETRY || eff[index]  == FAULT_ZERO_TELEMETRY) {
         result = true;
-        cout << "message name of index " << n[index] << endl;
+        std::cout << "message name of index " << n[index] << std::endl;
         // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
         // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
         // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
@@ -246,17 +246,17 @@ bool FaultDetector::findAntFaults(int jointName, names n, positions pos, effort 
 void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
   // antPublishFaultMessages( msg.data, m_ant_pan_set_point);
   // m_pan_command_val = msg.data;
-  antPublishFaultMessages(msg->data);
+  antPublishFaultMessages(msg.data);
 }
 
 void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
   // antPublishFaultMessages(msg.data, m_ant_tilt_set_point);
   // m_tilt_command_val = msg.data;
-  antPublishFaultMessages(msg->data);
+  antPublishFaultMessages(msg.data);
 }
 
 void FaultDetector::antPublishFaultMessages(float msg_info ){
-  ow_faults::PTFaults ant_fault_msg;
+  ow_faults_injection::PTFaults ant_fault_msg;
 
   if ((m_pan_fault && msg_info != FAULT_ZERO_TELEMETRY ) || 
       (m_tilt_fault && msg_info != FAULT_ZERO_TELEMETRY )) {
