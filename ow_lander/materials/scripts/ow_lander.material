@@ -52,17 +52,18 @@ fragment_program ow_lander_frag glsl
     param_named irradianceMap           int 3
 
     // lander lights
-    param_named_auto vsSpotlightPos0    light_position_view_space 1
-    param_named_auto vsSpotlightPos1    light_position_view_space 2
-    param_named_auto vsSpotlightDir0    light_direction_view_space 1
-    param_named_auto vsSpotlightDir1    light_direction_view_space 2
+    param_named spotlightIntensityScale0  float 1.0
+    param_named spotlightIntensityScale1  float 1.0
+    param_named_auto vsSpotlightPos0      light_position_view_space 1
+    param_named_auto vsSpotlightPos1      light_position_view_space 2
+    param_named_auto vsSpotlightDir0      light_direction_view_space 1
+    param_named_auto vsSpotlightDir1      light_direction_view_space 2
     // Assuming these spotlights are the same, these parameters can be reused for each.
-    param_named_auto spotlightColor0  light_diffuse_colour 1
-    param_named_auto spotlightAtten0    light_attenuation 1
-    param_named_auto spotlightParams0   spotlight_params 1
-    //param_named spotlightColor0         float4 1.0 1.0 1.0 1.0
+    param_named_auto spotlightColor0      light_diffuse_colour 1
+    param_named_auto spotlightAtten0      light_attenuation 1
+    param_named_auto spotlightParams0     spotlight_params 1
     // spotlight texture
-    param_named spotlightMap            int 4
+    param_named spotlightMap              int 4
   }
 }
 

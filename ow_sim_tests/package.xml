@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ow_dynamic_terrain</name>
+  <name>ow_sim_tests</name>
   <version>0.0.0</version>
-  <description>A demo of dynamic terrain within ROS/Gazebo environment</description>
+  <description>A module that implements a set of test for the ow simulator</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -26,13 +26,12 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roscpp</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>ow_lander</build_depend>
+  <build_depend>rostest</build_depend>
 
   <exec_depend>roscpp</exec_depend>
   <exec_depend>message_runtime</exec_depend>
-  <exec_depend>cv_bridge</exec_depend>
 
   <test_depend>rosunit</test_depend>
 

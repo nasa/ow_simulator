@@ -64,7 +64,7 @@ class GrindActionServer(object):
           '/controller_manager/switch_controller', SwitchController)
           success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
           print("switch_controllers error: %s" % e)
         finally:
           # This sleep is a workaround for "start point deviates from current robot

@@ -1,0 +1,5 @@
+string name         # Set to "left" or "right"
+float32 intensity   # Set intensity in range {0.0, 1.0}. O.0 turns the light off.
+---
+bool success
+string message
