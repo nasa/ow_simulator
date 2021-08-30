@@ -833,7 +833,7 @@
   </gazebo>
   <joint
     name="j_ant_pan"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0.58 0.675"
       rpy="-3.1416 0 0" />
@@ -844,7 +844,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="80.0" velocity="0.2" />
+    <limit effort="80.0" velocity="0.2" lower="-3.14" upper="3.14" />
   </joint>
   <transmission name="ant_pan_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -909,7 +909,7 @@
   </gazebo>
   <joint
     name="j_ant_tilt"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0 -0.24805"
       rpy="3.1416 1.5708 0" />
@@ -920,7 +920,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="100.0" velocity="0.2" />
+    <limit effort="100.0" velocity="0.2" lower="-1.5" upper="1.5" />
   </joint>
   <transmission name="ant_tilt_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -934,6 +934,10 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+
+    <plugin name="ow_faults_joints" filename="libow_faults_joints.so">
       <robotNamespace>/</robotNamespace>
     </plugin>
 
