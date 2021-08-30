@@ -88,8 +88,8 @@
   <node if="$(arg rqt_gui)" pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
-    <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/>
-    <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/> 
+    <!-- <remap from="/ant_pan_position_controller/command" to="/_original/ant_pan_position_controller/command"/> -->
+    <!-- <remap from="/ant_tilt_position_controller/command" to="/_original/ant_tilt_position_controller/command"/>  -->
     <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
   </node>
 
