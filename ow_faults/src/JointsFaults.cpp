@@ -28,27 +28,27 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
   m_model = model;
 
   auto j_ant_tilt = m_model->GetJoint("j_ant_tilt");
-  m_AntennaTiltLowerLimit = j_ant_tilt->LowerLimit(0);
-  m_AntennaTiltUpperLimit = j_ant_tilt->UpperLimit(0);
+  m_antennaTiltLowerLimit = j_ant_tilt->LowerLimit(0);
+  m_antennaTiltUpperLimit = j_ant_tilt->UpperLimit(0);
 
   auto j_ant_pan = m_model->GetJoint("j_ant_pan");
-  m_AntennaPanLowerLimit = j_ant_pan->LowerLimit(0);
-  m_AntennaPanUpperLimit = j_ant_pan->UpperLimit(0);
+  m_antennaPanLowerLimit = j_ant_pan->LowerLimit(0);
+  m_antennaPanUpperLimit = j_ant_pan->UpperLimit(0);
 
   // Listen to the update event. This event is broadcast every sim iteration.
   // If result goes out of scope updates will stop, so it is assigned to a member variable.
-  m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&JointsFaults::OnUpdate, this));
+  m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&JointsFaults::onUpdate, this));
 
     gzlog << "JointsFaultsP lugin - successfully loaded!" << endl;
 }
 
-void JointsFaults::OnUpdate()
+void JointsFaults::onUpdate()
 {
-  injectFault("ant_tilt_effort_failure", m_AntennaTiltFaultActivated, "j_ant_tilt",
-            m_AntennaTiltLowerLimit, m_AntennaTiltUpperLimit);
+  injectFault("ant_tilt_effort_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
+            m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
 
-  injectFault("ant_pan_effort_failure", m_AntennaPanFaultActivated, "j_ant_pan",
-            m_AntennaPanLowerLimit, m_AntennaPanUpperLimit);
+  injectFault("ant_pan_effort_failure", m_antennaPanFaultActivated, "j_ant_pan",
+            m_antennaPanLowerLimit, m_antennaPanUpperLimit);
 }
 
 void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated,
