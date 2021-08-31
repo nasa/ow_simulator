@@ -59,7 +59,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto h_scale = terrain->getSize() / terrain->getWorldSize();  // horizontal scale factor
   auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
-  cv_bridge::CvImage differential_image;
+  CvImage differential_image;
   applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
                         get_height_value, set_height_value, *merge_method,
                         differential_image);
@@ -258,5 +258,6 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
       diff.at<float>(y - top, x - left) = new_height - old_height;
     }
 
-    out_differential_image.image = diff;
+    out_differential_image.image    = diff;
+    out_differential_image.encoding = image_encodings::TYPE_32FC1;
 }
