@@ -81,7 +81,6 @@ private:
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
   // // power functions
-  float getRandomFloatFromRange(float min_val, float max_val);
   void publishPowerSystemFault();
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTemperatureListener(const std_msgs::Float64& msg);
