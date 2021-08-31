@@ -51,6 +51,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
   //                                         &FaultDetector::antennaTiltStateCb,
   //                                         this);
   // camera
+
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
     10, &FaultDetector::camerTriggerCb, this);
@@ -301,13 +302,8 @@ void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
     m_last_SOC = newSOC;
   }
   m_soc_fault = ((newSOC <= SOC_MIN)  ||
-        (!isnan(m_last_SOC) &&
-        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+                (!isnan(m_last_SOC) &&
+                ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
   publishPowerSystemFault();
   m_last_SOC = newSOC;
-}
-
-// helper functions
-float FaultDetector::getRandomFloatFromRange( float min_val, float max_val){
-  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
 }
