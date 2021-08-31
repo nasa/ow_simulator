@@ -241,7 +241,8 @@ bool FaultDetector::findAntFaults(int jointName, names n, positions pos, effort 
   }
   return result;
 }
-
+// need to change command otherwise there's no way to stop gazebo
+// need to upate to publish no fault when empty? or just leave it as unpublished. 
 
 void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
   // antPublishFaultMessages( msg.data, m_ant_pan_set_point);
