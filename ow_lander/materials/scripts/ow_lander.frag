@@ -39,6 +39,8 @@ in vec4 lsPos0;
 in vec4 lsPos1;
 in vec4 lsPos2;
 
+uniform float spotlightIntensityScale0;
+uniform float spotlightIntensityScale1;
 uniform vec4 vsSpotlightPos0;
 uniform vec4 vsSpotlightPos1;
 uniform vec4 vsSpotlightDir0;
@@ -226,11 +228,13 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
   vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
   spotlight(vsSpotlightPos0.xyz - vsPos, -vsSpotlightDir0.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord0,
-            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
+            spotlightParams0.xyz, spotlightColor0.rgb * spotlightIntensityScale0,
+            spotlightTexCoord0, vsDirToEye, vsDetailNormal, specular_power,
+            diffuse, specular);
   spotlight(vsSpotlightPos1.xyz - vsPos, -vsSpotlightDir1.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord1,
-            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
+            spotlightParams0.xyz, spotlightColor0.rgb * spotlightIntensityScale1,
+            spotlightTexCoord1, vsDirToEye, vsDetailNormal, specular_power,
+            diffuse, specular);
 }
 
 void main()

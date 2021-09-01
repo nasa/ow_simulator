@@ -29,6 +29,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
 
   //antenna fault publishers and subs
+<<<<<<< HEAD
   m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
                                               3,
                                               &FaultInjector::antennaPanFaultCb,
@@ -39,6 +40,16 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
                                               this);
   m_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
   m_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
+=======
+  // m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
+  //                                             3,
+  //                                             &FaultInjector::antennaPanFaultCb,
+  //                                             this);
+  // m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
+  //                                             3,
+  //                                             &FaultInjector::antennaTiltFaultCb,
+  //                                             this);
+>>>>>>> OCEANWATER-718-dectection_epic
 
   srand (static_cast <unsigned> (time(0)));
 }

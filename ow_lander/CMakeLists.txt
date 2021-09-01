@@ -20,10 +20,11 @@ add_service_files(
   DigLinear.srv
   Grind.srv
   GuardedMove.srv
+  Light.srv
   PublishTrajectory.srv
+  Stop.srv
   Stow.srv
   Unstow.srv
-  Stop.srv
 )
 
 add_action_files(
