@@ -39,7 +39,7 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
   // If result goes out of scope updates will stop, so it is assigned to a member variable.
   m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&JointsFaults::onUpdate, this));
 
-    gzlog << "JointsFaultsP lugin - successfully loaded!" << endl;
+  gzlog << "JointsFaultsPlugin - successfully loaded!" << endl;
 }
 
 void JointsFaults::onUpdate()
