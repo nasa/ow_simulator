@@ -35,9 +35,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     10, &FaultInjector::cameraTriggerCb, this);
   m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
 
-  m_fault_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
-  m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
-
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
   m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
@@ -54,16 +51,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
                                                   10,
                                                   &FaultInjector::powerTemperatureListener,
                                                   this);
-
-  //antenna fault publishers and subs
-  m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
-                                              3,
-                                              &FaultInjector::antennaPanFaultCb,
-                                              this);
-  m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
-                                              3,
-                                              &FaultInjector::antennaTiltFaultCb,
-                                              this);
 
   srand (static_cast <unsigned> (time(0)));
 }
@@ -103,7 +90,7 @@ void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
   }
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher) {
   std_msgs::Float64 out_msg;
 
   if (!(encoder || torque)) {
@@ -111,22 +98,6 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
   }
   out_msg.data = m_faultValue;
   m_publisher.publish(out_msg);
-}
-
-// Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
-// Given that, this is separate from the torque sensor implemented by Ussama.
-void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_pan_encoder_failure,
-                        m_faults.ant_pan_effort_failure,
-                        m_fault_pan_value, m_fault_ant_pan_remapped_pub );
-}
-
-void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_tilt_encoder_failure,
-                        m_faults.ant_tilt_effort_failure,
-                        m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
 }
 
 float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
@@ -194,20 +165,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   checkArmFaults();
   checkAntFaults();
   checkCamFaults();
-
-  //pant tilt faults
-  if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.position[index] = FAULT_ZERO_TELEMETRY;
-  }
-  if (m_faults.ant_pan_effort_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.effort[index]  = FAULT_ZERO_TELEMETRY;
-  }
-  if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-  if (m_faults.ant_tilt_effort_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.effort[index]  = FAULT_ZERO_TELEMETRY;
-  }
 
   if (m_ant_fault){
     m_system_faults_bitset |= isPanTiltExecutionError;
