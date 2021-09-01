@@ -31,14 +31,14 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
   m_fault_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
 
   //antenna fault publishers and subs
-  m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
-                                              3,
-                                              &FaultInjector::antennaPanFaultCb,
-                                              this);
-  m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
-                                              3,
-                                              &FaultInjector::antennaTiltFaultCb,
-                                              this);
+  // m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
+  //                                             3,
+  //                                             &FaultInjector::antennaPanFaultCb,
+  //                                             this);
+  // m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
+  //                                             3,
+  //                                             &FaultInjector::antennaTiltFaultCb,
+  //                                             this);
 
   srand (static_cast <unsigned> (time(0)));
 }
@@ -70,19 +70,19 @@ void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool enc
 
 // Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
 // Given that, this is separate from the torque sensor implemented by Ussama.
-void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_pan_encoder_failure,
-                        m_faults.ant_pan_effort_failure,
-                        m_fault_pan_value, m_fault_ant_pan_remapped_pub );
-}
+// void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
+//   publishAntennaeFaults(msg,
+//                         m_faults.ant_pan_encoder_failure,
+//                         m_faults.ant_pan_effort_failure,
+//                         m_fault_pan_value, m_fault_ant_pan_remapped_pub );
+// }
 
-void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
-  publishAntennaeFaults(msg,
-                        m_faults.ant_tilt_encoder_failure,
-                        m_faults.ant_tilt_effort_failure,
-                        m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
-}
+// void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
+//   publishAntennaeFaults(msg,
+//                         m_faults.ant_tilt_encoder_failure,
+//                         m_faults.ant_tilt_effort_failure,
+//                         m_fault_tilt_value, m_fault_ant_tilt_remapped_pub );
+// }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
