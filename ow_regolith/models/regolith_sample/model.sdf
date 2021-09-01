@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+
+<sdf version="1.5">
+    <model name="regolith_sample">
+        <self_collide>true</self_collide>
+        <allow_auto_disable>true</allow_auto_disable>
+
+        <pose>0 0 0 0 0 0</pose>
+
+        <include>
+            <name>regolith_0</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0 0 0 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_1</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0 0 0.02 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_2</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0.02 0 0.02 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_3</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>-0.02 0 0.02 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_4</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0 0.02 0.02 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_5</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0 -0.02 0.02 0 0 0</pose>
+        </include>
+
+        <include>
+            <name>regolith_6</name>
+            <uri>model://ball_icefrag_2cm</uri>
+            <pose>0 0 0.04 0 0 0</pose>
+        </include>
+
+    </model>
+</sdf>
