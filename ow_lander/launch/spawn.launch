@@ -96,11 +96,11 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- == launch the path planner services node ============== -->
+  <!-- == launch the services servers ============== -->
   <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" ></node>
+  <node pkg="ow_lander" name="lander_service_server" type="lander_service_server.py" output="screen" ></node>
   
-    <!-- == launch the action servers============== -->
-  
+  <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />  
   <node pkg="ow_lander" name="Unstow" type="unstow_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="Stow" type="stow_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
@@ -109,5 +109,5 @@
   <node pkg="ow_lander" name="DigCircular" type="dig_circular_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="Grind" type="grind_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
   <node pkg="ow_lander" name="GuardedMove" type="guarded_move_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
-  <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_pan_tilt_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>

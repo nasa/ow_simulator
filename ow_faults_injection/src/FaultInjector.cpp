@@ -58,7 +58,7 @@ void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
   } 
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher){
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher) {
   std_msgs::Float64 out_msg;
 
   if (!(encoder || torque)) {
