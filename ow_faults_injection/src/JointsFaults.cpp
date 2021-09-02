@@ -44,6 +44,7 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
+  std::cout << "hi" << std::endl;
   injectFault("ant_tilt_effort_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
             m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
 

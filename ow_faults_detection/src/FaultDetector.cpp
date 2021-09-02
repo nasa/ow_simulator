@@ -256,7 +256,7 @@ void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& 
   m_ant_pan_set_point = msg.set_point;
   bool fault_found = false;
   auto time_diff = ros::Time::now() - m_pan_fault_timer;
-  std::cout << msg.process_value << "   " << m_ant_pan_set_point << std::endl;
+  // std::cout << msg.process_value << "   " << m_ant_pan_set_point << std::endl;
   if (time_diff > ros::Duration(3.15) && m_ant_pan_set_point != msg.process_value ){
     fault_found = true;
   }
