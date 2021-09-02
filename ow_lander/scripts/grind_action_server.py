@@ -8,24 +8,12 @@ import rospy
 import time
 import actionlib
 import ow_lander.msg
-import sys
-import copy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
-from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
-from moveit_commander.conversions import pose_to_list
-import action_grind
-
+import all_action_trajectories
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
-
-
 
 
 class GrindActionServer(object):
@@ -75,7 +63,7 @@ class GrindActionServer(object):
         
     def _update_motion(self, goal):
         print("Grind activity started")
-        self.current_traj  = action_grind.grind(self._interface.move_grinder,
+        self.current_traj  = all_action_trajectories.grind(self._interface.move_grinder,
                                                 self._interface.robot, 
                                                 self._interface.moveit_fk, goal)
         if self.current_traj == False: 

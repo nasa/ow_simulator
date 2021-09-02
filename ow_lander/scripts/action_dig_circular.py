@@ -11,10 +11,6 @@ import copy
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
 from moveit_msgs.msg import RobotTrajectory
-from moveit_msgs.msg import Constraints
-from moveit_msgs.msg import JointConstraint
-from trajectory_msgs.msg import JointTrajectory
-from trajectory_msgs.msg import JointTrajectoryPoint
 from action_deliver_sample import cascade_plans
 import action_dig_linear
 import action_grind

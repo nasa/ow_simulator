@@ -7,8 +7,6 @@
 import rospy
 import actionlib
 import ow_lander.msg
-import sys
-#import action_guarded_move
 import all_action_trajectories
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
@@ -85,7 +83,7 @@ class GuardedMoveActionServer(object):
         
     def _update_motion(self, goal):
         print("Guarded move activity started")
-        self.guarded_move_traj, self._guarded_move_plan_ratio = all_action_trajectoris.guarded_move_plan(
+        self.guarded_move_traj, self._guarded_move_plan_ratio = all_action_trajectories.guarded_move_plan(
                                               self._interface.move_arm,
                                               self._interface.robot, 
                                               self._interface.moveit_fk, goal)

@@ -7,22 +7,7 @@
 import rospy
 import actionlib
 import ow_lander.msg
-import sys
-import copy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
-from math import pi
-from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
-from moveit_commander.conversions import pose_to_list
-import math
-import constants
-import utils
-import activity_full_digging_traj
-import action_deliver_sample
-import action_dig_linear
+import all_action_trajectories
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
@@ -63,7 +48,7 @@ class DigLinearActionServer(object):
     def _update_motion(self, goal):
         
         print("DigLinear activity started")
-        self.current_traj  = action_dig_linear.dig_linear(self._interface.move_arm,
+        self.current_traj  = all_action_trajectories.dig_linear(self._interface.move_arm,
                                                           self._interface.robot,  
                                                           self._interface.moveit_fk, goal)
         if self.current_traj == False: 

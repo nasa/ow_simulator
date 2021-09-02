@@ -7,6 +7,7 @@
 import rospy
 import math
 import constants
+import copy
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from utils import is_shou_yaw_goal_in_range
@@ -52,6 +53,11 @@ def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_
 
 
 def cascade_plans (plan1, plan2):
+  ''' 
+  Joins two robot motion plans into one
+  inputs:  two robot trajactories
+  outputs: final robot trjactory
+  '''    
   # Create a new trajectory object
   new_traj = RobotTrajectory()
   # Initialize the new trajectory to be the same as the planned trajectory
@@ -94,114 +100,6 @@ def cascade_plans (plan1, plan2):
   traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
   new_traj.joint_trajectory = traj_msg
   return new_traj   
-
-
-def deliver_sample(move_arm, robot, moveit_fk, args):
-  """
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type args: List[bool, float, float, float]
-  """
-  move_arm.set_planner_id("RRTstar")
-  robot_state = robot.get_current_state()
-  move_arm.set_start_state(robot_state)
-  x_delivery = args.delivery.x
-  y_delivery = args.delivery.y
-  z_delivery = args.delivery.z
-
-  # after sample collect
-  mypi = 3.14159
-  d2r = mypi/180
-  r2d = 180/mypi
-
-  goal_pose = move_arm.get_current_pose().pose
-  # position was found from rviz tool
-  goal_pose.position.x = x_delivery
-  goal_pose.position.y = y_delivery
-  goal_pose.position.z = z_delivery
-
-  r = -179
-  p = -20
-  y = -90
-
-  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-
-  move_arm.set_pose_target(goal_pose)
-
-  plan_a = move_arm.plan()
-  
-
-  if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-    return False
-
-  # rotate scoop to deliver sample at current location...
-
-  # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
-  pos_constraint = PositionConstraint()
-  pos_constraint.header.frame_id = "base_link"
-  pos_constraint.link_name = "l_scoop"
-  pos_constraint.target_point_offset.x = 0.1
-  pos_constraint.target_point_offset.y = 0.1
-  # rotate scoop to deliver sample at current location begin
-  pos_constraint.target_point_offset.z = 0.1
-  pos_constraint.constraint_region.primitives.append(
-      SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
-  pos_constraint.weight = 1
-
-  # using euler angles for own verification..
-
-  r = +180
-  p = 90  # 45 worked get
-  y = -90
-  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-
-  cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
-  
-  move_arm.set_start_state(cs)
-
-  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-  
-  move_arm.set_pose_target(goal_pose)
-  plan_b = move_arm.plan()
-
-  if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
-    return plan_a
-
-  deliver_sample_traj = cascade_plans (plan_a, plan_b)
-
-  #move_arm.set_planner_id("RRTconnect")
-
-  return deliver_sample_traj
-
-
-
-  def calculate_joint_state_end_pose_from_plan_arm (robot, plan, move_arm, moveit_fk):
-    ''' 
-    calculate the end pose (position and orientation), joint states and robot states
-     from the current plan
-    inputs:  current plan, robot, arm interface, and moveit forward kinematics object
-    outputs: goal_pose, robot state and joint states at end of the plan
-     '''  
-    #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_scoop_yaw]
-    #robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
-    #j_grinder, j_scoop_yaw]
-
-    # get joint states from the end of the plan 
-    joint_states = plan.joint_trajectory.points[len(plan.joint_trajectory.points)-1].positions 
-    # construct robot state at the end of the plan
-    robot_state = robot.get_current_state()
-    # adding antenna (0,0) and grinder positions (-0.1) which should not change
-    new_value =  new_value =  (0,0) + joint_states[:5] + (-0.1,) + (joint_states [5],)
-    # modify current state of robot to the end state of the previous plan
-    robot_state.joint_state.position = new_value 
-    # calculate goal pose at the end of the plan using forward kinematics
-    goal_pose = move_arm.get_current_pose().pose
-    header = Header(0,rospy.Time.now(),"base_link")
-    fkln = ['l_scoop']
-    goal_pose_stamped = moveit_fk(header, fkln, robot_state )
-    goal_pose = goal_pose_stamped.pose_stamped[0].pose
-  
-    return robot_state, joint_states, goal_pose 
 
   
 def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
@@ -469,7 +367,28 @@ def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
   plan = move_arm.plan(joint_goal)
   return plan
 
+def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs):   
+  """
+  :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type length: float
+  :type alpha: float
+  :type parallel: bool
+  """
+  if parallel==False:
+    alpha = alpha - math.pi/2
+  move_group.set_start_state(cs)
+  waypoints = []
+  wpose.position.z = z_start
+  wpose.position.x += length*math.cos(alpha)
+  wpose.position.y += length*math.sin(alpha)
+  waypoints.append(copy.deepcopy(wpose))
 
+  (plan, fraction) = move_group.compute_cartesian_path(
+                               waypoints,   # waypoints to follow
+                               0.01,        # end effector follow step (meters)
+                               0.0)         # jump threshold
+
+  return plan, fraction
 
 
 def plan_cartesian_path_lin(move_arm, wpose, length, alpha, z_start, cs):
@@ -671,30 +590,6 @@ def calculate_joint_state_end_pose_from_plan_grinder (robot, plan, move_arm, mov
   
   return robot_state, joint_states, goal_pose 
 
-    
-
-def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs):   
-  """
-  :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type length: float
-  :type alpha: float
-  :type parallel: bool
-  """
-  if parallel==False:
-    alpha = alpha - math.pi/2
-  move_group.set_start_state(cs)
-  waypoints = []
-  wpose.position.z = z_start
-  wpose.position.x += length*math.cos(alpha)
-  wpose.position.y += length*math.sin(alpha)
-  waypoints.append(copy.deepcopy(wpose))
-
-  (plan, fraction) = move_group.compute_cartesian_path(
-                               waypoints,   # waypoints to follow
-                               0.01,        # end effector follow step (meters)
-                               0.0)         # jump threshold
-
-  return plan, fraction
 
 
 
@@ -879,3 +774,81 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
   estimated_time_ratio= pre_guarded_move_end_time/guarded_move_end_time 
   
   return guarded_move_traj, estimated_time_ratio
+
+
+def deliver_sample(move_arm, robot, moveit_fk, args):
+  """
+  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type args: List[bool, float, float, float]
+  """
+  move_arm.set_planner_id("RRTstar")
+  robot_state = robot.get_current_state()
+  move_arm.set_start_state(robot_state)
+  x_delivery = args.delivery.x
+  y_delivery = args.delivery.y
+  z_delivery = args.delivery.z
+
+  # after sample collect
+  mypi = 3.14159
+  d2r = mypi/180
+  r2d = 180/mypi
+
+  goal_pose = move_arm.get_current_pose().pose
+  # position was found from rviz tool
+  goal_pose.position.x = x_delivery
+  goal_pose.position.y = y_delivery
+  goal_pose.position.z = z_delivery
+
+  r = -179
+  p = -20
+  y = -90
+
+  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+
+  move_arm.set_pose_target(goal_pose)
+
+  plan_a = move_arm.plan()
+  
+
+  if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+    return False
+
+  # rotate scoop to deliver sample at current location...
+
+  # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
+  pos_constraint = PositionConstraint()
+  pos_constraint.header.frame_id = "base_link"
+  pos_constraint.link_name = "l_scoop"
+  pos_constraint.target_point_offset.x = 0.1
+  pos_constraint.target_point_offset.y = 0.1
+  # rotate scoop to deliver sample at current location begin
+  pos_constraint.target_point_offset.z = 0.1
+  pos_constraint.constraint_region.primitives.append(
+      SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+  pos_constraint.weight = 1
+
+  # using euler angles for own verification..
+
+  r = +180
+  p = 90  # 45 worked get
+  y = -90
+  q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+
+  cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm (robot, plan_a, move_arm, moveit_fk)
+  
+  move_arm.set_start_state(cs)
+
+  goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+  
+  move_arm.set_pose_target(goal_pose)
+  plan_b = move_arm.plan()
+
+  if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
+    return plan_a
+
+  deliver_sample_traj = cascade_plans (plan_a, plan_b)
+
+  #move_arm.set_planner_id("RRTconnect")
+
+  return deliver_sample_traj
