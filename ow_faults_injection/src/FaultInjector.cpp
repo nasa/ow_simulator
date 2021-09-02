@@ -76,15 +76,15 @@ void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
   m_ant_tilt_remapped_pub.publish(msg);
 }
 
-void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_remapped_pub){
-  std_msgs::Float64 out_msg;
+// void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_remapped_pub){
+//   std_msgs::Float64 out_msg;
 
-  if (!(encoder || torque)) {
-    m_faultValue = msg.data;
-  }
-  out_msg.data = m_faultValue;
-  m_remapped_pub.publish(out_msg);
-}
+//   if (!(encoder || torque)) {
+//     m_faultValue = msg.data;
+//   }
+//   out_msg.data = m_faultValue;
+//   m_remapped_pub.publish(out_msg);
+// }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {

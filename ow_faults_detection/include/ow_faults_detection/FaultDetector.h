@@ -91,10 +91,10 @@ private:
   template<typename names, typename positions, typename effort>
   bool findAntFaults(int jointName, names n, positions pos, effort eff);
   void antennaPanCommandCb(const std_msgs::Float64& msg);
-  // void antennaPanStateCb(const control_msgs::JointControllerState& msg);
+  void antennaPanStateCb(const control_msgs::JointControllerState& msg);
   void antennaTiltCommandCb(const std_msgs::Float64& msg);
-  // void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
-  void antPublishFaultMessages(float msg_info );
+  void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
+  void antPublishFaultMessages(bool fault_found );
   
   // camera functions
   void camerTriggerCb(const std_msgs::Empty& msg);
@@ -127,9 +127,9 @@ private:
 
   // antenna
   ros::Subscriber m_ant_pan_command_sub;
-  // ros::Subscriber m_ant_pan_state_sub;
+  ros::Subscriber m_ant_pan_state_sub;
   ros::Subscriber m_ant_tilt_command_sub;
-  // ros::Subscriber m_ant_tilt_state_sub;
+  ros::Subscriber m_ant_tilt_state_sub;
 
   // camera
   ros::Timer m_camera_trigger_timer;
@@ -149,6 +149,8 @@ private:
   std::map<std::string, float> m_current_arm_positions; 
   float m_ant_pan_set_point;
   float m_ant_tilt_set_point;
+  ros::Time m_pan_fault_timer;
+  ros::Time m_tilt_fault_timer;
   bool m_pan_fault;
   bool m_tilt_fault;
   bool m_cam_trigger_on = false;

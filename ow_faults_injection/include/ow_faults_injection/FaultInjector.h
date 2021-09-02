@@ -72,8 +72,8 @@ private:
   // // Antennae functions
   void antennaPanFaultCb(const std_msgs::Float64& msg);
   void antennaTiltFaultCb(const std_msgs::Float64& msg);
-  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
-                             bool torque, float& m_faultValue, ros::Publisher& m_publisher);
+  // void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
+  //                            bool torque, float& m_faultValue, ros::Publisher& m_publisher);
                              
   // publishers and subscribers
 

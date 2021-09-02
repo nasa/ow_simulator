@@ -49,6 +49,12 @@ void JointsFaults::onUpdate()
 
   injectFault("ant_pan_effort_failure", m_antennaPanFaultActivated, "j_ant_pan",
             m_antennaPanLowerLimit, m_antennaPanUpperLimit);
+
+  // injectFault("ant_tilt_encoder_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
+  //           m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
+
+  // injectFault("ant_pan_encoder_failure", m_antennaPanFaultActivated, "j_ant_pan",
+  //           m_antennaPanLowerLimit, m_antennaPanUpperLimit);
 }
 
 void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated,
