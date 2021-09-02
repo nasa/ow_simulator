@@ -44,7 +44,6 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
-  std::cout << "hi" << std::endl;
   injectFault("ant_tilt_effort_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
             m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
 
@@ -63,6 +62,8 @@ void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activ
 {
   bool fault_enabled;
   ros::param::param("/faults/" + joint_fault, fault_enabled, false);
+  std::cout << "enables " << fault_enabled << std::endl;
+
   if (!fault_activated && fault_enabled)
   {
     ROS_INFO_STREAM(joint_fault << " activated!");
