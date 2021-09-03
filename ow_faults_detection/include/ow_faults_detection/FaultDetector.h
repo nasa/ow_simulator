@@ -94,7 +94,7 @@ private:
   void antennaPanStateCb(const control_msgs::JointControllerState& msg);
   void antennaTiltCommandCb(const std_msgs::Float64& msg);
   void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
-  void antPublishFaultMessages(bool fault_found );
+  void antPublishFaultMessages();
   
   // camera functions
   void camerTriggerCb(const std_msgs::Empty& msg);

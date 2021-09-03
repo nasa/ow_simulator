@@ -4,6 +4,8 @@
 
 #include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
+#include <iomanip>
+#include <iostream> 
 
 using namespace ow_lander;
 
@@ -235,14 +237,15 @@ void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
 }
 
 void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
-  m_ant_tilt_set_point = msg.data;
-  m_tilt_fault_timer = ros::Time::now();
+  if (m_ant_tilt_set_point != msg.data ){
+    m_ant_tilt_set_point = msg.data;
+    m_tilt_fault_timer = ros::Time::now();
+    }
 }
 
-void FaultDetector::antPublishFaultMessages(bool fault_found ){
+void FaultDetector::antPublishFaultMessages(){
   ow_faults_injection::PTFaults ant_fault_msg;
-
-  if (fault_found) {
+  if (m_pan_fault || m_tilt_fault) {
     setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
     m_system_faults_bitset |= isPanTiltExecutionError;
   }else {
@@ -254,18 +257,36 @@ void FaultDetector::antPublishFaultMessages(bool fault_found ){
 
 void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& msg){
   m_ant_pan_set_point = msg.set_point;
-  bool fault_found = false;
   auto time_diff = ros::Time::now() - m_pan_fault_timer;
-  // std::cout << msg.process_value << "   " << m_ant_pan_set_point << std::endl;
-  if (time_diff > ros::Duration(3.15) && m_ant_pan_set_point != msg.process_value ){
-    fault_found = true;
+  auto pose_diff = msg.process_value - m_ant_pan_set_point;
+  float value = (int)(pose_diff * 100 + .5);
+  auto b = (float)value / 100;
+  bool t =  b == 0.00;
+
+  if (time_diff > ros::Duration(5) && !t ){
+    m_pan_fault = true;
+  } else {
+    m_pan_fault = false;
   }
-  fault_found = false;
-  antPublishFaultMessages(fault_found);
+
+  antPublishFaultMessages();
 }
 
 void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
   m_ant_tilt_set_point = msg.set_point;
+  auto time_diff = ros::Time::now() - m_tilt_fault_timer;
+  auto pose_diff = msg.process_value - m_ant_tilt_set_point;
+  float value = (int)(pose_diff * 100 + .5);
+  auto b = (float)value / 100;
+  bool t =  value == 0.00;
+
+  if (time_diff > ros::Duration(5) && !t ){
+    m_tilt_fault = true;
+  } else {
+    m_tilt_fault = false;
+  }
+
+  antPublishFaultMessages();
 }
 
 //// Camera listeners
