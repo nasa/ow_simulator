@@ -277,8 +277,8 @@ void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState&
   auto pose_diff = msg.process_value - m_ant_tilt_set_point;
   float value = (int)(pose_diff * 100 + .5);
   auto b = (float)value / 100;
-  bool t =  value == 0.00;
-
+  bool t =  b == 0.00;
+  std::cout << 
   if (time_diff > ros::Duration(5) && !t ){
     m_tilt_fault = true;
   } else {
