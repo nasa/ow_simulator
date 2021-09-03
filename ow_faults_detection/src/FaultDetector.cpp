@@ -147,7 +147,6 @@ void FaultDetector::armControllerStateCb(const control_msgs::JointTrajectoryCont
   int i = 0;
   for (auto it : msg->joint_names){
     m_current_arm_positions[it] = msg->actual.positions[i];
-    // cout << m_current_arm_positions["j_shou_yaw"] << endl;
     i++;
   }
 }

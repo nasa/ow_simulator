@@ -28,18 +28,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
     10, &FaultInjector::cameraFaultRepublishCb, this);
   m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
 
-  //antenna fault publishers and subs
-  // m_fault_ant_pan_sub = node_handle.subscribe("/_original/ant_pan_position_controller/command",
-  //                                             3,
-  //                                             &FaultInjector::antennaPanFaultCb,
-  //                                             this);
-  // m_fault_ant_tilt_sub = node_handle.subscribe("/_original/ant_tilt_position_controller/command",
-  //                                             3,
-  //                                             &FaultInjector::antennaTiltFaultCb,
-  //                                             this);
-  // m_ant_pan_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_pan_position_controller/command", 10);
-  // m_ant_tilt_remapped_pub = node_handle.advertise<std_msgs::Float64>("/ant_tilt_position_controller/command", 10);
-
   srand (static_cast <unsigned> (time(0)));
 }
 
@@ -57,34 +45,6 @@ void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
     m_camera_trigger_remapped_pub.publish(msg);
   } 
 }
-
-// Note for torque sensor failure, we are finding whether or not the hardware faults for antenna are being triggered.
-// Given that, this is separate from the torque sensor implemented by Ussama.
-// void FaultInjector::antennaPanFaultCb(const std_msgs::Float64& msg){
-//   // publishAntennaeFaults(msg,
-//   //                       m_faults.ant_pan_encoder_failure,
-//   //                       m_faults.ant_pan_effort_failure,
-//   //                       m_fault_pan_value, m_ant_pan_remapped_pub );
-//   m_ant_pan_remapped_pub.publish(msg);
-// }
-
-// void FaultInjector::antennaTiltFaultCb(const std_msgs::Float64& msg){
-//   // publishAntennaeFaults(msg,
-//   //                       m_faults.ant_tilt_encoder_failure,
-//   //                       m_faults.ant_tilt_effort_failure,
-//   //                       m_fault_tilt_value, m_ant_tilt_remapped_pub );
-//   m_ant_tilt_remapped_pub.publish(msg);
-// }
-
-// void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_remapped_pub){
-//   std_msgs::Float64 out_msg;
-
-//   if (!(encoder || torque)) {
-//     m_faultValue = msg.data;
-//   }
-//   out_msg.data = m_faultValue;
-//   m_remapped_pub.publish(out_msg);
-// }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
@@ -105,20 +65,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 
   // checking rqt
   checkCamFaults();
-
-  //pant tilt faults
-  // if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
-  //   output.position[index] = FAULT_ZERO_TELEMETRY;
-  // }
-  // if (m_faults.ant_pan_effort_failure && findJointIndex(J_ANT_PAN, index)) {
-  //   output.effort[index]  = FAULT_ZERO_TELEMETRY;
-  // }
-  // if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
-  //   output.position[index]  = FAULT_ZERO_TELEMETRY;
-  // }
-  // if (m_faults.ant_tilt_effort_failure && findJointIndex(J_ANT_TILT, index)) {
-  //   output.effort[index]  = FAULT_ZERO_TELEMETRY;
-  // }
 
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
