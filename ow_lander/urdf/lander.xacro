@@ -306,7 +306,7 @@
   </gazebo>
   <joint
     name="j_prox_pitch"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0.53 0 0"
       rpy="9.7855E-17 0 -4.9304E-32" />
@@ -317,7 +317,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="2.7"/>
-    <limit effort="73.0" velocity="0.2" lower="-1000000" upper="1000000"/>
+    <limit effort="73.0" velocity="0.2"/>
   </joint>
   <transmission name="prox_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -382,7 +382,7 @@
   </gazebo>
   <joint
     name="j_dist_pitch"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0.586 0 -0.15"
       rpy="3.1416 2.1341E-16 1.5708" />
@@ -393,7 +393,7 @@
     <axis
       xyz="0 0 1" />
     <dynamics damping="50.0" friction="0.3"/>
-    <limit effort="25.7" velocity="0.2" lower="-1000000" upper="1000000"/>
+    <limit effort="25.7" velocity="0.2" />
   </joint>
   <transmission name="dist_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -482,7 +482,7 @@
 
   <joint
     name="j_hand_yaw"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0.163 0.2 0"
       rpy="1.5708 2.8911E-17 -3.228E-16" />
@@ -493,7 +493,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="0.3"/>
-    <limit effort="25.7" velocity="0.2" lower="-1000000" upper="1000000"/>
+    <limit effort="25.7" velocity="0.2" />
   </joint>
   <transmission name="hand_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -642,7 +642,7 @@
 
   <joint
     name="j_scoop_yaw"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0.15 0 0"
       rpy="1.5708 -1.1102E-16 1.5708" />
@@ -653,7 +653,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="0.5"/>
-    <limit effort="20.0" velocity="0.2" lower="-1000000" upper="1000000"/>
+    <limit effort="20.0" velocity="0.2" />
   </joint>
   <transmission name="scoop_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>

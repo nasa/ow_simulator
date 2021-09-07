@@ -12,6 +12,8 @@
 using namespace gazebo;
 using namespace std;
 
+constexpr double JointsFaults::MAX_FRICTION;
+
 GZ_REGISTER_MODEL_PLUGIN(JointsFaults)
 
 JointsFaults::JointsFaults() :
@@ -25,7 +27,7 @@ JointsFaults::JointsFaults() :
     {"j_hand_yaw", JointFaultInfo("hand_yaw_effort_failure")},
     {"j_scoop_yaw", JointFaultInfo("scoop_yaw_effort_failure")},
     {"j_ant_pan", JointFaultInfo("ant_pan_effort_failure")},
-    {"j_ant_tilt", JointFaultInfo("ant_pan_effort_failure")} };
+    {"j_ant_tilt", JointFaultInfo("ant_tilt_effort_failure")} };
 }
 
 JointsFaults::~JointsFaults()
@@ -35,13 +37,6 @@ JointsFaults::~JointsFaults()
 void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 {
   m_model = model;
-
-  for (auto& kv : m_JointsFaultsMap)
-  {
-    auto j = m_model->GetJoint(kv.first);
-    kv.second.lower = j->LowerLimit(0);
-    kv.second.upper = j->UpperLimit(0);
-  }
 
   // Listen to the update event. This event is broadcast every sim iteration.
   // If result goes out of scope updates will stop, so it is assigned to a member variable.
@@ -53,32 +48,28 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 void JointsFaults::onUpdate()
 {
   for (auto& kv : m_JointsFaultsMap)
-    injectFault(kv.second.fault, kv.second.activated, kv.first,
-            kv.second.lower, kv.second.upper);
+    injectFault(kv.first, kv.second);
 }
 
-void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated,
-                               const std::string& joint_name, double lower_limit, double upper_limit)
+void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
   bool fault_enabled;
-  ros::param::param("/faults/" + joint_fault, fault_enabled, false);
-  if (!fault_activated && fault_enabled)
+  ros::param::param("/faults/" + jfi.fault, fault_enabled, false);
+  if (!jfi.activated && fault_enabled)
   {
-    ROS_INFO_STREAM(joint_fault << " activated!");
-    fault_activated = true;
+    ROS_INFO_STREAM(jfi.fault << " activated!");
+    jfi.activated = true;
     // lock the joint to current position
     auto j = m_model->GetJoint(joint_name);
-    auto p = j->Position(0);
-    j->SetLowerLimit(0, p);
-    j->SetUpperLimit(0, p);
+    jfi.friction = j->GetParam("friction", 0);
+    j->SetParam("friction", 0, MAX_FRICTION);
   }
-  else if (fault_activated && !fault_enabled)
+  else if (jfi.activated && !fault_enabled)
   {
-    ROS_INFO_STREAM(joint_fault << " de-activated!");
-    fault_activated = false;
+    ROS_INFO_STREAM(jfi.fault << " de-activated!");
+    jfi.activated = false;
     // restore the joint limits
     auto j = m_model->GetJoint(joint_name);
-    j->SetLowerLimit(0, lower_limit);
-    j->SetUpperLimit(0, upper_limit);
+    j->SetParam("friction", 0, jfi.friction);
   }
 }
