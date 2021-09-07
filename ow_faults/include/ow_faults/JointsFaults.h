@@ -7,6 +7,18 @@
 
 #include <gazebo/common/Plugin.hh>
 
+struct JointFaultInfo
+{
+  const std::string fault;
+  bool activated;
+  double lower;
+  double upper;
+
+  JointFaultInfo(const std::string& fault_, bool activated_ = false, double lower_ = 0.0, double upper_ = 0.0)
+  : fault(fault_), activated(activated_), lower(lower_), upper(upper_)
+  {
+  }
+};
 
 class JointsFaults : public gazebo::ModelPlugin
 {
@@ -30,7 +42,7 @@ private:
   bool m_antennaTiltFaultActivated;
   bool m_antennaPanFaultActivated;
 
-
+  std::map<std::string, JointFaultInfo> m_JointsFaultsMap;
 
   // Connection to the update event
   gazebo::event::ConnectionPtr m_updateConnection;

@@ -17,6 +17,15 @@ GZ_REGISTER_MODEL_PLUGIN(JointsFaults)
 JointsFaults::JointsFaults() :
   ModelPlugin()
 {
+  m_JointsFaultsMap = {
+    {"j_shou_yaw", JointFaultInfo("shou_yaw_effort_failure")},
+    {"j_shou_pitch", JointFaultInfo("shou_pitch_effort_failure")},
+    {"j_prox_pitch", JointFaultInfo("prox_pitch_effort_failure")},
+    {"j_dist_pitch", JointFaultInfo("dist_pitch_effort_failure")},
+    {"j_hand_yaw", JointFaultInfo("hand_yaw_effort_failure")},
+    {"j_scoop_yaw", JointFaultInfo("scoop_yaw_effort_failure")},
+    {"j_ant_pan", JointFaultInfo("ant_pan_effort_failure")},
+    {"j_ant_tilt", JointFaultInfo("ant_pan_effort_failure")} };
 }
 
 JointsFaults::~JointsFaults()
@@ -27,13 +36,12 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 {
   m_model = model;
 
-  auto j_ant_tilt = m_model->GetJoint("j_ant_tilt");
-  m_antennaTiltLowerLimit = j_ant_tilt->LowerLimit(0);
-  m_antennaTiltUpperLimit = j_ant_tilt->UpperLimit(0);
-
-  auto j_ant_pan = m_model->GetJoint("j_ant_pan");
-  m_antennaPanLowerLimit = j_ant_pan->LowerLimit(0);
-  m_antennaPanUpperLimit = j_ant_pan->UpperLimit(0);
+  for (auto& kv : m_JointsFaultsMap)
+  {
+    auto j = m_model->GetJoint(kv.first);
+    kv.second.lower = j->LowerLimit(0);
+    kv.second.upper = j->UpperLimit(0);
+  }
 
   // Listen to the update event. This event is broadcast every sim iteration.
   // If result goes out of scope updates will stop, so it is assigned to a member variable.
@@ -44,11 +52,9 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
-  injectFault("ant_tilt_effort_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
-            m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
-
-  injectFault("ant_pan_effort_failure", m_antennaPanFaultActivated, "j_ant_pan",
-            m_antennaPanLowerLimit, m_antennaPanUpperLimit);
+  for (auto& kv : m_JointsFaultsMap)
+    injectFault(kv.second.fault, kv.second.activated, kv.first,
+            kv.second.lower, kv.second.upper);
 }
 
 void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated,
