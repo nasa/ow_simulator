@@ -6,29 +6,15 @@
 
 import rospy
 import actionlib
-#import ow_lander.msg
 from ow_lander.msg import *
-import sys
-import copy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
 import time
-from std_msgs.msg import String
-from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
-from moveit_commander.conversions import pose_to_list
-import constants
-import utils
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 import all_action_trajectories
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
-
 from ground_detection import GroundDetector
-
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point
 
