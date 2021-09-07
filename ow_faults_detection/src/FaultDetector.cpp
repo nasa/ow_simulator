@@ -260,9 +260,8 @@ void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& 
   auto pose_diff = msg.process_value - m_ant_pan_set_point;
   float value = (int)(pose_diff * 100 + .5);
   auto b = (float)value / 100;
-  bool t =  b == 0.00;
 
-  if (time_diff > ros::Duration(5) && !t ){
+  if (time_diff > ros::Duration(5) && !( b == 0.00) ){
     m_pan_fault = true;
   } else {
     m_pan_fault = false;
@@ -277,9 +276,7 @@ void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState&
   auto pose_diff = msg.process_value - m_ant_tilt_set_point;
   float value = (int)(pose_diff * 100 + .5);
   auto b = (float)value / 100;
-  bool t =  b == 0.00;
-  std::cout << 
-  if (time_diff > ros::Duration(5) && !t ){
+  if (time_diff > ros::Duration(5) && !( b == 0.00) ){
     m_tilt_fault = true;
   } else {
     m_tilt_fault = false;

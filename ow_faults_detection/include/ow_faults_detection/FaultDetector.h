@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <ow_faults_detection/FaultsConfig.h>
+#include <ow_faults_injection/FaultsConfig.h>
 #include "ow_faults_detection/SystemFaults.h"
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
