@@ -10,7 +10,7 @@ autonomy algorithms.
 
 Faults are implemented using ROS parameters.
 
-## `faults` node
+## `faults injection` node
 The `faults` node in this package is the source of all the fault state in
 OceanWATERS. It uses a `dynamic_reconfigure::Server` under the hood so that
 clients can modify fault state at runtime.
