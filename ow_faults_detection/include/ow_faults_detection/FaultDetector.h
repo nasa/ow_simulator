@@ -21,15 +21,12 @@
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <control_msgs/JointControllerState.h>
+#include <control_msgs/JointTrajectoryControllerState.h>
 #include <sensor_msgs/Image.h>
 
-// This class injects simple message faults that don't need to be simulated
-// at their source. Modified topics are prefixed with "/faults". This could be
-// accomplished on the original topics, but, for example, in the case of
-// /joint_states, this would require forking and modifying joint_state_publisher.
-// Creating a modified version of the original message is simpler, and it
-// leaves the original message intact in case we want to use it as part of a
-// placeholder fault estimator.
+// This class detects system faults and publishes the relevant fault information to a series of topics. 
+// Fault topics are prefixed with "/faults".
 class FaultDetector
 {
 
@@ -72,10 +69,34 @@ public:
   static constexpr float THERMAL_MAX = 50;
   static constexpr float SOC_MIN = 0.1;
   static constexpr float SOC_MAX_DIFF = 0.05;
-  
-private:
 
-  // //camera function
+  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
+
+private:
+  // COMPONENT FUNCTIONS
+  // arm functions
+  template<typename names, typename positions, typename effort>
+  bool findArmFault(int jointName, names n, positions pos, effort eff);
+  void armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  void armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg);
+  // Find an item in an std::vector or other find-able data structure, and
+  // return its index. Return -1 if not found.
+  template<typename group_t, typename item_t>
+  int findPositionInGroup(const group_t& group, const item_t& item);
+  // Get index from m_joint_index_map. If found, modify out_index and return
+  // true. Otherwise, return false.
+  bool findJointIndex(const unsigned int joint, unsigned int& out_index);
+
+  // antennae functions
+  template<typename names, typename positions, typename effort>
+  bool findAntFaults(int jointName, names n, positions pos, effort eff);
+  void antennaPanCommandCb(const std_msgs::Float64& msg);
+  void antennaPanStateCb(const control_msgs::JointControllerState& msg);
+  void antennaTiltCommandCb(const std_msgs::Float64& msg);
+  void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
+  void antPublishFaultMessages();
+  
+  // camera functions
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
@@ -85,7 +106,7 @@ private:
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
-  // //Setting message values
+  // JPL MESSAGE FUNCTIONS AND PUBLISHERS
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
@@ -93,35 +114,52 @@ private:
   void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
- 
-  // // camera
-  ros::Timer m_camera_trigger_timer;
-  ros::Subscriber m_camera_original_trigger_sub;
-  ros::Subscriber m_camera_raw_sub;
 
-  // //power
-  ros::Subscriber m_power_soc_sub;
-  ros::Subscriber m_power_temperature_sub;
-  ros::Publisher m_power_fault_trigger_pub;
-
-  // // jpl message publishers
+  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
+  //arm
+  ros::Subscriber m_arm_joint_states_sub;
+  ros::Subscriber m_arm_controller_states_sub;
 
-  // ////////// vars
-  // //system
+  // antenna
+  ros::Subscriber m_ant_pan_command_sub;
+  ros::Subscriber m_ant_pan_state_sub;
+  ros::Subscriber m_ant_tilt_command_sub;
+  ros::Subscriber m_ant_tilt_state_sub;
+
+  // camera
+  ros::Timer m_camera_trigger_timer;
+  ros::Subscriber m_camera_original_trigger_sub;
+  ros::Subscriber m_camera_raw_sub;
+
+  // power
+  ros::Subscriber m_power_soc_sub;
+  ros::Subscriber m_power_temperature_sub;
+
+  // VARIABLES
+  // system vars
   std::bitset<10> m_system_faults_bitset{};
 
-  // //general component faults
+  // general component fault vars
+  std::vector<unsigned int> m_joint_state_indices;
+  std::map<std::string, float> m_current_arm_positions; 
+  float m_ant_pan_set_point;
+  float m_ant_tilt_set_point;
+  ros::Time m_pan_fault_timer;
+  ros::Time m_tilt_fault_timer;
+  bool m_pan_fault;
+  bool m_tilt_fault;
   bool m_cam_trigger_on = false;
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
   ros::Time m_cam_raw_time;
   ros::Time m_cam_trigger_time;
 
-  // //power vars
+  // power vars
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
 
 };

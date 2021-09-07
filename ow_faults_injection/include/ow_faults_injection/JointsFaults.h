@@ -19,7 +19,7 @@ public:
 private:
   void onUpdate();
 
-  void injectFault(const std::string& joint_fault, bool& fault_activated, const std::string& joint_name,
+  void injectFault(const std::string& joint_fault, bool& fault_activated,  bool& other_active, const std::string& joint_name,
                    double lower_limit, double upper_limit);
 
   gazebo::physics::ModelPtr m_model;
@@ -27,8 +27,10 @@ private:
   double m_antennaTiltUpperLimit;
   double m_antennaPanLowerLimit;
   double m_antennaPanUpperLimit;
-  bool m_antennaTiltFaultActivated;
-  bool m_antennaPanFaultActivated;
+  bool m_antennaTiltEffortFaultActivated;
+  bool m_antennaPanEffortFaultActivated;
+  bool m_antennaTiltEncFaultActivated;
+  bool m_antennaPanEncFaultActivated;
 
 
 

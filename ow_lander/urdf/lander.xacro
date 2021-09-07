@@ -937,7 +937,7 @@
       <robotNamespace>/</robotNamespace>
     </plugin>
 
-    <plugin name="ow_faults_joints" filename="libow_faults_joints.so">
+    <plugin name="ow_faults_injection_joints" filename="libow_faults_injection_joints.so">
       <robotNamespace>/</robotNamespace>
     </plugin>
 

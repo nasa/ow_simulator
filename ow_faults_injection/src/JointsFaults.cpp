@@ -44,35 +44,46 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
-  injectFault("ant_tilt_effort_failure", m_antennaTiltFaultActivated, "j_ant_tilt",
+  injectFault("ant_tilt_effort_failure", m_antennaTiltEffortFaultActivated, m_antennaTiltEncFaultActivated, "j_ant_tilt",
             m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
 
-  injectFault("ant_pan_effort_failure", m_antennaPanFaultActivated, "j_ant_pan",
+  injectFault("ant_pan_effort_failure", m_antennaPanEffortFaultActivated, m_antennaPanEncFaultActivated, "j_ant_pan",
+            m_antennaPanLowerLimit, m_antennaPanUpperLimit);
+
+  injectFault("ant_tilt_encoder_failure", m_antennaTiltEncFaultActivated, m_antennaTiltEffortFaultActivated, "j_ant_tilt",
+            m_antennaTiltLowerLimit, m_antennaTiltUpperLimit);
+
+  injectFault("ant_pan_encoder_failure", m_antennaPanEncFaultActivated, m_antennaPanEffortFaultActivated, "j_ant_pan",
             m_antennaPanLowerLimit, m_antennaPanUpperLimit);
 }
 
-void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated,
+void JointsFaults::injectFault(const std::string& joint_fault, bool& fault_activated, bool& other_active, 
                                const std::string& joint_name, double lower_limit, double upper_limit)
 {
   bool fault_enabled;
   ros::param::param("/faults/" + joint_fault, fault_enabled, false);
-  if (!fault_activated && fault_enabled)
+  
+  if (fault_enabled)
   {
-    ROS_INFO_STREAM(joint_fault << " activated!");
-    fault_activated = true;
-    // lock the joint to current position
-    auto j = m_model->GetJoint(joint_name);
-    auto p = j->Position(0);
-    j->SetLowerLimit(0, p);
-    j->SetUpperLimit(0, p);
+    if (!fault_activated && !other_active){
+      ROS_INFO_STREAM(joint_fault << " activated!");
+      fault_activated = true;
+      // lock the joint to current position
+      auto j = m_model->GetJoint(joint_name);
+      auto p = j->Position(0);
+      j->SetLowerLimit(0, p);
+      j->SetUpperLimit(0, p);
+    }
   }
-  else if (fault_activated && !fault_enabled)
+  else if (!fault_enabled)
   {
-    ROS_INFO_STREAM(joint_fault << " de-activated!");
-    fault_activated = false;
-    // restore the joint limits
-    auto j = m_model->GetJoint(joint_name);
-    j->SetLowerLimit(0, lower_limit);
-    j->SetUpperLimit(0, upper_limit);
+    if (fault_activated && !other_active) {
+      fault_activated = false;
+      ROS_INFO_STREAM(joint_fault << " de-activated!");
+      // restore the joint limits
+      auto j = m_model->GetJoint(joint_name);
+      j->SetLowerLimit(0, lower_limit);
+      j->SetUpperLimit(0, upper_limit); 
+    }
   }
 }

@@ -67,21 +67,13 @@ private:
 
   //camera function
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
-
-  // Antennae functions
-  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
-                             bool torque, float& m_faultValue, ros::Publisher& m_publisher);
-
-  //checking rqt faults
-  void checkArmFaults();
-  void checkAntFaults();
   void checkCamFaults();
-
+               
   // publishers and subscribers
 
   // arm faults
   ros::Subscriber m_joint_state_sub;
-  ros::Publisher m_joint_state_pub;
+  ros::Publisher m_joint_state_remapped_pub;
 
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
@@ -94,20 +86,14 @@ private:
   //antenna 
   ros::Subscriber m_fault_ant_pan_sub;
   ros::Subscriber m_fault_ant_tilt_sub;
-  ros::Publisher m_fault_ant_pan_remapped_pub;
-  ros::Publisher m_fault_ant_tilt_remapped_pub;
-
-  // jpl message publishers
-  // ros::Publisher m_antenna_fault_msg_pub;
-  // ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_ant_pan_remapped_pub;
+  ros::Publisher m_ant_tilt_remapped_pub;
 
   ////////// vars
   //system
   std::bitset<10> m_system_faults_bitset{};
 
   //general component faults
-  bool m_arm_fault;
-  bool m_ant_fault;
   bool m_cam_fault = false;
 
   //arm joint faults
