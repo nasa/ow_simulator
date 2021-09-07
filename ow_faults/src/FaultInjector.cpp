@@ -162,8 +162,8 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // Set failed sensor values to 0
   unsigned int index;
 
-  checkArmFaults();
-  checkAntFaults();
+  // checkArmFaults();
+  // checkAntFaults();
   checkCamFaults();
 
   if (m_ant_fault){
@@ -273,7 +273,7 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
-void FaultInjector::checkArmFaults(){
+void FaultInjector::checkArmFaults() {
   m_arm_fault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||
                 m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_effort_failure ||
                 m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_effort_failure ||
