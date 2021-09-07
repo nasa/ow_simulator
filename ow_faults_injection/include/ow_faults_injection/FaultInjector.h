@@ -12,12 +12,6 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <ow_faults_injection/FaultsConfig.h>
-#include "ow_faults_injection/SystemFaults.h"
-#include "ow_faults_injection/ArmFaults.h"
-#include "ow_faults_injection/PowerFaults.h"
-#include "ow_faults_injection/PTFaults.h"
-#include "ow_faults_injection/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Image.h>

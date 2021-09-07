@@ -74,11 +74,11 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                                   this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_arm_fault_msg_pub = node_handle.advertise<ow_faults_injection::ArmFaults>("/faults/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults_injection::PTFaults>("/faults/pt_faults_status", 10);
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults_injection::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults_injection::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults_injection::SystemFaults>("/faults/system_faults_status", 10);
+  m_arm_fault_msg_pub = node_handle.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
+  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = node_handle.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
 
 }
 
@@ -103,14 +103,14 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage(){
-  ow_faults_injection::SystemFaults system_faults_msg;
+  ow_faults_detection::SystemFaults system_faults_msg;
   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
   m_system_fault_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
-  ow_faults_injection::CamFaults camera_faults_msg;
+  ow_faults_detection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
   if (m_cam_trigger_time <= m_cam_raw_time  
     &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) 
@@ -127,7 +127,7 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
 
 //// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault(){
-  ow_faults_injection::PowerFaults power_faults_msg;
+  ow_faults_detection::PowerFaults power_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
@@ -169,7 +169,7 @@ void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
                   findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) || 
                   findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
   
-  ow_faults_injection::ArmFaults arm_faults_msg;
+  ow_faults_detection::ArmFaults arm_faults_msg;
   if (arm_fault) {
     m_system_faults_bitset |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg, ComponentFaults::Hardware);
@@ -243,7 +243,7 @@ void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
 }
 
 void FaultDetector::antPublishFaultMessages(){
-  ow_faults_injection::PTFaults ant_fault_msg;
+  ow_faults_detection::PTFaults ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
     setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
     m_system_faults_bitset |= isPanTiltExecutionError;

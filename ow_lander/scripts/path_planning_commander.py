@@ -11,7 +11,7 @@ import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
-from ow_faults_injection.msg import SystemFaults
+from ow_faults_detection.msg import SystemFaults
 
 from ow_lander.srv import *
 from ow_lander.msg import *
