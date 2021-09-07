@@ -131,7 +131,6 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
     move_arm.set_pose_target(goal_pose)
 
   plan = move_arm.plan()
-  print (plan)
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
