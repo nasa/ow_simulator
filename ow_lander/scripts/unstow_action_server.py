@@ -22,8 +22,6 @@ from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 
-
-
 class UnstowActionServer(object):
     
     def __init__(self,name):
@@ -44,18 +42,14 @@ class UnstowActionServer(object):
         
     
     def _update_feedback(self):
- 
         self._ls =  self._current_link_state._link_value
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
         self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
-
-        
         
     def _update_motion(self):
-
-        print("Unstow arm activity started")
+        rospy.loginfo("Unstow arm activity started")
         goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_unstowed")
         plan = self._interface.move_arm.plan(goal)
@@ -67,8 +61,6 @@ class UnstowActionServer(object):
             end_time = plan.joint_trajectory.points[n_points-1].time_from_start
             self._timeout = end_time -start_time
             return plan
-        
-
         
     def on_unstow_action(self,goal):
         plan = self._update_motion()
@@ -89,7 +81,6 @@ class UnstowActionServer(object):
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):
-
            self._update_feedback()
            
         success = self.trajectory_async_executer.success() and self.trajectory_async_executer.wait()        

@@ -62,7 +62,7 @@ class DigCircularActionServer(object):
           success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
         except rospy.ServiceException as e:
-          print("switch_controllers error: %s" % e)
+          rospy.logerror("switch_controllers error: %s" % e)
         finally:
           # This sleep is a workaround for "start point deviates from current robot
           #  state" error on dig_circular trajectory execution.
@@ -81,7 +81,7 @@ class DigCircularActionServer(object):
         
         
     def _update_motion(self, goal):
-        print("DigCircular activity started")
+        rospy.loginfo("DigCircular activity started")
         self.current_traj = None
         self.current_traj = action_dig_circular.dig_circular(self._interface.move_arm,
                                          self._interface.move_limbs, 

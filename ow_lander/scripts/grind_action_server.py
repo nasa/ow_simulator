@@ -65,7 +65,7 @@ class GrindActionServer(object):
           success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
         except rospy.ServiceException as e:
-          print("switch_controllers error: %s" % e)
+          rospy.logerror("switch_controllers error: %s" % e)
         finally:
           # This sleep is a workaround for "start point deviates from current robot
           #  state" error on dig_circular trajectory execution.
@@ -74,7 +74,7 @@ class GrindActionServer(object):
         
         
     def _update_motion(self, goal):
-        print("Grind activity started")
+        rospy.loginfo("Grind activity started")
         self.current_traj  = action_grind.grind(self._interface.move_grinder,
                                                 self._interface.robot, 
                                                 self._interface.moveit_fk, goal)

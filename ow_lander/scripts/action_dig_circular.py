@@ -82,7 +82,6 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
     move_arm.set_pose_target(goal_pose)
 
   plan = move_arm.plan()
-  print (plan)
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
@@ -117,7 +116,6 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
     move_arm.set_pose_target(goal_pose)
 
   plan = move_arm.plan()
-  
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
@@ -174,7 +172,6 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
   depth = args.depth
   parallel = args.parallel
   ground_position = args.ground_position
-  
   
   if not parallel:
      

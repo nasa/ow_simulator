@@ -41,9 +41,9 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Stow.StopRequest'
     """
-    print("Stop arm activity started")
+    self.log_started("Stop")
     self.trajectory_async_executer.stop()
-    print("Stop arm activity completed")
+    rospy.loginfo("Stop arm activity completed")
     return True, "Done"
 
   # === SERVICE ACTIVITIES - Stow =============================
@@ -51,7 +51,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
-    print("Stow arm activity started")
+    self.log_started("Stow")
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
     self.arm_move_group.set_joint_value_target(goal)
 
@@ -61,7 +61,7 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
                                           feedback_cb=None)
     self.trajectory_async_executer.wait()
-    return self.return_message("Stow arm")
+    return self.log_finish_and_return("Stow arm")
 
 
   # === SERVICE ACTIVITIES - Unstow =============================
@@ -69,7 +69,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
     """
-    print("Unstow arm activity started")
+    self.log_started("Unstow")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
     self.arm_move_group.set_joint_value_target(goal)
     plan = self.arm_move_group.plan()
@@ -78,18 +78,18 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.execute(plan.joint_trajectory,
                                           feedback_cb=None)
     self.trajectory_async_executer.wait()
-    return self.return_message("Unstow arm")
+    return self.log_finish_and_return("Unstow arm")
 
   # === SERVICE ACTIVITIES - deliver sample =============================
   def handle_deliver_sample(self, req):
     """
     :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
     """
-    print("Deliver Sample arm activity started")
+    self.log_started("Deliver Sample")
     deliver_sample_args = activity_deliver_sample.arg_parsing(req)
     success = activity_deliver_sample.deliver_sample(
         self.arm_move_group, deliver_sample_args)
-    print("Deliver Sample arm activity completed")
+    rospy.loginfo("Deliver Sample arm activity completed")
     return success, "Done"
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
@@ -97,14 +97,14 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest'
     """
-    print("Dig Cicular arm activity started")
+    self.log_started("Dig Cicular")
     dig_circular_args = activity_full_digging_traj.arg_parsing_circ(req)
     success = activity_full_digging_traj.dig_circular(
         self.arm_move_group,
         self.limbs_move_group,
         dig_circular_args,
         self.switch_controllers)
-    print("Dig Circular arm activity completed")
+    rospy.loginfo("Dig Circular arm activity completed")
     return success, "Done"
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
@@ -112,11 +112,12 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
     """
+    self.log_started("Dig Linear")
     dig_linear_args = activity_full_digging_traj.arg_parsing_lin(req)
     success = activity_full_digging_traj.dig_linear(
         self.arm_move_group,
         dig_linear_args)
-    print("Dig linear arm motion executed!")
+    rospy.loginfo("Dig Linear arm activity completed")
     return success, "Done"
 
   def switch_controllers(self, start_controller, stop_controller):
@@ -128,7 +129,7 @@ class PathPlanningCommander(object):
       success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
     except rospy.ServiceException as e:
-      print("switch_controllers error: %s" % e)
+      rospy.logerror("switch_controllers error: %s" % e)
     finally:
       # This sleep is a workaround for "start point deviates from current robot
       # state" error on dig_circular trajectory execution.
@@ -140,7 +141,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Grind.GrindRequest'
     """
-    print("Grind arm activity started")
+    self.log_started("Grind")
     grind_args = activity_grind.arg_parsing(req)
     success = self.switch_controllers('grinder_controller', 'arm_controller')
     if not success:
@@ -149,7 +150,7 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    print("Grind arm activity completed")
+    rospy.loginfo("Grind arm activity completed")
     return success, "Done"
 
   def handle_guarded_move_done(self, state, result):
@@ -176,8 +177,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
     """
-    print("Guarded Move arm activity started")
-
+    self.log_started("Guarded Move")
     guarded_move_args = activity_guarded_move.arg_parsing(req)
     success = activity_guarded_move.pre_guarded_move(
         self.arm_move_group, guarded_move_args)
@@ -195,7 +195,7 @@ class PathPlanningCommander(object):
     # execution of the trajectory is completed
     self.trajectory_async_executer.wait()
     
-    return self.return_message( "Guarded Move arm activity", success)
+    return self.log_finish_and_return( "Guarded Move arm activity", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
@@ -223,17 +223,21 @@ class PathPlanningCommander(object):
         '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
-    print("path_planning_commander has started!")
+    
+    rospy.loginfo("path_planning_commander has started!")
 
     rospy.spin()
 
-  def return_message(self, action_name, success=True):
-    if not self.arm_fault:
-      print(action_name + " activity completed")
-      return success, "Done"
+  def log_started(self, activity_name):
+    rospy.loginfo("%s arm activity started", activity_name)
+
+  def log_finish_and_return(self, activity_name, success=True):
+    if self.arm_fault:
+      rospy.logerror("%s activity incomplete", activity_name)
+      return False,  "%s failed" % activity_name
     else:
-      print(action_name + " activity incomplete")
-      return False,  action_name + " failed"
+      rospy.loginfo("%s activity completed", activity_name)
+      return success, "Done"
 
   def callback(self, data):
     """

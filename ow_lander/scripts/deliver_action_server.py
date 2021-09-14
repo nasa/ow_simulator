@@ -27,8 +27,6 @@ from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from moveit_msgs.msg import RobotTrajectory
 
-
-
 class DeliverActionServer(object):
     
     def __init__(self,name):
@@ -44,19 +42,16 @@ class DeliverActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.deliver_sample_traj = RobotTrajectory()
-        
-    
+            
     def _update_feedback(self):
         self._ls =  self._current_link_state._link_value
         self._fdbk.current.x = self._ls.x
         self._fdbk.current.y = self._ls.y
         self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
-
-        
-        
+    
     def _update_motion(self, goal):
-        print("Deliver sample activity started")
+        rospy.loginfo("Deliver sample activity started")
         self.deliver_sample_traj = action_deliver_sample.deliver_sample(self._interface.move_arm,
                                              self._interface.robot, 
                                              self._interface.moveit_fk, goal)

@@ -18,8 +18,6 @@ from ow_lander.msg import *
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, WrenchStamped
 
-
-
 class GuardedMoveActionServer(object):
     
     def __init__(self,name):
@@ -83,7 +81,7 @@ class GuardedMoveActionServer(object):
         
         
     def _update_motion(self, goal):
-        print("Guarded move activity started")
+        rospy.loginfo("GuardedMove activity started")
         self.guarded_move_traj, self._guarded_move_plan_ratio = action_guarded_move.guarded_move_plan(
                                               self._interface.move_arm,
                                               self._interface.robot, 
