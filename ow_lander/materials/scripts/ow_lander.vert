@@ -22,22 +22,15 @@ uniform mat4 inverseTransposeWorldViewMatrix;
 
 // spotlights
 uniform vec3 landerUpVec;  // Should be set after launch and updated if lander changes orientation
-uniform vec4 wsSpotlightPos0;
-uniform vec4 wsSpotlightPos1;
-uniform vec4 wsSpotlightDir0;
-uniform vec4 wsSpotlightDir1;
+uniform vec4 wsLightPos[3];
+uniform vec4 wsLightDir[3];
+uniform vec4 spotlightParams[3];
 uniform vec4 spotlightAtten0;
-uniform vec4 spotlightParams0;
-out vec4 spotlightTexCoord0;
-out vec4 spotlightTexCoord1;
+out vec4 spotlightTexCoord[2];
 
 // Shadow parameters
-uniform mat4 texViewProjMatrix0;
-uniform mat4 texViewProjMatrix1;
-uniform mat4 texViewProjMatrix2;
-out vec4 lsPos0;
-out vec4 lsPos1;
-out vec4 lsPos2;
+uniform mat4 texViewProjMatrix[3];
+out vec4 lsPos[3];
 
 // output
 out vec3 wsPos;
@@ -97,10 +90,9 @@ void main()
   //vsVecToSun = normalMatrix * normalize(wsSunPosition.xyz);
 
   // PSSM shadows
-  vec4 worldPosition = worldMatrix * position;
-  lsPos0 = texViewProjMatrix0 * worldPosition;
-  lsPos1 = texViewProjMatrix1 * worldPosition;
-  lsPos2 = texViewProjMatrix2 * worldPosition;
+  vec4 worldPos = worldMatrix * position;
+  for (int i=0; i<3; i++)
+    lsPos[i] = texViewProjMatrix[i] * worldPos;
 
   // spotlight texture coordinates
   // Ogre's texture_viewproj_matrix and spotlight_viewproj_matrix both use a
@@ -115,11 +107,11 @@ void main()
     0.0, 0.0, 1.0, 0.0,
     0.5, 0.5, 0.0, 1.0
   );
-  mat4 spotlightProjMat = perspectiveProjection(acos(spotlightParams0.y), 0.01, spotlightAtten0.x);
-  mat4 spotlightViewMat0 = makeInverseViewMatrix(wsSpotlightPos0, wsSpotlightDir0.xyz);
-  mat4 spotlightViewMat1 = makeInverseViewMatrix(wsSpotlightPos1, wsSpotlightDir1.xyz);
-  spotlightTexCoord0 = biasMat * spotlightProjMat * spotlightViewMat0 * worldPosition;
-  spotlightTexCoord1 = biasMat * spotlightProjMat * spotlightViewMat1 * worldPosition;
+  for (int i=0; i<2; i++) {
+    mat4 spotlightProjMat = perspectiveProjection(acos(spotlightParams[i+1].y), 0.01, spotlightAtten0.x);
+    mat4 spotlightViewMat = makeInverseViewMatrix(wsLightPos[i+1], wsLightDir[i+1].xyz);
+    spotlightTexCoord[i] = biasMat * spotlightProjMat * spotlightViewMat * worldPos;
+  }
 
   gl_Position = worldViewProjMatrix * position;
 }
