@@ -145,7 +145,7 @@ float calcPSSMDepthShadowDebug(
 void spotlight(in vec3 vsVecToLight,
                in vec3 vsNegLightDir,  // Light is pointed in this direction
                in vec4 attenParams,
-               in vec3 spotParams,
+               in vec4 spotParams,
                in vec3 color,
                in vec4 texCoord,
                in vec3 vsDirToEye,
@@ -154,6 +154,13 @@ void spotlight(in vec3 vsVecToLight,
                inout vec3 diffuse,
                inout vec3 specular)
 {
+  // If this is not a spotlight or a spotlight isn't applied to this object
+  // because it is too far away, spotParams will be set to 1,0,0,1
+  if (spotParams == vec4(1, 0, 0, 1))
+  {
+    return;
+  }
+
   float lightD = length(vsVecToLight);
   vec3 vsDirToLight = vsVecToLight / lightD;
   vec3 vsNegLightDirNorm = normalize(vsNegLightDir);
@@ -228,11 +235,11 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
   vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
   spotlight(vsSpotlightPos0.xyz - vsPos, -vsSpotlightDir0.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb * spotlightIntensityScale0,
+            spotlightParams0, spotlightColor0.rgb * spotlightIntensityScale0,
             spotlightTexCoord0, vsDirToEye, vsDetailNormal, specular_power,
             diffuse, specular);
   spotlight(vsSpotlightPos1.xyz - vsPos, -vsSpotlightDir1.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb * spotlightIntensityScale1,
+            spotlightParams0, spotlightColor0.rgb * spotlightIntensityScale1,
             spotlightTexCoord1, vsDirToEye, vsDetailNormal, specular_power,
             diffuse, specular);
 }

@@ -21,6 +21,7 @@ uniform mat4 inverseTransposeWorldMatrix;
 uniform mat4 inverseTransposeWorldViewMatrix;
 
 // spotlights
+uniform vec3 landerUpVec;  // Should be set after launch and updated if lander changes orientation
 uniform vec4 wsSpotlightPos0;
 uniform vec4 wsSpotlightPos1;
 uniform vec4 wsSpotlightDir0;
@@ -48,6 +49,7 @@ out vec3 vsPos;
 out mat3 normalMatrix;
 //out vec3 vsVecToSun;
 
+// halfFOVy must be in radians. near and far must be positive.
 mat4 perspectiveProjection(float halfFOVy, float near, float far)
 {
   float f = 1.0 / tan(halfFOVy);
@@ -56,27 +58,26 @@ mat4 perspectiveProjection(float halfFOVy, float near, float far)
   return mat4(
     f, 0.0, 0.0, 0.0,
     0.0, f, 0.0, 0.0,
-    0.0, 0.0, (far + near) / (near - far), -1.0,
-    0.0, 0.0, (2.0 * far * near) / (near - far), 0.0
+    0.0, 0.0, -(far + near) / (far - near), -1.0,
+    0.0, 0.0, (-2.0 * far * near) / (far - near), 0.0
   );
 }
 
-mat4 makeInverseViewMatrix(vec4 pos, vec3 forwardDir)
+mat4 makeInverseViewMatrix(vec4 pos, vec3 forward)
 {
   // Ogre uses y-up system, but Gazebo uses z-up system
-  vec3 rightDir = normalize(cross(normalize(forwardDir), vec3(0.0, 0.0, 1.0)));
-  vec3 upDir = normalize(cross(rightDir, normalize(forwardDir)));
+  vec3 right = normalize(cross(normalize(forward), landerUpVec));
+  vec3 up = normalize(cross(right, normalize(forward)));
 
   mat3 rotmat = mat3(
-    rightDir, upDir, -forwardDir
+    right, up, -forward
   );
   vec4 posXformed = vec4(-pos.xyz * rotmat, 1.0);
 
-  // The first element should be divided by aspect ratio, but we're assuming 1.0.
   return mat4(
-    vec4(rightDir.x, upDir.x, -forwardDir.x, 0.0),
-    vec4(rightDir.y, upDir.y, -forwardDir.y, 0.0),
-    vec4(rightDir.z, upDir.z, -forwardDir.z, 0.0),
+    vec4(right.x, up.x, -forward.x, 0.0),
+    vec4(right.y, up.y, -forward.y, 0.0),
+    vec4(right.z, up.z, -forward.z, 0.0),
     posXformed
   );
 }
@@ -102,11 +103,17 @@ void main()
   lsPos2 = texViewProjMatrix2 * worldPosition;
 
   // spotlight texture coordinates
-  mat4 biasMat = mat4(
+  // Ogre's texture_viewproj_matrix and spotlight_viewproj_matrix both use a
+  // view matrix made from spotlight direction and an arbitrary up-vector, so
+  // texcoords computed from these spin in strange ways as spotlights rotate.
+  // For this reason, we construct our own transformations from worldPos to
+  // texcoords to project spotlight textures using the lander's up vector. This
+  // method assumes that spotlights have been yawed and pitched but not rolled.
+  mat4 biasMat = mat4(  // Convert tex coords from {-1, 1} to {0, 1}.
     0.5, 0.0, 0.0, 0.0,
-    0.0, 0.5, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.5, 0.5, 0.5, 1.0
+    0.0, -0.5, 0.0, 0.0,  // It is not known why element 1 needs to be negative to correctly project a texture.
+    0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.0, 1.0
   );
   mat4 spotlightProjMat = perspectiveProjection(acos(spotlightParams0.y), 0.01, spotlightAtten0.x);
   mat4 spotlightViewMat0 = makeInverseViewMatrix(wsSpotlightPos0, wsSpotlightDir0.xyz);

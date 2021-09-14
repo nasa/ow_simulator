@@ -17,6 +17,7 @@ vertex_program ow_lander_vert glsl
     param_named_auto texViewProjMatrix2 texture_viewproj_matrix 2
 
     // lander lights
+    param_named landerUpVec             float3 0.0 0.0 1.0
     param_named_auto wsSpotlightPos0    light_position 1
     param_named_auto wsSpotlightPos1    light_position 2
     param_named_auto wsSpotlightDir0    light_direction 1
