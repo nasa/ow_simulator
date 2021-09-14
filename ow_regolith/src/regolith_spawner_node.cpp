@@ -2,6 +2,11 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// TODO:
+//   1. Make diff image publish less frequently (must be done in ow_dynamic_terrain)
+//   2. (See line 156)
+//   3. (See line 169)
+
 #include <fstream>
 
 #include <ros/ros.h>
@@ -24,11 +29,17 @@ using namespace gazebo_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
-static std::string getGazeboModelSdf(std::string const &model_uri) {
-  auto model_path = gazebo::common::ModelDatabase::Instance()->GetModelFile(model_uri);
-  std::ifstream file(model_path);
+using std::string;
+using std::unique_ptr;
+using std::ifstream;
+using std::stringstream;
+
+static string getGazeboModelSdf(string const &model_uri) {
+  auto model_path = gazebo::common::ModelDatabase::Instance()
+    ->GetModelFile(model_uri);
+  ifstream file(model_path);
   if (file) {
-    std::stringstream ss;
+    stringstream ss;
     ss << file.rdbuf();
     return ss.str();
   } else {
@@ -38,13 +49,12 @@ static std::string getGazeboModelSdf(std::string const &model_uri) {
   }
 }
 
-// TODO: How to make this function gauruntee msg won't be modified?
-//       Making the msg reference constant causes a compile error
 template <class T>
 static bool call_ros_service(ros::ServiceClient &srv, T &msg) {
   if (!srv.call(msg)) {
-    ROS_ERROR("Failed to call service %s!", srv.getService().c_str());
-    ROS_ERROR("Service failed with status: %s", msg.response.status_message.c_str());
+    ROS_ERROR("Service %s failed: %s", 
+      srv.getService().c_str(), msg.response.status_message.c_str()
+    );
     return false;
   } else {
     return true;
@@ -54,23 +64,39 @@ static bool call_ros_service(ros::ServiceClient &srv, T &msg) {
 class RegolithSpawner
 {
 public:
+  RegolithSpawner() = delete;
+
   RegolithSpawner(ros::NodeHandle* nh)
-    : m_volume_displaced(0), m_spawn_threshold(0.0005), m_node_handle(nh)
-  {
-    m_gazebo_spawn = m_node_handle->serviceClient<SpawnModel>("/gazebo/spawn_sdf_model");//, true);
-    m_gazebo_wrench = m_node_handle->serviceClient<ApplyBodyWrench>("/gazebo/apply_body_wrench");//, true);
+    : m_volume_displaced(0.0), m_node_handle(nh) {
+
+    // get node parameters, which mirror class data member
+    if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
+      ROS_ERROR("Regolith node requires the spawn_volume_threshold parameter.");
+    if (!m_node_handle->getParam("regolith_model_uri", m_regolith_model_uri))
+      ROS_ERROR("Regolith node requires the regolith_model_uri paramter.");
+
+    // load SDF model
+    m_regolith_model_sdf = getGazeboModelSdf(m_regolith_model_uri);
+    if (m_regolith_model_sdf.empty())
+      ROS_ERROR("Failed to acquire regolith SDF");
+
+    // connect to services for spawning models and applying forces to models
+    // NOTE: Using persistence produces an error each time the service is called
+    m_gazebo_spawn = m_node_handle->serviceClient<SpawnModel>(
+      "/gazebo/spawn_sdf_model"
+    );
+    m_gazebo_wrench = m_node_handle->serviceClient<ApplyBodyWrench>(
+      "/gazebo/apply_body_wrench"
+    );
   }
 
   void terrainVisualModCb(const modified_terrain_diff::ConstPtr& msg)
   {
     // import image to so we can traverse it
     auto image_handle = CvImageConstPtr();
-    try
-    {
+    try {
       image_handle = toCvShare(msg->diff, msg);
-    }
-    catch (cv_bridge::Exception& e)
-    {
+    } catch (cv_bridge::Exception& e) {
       ROS_ERROR("cv_bridge exception: %s", e.what());
       return;
     }
@@ -89,11 +115,10 @@ public:
       for (auto x = 0; x < cols; ++x)
         m_volume_displaced += -image_handle->image.at<float>(y, x) * pixel_area;
 
-    // DEBUG
+    // DEBUG OUTPUT
     // ROS_INFO("Volume displaced: %f", m_volume_displaced);
 
-    if (m_volume_displaced >= m_spawn_threshold)
-    {
+    if (m_volume_displaced >= m_spawn_threshold) {
       m_volume_displaced -= m_spawn_threshold;
       if (!spawnRegolithInScoop())
         ROS_ERROR("Failed to spawn regolith in scoop");
@@ -104,23 +129,15 @@ public:
   {
     ROS_INFO("Spawning regolith");
 
-    // load SDF model
-    // TODO: load this once and save as data member
-    auto sdf = getGazeboModelSdf("model://ball_icefrag_2cm");
-    if (sdf.empty()) {
-      ROS_ERROR("Failed to acquire regolith SDF");
-      return false;
-    }
-
     // spawn model
     static auto spawn_count = 0;
-    std::stringstream model_name;
+    stringstream model_name;
     model_name << "regolith_" << spawn_count++;
 
     SpawnModel spawn_msg;
     
     spawn_msg.request.model_name                  = model_name.str();
-    spawn_msg.request.model_xml                   = sdf;
+    spawn_msg.request.model_xml                   = m_regolith_model_sdf;
     spawn_msg.request.robot_namespace             = "/regolith";
     spawn_msg.request.reference_frame             = "lander::l_scoop_tip";
 
@@ -137,7 +154,7 @@ public:
       return false;
 
     // apply a force to keep model in the scoop
-    std::stringstream body_name;
+    stringstream body_name;
     body_name << model_name.str() << "::link";
 
     ApplyBodyWrench wrench_msg;
@@ -166,19 +183,17 @@ public:
     //       Or when scoop is upright and out of the ground
     wrench_msg.request.duration                   = ros::Duration(10.0);
 
-    if (!call_ros_service(m_gazebo_wrench, wrench_msg))
-      return false;
-
-    return true;
+    return call_ros_service(m_gazebo_wrench, wrench_msg);
   }
 
 private:
-  float m_volume_displaced;
-  
-  // TODO: make into topic value that can be adjusted during runtime
-  float m_spawn_threshold; 
+  double m_volume_displaced;
+  double m_spawn_threshold;
 
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  string m_regolith_model_uri;
+  string m_regolith_model_sdf;
+
+  unique_ptr<ros::NodeHandle> m_node_handle;
   ros::ServiceClient m_gazebo_spawn;
   ros::ServiceClient m_gazebo_wrench;
 };
@@ -191,8 +206,12 @@ int main(int argc, char* argv[])
 
   auto rs = RegolithSpawner(&nh);
 
-  auto sub = nh.subscribe("/ow_dynamic_terrain/modification_differential/visual", 
-    1, &RegolithSpawner::terrainVisualModCb, &rs);
+  auto sub = nh.subscribe(
+    "/ow_dynamic_terrain/modification_differential/visual", 
+    1, 
+    &RegolithSpawner::terrainVisualModCb, 
+    &rs
+  );
 
   // DEBUG
   // sleep(10.0);

@@ -82,7 +82,10 @@
   <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
 
   <!-- simulate material collecting in scoop and material delivery to sample dock -->
-  <node name="regolith_spawner_node" pkg="ow_regolith" type="regolith_spawner_node" output="screen"/>
+  <node name="regolith_spawner_node" pkg="ow_regolith" type="regolith_spawner_node" output="screen">
+    <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
+    <param name="spawn_volume_threshold" type="double" value="0.0005"/>
+  </node>
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
