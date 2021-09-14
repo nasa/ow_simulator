@@ -7,7 +7,6 @@
 import rospy
 import actionlib
 from ow_lander.msg import *
-import time
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
@@ -215,7 +214,7 @@ class GrindActionServer(object):
         finally:
           # This sleep is a workaround for "start point deviates from current robot
           #  state" error on dig_circular trajectory execution.
-          time.sleep(0.2)
+          rospy.sleep(0.2)
           return success
         
         
@@ -430,7 +429,7 @@ class DigCircularActionServer(object):
         finally:
           # This sleep is a workaround for "start point deviates from current robot
           #  state" error on dig_circular trajectory execution.
-          time.sleep(0.2)
+          rospy.sleep(0.2)
           return success
         
     
