@@ -43,9 +43,11 @@ private:
   bool m_antennaPanEffortFaultActivated;
   bool m_antennaTiltEncFaultActivated;
   bool m_antennaPanEncFaultActivated;
+  bool m_armFaultsActivated;
 
   void injectArmFault(const std::string& joint_name, JointFaultInfo& jfi);
   void injectAntFault(const std::string& joint_name, JointFaultInfo& jfi);
+  void checkArmFaultEnabled();
 
   static constexpr double MAX_FRICTION = 3000.0;
 

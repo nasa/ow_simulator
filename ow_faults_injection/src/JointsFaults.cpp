@@ -20,12 +20,12 @@ JointsFaults::JointsFaults() :
   ModelPlugin()
 {
   m_JointsArmFaultsMap = {
-    {"j_shou_yaw", JointFaultInfo("shou_yaw_effort_failure")},
-    {"j_shou_pitch", JointFaultInfo("shou_pitch_effort_failure")},
-    {"j_prox_pitch", JointFaultInfo("prox_pitch_effort_failure")},
-    {"j_dist_pitch", JointFaultInfo("dist_pitch_effort_failure")},
-    {"j_hand_yaw", JointFaultInfo("hand_yaw_effort_failure")},
-    {"j_scoop_yaw", JointFaultInfo("scoop_yaw_effort_failure")} };
+    {"j_shou_yaw", JointFaultInfo("shou_yaw")},
+    {"j_shou_pitch", JointFaultInfo("shou_pitch")},
+    {"j_prox_pitch", JointFaultInfo("prox_pitch")},
+    {"j_dist_pitch", JointFaultInfo("dist_pitch")},
+    {"j_hand_yaw", JointFaultInfo("hand_yaw")},
+    {"j_scoop_yaw", JointFaultInfo("scoop_yaw")} };
 
    m_JointsAntFaultsMap = {
     {"j_ant_pan", JointFaultInfo("ant_pan")},
@@ -51,63 +51,43 @@ void JointsFaults::onUpdate()
 {
   for (auto& kv : m_JointsAntFaultsMap)
     injectAntFault(kv.first, kv.second);
-    
-  for (auto& kv : m_JointsAntFaultsMap)
-    injectAntFault(kv.first, kv.second);
-
-  // bool arm_fault_enabled = false;
-  // for (auto& kv: m_JointsArmFaultsMap){
-  //   bool enf;
-  //   bool eff;
-  //   ros::param::param("/faults/" + kv.second.encoderFault, enf, false);
-  //   ros::param::param("/faults/" + kv.second.encoderFault, eff, false);
-  //   arm_fault_enabled = arm_fault_enabled || enf || eff;
-  // }
-  // injectArmFault()
+  
+  checkArmFaultEnabled();
+  for (auto& kv : m_JointsArmFaultsMap)
+    injectAntFault(kv.first, kv.second );
+  
 }
 
-// bool armFaultEnabled(){
-
-// }
+void JointsFaults::checkArmFaultEnabled(){
+  bool arm_fault_enabled = false;
+  for (auto& kv: m_JointsArmFaultsMap){
+    bool enf;
+    bool eff;
+    ros::param::param("/faults/" + kv.second.effortFault, eff, false);
+    ros::param::param("/faults/" + kv.second.encoderFault, enf, false);
+    arm_fault_enabled = arm_fault_enabled || enf || eff;
+  }
+  m_armFaultsActivated =  arm_fault_enabled;
+}
 
 void JointsFaults::injectArmFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
-  bool eff_fault_enabled;
-  ros::param::param("/faults/" + jfi.effortFault, eff_fault_enabled, false);
 
-  bool enc_fault_enabled;
-  ros::param::param("/faults/" + jfi.encoderFault, enc_fault_enabled, false);
-
-  // bool arm_fault_enabled = false;
-  // for (auto& kv: m_JointsArmFaultsMap){
-  //   bool enf;
-  //   bool eff;
-  //   ros::param::param("/faults/" + kv.second.encoderFault, enf, false);
-  //   ros::param::param("/faults/" + kv.second.encoderFault, eff, false);
-  //   arm_fault_enabled = arm_fault_enabled || enf || eff;
-  // }
-
-
-  if (!jfi.activated)
+  if (m_armFaultsActivated) //is active, lock joint
   {
-    if (eff_fault_enabled || enc_fault_enabled){
-      ROS_INFO_STREAM(joint_name << " activated!");
-      jfi.activated = true;
-      // lock the joint to current position
-      auto j = m_model->GetJoint(joint_name);
-      jfi.friction = j->GetParam("friction", 0);
-      j->SetParam("friction", 0, MAX_FRICTION);
-    }
+    jfi.activated = true;
+    // lock the joint to current position
+    auto j = m_model->GetJoint(joint_name);
+    jfi.friction = j->GetParam("friction", 0);
+    j->SetParam("friction", 0, MAX_FRICTION);
   }
-  else if (jfi.activated)
+  else if (!m_armFaultsActivated)
   {
-    if (!eff_fault_enabled && !enc_fault_enabled){
-      ROS_INFO_STREAM(joint_name << " de-activated!");
-      jfi.activated = false;
-      // restore the joint limits
-      auto j = m_model->GetJoint(joint_name);
-      j->SetParam("friction", 0, jfi.friction);
-    }
+    jfi.activated = false;
+    // restore the joint limits
+    auto j = m_model->GetJoint(joint_name);
+    j->SetParam("friction", 0, jfi.friction);
+  
   }
 }
 
