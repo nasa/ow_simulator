@@ -113,7 +113,7 @@ float calcPSSMDepthShadow(
   {
     shadow = calcDepthShadow(shadowMap1, lsPos1, invShadowmapSize1);
   }
-  else
+  else if (camDepth <= pssmSplitPoints.z)
   {
     shadow = calcDepthShadow(shadowMap2, lsPos2, invShadowmapSize2);
   }
