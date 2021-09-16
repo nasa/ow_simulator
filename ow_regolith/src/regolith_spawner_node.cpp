@@ -4,23 +4,19 @@
 
 // TODO:
 //   1. Make diff image publish less frequently (must be done in ow_dynamic_terrain)
-//   2. (See line 156)
-//   3. (See line 169)
+//   2. (See line 185)
 
 #include <fstream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
+#include <tf/transform_datatypes.h>
 
 #include <gazebo_msgs/SpawnModel.h>
 #include <gazebo_msgs/ApplyBodyWrench.h>
 
 #include <gazebo/common/common.hh>
-
-#include <gazebo/transport/transport.hh>
-#include <gazebo/msgs/msgs.hh>
-#include <gazebo/gazebo.hh>
 
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
 
@@ -28,6 +24,8 @@ using namespace sensor_msgs;
 using namespace gazebo_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
+
+using tf::Vector3;
 
 using std::string;
 using std::unique_ptr;
@@ -104,13 +102,14 @@ public:
     auto rows = image_handle->image.rows;
     auto cols = image_handle->image.cols;
     if (rows <= 0 || cols <= 0) {
-      ROS_ERROR("Differential image dimensions are zero or negative");
+      ROS_DEBUG("Differential image dimensions are zero or negative");
       return;
     }
 
     auto pixel_area = (msg->height / rows) * (msg->width / cols);
-    auto center = msg->position;
 
+    Vector3 center(msg->position.x, msg->position.y, msg->position.z);
+  
     for (auto y = 0; y < rows; ++y)
       for (auto x = 0; x < cols; ++x)
         m_volume_displaced += -image_handle->image.at<float>(y, x) * pixel_area;
@@ -119,13 +118,21 @@ public:
     // ROS_INFO("Volume displaced: %f", m_volume_displaced);
 
     if (m_volume_displaced >= m_spawn_threshold) {
+      // deduct threshold from tracked volume
       m_volume_displaced -= m_spawn_threshold;
-      if (!spawnRegolithInScoop())
+      // compute scooping direction
+      auto scooping_dir = center - m_previous_center;
+      scooping_dir.setZ(0.0); // flatten against X-Y plane (cheap projection)
+
+      if (!spawnRegolithInScoop(-scooping_dir.normalize()))
         ROS_ERROR("Failed to spawn regolith in scoop");
     }
+
+    // cache center so on next call we know in what direction the scoop has moved
+    m_previous_center = center;
   }
 
-  bool spawnRegolithInScoop(void)
+  bool spawnRegolithInScoop(Vector3 pushback_direction)
   {
     ROS_INFO("Spawning regolith");
 
@@ -166,13 +173,7 @@ public:
     wrench_msg.request.reference_point.y          = 0.0;
     wrench_msg.request.reference_point.z          = 0.0;
     
-    // TOOD: Compute the appropriate force direction based on the direction of 
-    //       the dig.
-    //       Could simply use the direction of the scoop relative to the x-y 
-    //       plane.
-    wrench_msg.request.wrench.force.x             = -1.0;
-    wrench_msg.request.wrench.force.y             = 0.0;
-    wrench_msg.request.wrench.force.z             = 0.0;
+    tf::vector3TFToMsg(pushback_direction, wrench_msg.request.wrench.force);
     
     wrench_msg.request.wrench.torque.x            = 0.0;
     wrench_msg.request.wrench.torque.y            = 0.0;
@@ -187,8 +188,12 @@ public:
   }
 
 private:
+  // sum of volume displaced since last call to spawnRegolithInScoop
   double m_volume_displaced;
+  // volume threshold for spawning regolith
   double m_spawn_threshold;
+  // where terrain modification previously occurred
+  Vector3 m_previous_center;
 
   string m_regolith_model_uri;
   string m_regolith_model_sdf;
