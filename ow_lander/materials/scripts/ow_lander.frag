@@ -228,7 +228,7 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
   for (int i=0; i<2; i++) {
     spotlight(vsLightPos[i+1].xyz - vsPos, -vsLightDir[i+1].xyz, spotlightAtten0,
-              spotlightParams[1], spotlightColor0.rgb * spotlightIntensityScale[i],
+              spotlightParams[1+1], spotlightColor0.rgb * spotlightIntensityScale[i],
               spotlightTexCoord[i], vsDirToEye, vsDetailNormal, specular_power,
               diffuse, specular);
   }

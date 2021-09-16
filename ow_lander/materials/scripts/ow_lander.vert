@@ -91,7 +91,7 @@ void main()
 
   // PSSM shadows
   vec4 worldPos = worldMatrix * position;
-  for (int i=0; i<3; i++)
+  for (int i=0; i<lsPos.length(); i++)
     lsPos[i] = texViewProjMatrix[i] * worldPos;
 
   // spotlight texture coordinates
@@ -107,7 +107,7 @@ void main()
     0.0, 0.0, 1.0, 0.0,
     0.5, 0.5, 0.0, 1.0
   );
-  for (int i=0; i<2; i++) {
+  for (int i=0; i<spotlightTexCoord.length(); i++) {
     mat4 spotlightProjMat = perspectiveProjection(acos(spotlightParams[i+1].y), 0.01, spotlightAtten0.x);
     mat4 spotlightViewMat = makeInverseViewMatrix(wsLightPos[i+1], wsLightDir[i+1].xyz);
     spotlightTexCoord[i] = biasMat * spotlightProjMat * spotlightViewMat * worldPos;
