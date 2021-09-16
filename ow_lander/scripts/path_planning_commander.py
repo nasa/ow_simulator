@@ -43,9 +43,8 @@ class PathPlanningCommander(object):
     """
     self.log_started("Stop")
     self.trajectory_async_executer.stop()
-    rospy.loginfo("Stop arm activity completed")
-    return True, "Done"
-
+    return self.log_finish_and_return("Stop")
+    
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stow(self, req):
     """
@@ -89,8 +88,7 @@ class PathPlanningCommander(object):
     deliver_sample_args = activity_deliver_sample.arg_parsing(req)
     success = activity_deliver_sample.deliver_sample(
         self.arm_move_group, deliver_sample_args)
-    rospy.loginfo("Deliver Sample arm activity completed")
-    return success, "Done"
+    return self.log_finish_and_return("Deliver Sample", success)
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
   def handle_dig_circular(self, req):
@@ -104,8 +102,7 @@ class PathPlanningCommander(object):
         self.limbs_move_group,
         dig_circular_args,
         self.switch_controllers)
-    rospy.loginfo("Dig Circular arm activity completed")
-    return success, "Done"
+    return self.log_finish_and_return("Dig Circular", success)
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
   def handle_dig_linear(self, req):
@@ -117,8 +114,7 @@ class PathPlanningCommander(object):
     success = activity_full_digging_traj.dig_linear(
         self.arm_move_group,
         dig_linear_args)
-    rospy.loginfo("Dig Linear arm activity completed")
-    return success, "Done"
+    return self.log_finish_and_return("Dig Linear", success)
 
   def switch_controllers(self, start_controller, stop_controller):
     rospy.wait_for_service('/controller_manager/switch_controller')
@@ -150,8 +146,8 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    rospy.loginfo("Grind arm activity completed")
-    return success, "Done"
+    
+    return self.log_finish_and_return("Grind", success)
 
   def handle_guarded_move_done(self, state, result):
     """
@@ -194,8 +190,8 @@ class PathPlanningCommander(object):
     # To preserve the previous behaviour we are adding a blocking call till the
     # execution of the trajectory is completed
     self.trajectory_async_executer.wait()
-    
-    return self.log_finish_and_return( "Guarded Move arm activity", success)
+
+    return self.log_finish_and_return("Guarded Move arm activity", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
