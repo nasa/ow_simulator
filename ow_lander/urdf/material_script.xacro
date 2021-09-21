@@ -9,7 +9,7 @@
   <xacro:macro name="material_script">
     <script>
       <uri>$(find ow_lander)/materials/scripts</uri>
-      <uri>$(find ow_europa)/models/terminator/materials/textures</uri>
+      <uri>$(find ow_lander)/materials/textures</uri>
       <name>ow/lander</name>
     </script>
   </xacro:macro>

@@ -767,7 +767,7 @@
     <child link="l_grinder" />
     <axis xyz="-1 0 0" />
     <dynamics damping="1" />
-    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="0.1" />
+    <limit effort="1.0" velocity="0.1" lower="-3.14" upper="3.14"/>
   </joint>
   <transmission name="grinder_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -833,7 +833,7 @@
   </gazebo>
   <joint
     name="j_ant_pan"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0 0.58 0.675"
       rpy="-3.1416 0 0" />
@@ -844,7 +844,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="80.0" velocity="0.2" lower="-3.50" upper="3.50" />
+    <limit effort="80.0" velocity="0.2" />
   </joint>
   <transmission name="ant_pan_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -909,7 +909,7 @@
   </gazebo>
   <joint
     name="j_ant_tilt"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0 0 -0.24805"
       rpy="3.1416 1.5708 0" />
@@ -920,7 +920,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="100.0" velocity="0.2" lower="-1.5" upper="1.5" />
+    <limit effort="100.0" velocity="0.2" />
   </joint>
   <transmission name="ant_tilt_transmission">
     <type>transmission_interface/SimpleTransmission</type>

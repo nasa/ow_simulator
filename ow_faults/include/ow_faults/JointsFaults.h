@@ -7,6 +7,17 @@
 
 #include <gazebo/common/Plugin.hh>
 
+struct JointFaultInfo
+{
+  const std::string fault;
+  bool activated;
+  double friction;
+
+  JointFaultInfo(const std::string& fault_, bool activated_ = false, double friction_ = 0.0)
+  : fault(fault_), activated(activated_), friction(friction_)
+  {
+  }
+};
 
 class JointsFaults : public gazebo::ModelPlugin
 {
@@ -19,20 +30,12 @@ public:
 private:
   void onUpdate();
 
-  void injectFault(const std::string& joint_fault, bool& fault_activated, const std::string& joint_name,
-                   double lower_limit, double upper_limit);
+  void injectFault(const std::string& joint_name, JointFaultInfo& jfi);
+
+  static constexpr double MAX_FRICTION = 3000.0;
 
   gazebo::physics::ModelPtr m_model;
-  double m_antennaTiltLowerLimit;
-  double m_antennaTiltUpperLimit;
-  double m_antennaPanLowerLimit;
-  double m_antennaPanUpperLimit;
-  bool m_antennaTiltFaultActivated;
-  bool m_antennaPanFaultActivated;
-
-
-
-  // Connection to the update event
+  std::map<std::string, JointFaultInfo> m_JointsFaultsMap;
   gazebo::event::ConnectionPtr m_updateConnection;
 };
 
