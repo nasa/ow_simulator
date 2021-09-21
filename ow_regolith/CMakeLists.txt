@@ -101,11 +101,17 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-add_executable(regolith_spawner_node src/regolith_spawner_node.cpp)
+add_executable(regolith_node 
+  src/regolith_node.cpp
+  src/RegolithSpawner.cpp
+)
 
-add_dependencies(regolith_spawner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(regolith_node 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS}
+)
 
-target_link_libraries(regolith_spawner_node
+target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
 )
