@@ -9,8 +9,9 @@
 #include <gazebo/rendering/Scene.hh>
 #include <ros/ros.h>
 
-using namespace gazebo;
 using namespace std;
+using namespace gazebo;
+using namespace gazebo::event;
 
 constexpr double JointsFaults::MAX_FRICTION;
 
@@ -20,14 +21,15 @@ JointsFaults::JointsFaults() :
   ModelPlugin()
 {
   m_JointsFaultsMap = {
-    {"j_shou_yaw", JointFaultInfo("shou_yaw_effort_failure")},
-    {"j_shou_pitch", JointFaultInfo("shou_pitch_effort_failure")},
-    {"j_prox_pitch", JointFaultInfo("prox_pitch_effort_failure")},
-    {"j_dist_pitch", JointFaultInfo("dist_pitch_effort_failure")},
-    {"j_hand_yaw", JointFaultInfo("hand_yaw_effort_failure")},
-    {"j_scoop_yaw", JointFaultInfo("scoop_yaw_effort_failure")},
-    {"j_ant_pan", JointFaultInfo("ant_pan_effort_failure")},
-    {"j_ant_tilt", JointFaultInfo("ant_tilt_effort_failure")} };
+    {"j_shou_yaw", JointFaultInfo("/faults/shou_yaw_effort_failure")},
+    {"j_shou_pitch", JointFaultInfo("/faults/shou_pitch_effort_failure")},
+    {"j_prox_pitch", JointFaultInfo("/faults/prox_pitch_effort_failure")},
+    {"j_dist_pitch", JointFaultInfo("/faults/dist_pitch_effort_failure")},
+    {"j_hand_yaw", JointFaultInfo("/faults/hand_yaw_effort_failure")},
+    {"j_scoop_yaw", JointFaultInfo("/faults/scoop_yaw_effort_failure")},
+    {"j_ant_pan", JointFaultInfo("/faults/ant_pan_effort_failure")},
+    {"j_ant_tilt", JointFaultInfo("/faults/ant_tilt_effort_failure")}
+  };
 }
 
 JointsFaults::~JointsFaults()
@@ -37,12 +39,8 @@ JointsFaults::~JointsFaults()
 void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 {
   m_model = model;
-
-  // Listen to the update event. This event is broadcast every sim iteration.
-  // If result goes out of scope updates will stop, so it is assigned to a member variable.
-  m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&JointsFaults::onUpdate, this));
-
   gzlog << "JointsFaultsPlugin - successfully loaded!" << endl;
+  m_updateConnection = Events::ConnectBeforePhysicsUpdate(bind(&JointsFaults::onUpdate, this));
 }
 
 void JointsFaults::onUpdate()
@@ -51,10 +49,14 @@ void JointsFaults::onUpdate()
     injectFault(kv.first, kv.second);
 }
 
-void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
+void JointsFaults::injectFault(const string& joint_name, JointFaultInfo& jfi)
 {
-  bool fault_enabled;
-  ros::param::param("/faults/" + jfi.fault, fault_enabled, false);
+  auto fault_enabled = false;
+  auto success = ros::param::getCached(jfi.fault, fault_enabled);
+
+  if (!success)
+    return;
+
   if (!jfi.activated && fault_enabled)
   {
     ROS_INFO_STREAM(jfi.fault << " activated!");
