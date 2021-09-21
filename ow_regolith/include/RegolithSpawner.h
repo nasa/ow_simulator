@@ -17,10 +17,16 @@ public:
 
   RegolithSpawner(ros::NodeHandle* nh);
 
-  bool initializeRegolith(void);
+  // loads regolith SDF and computes its mass
+  // NOTE: must be called after constructor before any other functions are used
+  bool initializeRegolith(void); // may block excecution
 
+  // spawn the regolith model just above the tip of the scoop and apply a force
+  // that keeps it in the scoop during the remainder of scooping operation
   bool spawnRegolithInScoop(tf::Vector3 pushback_direction);
 
+  // computes the volume displaced from a modified terrain diff image and
+  // and spawns reoglith if it surpasses the spawn threshold
   void terrainVisualModCb(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr& msg
   );

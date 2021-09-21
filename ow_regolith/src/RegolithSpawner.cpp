@@ -82,7 +82,6 @@ static bool callRosService(ros::ServiceClient &srv, T &msg) {
 
 RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
   : m_volume_displaced(0.0), m_node_handle(nh) {
-
   // get node parameters, which mirror class data member
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
     ROS_ERROR("Regolith node requires the spawn_volume_threshold parameter.");
@@ -102,7 +101,7 @@ RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
 
 bool RegolithSpawner::initializeRegolith(void) {
   // set the maximum scoop inclination that the psuedo force can counteract
-  // to be 45 degrees
+  // to be 45 degrees 
   constexpr float MAX_SCOOP_INCLINATION_DEG = 45; // degrees
   constexpr float MAX_SCOOP_INCLINATION_RAD 
     = MAX_SCOOP_INCLINATION_DEG * acos(-1) / 180; // radians
