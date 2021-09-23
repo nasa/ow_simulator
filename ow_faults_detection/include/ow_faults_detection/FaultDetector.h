@@ -13,6 +13,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_injection/FaultsConfig.h>
+#include <ow_faults_injection/JointStatesFlag.h>
 #include "ow_faults_detection/SystemFaults.h"
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
@@ -79,6 +80,9 @@ private:
   bool findArmFault(int jointName, names n, positions pos, effort eff);
   void armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg);
+  void jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg);
+  template<typename name, typename flagsList>
+  bool isFlagSet(name n, flagsList flags);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
@@ -124,6 +128,7 @@ private:
   //arm
   ros::Subscriber m_arm_joint_states_sub;
   ros::Subscriber m_arm_controller_states_sub;
+  ros::Subscriber m_arm_controller_flags_sub;
 
   // antenna
   ros::Subscriber m_ant_pan_command_sub;
