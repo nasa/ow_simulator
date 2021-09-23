@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <ow_faults_injection/FaultsConfig.h>
+#include <ow_faults_injection/JointStatesFlag.h>
 #include <std_msgs/Empty.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -63,12 +64,15 @@ private:
   //camera function
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
   void checkCamFaults();
+  // void checkArmFaults();
+  // void checkAntFaults();
                
   // publishers and subscribers
 
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_remapped_pub;
+  ros::Publisher m_joint_state_flags_pub;
 
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;

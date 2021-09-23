@@ -35,25 +35,12 @@ public:
 private:
   void onUpdate();
 
-  double m_antennaTiltLowerLimit;
-  double m_antennaTiltUpperLimit;
-  double m_antennaPanLowerLimit;
-  double m_antennaPanUpperLimit;
-  bool m_antennaTiltEffortFaultActivated;
-  bool m_antennaPanEffortFaultActivated;
-  bool m_antennaTiltEncFaultActivated;
-  bool m_antennaPanEncFaultActivated;
-  bool m_armFaultsActivated;
-
-  void injectArmFault(const std::string& joint_name, JointFaultInfo& jfi);
-  void injectAntFault(const std::string& joint_name, JointFaultInfo& jfi);
-  void checkArmFaultEnabled();
+  void injectFault(const std::string& joint_name, JointFaultInfo& jfi);
 
   static constexpr double MAX_FRICTION = 3000.0;
 
   gazebo::physics::ModelPtr m_model;
-  std::map<std::string, JointFaultInfo> m_JointsArmFaultsMap;
-  std::map<std::string, JointFaultInfo> m_JointsAntFaultsMap;
+  std::map<std::string, JointFaultInfo> m_JointsFaultsMap;
   gazebo::event::ConnectionPtr m_updateConnection;
 };
 

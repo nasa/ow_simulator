@@ -19,15 +19,13 @@ GZ_REGISTER_MODEL_PLUGIN(JointsFaults)
 JointsFaults::JointsFaults() :
   ModelPlugin()
 {
-  m_JointsArmFaultsMap = {
+  m_JointsFaultsMap = {
     {"j_shou_yaw", JointFaultInfo("shou_yaw")},
     {"j_shou_pitch", JointFaultInfo("shou_pitch")},
     {"j_prox_pitch", JointFaultInfo("prox_pitch")},
     {"j_dist_pitch", JointFaultInfo("dist_pitch")},
     {"j_hand_yaw", JointFaultInfo("hand_yaw")},
-    {"j_scoop_yaw", JointFaultInfo("scoop_yaw")} };
-
-   m_JointsAntFaultsMap = {
+    {"j_scoop_yaw", JointFaultInfo("scoop_yaw")},
     {"j_ant_pan", JointFaultInfo("ant_pan")},
     {"j_ant_tilt", JointFaultInfo("ant_tilt")} };
 }
@@ -49,49 +47,11 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
-  for (auto& kv : m_JointsAntFaultsMap)
-    injectAntFault(kv.first, kv.second);
-  
-  checkArmFaultEnabled();
-  for (auto& kv : m_JointsArmFaultsMap)
-    injectAntFault(kv.first, kv.second );
-  
+  for (auto& kv : m_JointsFaultsMap)
+    injectFault(kv.first, kv.second);
 }
 
-void JointsFaults::checkArmFaultEnabled(){
-  bool arm_fault_enabled = false;
-  for (auto& kv: m_JointsArmFaultsMap){
-    bool enf;
-    bool eff;
-    ros::param::param("/faults/" + kv.second.effortFault, eff, false);
-    ros::param::param("/faults/" + kv.second.encoderFault, enf, false);
-    arm_fault_enabled = arm_fault_enabled || enf || eff;
-  }
-  m_armFaultsActivated =  arm_fault_enabled;
-}
-
-void JointsFaults::injectArmFault(const std::string& joint_name, JointFaultInfo& jfi)
-{
-
-  if (m_armFaultsActivated) //is active, lock joint
-  {
-    jfi.activated = true;
-    // lock the joint to current position
-    auto j = m_model->GetJoint(joint_name);
-    jfi.friction = j->GetParam("friction", 0);
-    j->SetParam("friction", 0, MAX_FRICTION);
-  }
-  else if (!m_armFaultsActivated)
-  {
-    jfi.activated = false;
-    // restore the joint limits
-    auto j = m_model->GetJoint(joint_name);
-    j->SetParam("friction", 0, jfi.friction);
-  
-  }
-}
-
-void JointsFaults::injectAntFault(const std::string& joint_name, JointFaultInfo& jfi)
+void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
   bool eff_fault_enabled;
   ros::param::param("/faults/" + jfi.effortFault, eff_fault_enabled, false);

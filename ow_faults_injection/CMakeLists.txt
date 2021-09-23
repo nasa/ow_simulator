@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   ow_lander
   std_msgs
-  # message_generation
+  message_generation
 )
 
 include(FindPkgConfig)
@@ -56,14 +56,10 @@ endif()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   # SystemFaults.msg
-#   # ArmFaults.msg
-#   # PowerFaults.msg
-#   # PTFaults.msg
-#   # CamFaults.msg
-# )
+add_message_files(
+  FILES
+  JointStatesFlag.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -80,10 +76,10 @@ endif()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -118,7 +114,7 @@ catkin_package(
 #  LIBRARIES ow_faults
 #  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
 #  DEPENDS system_lib
-  # CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########
