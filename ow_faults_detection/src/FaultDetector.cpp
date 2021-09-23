@@ -186,68 +186,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlag
   publishSystemFaultsMessage();
 }
 
-void FaultDetector::armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg){
-  // int i = 0;
-  // for (auto it : msg->joint_names){
-  //   m_current_arm_positions[it] = msg->actual.positions[i];
-  //   i++;
-  // }
-}
 
-void FaultDetector::armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg){
-  // Populate the map once here.
-  // This assumes the collection of joints will never change.
-  // if (m_joint_state_indices.empty()) {
-  //   for (int j = 0; j < NUM_JOINTS; j ++) {
-  //     int index = findPositionInGroup(msg->name, joint_names[j]);
-  //     if (index >= 0)
-  //       m_joint_state_indices.push_back(index);
-  //   }
-  // }
-
-  // bool arm_fault = findArmFault( J_SHOU_YAW, msg->name, msg->position, msg->effort) ||
-  //                 findArmFault( J_SHOU_PITCH, msg->name, msg->position, msg->effort) ||
-  //                 findArmFault( J_PROX_PITCH, msg->name, msg->position, msg->effort) ||
-  //                 findArmFault( J_DIST_PITCH, msg->name, msg->position, msg->effort) ||
-  //                 findArmFault( J_HAND_YAW, msg->name, msg->position, msg->effort) || 
-  //                 findArmFault( J_SCOOP_YAW, msg->name, msg->position, msg->effort);
-  
-  // ow_faults_detection::ArmFaults arm_faults_msg;
-  // if (arm_fault) {
-  //   m_system_faults_bitset |= isArmExecutionError;
-  //   setComponentFaultsMessage(arm_faults_msg, ComponentFaults::Hardware);
-  // } else {
-  //   m_system_faults_bitset &= ~isArmExecutionError;
-  // }
-  // m_arm_fault_msg_pub.publish(arm_faults_msg);
-  // publishSystemFaultsMessage();
-
-}
-
-template<typename names, typename positions, typename effort>
-bool FaultDetector::findArmFault(int jointName, names n, positions pos, effort eff){
-  // unsigned int index;
-  // bool result = false;
-  // if (findJointIndex(jointName, index) && joint_names[jointName] == n[index]) {
-  //   if (pos[index]  == FAULT_ZERO_TELEMETRY ){
-  //     if (m_current_arm_positions[joint_names[jointName]] != pos[index]) {
-  //         result = true;
-  //         // cout << "message name of index " << n[index] << endl;
-  //         // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
-  //         // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
-  //         // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
-  //       }
-  //   }
-  //   if (eff[index]  == FAULT_ZERO_TELEMETRY){
-  //       result = true;
-  //       // cout << "message name of index " << n[index] << endl;
-  //       // // cout << "jointname name of jointName " << joint_names[jointName] << endl;
-  //       // cout << "real position " << m_current_arm_positions[joint_names[jointName]] << " msg position " << pos[index] << endl;
-  //       // cout << " index " << index << " position: " << pos[index] << " effort: " << eff[index]  << endl;
-  //   }
-  // }
-  // return result;
-}
 
 template<typename group_t, typename item_t>
 int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
@@ -271,19 +210,6 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 // need to change command otherwise there's no way to stop gazebo
 // need to upate to publish no fault when empty? or just leave it as unpublished. 
 
-void FaultDetector::antennaPanCommandCb(const std_msgs::Float64& msg){
-  // if (m_ant_pan_set_point != msg.data ){
-  //   m_ant_pan_set_point = msg.data;
-  //   m_pan_fault_timer = ros::Time::now();
-  // }
-}
-
-void FaultDetector::antennaTiltCommandCb(const std_msgs::Float64& msg){
-  // if (m_ant_tilt_set_point != msg.data ){
-  //   m_ant_tilt_set_point = msg.data;
-  //   m_tilt_fault_timer = ros::Time::now();
-  //   }
-}
 
 void FaultDetector::antPublishFaultMessages(){
   ow_faults_detection::PTFaults ant_fault_msg;
@@ -295,37 +221,6 @@ void FaultDetector::antPublishFaultMessages(){
   }
   publishSystemFaultsMessage();
   m_antenna_fault_msg_pub.publish(ant_fault_msg);
-}
-
-void FaultDetector::antennaPanStateCb(const control_msgs::JointControllerState& msg){
-  // m_ant_pan_set_point = msg.set_point;
-  // auto time_diff = ros::Time::now() - m_pan_fault_timer;
-  // auto pose_diff = msg.process_value - m_ant_pan_set_point;
-  // float value = (int)(pose_diff * 100 + .5);
-  // auto b = (float)value / 100;
-
-  // if (time_diff > ros::Duration(5) && !( b == 0.00) ){
-  //   m_pan_fault = true;
-  // } else {
-  //   m_pan_fault = false;
-  // }
-
-  // antPublishFaultMessages();
-}
-
-void FaultDetector::antennaTiltStateCb(const control_msgs::JointControllerState& msg){
-  // m_ant_tilt_set_point = msg.set_point;
-  // auto time_diff = ros::Time::now() - m_tilt_fault_timer;
-  // auto pose_diff = msg.process_value - m_ant_tilt_set_point;
-  // float value = (int)(pose_diff * 100 + .5);
-  // auto b = (float)value / 100;
-  // if (time_diff > ros::Duration(5) && !( b == 0.00) ){
-  //   m_tilt_fault = true;
-  // } else {
-  //   m_tilt_fault = false;
-  // }
-
-  // antPublishFaultMessages();
 }
 
 //// Camera listeners
