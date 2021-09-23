@@ -60,7 +60,7 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.execute(plan.joint_trajectory, 
                                           feedback_cb=None)
     self.trajectory_async_executer.wait()
-    return self.log_finish_and_return("Stow arm")
+    return self.log_finish_and_return("Stow")
 
 
   # === SERVICE ACTIVITIES - Unstow =============================
@@ -77,7 +77,7 @@ class PathPlanningCommander(object):
     self.trajectory_async_executer.execute(plan.joint_trajectory,
                                           feedback_cb=None)
     self.trajectory_async_executer.wait()
-    return self.log_finish_and_return("Unstow arm")
+    return self.log_finish_and_return("Unstow")
 
   # === SERVICE ACTIVITIES - deliver sample =============================
   def handle_deliver_sample(self, req):
@@ -191,7 +191,7 @@ class PathPlanningCommander(object):
     # execution of the trajectory is completed
     self.trajectory_async_executer.wait()
 
-    return self.log_finish_and_return("Guarded Move arm activity", success)
+    return self.log_finish_and_return("Guarded Move", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
@@ -227,18 +227,14 @@ class PathPlanningCommander(object):
   def log_started(self, activity_name):
     rospy.loginfo("%s arm activity started", activity_name)
 
-  def log_finish_and_return(self, activity_name, success=True):
-    if self.arm_fault:
-      rospy.logerror("%s activity incomplete", activity_name)
-      return False,  "%s failed" % activity_name
-    else:
-      rospy.loginfo("%s activity completed", activity_name)
-      return success, "Done"
+  def log_finish_and_return(self, activity_name, success=True):  
+    rospy.loginfo("%s arm activity completed", activity_name)
+    return success, "Done"
 
   def callback(self, data):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
-    """
+    """ 
     self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
 
 if __name__ == '__main__':
