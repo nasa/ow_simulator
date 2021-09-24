@@ -147,10 +147,13 @@ void FaultDetector::publishPowerSystemFault(){
 
 // Listeners
 // Arm listeners
-template<typename name, typename flagsList>
-bool FaultDetector::isFlagSet(name n, flagsList flags){
+bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags) {
   unsigned int index;
-  findJointIndex(n, index);
+  auto found = findJointIndex(joint, index);
+
+  if (!found)
+    return false;
+
   if (flags[index] == 1.0){
     return true;
   }
@@ -159,7 +162,7 @@ bool FaultDetector::isFlagSet(name n, flagsList flags){
 
 void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg){
   unsigned int index;
-  std::cout << "hi" << std::endl;
+  
   bool armFault = false;
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
                       J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
@@ -174,6 +177,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlag
     std::cout << name << std::endl;
     armFault = armFault || isFlagSet( name, msg->flags);
   }
+
   ow_faults_detection::ArmFaults arm_faults_msg;
   if (armFault){
     m_system_faults_bitset |= isArmExecutionError;
@@ -199,7 +203,7 @@ int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
 
 bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_index)
 {
-  if(joint >= NUM_JOINTS)
+  if(joint >= m_joint_state_indices.size())
     return false;
 
   out_index = m_joint_state_indices[joint];
