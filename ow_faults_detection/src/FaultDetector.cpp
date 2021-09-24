@@ -174,7 +174,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlag
 
   //arm faults
   for (auto& name : armList) {
-    std::cout << name << std::endl;
     armFault = armFault || isFlagSet( name, msg->flags);
   }
 
