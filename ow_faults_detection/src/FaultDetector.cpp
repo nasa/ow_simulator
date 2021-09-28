@@ -29,7 +29,6 @@ FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
                                           10,
                                           &FaultDetector::jointStatesFlagCb,
                                           this);
-                                       this);
   // camera
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
