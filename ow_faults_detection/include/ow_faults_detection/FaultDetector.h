@@ -70,16 +70,13 @@ public:
   static constexpr float THERMAL_MAX = 50;
   static constexpr float SOC_MIN = 0.1;
   static constexpr float SOC_MAX_DIFF = 0.05;
-
+  
+  //arm
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
   // COMPONENT FUNCTIONS
   // arm functions
-  template<typename names, typename positions, typename effort>
-  bool findArmFault(int jointName, names n, positions pos, effort eff);
-  void armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
-  void armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg);
   void jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<double>& flags);
   // Find an item in an std::vector or other find-able data structure, and
@@ -91,12 +88,6 @@ private:
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
   // antennae functions
-  template<typename names, typename positions, typename effort>
-  bool findAntFaults(int jointName, names n, positions pos, effort eff);
-  void antennaPanCommandCb(const std_msgs::Float64& msg);
-  void antennaPanStateCb(const control_msgs::JointControllerState& msg);
-  void antennaTiltCommandCb(const std_msgs::Float64& msg);
-  void antennaTiltStateCb(const control_msgs::JointControllerState& msg);
   void antPublishFaultMessages();
   
   // camera functions
@@ -118,22 +109,17 @@ private:
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
 
+
+  // PUBLISHERS AND SUBSCRIBERS
+  // faults topic publishers
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
-  //arm
-  ros::Subscriber m_arm_joint_states_sub;
-  ros::Subscriber m_arm_controller_states_sub;
-  ros::Subscriber m_arm_controller_flags_sub;
-
-  // antenna
-  ros::Subscriber m_ant_pan_command_sub;
-  ros::Subscriber m_ant_pan_state_sub;
-  ros::Subscriber m_ant_tilt_command_sub;
-  ros::Subscriber m_ant_tilt_state_sub;
+  //arm and ant
+  ros::Subscriber m_joint_states_sub;
 
   // camera
   ros::Timer m_camera_trigger_timer;
@@ -144,28 +130,21 @@ private:
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
 
-  // VARIABLES
-  // system vars
-  std::bitset<10> m_system_faults_bitset{};
 
-  // general component fault vars
+  // VARIABLES
+  // system 
+  std::bitset<10> m_system_faults_bitset{};
   std::vector<unsigned int> m_joint_state_indices;
-  std::map<std::string, float> m_current_arm_positions; 
-  float m_ant_pan_set_point;
-  float m_ant_tilt_set_point;
-  ros::Time m_pan_fault_timer;
-  ros::Time m_tilt_fault_timer;
+  //antenna
   bool m_pan_fault;
   bool m_tilt_fault;
-  bool m_cam_trigger_on = false;
-  bool m_soc_fault = false;
-  bool m_temperature_fault = false;
+  // camera
   ros::Time m_cam_raw_time;
   ros::Time m_cam_trigger_time;
-
   // power vars
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
-
+  bool m_soc_fault = false;
+  bool m_temperature_fault = false;
 };
 
 #endif

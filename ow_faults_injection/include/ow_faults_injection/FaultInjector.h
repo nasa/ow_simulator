@@ -64,8 +64,6 @@ private:
   //camera function
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
   void checkCamFaults();
-  // void checkArmFaults();
-  // void checkAntFaults();
                
   // publishers and subscribers
 

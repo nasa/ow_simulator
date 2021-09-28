@@ -24,41 +24,13 @@ constexpr bitset<3> FaultDetector::isThermalError;
 FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
 {
   srand (static_cast <unsigned> (time(0)));
-  // arm
-  // m_arm_joint_states_sub = node_handle.subscribe( "/joint_states",
-  //                                         10,
-  //                                         &FaultDetector::armJointStatesCb,
-  //                                         this);
-  m_arm_joint_states_sub = node_handle.subscribe( "/flags/joint_states",
+  // arm and antenna
+  m_joint_states_sub = node_handle.subscribe( "/flags/joint_states",
                                           10,
                                           &FaultDetector::jointStatesFlagCb,
                                           this);
-  // m_arm_controller_states_sub = node_handle.subscribe( "/arm_controller/state",
-  //                                         10,
-  //                                         &FaultDetector::armControllerStateCb,
-  //                                         this);
-  // antenna
-  string ant_pan_str = "/ant_pan_position_controller";
-  string ant_tilt_str = "/ant_tilt_position_controller";
-  // m_ant_pan_command_sub = node_handle.subscribe( ant_pan_str + string("/command"),
-  //                                         10,
-  //                                         &FaultDetector::antennaPanCommandCb,
-  //                                         this);
-  // m_ant_pan_state_sub = node_handle.subscribe(ant_pan_str + string("/state"),
-  //                                         10,
-  //                                         &FaultDetector::antennaPanStateCb,
-  //                                         this);
-  // m_ant_tilt_command_sub = node_handle.subscribe( ant_tilt_str + string("/command"),
-  //                                         10,
-  //                                         &FaultDetector::antennaTiltCommandCb,
-  //                                         this);
-  // m_ant_tilt_state_sub = node_handle.subscribe(ant_tilt_str + string("/state"),
-  //                                         10,
-  //                                         &FaultDetector::antennaTiltStateCb,
-  //                                         this);
-
+                                       this);
   // camera
-
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
     10, &FaultDetector::camerTriggerCb, this);
@@ -163,10 +135,19 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags) {
 void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg){
   unsigned int index;
   
+  // Populate the map once here.
+  // This assumes the collection of joints will never change.
+  if (m_joint_state_indices.empty()) {
+    for (int j = 0; j < NUM_JOINTS; j ++) {
+      int index = findPositionInGroup(msg->name, joint_names[j]);
+      if (index >= 0)
+        m_joint_state_indices.push_back(index);
+    }
+  }
+
   bool armFault = false;
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
                       J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
-
   //ant faults
   m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
   m_tilt_fault = isFlagSet( J_ANT_TILT, msg->flags);
@@ -210,10 +191,6 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 }
 
 //// Antenna Listeners
-// need to change command otherwise there's no way to stop gazebo
-// need to upate to publish no fault when empty? or just leave it as unpublished. 
-
-
 void FaultDetector::antPublishFaultMessages(){
   ow_faults_detection::PTFaults ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
