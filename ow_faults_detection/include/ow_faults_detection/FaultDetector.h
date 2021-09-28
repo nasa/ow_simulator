@@ -81,8 +81,7 @@ private:
   void armJointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void armControllerStateCb(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg);
   void jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg);
-  template<typename name, typename flagsList>
-  bool isFlagSet(name n, flagsList flags);
+  bool isFlagSet(uint joint, const std::vector<double>& flags);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
