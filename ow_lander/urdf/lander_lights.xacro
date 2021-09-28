@@ -22,8 +22,8 @@
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
 
-    <xacro:lander_light_link suffix="0" roll="0" pitch="0" y="-0.33" />
-    <xacro:lander_light_link suffix="1" roll="0" pitch="0" y="0.33" />
+    <xacro:lander_light_link suffix="0" roll="0" pitch="0" y="0.33" />
+    <xacro:lander_light_link suffix="1" roll="0" pitch="0" y="-0.33" />
   </xacro:macro>
 
   <xacro:property name="light_mass" value="0.2" />

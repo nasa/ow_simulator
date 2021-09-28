@@ -44,9 +44,9 @@ class LanderServiceServer(object):
       return False, 'Light intensity setting failed. Intensity = {} is out '\
              'of range.'.format(req.intensity)
 
-    self.light_msg.paramName = 'spotlightIntensityScale0'
+    self.light_msg.paramName = 'spotlightIntensityScale[0]'
     if req.name == 'right':
-        self.light_msg.paramName = 'spotlightIntensityScale1'
+        self.light_msg.paramName = 'spotlightIntensityScale[1]'
     self.light_msg.paramValue = str(req.intensity)
     self.light_pub.publish(self.light_msg)
     return True, '{} light intensity setting succeeded.'.format(req.name)
