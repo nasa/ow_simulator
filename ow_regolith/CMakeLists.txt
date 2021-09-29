@@ -105,6 +105,7 @@ catkin_add_env_hooks(
 add_executable(regolith_node 
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
+  src/sdf_utility.cpp
 )
 
 add_dependencies(regolith_node 

@@ -21,7 +21,7 @@ public:
 
   // loads regolith SDF and computes its mass
   // must be called before the other functions
-  bool initialize(void); // may block excecution
+  bool initialize(void);
 
   // spawn the regolith model just above the tip of the scoop and apply a force
   // that keeps it in the scoop during the remainder of scooping operation
@@ -32,12 +32,12 @@ public:
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
   void terrainVisualModCb(
-    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg
-  );
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
+  // both call clearAllPsuedoForces at the end of digs
   void digLinearResultCb(const ow_lander::DigLinearActionResult::ConstPtr &msg);
-
-  void digCircularResultCb(const ow_lander::DigCircularActionResult::ConstPtr &msg);
+  void digCircularResultCb(
+    const ow_lander::DigCircularActionResult::ConstPtr &msg);
 
 private:
   // sum of volume displaced since last call to spawnRegolithInScoop
@@ -58,7 +58,6 @@ private:
   struct Regolith {
     std::string model_name;
     std::string body_name;
-    bool applying_force;
   };
   std::vector<Regolith> m_active_regolith;
 

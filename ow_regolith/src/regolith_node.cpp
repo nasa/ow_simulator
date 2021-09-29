@@ -3,9 +3,9 @@
 // this repository.
 
 // TODO:
-//   1. Make diff image publish less frequently (must be done in ow_dynamic_terrain)
-//   2. Compute appropriate psuedo force duration based on dig_linear arguments
-//   3. Try and get persistent service clients to work
+//   1. Suppress or prevent "ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)"
+//   2. Make diff image publish less frequently (must be done in ow_dynamic_terrain)
+//   3. Delete spawned regolith after a certain time as a temporary solution to clean-up
 
 #include <ros/ros.h>
 

@@ -4,13 +4,12 @@
 
 #include "RegolithSpawner.h"
 
-#include <fstream>
+#include "sdf_utility.h"
+
 #include <cmath>
 
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
-#include <gazebo/common/common.hh>
-#include <sdf/sdf.hh>
 
 #include <gazebo_msgs/GetPhysicsProperties.h>
 #include <gazebo_msgs/SpawnModel.h>
@@ -20,14 +19,14 @@
 
 using namespace ow_dynamic_terrain;
 using namespace ow_lander;
-using namespace sensor_msgs;
 using namespace gazebo_msgs;
+using namespace sensor_msgs;
 using namespace cv_bridge;
+using namespace sdf_utility;
 
 using tf::Vector3;
 
 using std::string;
-using std::ifstream;
 using std::stringstream;
 using std::acos;
 using std::cos;
@@ -44,50 +43,6 @@ const static string SRV_CLEAR_WRENCH   = "/gazebo/clear_body_wrenches";
 const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
 const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
-
-static string getSdfFromUri(const string &model_uri) 
-{
-  auto model_path = gazebo::common::ModelDatabase::Instance()
-    ->GetModelFile(model_uri);
-  ifstream file(model_path);
-  if (file) {
-    stringstream ss;
-    ss << file.rdbuf();
-    return ss.str();
-  } else {
-    ROS_ERROR("SDF file %s could not be opened!", model_uri.c_str());
-    ROS_ERROR("Error code: %s", strerror(errno));
-    return "";
-  }
-}
-
-static string getLinkName(const string &model_sdf)
-{
-  // parse SDF stirng for all links
-  sdf::SDFPtr sdf_data(new sdf::SDF());
-  sdf_data->SetFromString(model_sdf);
-  auto root = sdf_data->Root();
-  auto link = root->GetElement("model")->GetElement("link");
-  auto link_name = link->GetAttribute("name");
-  if (link_name) {
-    return link_name->GetAsString();
-  } else {
-    ROS_ERROR("Link has no name attribute");
-    return "";
-  } 
-}
-
-static float getModelMass(const string &model_sdf) 
-{
-  // parse SDF string for all links
-  sdf::SDFPtr sdf_data(new sdf::SDF());
-  sdf_data->SetFromString(model_sdf);
-  auto root  = sdf_data->Root();
-  auto link = root->GetElement("model")->GetElement("link");
-  float link_mass;
-  link->GetElement("inertial")->GetElement("mass")->GetValue()->Get(link_mass);
-  return link_mass;
-}
 
 template <class T>
 static bool callRosService(ros::ServiceClient &srv, T &msg) 
@@ -106,11 +61,8 @@ static bool callRosService(ros::ServiceClient &srv, T &msg)
 }
 
 template <class T>
-static bool createRosServiceClient(
-  unique_ptr<ros::NodeHandle> &nh, 
-  string service_path,
-  ros::ServiceClient &out_srv, 
-  bool persistent = false)
+static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh, 
+  string service_path, ros::ServiceClient &out_srv, bool persistent = false)
 {
   // maximum time we will wait for the service to exist
   constexpr auto SERVICE_TIMEOUT = 5.0f; // seconds
@@ -146,35 +98,34 @@ bool RegolithSpawner::initialize(void)
     = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
 
   // load SDF model
-  m_model_sdf = getSdfFromUri(m_model_uri);
-  if (m_model_sdf.empty()) {
-    ROS_ERROR("Failed to acquire regolith model SDF");
+  if (!getSdfFromUri(m_model_uri, m_model_sdf)) {
+    ROS_ERROR("Failed to load SDF for regolith model");
     return false;
   }
-  // compute its mass
-  auto model_mass = getModelMass(m_model_sdf);
-  // grab its link name
-  m_model_linkname = getLinkName(m_model_sdf);
+  // parse as SDF object to query properties about the model
+  auto sdf = parseSdf(m_model_sdf);
+  float model_mass;
+  if (!getModelLinkMass(sdf, model_mass) ||
+      !getModelLinkName(sdf, m_model_linkname)) {
+    ROS_ERROR("Failed to acquire regolith model SDF parameters");
+    return false;
+  }
 
-  // connect service for querying gazebo's physics state 
+  // connect to all ROS services
   ros::ServiceClient gz_get_phys_prop;
-  if (!createRosServiceClient<GetPhysicsProperties>(m_node_handle, 
-    SRV_GET_PHYS_PROPS, gz_get_phys_prop, false))
+  if (!createRosServiceClient<GetPhysicsProperties>(
+        m_node_handle, SRV_GET_PHYS_PROPS, gz_get_phys_prop, false) ||
+      !createRosServiceClient<SpawnModel>(m_node_handle, 
+        SRV_SPAWN_MODEL, m_gz_spawn_model, true) ||
+      !createRosServiceClient<DeleteModel>(m_node_handle, 
+        SRV_DELETE_MODEL, m_gz_delete_model, true) ||
+      !createRosServiceClient<ApplyBodyWrench>(m_node_handle, 
+        SRV_APPLY_WRENCH, m_gz_apply_wrench, true) ||
+      !createRosServiceClient<BodyRequest>(m_node_handle, 
+        SRV_CLEAR_WRENCH, m_gz_clear_wrench, true)) {
+    ROS_ERROR("Failed to connect to all required ROS services");
     return false;
-  // connect services for spawning and removing models in gazebo
-  if (!createRosServiceClient<SpawnModel>(m_node_handle,
-    SRV_SPAWN_MODEL, m_gz_spawn_model, true))
-    return false;
-  if (!createRosServiceClient<DeleteModel>(m_node_handle,
-    SRV_DELETE_MODEL, m_gz_delete_model, true))
-    return false;
-  // connect services for applying and clearing forces on bodies in gazebo
-  if (!createRosServiceClient<ApplyBodyWrench>(m_node_handle, 
-    SRV_APPLY_WRENCH, m_gz_apply_wrench, true))
-    return false;
-  if (!createRosServiceClient<BodyRequest>(m_node_handle,
-    SRV_CLEAR_WRENCH, m_gz_clear_wrench, true))
-    return false;
+  }
 
   // query gazebo for the gravity vector
   GetPhysicsProperties msg;
@@ -193,7 +144,7 @@ bool RegolithSpawner::initialize(void)
   // ROS_DEBUG("model mass       = %2f", model_mass);
   // ROS_DEBUG("psuedo force mag = %2f", m_psuedo_force_mag);
 
-  // subscribe callbacks to topics
+  // subscribe callbacks to ROS topics
   m_modify_terrain_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::terrainVisualModCb, this);
   m_dig_linear_result = m_node_handle->subscribe(
@@ -267,9 +218,9 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
     wrench_msg.request.wrench.force.y,
     wrench_msg.request.wrench.force.z
   );
-  ROS_DEBUG("Duration = %4f seconds", wrench_msg.request.duration.toSec());
+  // ROS_DEBUG("Duration = %4f seconds", wrench_msg.request.duration.toSec());
 
-  m_active_regolith.push_back({model_name.str(), body_name.str(), true});
+  m_active_regolith.push_back({model_name.str(), body_name.str()});
 
   return callRosService(m_gz_apply_wrench, wrench_msg);
 }
@@ -322,19 +273,17 @@ void RegolithSpawner::digLinearResultCb(const DigLinearActionResult::ConstPtr &m
   clearAllPsuedoForces();
 }
 
-void RegolithSpawner::digCircularResultCb(const DigCircularActionResult::ConstPtr &msg) {
+void RegolithSpawner::digCircularResultCb(const DigCircularActionResult::ConstPtr &msg)
+{
   clearAllPsuedoForces();
 }
 
-void RegolithSpawner::clearAllPsuedoForces(void) {
+void RegolithSpawner::clearAllPsuedoForces(void)
+{
   for (auto &regolith : m_active_regolith) {
-    if (regolith.applying_force) {
-      BodyRequest msg;
-      msg.request.body_name = regolith.body_name;
-      if (!callRosService(m_gz_clear_wrench, msg))
-        ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
-      else
-        regolith.applying_force = false;
-    }
+    BodyRequest msg;
+    msg.request.body_name = regolith.body_name;
+    if (!callRosService(m_gz_clear_wrench, msg))
+      ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
   }
 }
