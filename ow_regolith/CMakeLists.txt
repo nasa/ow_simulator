@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
+  ow_lander
 )
 
 include(FindPkgConfig)
@@ -73,7 +74,7 @@ link_directories(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-   CATKIN_DEPENDS message_runtime ow_dynamic_terrain
+   CATKIN_DEPENDS message_runtime ow_dynamic_terrain ow_lander
 )
 
 catkin_add_env_hooks(

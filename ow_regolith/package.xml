@@ -25,6 +25,7 @@
   <build_depend>gazebo</build_depend>
   <build_depend>gazebo_ros</build_depend>
   <build_depend>ow_dynamic_terrain</build_depend>
+  <build_depend>ow_lander</build_depend>
 
   <build_export_depend>roscpp</build_export_depend>
 
@@ -32,6 +33,7 @@
   <exec_depend>gazebo</exec_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>ow_dynamic_terrain</exec_depend>
+  <exec_depend>ow_lander</exec_depend>
   <exec_depend>message_runtime</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

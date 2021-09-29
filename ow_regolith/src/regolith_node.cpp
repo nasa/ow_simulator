@@ -28,17 +28,10 @@ int main(int argc, char* argv[])
 
   auto rs = RegolithSpawner(&nh);
   
-  if (!rs.initializeRegolith()) { // may block
-    ROS_ERROR("Failed to initialize regolith model");
+  if (!rs.initialize()) {
+    ROS_ERROR("Failed to initialize regolith node");
     return 1;
   }
-
-  auto sub = nh.subscribe(
-    "/ow_dynamic_terrain/modification_differential/visual", 
-    1, 
-    &RegolithSpawner::terrainVisualModCb, 
-    &rs
-  );
 
   // DEBUG CODE
   // sleep(10.0);
