@@ -26,31 +26,31 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
-                                              10,
-                                              &FaultDetector::jointStatesFlagCb,
-                                              this);
+                                      10,
+                                      &FaultDetector::jointStatesFlagCb,
+                                      this);
   // camera
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
-                                                          10, 
-                                                          &FaultDetector::camerTriggerCb, 
-                                                          this);
+                                                10, 
+                                                &FaultDetector::camerTriggerCb, 
+                                                this);
   m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
-                                            10, 
-                                            &FaultDetector::cameraRawCb, 
-                                            this);
+                                   10, 
+                                   &FaultDetector::cameraRawCb, 
+                                   this);
   
   m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
 
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
-                                            10,
-                                            &FaultDetector::powerSOCListener,
-                                            this);
+                                  10,
+                                  &FaultDetector::powerSOCListener,
+                                  this);
   m_power_temperature_sub = nh.subscribe( "/power_system_node/battery_temperature",
-                                                    10,
-                                                    &FaultDetector::powerTemperatureListener,
-                                                    this);
+                                          10,
+                                          &FaultDetector::powerTemperatureListener,
+                                          this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
