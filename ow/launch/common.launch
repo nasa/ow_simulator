@@ -10,6 +10,7 @@
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true" />
   <arg name="use_rviz" default="true" />
+  <arg name="sim_regolith" default="false" />
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -82,9 +83,8 @@
   <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
 
   <!-- simulate material collecting in scoop and material delivery to sample dock -->
-  <node name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
+  <node if="$(arg sim_regolith)" name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
     <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
-    <!-- <param name="regolith_model_uri"     type="string" value="model://regolith_sample"/> -->
     <param name="spawn_volume_threshold" type="double" value="0.0005"/>
   </node>
 
