@@ -32,7 +32,7 @@ class FaultDetector
 {
 
 public:
-  FaultDetector(ros::NodeHandle& node_handle);
+  FaultDetector(ros::NodeHandle& nh);
   ~FaultDetector(){}
   
   FaultDetector (const FaultDetector&) = delete;

@@ -10,25 +10,32 @@ using namespace ow_lander;
 using std::string;
 // static constexpr float64 SET_FLAG = 1.0;
 
-FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
+FaultInjector::FaultInjector(ros::NodeHandle& nh)
 { 
+  string original_str = "/_original";
   //  arm pub and subs
-  const char* joint_states_str = "joint_states";
-  m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
-    &FaultInjector::jointStateCb, this);
-  m_joint_state_remapped_pub = node_handle.advertise<sensor_msgs::JointState>(joint_states_str, 10);
-  m_joint_state_flags_pub = node_handle.advertise<ow_faults_injection::JointStatesFlag>(string("/flags/") + joint_states_str, 10);
+  const char* joint_states_str = "/joint_states";
+  m_joint_state_sub = nh.subscribe( original_str + joint_states_str, 
+                                    10,
+                                    &FaultInjector::jointStateCb, 
+                                    this);
+  m_joint_state_remapped_pub = nh.advertise<sensor_msgs::JointState>(joint_states_str, 10);
+  m_joint_state_flags_pub = nh.advertise<ow_faults_injection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
-  const char* ft_sensor_dist_pitch_str = "ft_sensor_dist_pitch";
-  m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
-    10, &FaultInjector::distPitchFtSensorCb, this);
-  m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
+  const char* ft_sensor_dist_pitch_str = "/ft_sensor_dist_pitch";
+  m_dist_pitch_ft_sensor_sub = nh.subscribe( original_str + ft_sensor_dist_pitch_str,
+                                             10, 
+                                             &FaultInjector::distPitchFtSensorCb, 
+                                             this);
+  m_dist_pitch_ft_sensor_pub = nh.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
 
   //camera sub and repub for remapped topic
   const char* image_raw_str = "/StereoCamera/left/image_raw";
-  m_camera_raw_sub = node_handle.subscribe(string("/_original") + image_raw_str,
-    10, &FaultInjector::cameraFaultRepublishCb, this);
-  m_camera_trigger_remapped_pub = node_handle.advertise<sensor_msgs::Image>(image_raw_str, 10);
+  m_camera_raw_sub = nh.subscribe( original_str + image_raw_str,
+                                   10, 
+                                   &FaultInjector::cameraFaultRepublishCb, 
+                                   this);
+  m_camera_trigger_remapped_pub = nh.advertise<sensor_msgs::Image>(image_raw_str, 10);
 
   srand (static_cast <unsigned> (time(0)));
 }
@@ -42,7 +49,8 @@ void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, ui
   m_faults = faults;
 }
 
-void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg){
+void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
+{
   if (!m_cam_fault) {// if no fault
     m_camera_trigger_remapped_pub.publish(msg);
   } 
@@ -176,7 +184,8 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
-void FaultInjector::checkCamFaults(){
+void FaultInjector::checkCamFaults()
+{
   m_cam_fault = m_faults.camera_left_trigger_failure;
 }
 
@@ -184,9 +193,7 @@ template<typename group_t, typename item_t>
 int FaultInjector::findPositionInGroup(const group_t& group, const item_t& item)
 {
   auto iter = std::find(group.begin(), group.end(), item);
-  if (iter == group.end())
-    return -1;
-  return iter - group.begin();
+  return (iter == group.end()) ? -1 :  iter - group.begin();
 }
 
 bool FaultInjector::findJointIndex(const unsigned int joint, unsigned int& out_index)

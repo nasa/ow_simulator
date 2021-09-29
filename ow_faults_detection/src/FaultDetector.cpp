@@ -21,75 +21,84 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
-FaultDetector::FaultDetector(ros::NodeHandle& node_handle)
+FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
-  m_joint_states_sub = node_handle.subscribe( "/flags/joint_states",
-                                          10,
-                                          &FaultDetector::jointStatesFlagCb,
-                                          this);
+  m_joint_states_sub = nh.subscribe( "/flags/joint_states",
+                                              10,
+                                              &FaultDetector::jointStatesFlagCb,
+                                              this);
   // camera
   const char* image_str = "/StereoCamera/left/image_";
-  m_camera_original_trigger_sub = node_handle.subscribe( image_str + string("trigger"),
-    10, &FaultDetector::camerTriggerCb, this);
-  m_camera_raw_sub = node_handle.subscribe(image_str + string("raw"),
-    10, &FaultDetector::cameraRawCb, this);
+  m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
+                                                          10, 
+                                                          &FaultDetector::camerTriggerCb, 
+                                                          this);
+  m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
+                                            10, 
+                                            &FaultDetector::cameraRawCb, 
+                                            this);
   
-  m_camera_trigger_timer = node_handle.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
+  m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
 
   //  power fault publishers and subs
-  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
-                                          10,
-                                          &FaultDetector::powerSOCListener,
-                                          this);
-  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
-                                                  10,
-                                                  &FaultDetector::powerTemperatureListener,
-                                                  this);
+  m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
+                                            10,
+                                            &FaultDetector::powerSOCListener,
+                                            this);
+  m_power_temperature_sub = nh.subscribe( "/power_system_node/battery_temperature",
+                                                    10,
+                                                    &FaultDetector::powerTemperatureListener,
+                                                    this);
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_arm_fault_msg_pub = node_handle.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
-  m_camera_fault_msg_pub = node_handle.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = node_handle.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = node_handle.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
+  m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
+  m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
+  m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
 
 }
 
 // Creating Fault Messages
 template<typename fault_msg>
-void FaultDetector::setFaultsMessageHeader(fault_msg& msg){
+void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
+{
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
 }
 
 template<typename bitsetFaultsMsg, typename bitmask>
-void FaultDetector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) {
+void FaultDetector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) 
+{
   setFaultsMessageHeader(msg);
   msg.value = bm.to_ullong();
 }
 
 template<typename fault_msg>
-void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
+void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) 
+{
   setFaultsMessageHeader(msg);
   msg.value = static_cast<uint>(value);
 }
 
 // publish system messages
-void FaultDetector::publishSystemFaultsMessage(){
+void FaultDetector::publishSystemFaultsMessage()
+{
   ow_faults_detection::SystemFaults system_faults_msg;
   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
   m_system_fault_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
+void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
+{
   ow_faults_detection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time  
-    &&  m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) 
-    || diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+  if (m_cam_trigger_time <= m_cam_raw_time &&  
+    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
+    diff < ros::Duration(0) && ros::Duration(-1) < diff) {
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
     m_system_faults_bitset |= isCamExecutionError;
@@ -101,7 +110,8 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t){
 }
 
 //// Publish Power Faults Messages
-void FaultDetector::publishPowerSystemFault(){
+void FaultDetector::publishPowerSystemFault()
+{
   ow_faults_detection::PowerFaults power_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
@@ -118,20 +128,22 @@ void FaultDetector::publishPowerSystemFault(){
 
 // Listeners
 // Arm listeners
-bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags) {
+bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags) 
+{
   unsigned int index;
   auto found = findJointIndex(joint, index);
 
-  if (!found)
+  if (!found){
     return false;
-
+  }
   if (flags[index] == 1.0){
     return true;
   }
   return false;
 }
 
-void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg){
+void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg)
+{
   unsigned int index;
   
   // Populate the map once here.
@@ -146,7 +158,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlag
 
   bool armFault = false;
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
-                      J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
+                  J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
   //ant faults
   m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
   m_tilt_fault = isFlagSet( J_ANT_TILT, msg->flags);
@@ -190,7 +202,8 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 }
 
 //// Antenna Listeners
-void FaultDetector::antPublishFaultMessages(){
+void FaultDetector::antPublishFaultMessages()
+{
   ow_faults_detection::PTFaults ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
     setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
@@ -203,11 +216,13 @@ void FaultDetector::antPublishFaultMessages(){
 }
 
 //// Camera listeners
-void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg){
+void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
+{
   m_cam_trigger_time = ros::Time::now();
 }
 
-void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg){
+void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
+{
   m_cam_raw_time = ros::Time::now();
 }
 
