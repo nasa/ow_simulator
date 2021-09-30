@@ -11,6 +11,7 @@
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
 #include "ow_lander/DigLinearActionResult.h"
 #include "ow_lander/DigCircularActionResult.h"
+#include "ow_lander/DeliverActionResult.h"
 
 class RegolithSpawner
 {
@@ -29,15 +30,20 @@ public:
 
   void clearAllPsuedoForces(void);
 
+  void removeAllRegolithModels(void);
+
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
   void terrainVisualModCb(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
   // both call clearAllPsuedoForces at the end of digs
-  void digLinearResultCb(const ow_lander::DigLinearActionResult::ConstPtr &msg);
-  void digCircularResultCb(
-    const ow_lander::DigCircularActionResult::ConstPtr &msg);
+  void armDigLinearResultCb(const ow_lander::DigLinearActionResult::ConstPtr &msg);
+  void armDigCircularResultCb(const ow_lander::DigCircularActionResult::ConstPtr &msg);
+
+  // calls deleteAllRegolithModels
+  // TODO: temporary solution for model clean-up, come up with a more precise one
+  void armDeliverResultCb(const ow_lander::DeliverActionResult::ConstPtr &msg);
 
 private:
   // sum of volume displaced since last call to spawnRegolithInScoop
@@ -59,7 +65,7 @@ private:
     std::string model_name;
     std::string body_name;
   };
-  std::vector<Regolith> m_active_regolith;
+  std::vector<Regolith> m_active_models;
 
   // ROS interfaces
   std::unique_ptr<ros::NodeHandle> m_node_handle;
@@ -70,6 +76,7 @@ private:
   ros::Subscriber m_modify_terrain_visual;
   ros::Subscriber m_dig_linear_result;
   ros::Subscriber m_dig_circular_result;
+  ros::Subscriber m_deliver_result;
 };
 
 #endif // REGOLITH_SPAWNER_H

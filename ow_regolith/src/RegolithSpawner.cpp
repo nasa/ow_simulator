@@ -43,6 +43,7 @@ const static string SRV_CLEAR_WRENCH   = "/gazebo/clear_body_wrenches";
 const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
 const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
+const static string TOPIC_DELIVER_RESULT        = "/Deliver/result";
 
 template <class T>
 static bool callRosService(ros::ServiceClient &srv, T &msg) 
@@ -51,13 +52,13 @@ static bool callRosService(ros::ServiceClient &srv, T &msg)
     ROS_ERROR("Connection to service %s has been lost", 
       srv.getService().c_str()
     );
+    return false;
   }
   if (!srv.call(msg)) {
     ROS_ERROR("Failed to call service %s", srv.getService().c_str());
     return false;
-  } else {
-    return true;
-  }
+  } 
+  return true;
 }
 
 template <class T>
@@ -72,9 +73,13 @@ static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
       service_path.c_str()
     );
     return false;
-  } else {
-    return true;
-  }
+  } 
+  // DEBUG CODE
+  // if (!out_srv.exists()) {
+  //   ROS_DEBUG("Service does not exist");
+  //   return false;
+  // }
+  return true;
 }
 
 RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
@@ -113,8 +118,8 @@ bool RegolithSpawner::initialize(void)
 
   // connect to all ROS services
   ros::ServiceClient gz_get_phys_prop;
-  if (!createRosServiceClient<GetPhysicsProperties>(
-        m_node_handle, SRV_GET_PHYS_PROPS, gz_get_phys_prop, false) ||
+  if (!createRosServiceClient<GetPhysicsProperties>(m_node_handle, 
+        SRV_GET_PHYS_PROPS, gz_get_phys_prop, false) ||
       !createRosServiceClient<SpawnModel>(m_node_handle, 
         SRV_SPAWN_MODEL, m_gz_spawn_model, true) ||
       !createRosServiceClient<DeleteModel>(m_node_handle, 
@@ -148,9 +153,11 @@ bool RegolithSpawner::initialize(void)
   m_modify_terrain_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::terrainVisualModCb, this);
   m_dig_linear_result = m_node_handle->subscribe(
-    TOPIC_DIG_LINEAR_RESULT, 1, &RegolithSpawner::digLinearResultCb, this);
+    TOPIC_DIG_LINEAR_RESULT, 1, &RegolithSpawner::armDigLinearResultCb, this);
   m_dig_circular_result = m_node_handle->subscribe(
-    TOPIC_DIG_CIRCULAR_RESULT, 1, &RegolithSpawner::digCircularResultCb, this);
+    TOPIC_DIG_CIRCULAR_RESULT, 1, &RegolithSpawner::armDigCircularResultCb, this);
+  m_deliver_result = m_node_handle->subscribe(
+    TOPIC_DELIVER_RESULT, 1, &RegolithSpawner::armDeliverResultCb, this);
 
   return true;
 }
@@ -220,9 +227,35 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
   );
   // ROS_DEBUG("Duration = %4f seconds", wrench_msg.request.duration.toSec());
 
-  m_active_regolith.push_back({model_name.str(), body_name.str()});
+  m_active_models.push_back({model_name.str(), body_name.str()});
 
   return callRosService(m_gz_apply_wrench, wrench_msg);
+}
+
+
+void RegolithSpawner::clearAllPsuedoForces(void)
+{
+  for (auto &regolith : m_active_models) {
+    BodyRequest msg;
+    msg.request.body_name = regolith.body_name;
+    if (!callRosService(m_gz_clear_wrench, msg))
+      ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
+  }
+}
+
+void RegolithSpawner::removeAllRegolithModels(void)
+{
+  auto it = m_active_models.begin();
+  while (it != m_active_models.end()) {
+    DeleteModel msg;
+    msg.request.model_name = it->model_name;
+    if (callRosService(m_gz_delete_model, msg)) {
+      it = m_active_models.erase(it);
+    } else {
+      ROS_WARN("Failed to delete model %s", it->model_name.c_str());
+      ++it;
+    }
+  }
 }
 
 void RegolithSpawner::terrainVisualModCb(const modified_terrain_diff::ConstPtr& msg)
@@ -269,21 +302,17 @@ void RegolithSpawner::terrainVisualModCb(const modified_terrain_diff::ConstPtr& 
   m_previous_center = center;
 }
 
-void RegolithSpawner::digLinearResultCb(const DigLinearActionResult::ConstPtr &msg) {
-  clearAllPsuedoForces();
-}
-
-void RegolithSpawner::digCircularResultCb(const DigCircularActionResult::ConstPtr &msg)
+void RegolithSpawner::armDigLinearResultCb(const DigLinearActionResult::ConstPtr &msg)
 {
   clearAllPsuedoForces();
 }
 
-void RegolithSpawner::clearAllPsuedoForces(void)
+void RegolithSpawner::armDigCircularResultCb(const DigCircularActionResult::ConstPtr &msg)
 {
-  for (auto &regolith : m_active_regolith) {
-    BodyRequest msg;
-    msg.request.body_name = regolith.body_name;
-    if (!callRosService(m_gz_clear_wrench, msg))
-      ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
-  }
+  clearAllPsuedoForces();
+}
+
+void RegolithSpawner::armDeliverResultCb(const DeliverActionResult::ConstPtr &msg)
+{
+  removeAllRegolithModels();
 }
