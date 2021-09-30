@@ -16,7 +16,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
 from ow_dynamic_terrain.msg import modify_terrain_patch
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -35,14 +34,12 @@ def parse_args():
                                                 "current height values of the terrain"), type=str, default="add")
     return parser.parse_args()
 
-
 def scale_image_intensities(image, scale):
     h = image.shape[0]
     w = image.shape[1]
     for y in range(0, h):
         for x in range(0, w):
             image[y, x] *= scale
-
 
 def compose_modify_terrain_patch_message(image_path, position_x, position_y, position_z, orientation, z_scale,
                                          merge_method):
@@ -58,7 +55,6 @@ def compose_modify_terrain_patch_message(image_path, position_x, position_y, pos
     cv_bridge = CvBridge()
     msg.patch = cv_bridge.cv2_to_imgmsg(image)
     return msg
-
 
 def publish_image(args):
     rospy.init_node("modify_terrain_patch_pub", anonymous=True)
@@ -79,10 +75,9 @@ def publish_image(args):
     except rospy.ROSInterruptException as e:
         raise e
 
-
 if __name__ == '__main__':
     args = parse_args()
     if not os.path.exists(args.image):
-        print("image file not found")
+        rospy.logerror("image file not found")
         quit()
     publish_image(args)

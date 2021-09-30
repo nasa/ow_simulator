@@ -28,7 +28,7 @@ class LanderServiceServer(object):
     self.lander_light_srv = rospy.Service(
         'lander/light', Light, self.handle_light)
 
-    print("Lander service server has started.")
+    rospy.loginfo("Lander service server has started.")
 
     rospy.spin()
 

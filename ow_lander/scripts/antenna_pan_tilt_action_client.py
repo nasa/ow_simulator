@@ -4,14 +4,12 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from __future__ import print_function
-
 import rospy
 import actionlib
 from math import pi
 import ow_lander.msg
 
-def WrapAngle(angle):
+def wrap_angle(angle):
     """
     :param angle: (float)
     :return: (float) the angle in [-pi, pi]
@@ -21,7 +19,6 @@ def WrapAngle(angle):
     while angle < -pi:
         angle += 2 * pi
     return angle 
-
 
 def antenna_client():
  
@@ -33,8 +30,8 @@ def antenna_client():
 
     goal.pan = -0.0
     goal.tilt = 0.5
-    goal.tilt = WrapAngle(goal.tilt)
-    goal.pan = WrapAngle(goal.pan)
+    goal.tilt = wrap_angle(goal.tilt)
+    goal.pan = wrap_angle(goal.pan)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
@@ -51,7 +48,6 @@ if __name__ == '__main__':
         # publish and subscribe over ROS.
         rospy.init_node('antenna_client_py')
         result = antenna_client()
-        print("Result:", ', ',result)
-        #print("Result:", ', '.join([str(n) for n in result.sequence]))
+        rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        print("program interrupted before completion", file=sys.stderr)
+        rospy.logerror("program interrupted before completion")
