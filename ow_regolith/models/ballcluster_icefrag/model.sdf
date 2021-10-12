@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <sdf version="1.5">
-    <model name="regolith_sample">
+    <model name="ballcluster_icefrag">
         <self_collide>true</self_collide>
         <allow_auto_disable>true</allow_auto_disable>
 

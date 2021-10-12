@@ -74,11 +74,6 @@ static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
     );
     return false;
   } 
-  // DEBUG CODE
-  // if (!out_srv.exists()) {
-  //   ROS_DEBUG("Service does not exist");
-  //   return false;
-  // }
   return true;
 }
 
@@ -96,9 +91,10 @@ bool RegolithSpawner::initialize(void)
 {
   // set the maximum scoop inclination that the psuedo force can counteract
   // to be 45 degrees (excluding friction)
-  constexpr auto MAX_SCOOP_INCLINATION_DEG = 45.0f; // degrees
+  // NOTE: do not use a value that makes cosine zero!
+  constexpr auto MAX_SCOOP_INCLINATION_DEG = 70.0f; // degrees
   constexpr auto MAX_SCOOP_INCLINATION_RAD 
-    = MAX_SCOOP_INCLINATION_DEG * acos(-1) / 180; // radians
+    = MAX_SCOOP_INCLINATION_DEG * acos(-1) / 180.0f; // radians
   constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR 
     = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
 
@@ -145,10 +141,6 @@ bool RegolithSpawner::initialize(void)
   m_psuedo_force_mag 
     = model_mass * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
 
-  // DEBUG CODE
-  // ROS_DEBUG("model mass       = %2f", model_mass);
-  // ROS_DEBUG("psuedo force mag = %2f", m_psuedo_force_mag);
-
   // subscribe callbacks to ROS topics
   m_modify_terrain_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::terrainVisualModCb, this);
@@ -173,10 +165,6 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
 
   SpawnModel spawn_msg;
   
-  // DEBUG CODE
-  // ROS_DEBUG("SDF = %s", m_model_sdf.c_str());
-  // ROS_DEBUG("model_name = %s", model_name.str().c_str());
-
   spawn_msg.request.model_name                  = model_name.str();
   spawn_msg.request.model_xml                   = m_model_sdf;
   spawn_msg.request.robot_namespace             = "/regolith";
@@ -218,14 +206,6 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
   
   // negative duration means the force is applied until we clear it
   wrench_msg.request.duration          = ros::Duration(-1);
-
-  // DEBUG CODE
-  ROS_DEBUG("Psuedo force = (%2f, %2f, %2f)", 
-    wrench_msg.request.wrench.force.x,
-    wrench_msg.request.wrench.force.y,
-    wrench_msg.request.wrench.force.z
-  );
-  // ROS_DEBUG("Duration = %4f seconds", wrench_msg.request.duration.toSec());
 
   m_active_models.push_back({model_name.str(), body_name.str()});
 
@@ -283,9 +263,6 @@ void RegolithSpawner::terrainVisualModCb(const modified_terrain_diff::ConstPtr& 
   for (auto y = 0; y < rows; ++y)
     for (auto x = 0; x < cols; ++x)
       m_volume_displaced += -image_handle->image.at<float>(y, x) * pixel_area;
-
-  // DEBUG OUTPUT
-  // ROS_DEBUG("Volume displaced: %f", m_volume_displaced);
 
   if (m_volume_displaced >= m_spawn_threshold) {
     // deduct threshold from tracked volume

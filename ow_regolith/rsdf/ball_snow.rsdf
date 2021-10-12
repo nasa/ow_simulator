@@ -4,8 +4,6 @@
   # Snow bulk material sphere of variable diameter
   # Specified in SI units
 
-  # Geometry
-
   # material properties
   # values copied from https://github.com/nasa/ow_simulator/wiki/Appendices
   density          = 300.0 # kg/m^3
