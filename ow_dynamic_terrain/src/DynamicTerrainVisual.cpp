@@ -50,14 +50,18 @@ private:
     modified_terrain_diff diff_msg;
 
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-    modify_method(heightmap, msg, [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
-                  [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); }, 
-                  diff_msg);
+    auto changed = modify_method(heightmap, msg, 
+        [&terrain](int x, int y) { return getHeightInWorldCoords(terrain, x, y); },
+        [&terrain](int x, int y, float value) { setHeightFromWorldCoords(terrain, x, y, value); }, 
+        diff_msg);
 
-    terrain->updateGeometry();
-    terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
+    if (changed)
+    {
+      terrain->updateGeometry();
+      terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
 
-    m_differential_pub.publish(diff_msg);
+      m_differential_pub.publish(diff_msg);
+    }
   }
 
   void onModifyTerrainCircleMsg(const modify_terrain_circle::ConstPtr& msg) override

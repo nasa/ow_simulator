@@ -56,8 +56,6 @@ void DynamicTerrainBase::subscribe(const std::string& topic,
   m_subscribers.push_back(m_node_handle->subscribe<T>(topic_fqn, 10, callback));
 }
 
-
-
 gazebo::rendering::Heightmap* DynamicTerrainBase::getHeightmap(gazebo::rendering::ScenePtr scene)
 {
   if (!scene)

@@ -4,8 +4,7 @@
 
 // TODO:
 //   1. Suppress or prevent "ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)"
-//   2. Make diff image publish less frequently (must be done in ow_dynamic_terrain)
-//   3. Delete spawned regolith after a certain time as a temporary solution to clean-up
+//   2. Increase the minimum angle. Scoop can sometimes start receiving material while still vertical
 
 #include <ros/ros.h>
 

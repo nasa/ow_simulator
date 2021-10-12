@@ -21,7 +21,7 @@ using namespace cv;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
-void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
+bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
                                    const function<float(int, int)>& get_height_value,
                                    const function<void(int, int, float)>& set_height_value,
                                    ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -31,20 +31,20 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   if (msg->outer_radius <= 0.0f)
   {
     gzerr << "DynamicTerrain: outer_radius has to be a positive number!" << endl;
-    return;
+    return false;
   }
 
   if (msg->inner_radius > msg->outer_radius)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
-    return;
+    return false;
   }
 
   auto merge_method = MergeMethods::mergeMethodFromString(msg->merge_method != "" ? msg->merge_method : "add");
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
-    return;
+    return false;
   }
 
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
@@ -52,7 +52,7 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   if (!terrain)
   {
     gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
-    return;
+    return false;
   }
 
   auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
@@ -60,21 +60,25 @@ void TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
   CvImage differential_image;
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                        get_height_value, set_height_value, *merge_method,
-                        differential_image);
+  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
+                                       get_height_value, set_height_value, *merge_method,
+                                       differential_image);
 
-  differential_image.toImageMsg(out_diff_msg.diff);
-  out_diff_msg.position = msg->position;
-  out_diff_msg.height = image.rows / h_scale;
-  out_diff_msg.width  = image.cols / h_scale;
+  if (changed)
+  {
+    differential_image.toImageMsg(out_diff_msg.diff);
+    out_diff_msg.position = msg->position;
+    out_diff_msg.height = image.rows / h_scale;
+    out_diff_msg.width  = image.cols / h_scale;
 
+    gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+          << endl;
+  }
 
-  gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
-        << endl;
+  return changed;
 }
 
-void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
+bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
                                     const function<float(int, int)>& get_height_value,
                                     const function<void(int, int, float)>& set_height_value,
                                     ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -84,20 +88,20 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   if (msg->outer_radius_a <= 0.0f || msg->outer_radius_b <= 0.0f)
   {
     gzerr << "DynamicTerrain: outer_radius a & b has to be positive!" << endl;
-    return;
+    return false;
   }
 
   if (msg->inner_radius_a > msg->outer_radius_a || msg->inner_radius_b > msg->outer_radius_b)
   {
     gzerr << "DynamicTerrain: inner_radius can't exceed outer_radius value!" << endl;
-    return;
+    return false;
   }
 
   auto merge_method = MergeMethods::mergeMethodFromString(msg->merge_method != "" ? msg->merge_method : "add");
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
-    return;
+    return false;
   }
 
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
@@ -105,7 +109,7 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   if (!terrain)
   {
     gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
-    return;
+    return false;
   }
 
   auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
@@ -122,21 +126,26 @@ void TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   }
 
   cv_bridge::CvImage differential_image;
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                        get_height_value, set_height_value, *merge_method,
-                        differential_image);
-
-  differential_image.toImageMsg(out_diff_msg.diff);
-  out_diff_msg.position = msg->position;
-  out_diff_msg.height = image.rows / h_scale;
-  out_diff_msg.width  = image.cols / h_scale;
+  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
+                                       get_height_value, set_height_value, *merge_method,
+                                       differential_image);
 
 
-  gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
+  if (changed)
+  {
+    differential_image.toImageMsg(out_diff_msg.diff);
+    out_diff_msg.position = msg->position;
+    out_diff_msg.height = image.rows / h_scale;
+    out_diff_msg.width  = image.cols / h_scale;
+
+    gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
         << endl;
+  }
+
+  return changed;
 }
 
-void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
+bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
                                   const function<float(int, int)>& get_height_value,
                                   const function<void(int, int, float)>& set_height_value,
                                   ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -147,7 +156,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   if (!merge_method)
   {
     gzerr << "DynamicTerrain: merge method [" << msg->merge_method << "] is unsupported!" << endl;
-    return;
+    return false;
   }
 
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
@@ -155,13 +164,13 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   if (!terrain)
   {
     gzerr << "DynamicTerrain: Heightmap has no associated terrain object!" << endl;
-    return;
+    return false;
   }
 
   if (msg->patch.encoding != "32FC1")
   {
     gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
-    return;
+    return false;
   }
 
   auto center = TerrainModifier::getHeightmapPosition(heightmap, msg->position);
@@ -171,7 +180,7 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   if (image_handle == nullptr)
   {
     gzerr << "DynamicTerrain: Failed to convert ROS image" << endl;
-    return;
+    return false;
   }
 
   auto image = image_handle->image;
@@ -182,16 +191,21 @@ void TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   }
 
   cv_bridge::CvImage differential_image;
-  applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                        get_height_value, set_height_value, *merge_method,
-                        differential_image);
+  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
+                                       get_height_value, set_height_value, *merge_method,
+                                       differential_image);
 
-  differential_image.toImageMsg(out_diff_msg.diff);
-  out_diff_msg.position = msg->position;
-  out_diff_msg.height = image.rows / h_scale;
-  out_diff_msg.width  = image.cols / h_scale;
+  if (changed)
+  {
+    differential_image.toImageMsg(out_diff_msg.diff);
+    out_diff_msg.position = msg->position;
+    out_diff_msg.height = image.rows / h_scale;
+    out_diff_msg.width  = image.cols / h_scale;
 
-  gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;
+    gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;    
+  }
+
+  return changed;
 }
 
 Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point32& position)
@@ -222,19 +236,19 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   return image_handle;
 }
 
-void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias,
+bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias,
                                             const Mat& image, bool skip_zeros,
                                             const function<float(int, int)>& get_height_value,
                                             const function<void(int, int, float)>& set_height_value,
                                             const function<float(float, float)>& merge_method, 
-                                            cv_bridge::CvImage& out_differential_image)
+                                            cv_bridge::CvImage& out_diff_image)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 
   if (image.type() != CV_32FC1)
   {
     gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
-    return;
+    return false;
   }
 
   auto heightmap_size = static_cast<int>(terrain->getSize());
@@ -245,19 +259,33 @@ void TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
 
   auto diff = TerrainBrush::createZerosMatLike(image);
 
+  bool change_occurred = false;
+
   for (auto y = top; y <= bottom; ++y)
     for (auto x = left; x <= right; ++x)
     {
       auto pixel_value = image.at<float>(y - top, x - left);
       if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
         continue;
+      
       auto old_height = get_height_value(x, y);
       auto new_height = merge_method(old_height, pixel_value + z_bias);
-      set_height_value(x, y, new_height);
 
+      if (old_height == new_height) 
+        continue; // no change is necessary
+      
+      set_height_value(x, y, new_height);
       diff.at<float>(y - top, x - left) = new_height - old_height;
+      
+      // if we make it here, flag that a change has occurred
+      change_occurred = true;
     }
 
-    out_differential_image.image    = diff;
-    out_differential_image.encoding = image_encodings::TYPE_32FC1;
+    if (change_occurred)
+    {
+      out_diff_image.image    = diff;
+      out_diff_image.encoding = image_encodings::TYPE_32FC1;
+    }
+
+    return change_occurred;
 }
