@@ -195,7 +195,7 @@ int FaultInjector::findPositionInGroup(const vector<string>& group, const string
   return (iter == group.end()) ? -1 :  iter - group.begin();
 }
 
-bool FaultInjector::findJointIndex(const unsigned int joint, unsigned int& out_index)
+bool FaultInjector::findJointIndex(unsigned int joint, unsigned int& out_index)
 {
   if(joint >= m_joint_state_indices.size())
     return false;
