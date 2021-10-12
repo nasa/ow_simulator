@@ -34,7 +34,7 @@ class FaultInjector
 
 public:
   FaultInjector(ros::NodeHandle& node_handle);
-  ~FaultInjector(){}
+  ~FaultInjector() = default;
 
   void faultsConfigCb(ow_faults_injection::FaultsConfig& faults, uint32_t level);
 
