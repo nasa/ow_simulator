@@ -142,7 +142,7 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags)
   return false;
 }
 
-void FaultDetector::jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg)
+void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
 {
   unsigned int index;
   

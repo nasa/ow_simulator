@@ -20,7 +20,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& nh)
                                     &FaultInjector::jointStateCb, 
                                     this);
   m_joint_state_remapped_pub = nh.advertise<sensor_msgs::JointState>(joint_states_str, 10);
-  m_joint_state_flags_pub = nh.advertise<ow_faults_injection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
+  m_joint_state_flags_pub = nh.advertise<ow_faults_detection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
   const char* ft_sensor_dist_pitch_str = "/ft_sensor_dist_pitch";
   m_dist_pitch_ft_sensor_sub = nh.subscribe( original_str + ft_sensor_dist_pitch_str,
@@ -58,7 +58,7 @@ void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  ow_faults_injection::JointStatesFlag flag_msg;
+  ow_faults_detection::JointStatesFlag flag_msg;
   flag_msg.header.stamp = ros::Time::now();
   flag_msg.header.frame_id = "world";
 

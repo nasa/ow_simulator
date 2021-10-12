@@ -12,8 +12,7 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <ow_faults_injection/FaultsConfig.h>
-#include <ow_faults_injection/JointStatesFlag.h>
+#include <ow_faults_detection/JointStatesFlag.h>
 #include "ow_faults_detection/SystemFaults.h"
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
@@ -77,7 +76,7 @@ public:
 private:
   // COMPONENT FUNCTIONS
   // arm functions
-  void jointStatesFlagCb(const ow_faults_injection::JointStatesFlagConstPtr& msg);
+  void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<double>& flags);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
