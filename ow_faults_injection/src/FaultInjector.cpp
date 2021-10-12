@@ -189,7 +189,7 @@ void FaultInjector::checkCamFaults()
   m_cam_fault = m_faults.camera_left_trigger_failure;
 }
 
-int FaultInjector::findPositionInGroup(const vector<string>& group, const string& item);
+int FaultInjector::findPositionInGroup(const std::vector<string>& group, const string& item)
 {
   auto iter = std::find(group.begin(), group.end(), item);
   return (iter == group.end()) ? -1 :  iter - group.begin();

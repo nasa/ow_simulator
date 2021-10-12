@@ -58,7 +58,7 @@ private:
   int findPositionInGroup(const std::vector<std::string>& group, const std::string& item);
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
-  bool findJointIndex(const unsigned int joint, unsigned int& out_index);
+  bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
   //camera function
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
