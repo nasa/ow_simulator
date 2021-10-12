@@ -25,7 +25,7 @@ def callback(msg):
 
     image = cv_bridge.imgmsg_to_cv2(msg.patch)
     if msg.patch.encoding == "64FC1" or msg.patch.encoding == "32FC1":
-        print("Converting to a displayable format ...")
+        rospy.loginfo("Converting to a displayable format ...")
         image = convert_tiff_to_grayscale(image)
     cv2.imshow("view", image)
     cv2.waitKey()
