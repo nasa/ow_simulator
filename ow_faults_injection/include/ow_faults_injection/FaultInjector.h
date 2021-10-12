@@ -55,8 +55,7 @@ private:
   void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
-  template<typename group_t, typename item_t>
-  int findPositionInGroup(const group_t& group, const item_t& item);
+  int findPositionInGroup(const std::vector<std::string>& group, const std::string& item);
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
