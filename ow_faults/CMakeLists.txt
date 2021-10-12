@@ -3,9 +3,6 @@ project(ow_faults)
 
 set(EXEC_NAME faults)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++14)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -17,6 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 )
+
+include(FindPkgConfig)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(GAZEBO gazebo)
+  pkg_check_modules(OGRE OGRE)
+  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -56,6 +60,9 @@ add_message_files(
   FILES
   SystemFaults.msg
   ArmFaults.msg
+  PowerFaults.msg
+  PTFaults.msg
+  CamFaults.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -123,12 +130,26 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ow_faults.cpp
-# )
+add_library(${PROJECT_NAME}_joints
+  src/JointsFaults.cpp
+)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(${PROJECT_NAME}_joints
+   ${catkin_LIBRARIES}
+   ${GAZEBO_LIBRARIES}
+)
+
+link_directories(
+  ${Boost_LIBRARY_DIR}
+  ${catkin_LIBRARY_DIRS}
+  ${GAZEBO_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

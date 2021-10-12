@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ow_ephemeris)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -59,8 +56,8 @@ download_file(
   91e21181f6a96edbfeb1ff5a419ce095
 )
 download_file(
-  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/jup310.bsp
-  be5c27b3c2d30cefbcee218ff5711807
+  https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/jup365.bsp
+  9dcee11a333945310db8b76eb695fc9c
 )
 download_file(
   https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/sat427.bsp

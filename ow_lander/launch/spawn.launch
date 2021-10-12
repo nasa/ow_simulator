@@ -3,6 +3,7 @@
 
   <arg name="debug" default="false" />
   <arg name="use_gui" default="false" />
+  <arg name="use_rviz" default="true" />
 
   <!-- Initial lander pose arguments -->
   <arg name="init_x" default="0" />
@@ -90,12 +91,17 @@
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
-  <include file="$(find ow_lander)/launch/moveit_rviz.launch">
+  <include file="$(find ow_lander)/launch/moveit_rviz.launch" if="$(arg use_rviz)">
     <arg name="rviz_config" value="$(find ow_lander)/config/moveit.rviz"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- == launch the path planner node ============== -->
-  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" />
-
+  <!-- == launch the services servers ============== -->
+  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen" ></node>
+  <node pkg="ow_lander" name="lander_service_server" type="lander_service_server.py" output="screen" ></node>
+  
+  <!-- == launch the action servers ============== -->
+  <arg name="node_start_delay" default="10.0" />  
+  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>

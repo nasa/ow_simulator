@@ -32,22 +32,16 @@ uniform vec4 pssmSplitPoints;
 uniform sampler2DShadow shadowMap0;
 uniform sampler2DShadow shadowMap1;
 uniform sampler2DShadow shadowMap2;
-uniform float inverseShadowmapSize0;
-uniform float inverseShadowmapSize1;
-uniform float inverseShadowmapSize2;
-in vec4 lsPos0;
-in vec4 lsPos1;
-in vec4 lsPos2;
+uniform float inverseShadowmapSize[3];
+in vec4 lsPos[3];
 
-uniform vec4 vsSpotlightPos0;
-uniform vec4 vsSpotlightPos1;
-uniform vec4 vsSpotlightDir0;
-uniform vec4 vsSpotlightDir1;
+uniform float spotlightIntensityScale[2];
+uniform vec4 vsLightPos[3];
+uniform vec4 vsLightDir[3];
+uniform vec4 spotlightParams[3];
 uniform vec4 spotlightColor0;
 uniform vec4 spotlightAtten0;
-uniform vec4 spotlightParams0;
-in vec4 spotlightTexCoord0;
-in vec4 spotlightTexCoord1;
+in vec4 spotlightTexCoord[2];
 
 uniform samplerCube irradianceMap;
 uniform sampler2D spotlightMap;
@@ -91,14 +85,14 @@ float calcDepthShadow(sampler2DShadow shadowMap, vec4 uv, float invShadowMapSize
     vec2( -0.491072397165, 0.263378713033 ), 
     vec2( 0.0606228609526, 0.851023996335 )
   );
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < poissonDisk.length(); i++)
   {
     vec4 newUV = uv;
     newUV.xy += poissonDisk[i] * invShadowMapSize;
     newUV = newUV / newUV.w;
     shadow += texture(shadowMap, newUV.xyz);
   }
-  shadow /= 9.0;
+  shadow /= poissonDisk.length();
 
   return smoothstep(0.0, 1.0, shadow);
 }
@@ -119,7 +113,7 @@ float calcPSSMDepthShadow(
   {
     shadow = calcDepthShadow(shadowMap1, lsPos1, invShadowmapSize1);
   }
-  else
+  else if (camDepth <= pssmSplitPoints.z)
   {
     shadow = calcDepthShadow(shadowMap2, lsPos2, invShadowmapSize2);
   }
@@ -143,7 +137,7 @@ float calcPSSMDepthShadowDebug(
 void spotlight(in vec3 vsVecToLight,
                in vec3 vsNegLightDir,  // Light is pointed in this direction
                in vec4 attenParams,
-               in vec3 spotParams,
+               in vec4 spotParams,
                in vec3 color,
                in vec4 texCoord,
                in vec3 vsDirToEye,
@@ -152,6 +146,13 @@ void spotlight(in vec3 vsVecToLight,
                inout vec3 diffuse,
                inout vec3 specular)
 {
+  // If this is not a spotlight or a spotlight isn't applied to this object
+  // because it is too far away, spotParams will be set to 1,0,0,1
+  if (spotParams == vec4(1, 0, 0, 1))
+  {
+    return;
+  }
+
   float lightD = length(vsVecToLight);
   vec3 vsDirToLight = vsVecToLight / lightD;
   vec3 vsNegLightDirNorm = normalize(vsNegLightDir);
@@ -184,8 +185,8 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
 
   // shadows
   float shadow = calcPSSMDepthShadow(shadowMap0, shadowMap1, shadowMap2,
-                                     lsPos0, lsPos1, lsPos2,
-                                     inverseShadowmapSize0, inverseShadowmapSize1, inverseShadowmapSize2,
+                                     lsPos[0], lsPos[1], lsPos[2],
+                                     inverseShadowmapSize[0], inverseShadowmapSize[1], inverseShadowmapSize[2],
                                      pssmSplitPoints, -vsPos.z);
 
   // Only the highest parts of bumps should be lit when sun is at glancing angles
@@ -225,12 +226,12 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   // Phong specular model we are currently using.
   vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
   vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
-  spotlight(vsSpotlightPos0.xyz - vsPos, -vsSpotlightDir0.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord0,
-            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
-  spotlight(vsSpotlightPos1.xyz - vsPos, -vsSpotlightDir1.xyz, spotlightAtten0,
-            spotlightParams0.xyz, spotlightColor0.rgb, spotlightTexCoord1,
-            vsDirToEye, vsDetailNormal, specular_power, diffuse, specular);
+  for (int i=0; i<2; i++) {
+    spotlight(vsLightPos[i+1].xyz - vsPos, -vsLightDir[i+1].xyz, spotlightAtten0,
+              spotlightParams[1+1], spotlightColor0.rgb * spotlightIntensityScale[i],
+              spotlightTexCoord[i], vsDirToEye, vsDetailNormal, specular_power,
+              diffuse, specular);
+  }
 }
 
 void main()

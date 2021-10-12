@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="gzclient" default="true"/>
+
+    <include file="$(find ow)/launch/atacama_y1a.launch">
+        <arg name="gazebo_launch_file" default="$(find ow_sim_tests)/launch/empty_world_inject_fps_monitor_gui_plugin.launch"/>
+        <arg name="rqt_gui" value="false"/>
+        <arg name="use_rviz" value="false"/>
+    </include>
+
+    <test test-name="minimum_fps" pkg="ow_sim_tests" type="test_minimum_fps.py">
+        <param name="min_fps" value="45.0"/>
+        <param name="warmup_period" value="10.0" />  <!-- how much to wait before observing avg fps -->
+        <param name="test_duration" value="20.0"/>  <!-- total test duration, must be larger than warmup period -->
+    </test>
+
+</launch>

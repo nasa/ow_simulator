@@ -404,6 +404,18 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+  <gazebo reference="j_dist_pitch">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo>
+    <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+      <jointName>j_dist_pitch</jointName>
+      <topicName>/_original/ft_sensor_dist_pitch</topicName>
+      <updateRate>200</updateRate>  <!-- Barret F/T sensor runs at 250 Hz and has max update rate of 2500 Hz
+                                         However, the gazebo_ros_ft_sensor plugin is only able to run at a max of 200 -->
+      <gaussianNoise>0.2</gaussianNoise> <!-- estimated based on a profile of the barret ft sensor -->
+    </plugin>
+  </gazebo>
   <link name="l_hand">
     <inertial>
       <origin
@@ -492,6 +504,7 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+
   <link name="l_scoop">
     <inertial>
       <origin
@@ -521,13 +534,67 @@
           rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
       </material>
     </visual>
+    <!-- scoop bottom -->
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin 
+        xyz="0.030115 0 0.076505"
+        rpy="0 -0.0349040838 0" />
       <geometry>
-        <mesh
-          filename="package://ow_lander/meshes/l_scoop.STL" />
+          <box size="0.1273 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop backing (flat) -->
+    <collision>
+      <origin 
+        xyz="-0.032195 0 0.036854"
+        rpy="0 -1.60570041059 0" />
+      <geometry>
+          <box size="0.0749 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop left sidewall -->
+    <collision>
+      <origin 
+        xyz="0.025676 -0.0409 0.038875"
+        rpy="1.5708 -0.0349040838 0" />
+      <geometry>
+          <box size="0.1158 0.0749 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop right sidewall -->
+    <collision>
+      <origin 
+        xyz="0.025676 0.0409 0.038875"
+        rpy="1.5708 -0.0349040838 0" />
+      <geometry>
+          <box size="0.1158 0.0749 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop top -->
+    <collision>
+      <origin 
+        xyz="0.000264 0 0.000512"
+        rpy="0 -0.0349040838 0" />
+      <geometry>
+          <box size="0.06234 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop wide tip -->
+    <collision>
+      <origin 
+        xyz="0.090908 0 0.079513"
+        rpy="0 -0.254542712 0" />
+      <geometry>
+          <box size="0.008122 0.0818 0.002"/>
+      </geometry>
+    </collision>
+    <!-- scoop wide tip -->
+    <collision>
+      <origin 
+        xyz="0.092572 0 0.079946"
+        rpy="0 -0.254542712 0" />
+      <geometry>
+          <box size="0.01156 0.04346 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -700,7 +767,7 @@
     <child link="l_grinder" />
     <axis xyz="-1 0 0" />
     <dynamics damping="1" />
-    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="0.1" />
+    <limit effort="1.0" velocity="0.1" lower="-3.14" upper="3.14"/>
   </joint>
   <transmission name="grinder_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -867,6 +934,10 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+
+    <plugin name="ow_faults_joints" filename="libow_faults_joints.so">
       <robotNamespace>/</robotNamespace>
     </plugin>
 

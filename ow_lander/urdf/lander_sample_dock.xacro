@@ -33,13 +33,13 @@
       <collision>
         <origin rpy="0 0 0" xyz="0 0 0.025"/>
         <geometry>
-          <box size="0.3 0.05 0.095"/>
+          <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
         </geometry>
       </collision>
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0.025"/>
         <geometry>
-          <box size="0.3 0.05 0.095"/>
+          <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
         </geometry>
         <material name="">
           <color rgba="0.7 0.7 0.7 1" />
@@ -49,9 +49,9 @@
         <origin rpy="0 0 0" xyz="0 0 0.05"/>
         <mass value="0.01"/>
         <inertia
-            ixx="${sample_dock_mass / 12.0 * (0.1*0.1 + 0.06*0.06)}" ixy="0.0" ixz="0.0"
-            iyy="${sample_dock_mass / 12.0 * (0.06*0.06 + 0.1*0.1)}" iyz="0.0"
-            izz="${sample_dock_mass / 12.0 * (0.06*0.06 + 0.06*0.06)}"/>
+            ixx="${sample_dock_mass * 0.000001}" ixy="0.0" ixz="0.0"
+            iyy="${sample_dock_mass * 0.000006}" iyz="0.0"
+            izz="${sample_dock_mass * 0.000006}"/>
       </inertial>
     </link>
 

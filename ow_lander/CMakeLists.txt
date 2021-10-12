@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(roslaunch)
 
+find_package(catkin REQUIRED COMPONENTS actionlib_msgs)
+
 add_service_files(
   FILES
   DeliverSample.srv
@@ -18,20 +20,44 @@ add_service_files(
   DigLinear.srv
   Grind.srv
   GuardedMove.srv
+  Light.srv
   PublishTrajectory.srv
+  Stop.srv
   Stow.srv
   Unstow.srv
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES Unstow.action
+  FILES Stow.action
+  FILES Deliver.action
+  FILES DigLinear.action
+  FILES DigCircular.action
+  FILES Grind.action
+  FILES GuardedMove.action
+  FILES AntennaPanTilt.action
+)
+
+
 add_message_files(
   FILES
-  GuardedMoveResult.msg
+  GuardedMoveFinalResult.msg
 )
+
+
 
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  actionlib_msgs
+  
+)
+
+
+catkin_package(
+  CATKIN_DEPENDS actionlib_msgs
 )
 
 catkin_package(

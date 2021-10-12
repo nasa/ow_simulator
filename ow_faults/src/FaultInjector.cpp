@@ -8,16 +8,51 @@
 using namespace std;
 using namespace ow_lander;
 
-FaultInjector::FaultInjector(ros::NodeHandle node_handle)
-{
-  m_joint_state_sub = node_handle.subscribe("/_original/joint_states", 10, &FaultInjector::jointStateCb, this);
-  // 'new' joint states topic where fault data is now publishes on
-  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>("/joint_states", 10); 
+constexpr std::bitset<10> FaultInjector::isCamExecutionError;
+constexpr std::bitset<10> FaultInjector::isPanTiltExecutionError;
+constexpr std::bitset<10> FaultInjector::isArmExecutionError;
+constexpr std::bitset<10> FaultInjector::isPowerSystemFault;
 
-  // topic for system fault messages, see Faults.msg
-  m_fault_status_pub = node_handle.advertise<ow_faults::SystemFaults>("/system_faults_status", 10); 
-  // topic for arm fault status, see ArmFaults.msg
-  m_arm_fault_status_pub = node_handle.advertise<ow_faults::ArmFaults>("/arm_faults_status", 10); 
+constexpr std::bitset<3> FaultInjector::islowVoltageError;
+constexpr std::bitset<3> FaultInjector::isCapLossError;
+constexpr std::bitset<3> FaultInjector::isThermalError;
+
+FaultInjector::FaultInjector(ros::NodeHandle& node_handle)
+{
+  //  arm pub and subs
+  const char* joint_states_str = "joint_states";
+  m_joint_state_sub = node_handle.subscribe(string("/_original/") + joint_states_str, 10,
+    &FaultInjector::jointStateCb, this);
+  m_joint_state_pub = node_handle.advertise<sensor_msgs::JointState>(joint_states_str, 10);
+
+  auto ft_sensor_dist_pitch_str = "ft_sensor_dist_pitch";
+  m_dist_pitch_ft_sensor_sub = node_handle.subscribe(string("/_original/") + ft_sensor_dist_pitch_str,
+    10, &FaultInjector::distPitchFtSensorCb, this);
+  m_dist_pitch_ft_sensor_pub = node_handle.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
+
+  auto image_trigger_str = "/StereoCamera/left/image_trigger";
+  m_camera_trigger_sub = node_handle.subscribe(string("/_original") + image_trigger_str,
+    10, &FaultInjector::cameraTriggerCb, this);
+  m_camera_trigger_remapped_pub = node_handle.advertise<std_msgs::Empty>(image_trigger_str, 10);
+
+  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  m_antenna_fault_msg_pub = node_handle.advertise<ow_faults::PTFaults>("/faults/pt_faults_status", 10);
+  m_arm_fault_msg_pub = node_handle.advertise<ow_faults::ArmFaults>("/faults/arm_faults_status", 10);
+  m_camera_fault_msg_pub = node_handle.advertise<ow_faults::CamFaults>("/faults/cam_faults_status", 10);
+  m_power_fault_msg_pub = node_handle.advertise<ow_faults::PowerFaults>("/faults/power_faults_status", 10);
+  m_system_fault_msg_pub = node_handle.advertise<ow_faults::SystemFaults>("/faults/system_faults_status", 10);
+
+  //power fault publishers and subs
+  m_power_soc_sub = node_handle.subscribe("/power_system_node/state_of_charge",
+                                          10,
+                                          &FaultInjector::powerSOCListener,
+                                          this);
+  m_power_temperature_sub = node_handle.subscribe("/power_system_node/battery_temperature",
+                                                  10,
+                                                  &FaultInjector::powerTemperatureListener,
+                                                  this);
+
+  srand (static_cast <unsigned> (time(0)));
 }
 
 void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level)
@@ -29,18 +64,78 @@ void FaultInjector::faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t lev
   m_faults = faults;
 }
 
-void FaultInjector::setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value) {
-  // for now only arm execution errors
+// Creating Fault Messages
+template<typename fault_msg>
+void FaultInjector::setFaultsMessageHeader(fault_msg& msg){
   msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "/world";
-  msg.value = value; //should be ARM EXECUTION ERROR for now
+  msg.header.frame_id = "world";
 }
 
-void FaultInjector::setArmFaultMessage(ow_faults::ArmFaults& msg, int value) {
-  // for now only arm execution errors
-  msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = "/world";
-  msg.value = value; //should be HARDWARE for now
+template<typename bitsetFaultsMsg, typename bitmask>
+void FaultInjector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) {
+  setFaultsMessageHeader(msg);
+  msg.value = bm.to_ullong();
+}
+
+template<typename fault_msg>
+void FaultInjector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) {
+  setFaultsMessageHeader(msg);
+  msg.value = static_cast<uint>(value);
+}
+
+void FaultInjector::cameraTriggerCb(const std_msgs::Empty& msg){
+  if (!m_cam_fault) {// if no fault
+    std_msgs::Empty msg;
+    m_camera_trigger_remapped_pub.publish(msg);
+  }
+}
+
+void FaultInjector::publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, bool torque, float& m_faultValue, ros::Publisher& m_publisher) {
+  std_msgs::Float64 out_msg;
+
+  if (!(encoder || torque)) {
+    m_faultValue = msg.data;
+  }
+  out_msg.data = m_faultValue;
+  m_publisher.publish(out_msg);
+}
+
+float FaultInjector::getRandomFloatFromRange( float min_val, float max_val){
+  return min_val + (max_val - min_val) * (rand() / static_cast<float>(RAND_MAX));
+}
+
+void FaultInjector::publishPowerSystemFault(){
+  ow_faults::PowerFaults power_faults_msg;
+  //update if fault
+  if (m_temperature_fault || m_soc_fault) {
+    //system
+    m_system_faults_bitset |= isPowerSystemFault;
+    //power
+    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isPowerSystemFault;
+  }
+  publishSystemFaultsMessage();
+  m_power_fault_msg_pub.publish(power_faults_msg);
+}
+
+void FaultInjector::powerTemperatureListener(const std_msgs::Float64& msg)
+{
+  m_temperature_fault = msg.data > THERMAL_MAX;
+  publishPowerSystemFault();
+}
+
+void FaultInjector::powerSOCListener(const std_msgs::Float64& msg)
+{
+  float newSOC = msg.data;
+  if (isnan(m_last_SOC)){
+    m_last_SOC = newSOC;
+  }
+  m_soc_fault = ((newSOC <= SOC_MIN)  ||
+        (!isnan(m_last_SOC) &&
+        ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+  publishPowerSystemFault();
+  m_last_SOC = newSOC;
 }
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
@@ -56,100 +151,144 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   sensor_msgs::JointState output(*msg);
+
   ow_faults::SystemFaults system_faults_msg;
   ow_faults::ArmFaults arm_faults_msg;
-  SystemFaults sf = ArmExecutionError;
-  ArmFaults af = Hardware;
+  ow_faults::PTFaults pt_faults_msg;
+  ow_faults::CamFaults camera_faults_msg;
+
+  ComponentFaults hardwareFault =  ComponentFaults::Hardware;
 
   // Set failed sensor values to 0
   unsigned int index;
-  if (m_faults.ant_pan_encoder_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-  }
-  if (m_faults.ant_pan_torque_sensor_failure && findJointIndex(J_ANT_PAN, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
+
+  // checkArmFaults();
+  // checkAntFaults();
+  checkCamFaults();
+
+  if (m_ant_fault){
+    m_system_faults_bitset |= isPanTiltExecutionError;
+    setComponentFaultsMessage(pt_faults_msg, hardwareFault);
+  } else {
+    m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
 
-  if (m_faults.ant_tilt_encoder_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-  }
-  if (m_faults.ant_tilt_torque_sensor_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-  }
-
+  //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.shou_yaw_torque_sensor_failure && findJointIndex(J_SHOU_YAW, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.shou_yaw_effort_failure && findJointIndex(J_SHOU_YAW, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.shou_pitch_torque_sensor_failure && findJointIndex(J_SHOU_PITCH, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.shou_pitch_effort_failure && findJointIndex(J_SHOU_PITCH, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.prox_pitch_torque_sensor_failure && findJointIndex(J_PROX_PITCH, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.prox_pitch_effort_failure && findJointIndex(J_PROX_PITCH, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.dist_pitch_torque_sensor_failure && findJointIndex(J_DIST_PITCH, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.dist_pitch_effort_failure && findJointIndex(J_DIST_PITCH, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.hand_yaw_torque_sensor_failure && findJointIndex(J_HAND_YAW, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.hand_yaw_effort_failure && findJointIndex(J_HAND_YAW, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
-    output.position[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+    output.position[index]  = FAULT_ZERO_TELEMETRY;
   }
-  if (m_faults.scoop_yaw_torque_sensor_failure && findJointIndex(J_SCOOP_YAW, index)) {
-    output.effort[index] = 0.0;
-    setSytemFaultsMessage(system_faults_msg, sf);
-    setArmFaultMessage(arm_faults_msg, af);
+  if (m_faults.scoop_yaw_effort_failure && findJointIndex(J_SCOOP_YAW, index)) {
+    output.effort[index]  = FAULT_ZERO_TELEMETRY;
+  }
+
+  if (m_arm_fault) {
+    m_system_faults_bitset |= isArmExecutionError;
+    setComponentFaultsMessage(arm_faults_msg, hardwareFault);
+  } else {
+    m_system_faults_bitset &= ~isArmExecutionError;
+  }
+
+  if (m_cam_fault){
+    m_system_faults_bitset |= isCamExecutionError;
+    setComponentFaultsMessage(camera_faults_msg, hardwareFault);
+  } else {
+    m_system_faults_bitset &= ~isCamExecutionError;
   }
 
   m_joint_state_pub.publish(output);
-  m_fault_status_pub.publish(system_faults_msg);
-  m_arm_fault_status_pub.publish(arm_faults_msg);
+  publishSystemFaultsMessage();
+
+  m_arm_fault_msg_pub.publish(arm_faults_msg);
+  m_antenna_fault_msg_pub.publish(pt_faults_msg);
+  m_camera_fault_msg_pub.publish(camera_faults_msg);
+}
+
+void FaultInjector::publishSystemFaultsMessage(){
+  ow_faults::SystemFaults system_faults_msg;
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  m_system_fault_msg_pub.publish(system_faults_msg);
+}
+
+void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
+{
+  if (!m_faults.groups.ft_sensor_faults.enable) {
+    m_dist_pitch_ft_sensor_pub.publish(msg);
+    return;
+  }
+
+  auto out_msg = msg;
+
+  if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
+    out_msg.wrench.force = geometry_msgs::Vector3();
+    out_msg.wrench.torque = geometry_msgs::Vector3();
+  }
+
+  auto mean = m_faults.groups.ft_sensor_faults.signal_bias_failure;
+  auto stddev = m_faults.groups.ft_sensor_faults.signal_noise_failure;
+  // TODO: consider optimizing this by re-creating the distribution only when
+  // mean and stddev values change
+  auto normal_dist = std::normal_distribution<float>(mean, stddev);
+  out_msg.wrench.force.x += normal_dist(m_random_generator);
+  out_msg.wrench.force.y += normal_dist(m_random_generator);
+  out_msg.wrench.force.z += normal_dist(m_random_generator);
+  out_msg.wrench.torque.x += normal_dist(m_random_generator);
+  out_msg.wrench.torque.y += normal_dist(m_random_generator);
+  out_msg.wrench.torque.z += normal_dist(m_random_generator);
+
+  m_dist_pitch_ft_sensor_pub.publish(out_msg);
+}
+
+void FaultInjector::checkArmFaults() {
+  m_arm_fault = (m_faults.shou_yaw_encoder_failure || m_faults.shou_yaw_effort_failure ||
+                m_faults.shou_pitch_encoder_failure || m_faults.shou_pitch_effort_failure ||
+                m_faults.prox_pitch_encoder_failure || m_faults.prox_pitch_effort_failure ||
+                m_faults.dist_pitch_encoder_failure || m_faults.dist_pitch_effort_failure ||
+                m_faults.hand_yaw_encoder_failure || m_faults.hand_yaw_effort_failure ||
+                m_faults.scoop_yaw_encoder_failure || m_faults.scoop_yaw_effort_failure);
+}
+
+void FaultInjector::checkAntFaults(){
+  m_ant_fault = (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure ||
+                m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure);
+}
+
+void FaultInjector::checkCamFaults(){
+  m_cam_fault = m_faults.camera_left_trigger_failure ;
 }
 
 template<typename group_t, typename item_t>

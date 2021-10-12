@@ -11,6 +11,7 @@ import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
+from ow_faults.msg import SystemFaults
 
 from ow_lander.srv import *
 from ow_lander.msg import *
@@ -22,79 +23,98 @@ import activity_grind
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from ground_detection import GroundDetector
 
+ARM_EXECUTION_ERROR = 4
 
 class PathPlanningCommander(object):
 
   def __init__(self):
     super(PathPlanningCommander, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
-    self.arm_move_group = moveit_commander.MoveGroupCommander("arm", wait_for_servers=10.0)
-    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=10.0)
-    self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=10.0)
+    self.arm_move_group = moveit_commander.MoveGroupCommander("arm", wait_for_servers=20.0)
+    self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=20.0)
+    self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=20.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
+    self.arm_fault = False
 
+  # === SERVICE ACTIVITIES - Stow =============================
+  def handle_stop(self, req):
+    """
+    :type req: class 'ow_lander.srv._Stow.StopRequest'
+    """
+    self.log_started("Stop")
+    self.trajectory_async_executer.stop()
+    return self.log_finish_and_return("Stop")
+    
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stow(self, req):
     """
     :type req: class 'ow_lander.srv._Stow.StowRequest'
     """
-    print("Stow arm activity started")
+    self.log_started("Stow")
     goal = self.arm_move_group.get_named_target_values("arm_stowed")
-    self.arm_move_group.go(goal, wait=True)
-    self.arm_move_group.stop()
-    print("Stow arm activity completed")
-    return True, "Done"
+    self.arm_move_group.set_joint_value_target(goal)
+
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory, 
+                                          feedback_cb=None)
+    self.trajectory_async_executer.wait()
+    return self.log_finish_and_return("Stow")
+
 
   # === SERVICE ACTIVITIES - Unstow =============================
   def handle_unstow(self, req):
     """
     :type req: class 'ow_lander.srv._Unstow.UnstowRequest'
     """
-    print("Unstow arm activity started")
+    self.log_started("Unstow")
     goal = self.arm_move_group.get_named_target_values("arm_unstowed")
-    self.arm_move_group.go(goal, wait=True)
-    self.arm_move_group.stop()
-    print("Unstow arm activity completed")
-    return True, "Done"
+    self.arm_move_group.set_joint_value_target(goal)
+    plan = self.arm_move_group.plan()
+    if len(plan.joint_trajectory.points) == 0:
+      return False
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
+                                          feedback_cb=None)
+    self.trajectory_async_executer.wait()
+    return self.log_finish_and_return("Unstow")
 
   # === SERVICE ACTIVITIES - deliver sample =============================
   def handle_deliver_sample(self, req):
     """
     :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
     """
-    print("Deliver Sample arm activity started")
+    self.log_started("Deliver Sample")
     deliver_sample_args = activity_deliver_sample.arg_parsing(req)
     success = activity_deliver_sample.deliver_sample(
         self.arm_move_group, deliver_sample_args)
-    print("Deliver Sample arm activity completed")
-    return success, "Done"
+    return self.log_finish_and_return("Deliver Sample", success)
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
   def handle_dig_circular(self, req):
     """
     :type req: class 'ow_lander.srv._DigCircular.DigCircularRequest'
     """
-    print("Dig Cicular arm activity started")
+    self.log_started("Dig Cicular")
     dig_circular_args = activity_full_digging_traj.arg_parsing_circ(req)
     success = activity_full_digging_traj.dig_circular(
         self.arm_move_group,
         self.limbs_move_group,
         dig_circular_args,
         self.switch_controllers)
-    print("Dig Circular arm activity completed")
-    return success, "Done"
+    return self.log_finish_and_return("Dig Circular", success)
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
   def handle_dig_linear(self, req):
     """
     :type req: class 'ow_lander.srv._DigLinear.DigLinearRequest'
     """
+    self.log_started("Dig Linear")
     dig_linear_args = activity_full_digging_traj.arg_parsing_lin(req)
     success = activity_full_digging_traj.dig_linear(
         self.arm_move_group,
         dig_linear_args)
-    print "Dig linear arm motion executed!"
-    return success, "Done"
+    return self.log_finish_and_return("Dig Linear", success)
 
   def switch_controllers(self, start_controller, stop_controller):
     rospy.wait_for_service('/controller_manager/switch_controller')
@@ -104,8 +124,8 @@ class PathPlanningCommander(object):
           '/controller_manager/switch_controller', SwitchController)
       success = switch_controller(
           [start_controller], [stop_controller], 2, False, 1.0)
-    except rospy.ServiceException, e:
-      print("switch_controllers error: %s" % e)
+    except rospy.ServiceException as e:
+      rospy.logerror("switch_controllers error: %s" % e)
     finally:
       # This sleep is a workaround for "start point deviates from current robot
       # state" error on dig_circular trajectory execution.
@@ -117,7 +137,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._Grind.GrindRequest'
     """
-    print("Grinde arm activity started")
+    self.log_started("Grind")
     grind_args = activity_grind.arg_parsing(req)
     success = self.switch_controllers('grinder_controller', 'arm_controller')
     if not success:
@@ -126,8 +146,8 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    print("Grinde arm activity completed")
-    return success, "Done"
+    
+    return self.log_finish_and_return("Grind", success)
 
   def handle_guarded_move_done(self, state, result):
     """
@@ -144,6 +164,7 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
+
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
@@ -152,7 +173,7 @@ class PathPlanningCommander(object):
     """
     :type req: class 'ow_lander.srv._GuardedMove.GuardedMoveRequest'
     """
-    print("Guarded Move arm activity started")
+    self.log_started("Guarded Move")
     guarded_move_args = activity_guarded_move.arg_parsing(req)
     success = activity_guarded_move.pre_guarded_move(
         self.arm_move_group, guarded_move_args)
@@ -164,17 +185,22 @@ class PathPlanningCommander(object):
       return False, "guarded_move_plan failed"
     self.ground_detector.reset()
     self.trajectory_async_executer.execute(plan.joint_trajectory,
-                                           done_cb=self.handle_guarded_move_done,
-                                           active_cb=None,
-                                           feedback_cb=self.handle_guarded_move_feedback)
+                                          done_cb=self.handle_guarded_move_done,
+                                          feedback_cb=self.handle_guarded_move_feedback)
     # To preserve the previous behaviour we are adding a blocking call till the
     # execution of the trajectory is completed
     self.trajectory_async_executer.wait()
-    print("Guarded Move arm activity completed")
-    return success, "Done"
+
+    return self.log_finish_and_return("Guarded Move", success)
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
+
+    # subscribe to system_fault_status for any arm faults
+    rospy.Subscriber("/faults/system_faults_status", SystemFaults, self.callback)
+
+    self.stop_srv = rospy.Service(
+        'arm/stop', Stop, self.handle_stop)
     self.stow_srv = rospy.Service(
         'arm/stow', Stow, self.handle_stow)
     self.unstow_srv = rospy.Service(
@@ -190,12 +216,26 @@ class PathPlanningCommander(object):
     self.ground_detector = GroundDetector()
     self.trajectory_async_executer.connect("arm_controller")
     self.guarded_move_pub = rospy.Publisher(
-        '/guarded_move_result', GuardedMoveResult, queue_size=10)
+        '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
-    print("path_planning_commander has started!")
+    
+    rospy.loginfo("path_planning_commander has started!")
+
     rospy.spin()
 
+  def log_started(self, activity_name):
+    rospy.loginfo("%s arm activity started", activity_name)
+
+  def log_finish_and_return(self, activity_name, success=True):  
+    rospy.loginfo("%s arm activity completed", activity_name)
+    return success, "Done"
+
+  def callback(self, data):
+    """
+    If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+    """ 
+    self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()

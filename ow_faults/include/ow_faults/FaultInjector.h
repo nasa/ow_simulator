@@ -5,14 +5,24 @@
 #ifndef FaultInjector_h
 #define FaultInjector_h
 
-
+#include <bitset>
+#include <ctime>
+#include <cstdlib>
 #include <ros/ros.h>
+#include <cstdint>
+#include <std_msgs/Float64.h>
+#include <std_msgs/Empty.h>
 #include <ow_faults/FaultsConfig.h>
 #include "ow_faults/SystemFaults.h"
 #include "ow_faults/ArmFaults.h"
+#include "ow_faults/PowerFaults.h"
+#include "ow_faults/PTFaults.h"
+#include "ow_faults/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
+#include <random>
 
 
 // This class injects simple message faults that don't need to be simulated
@@ -24,64 +34,150 @@
 // placeholder fault estimator.
 class FaultInjector
 {
+
 public:
-  FaultInjector(ros::NodeHandle node_handle);
+  FaultInjector(ros::NodeHandle& node_handle);
   ~FaultInjector(){}
 
   void faultsConfigCb(ow_faults::FaultsConfig& faults, uint32_t level);
+ 
+  enum class ComponentFaults : uint {
+    Hardware = 1, 
+    JointLimit = 2,
+    TrajectoryGeneration = 2,
+    Collision = 3, 
+    Estop = 4, 
+    PositionLimit = 5, 
+    TorqueLimit = 6, 
+    VelocityLimit = 7, 
+    NoForceData = 8
+    };
 
-  enum Nominal { None=0 };
+  //system
+  static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
+  static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
+  static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
+  static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
+  static constexpr std::bitset<10> isCamGoalError{          0b00'0001'0000 };
+  static constexpr std::bitset<10> isCamExecutionError{     0b00'0010'0000 };
+  static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
+  static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
+  static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
+  static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
+  
+  //power
+  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
+  static constexpr std::bitset<3> isCapLossError{    0b010 };
+  static constexpr std::bitset<3> isThermalError{    0b100 };
 
-  enum ArmFaults {
-    Hardware=1, 
-    TrajectoryGeneration=2, 
-    Collision=3, 
-    Estop=4, 
-    PositionLimit=5, 
-    TorqueLimit=6, 
-    VelocityLimit=7, 
-    NoForceData=8};
+  static constexpr float THERMAL_MAX = 50;
+  static constexpr float SOC_MIN = 0.1;
+  static constexpr float SOC_MAX_DIFF = 0.05;
 
-  enum SystemFaults {
-    System=1, 
-    ArmGoalError=2, 
-    ArmExecutionError=4,
-    TaskGoalError=8, 
-    CamGoalError=16, 
-    CamExecutionError=32, 
-    PtGoalError=64, 
-    PtExecutionError=128, 
-    LanderExecutionError = 256};
+  //arm
+  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
+  
+  ////////// functions
+  void publishSystemFaultsMessage();
+
+  //Arm functions
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
-
-  //Setting the correct values for system faults and arm faults messages
-  void setSytemFaultsMessage(ow_faults::SystemFaults& msg, int value);
-  void setArmFaultMessage(ow_faults::ArmFaults& msg, int value);
-
+  // Output /faults/joint_states, a modified version of /joint_states, injecting
+  // simple message faults that don't need to be simulated at their source.
+  void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
   int findPositionInGroup(const group_t& group, const item_t& item);
-
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
-  ow_faults::FaultsConfig m_faults;
+  //camera function
+  void cameraTriggerCb(const std_msgs::Empty& msg);
 
+  // power functions
+  float getRandomFloatFromRange(float min_val, float max_val);
+  void publishPowerSystemFault();
+  void powerSOCListener(const std_msgs::Float64& msg);
+  void powerTemperatureListener(const std_msgs::Float64& msg);
+
+  // Antennae functions
+  void publishAntennaeFaults(const std_msgs::Float64& msg, bool encoder, 
+                             bool torque, float& m_faultValue, ros::Publisher& m_publisher);
+
+  //Setting message values
+  template<typename fault_msg>
+  void setFaultsMessageHeader(fault_msg& msg);
+  template<typename bitsetFaultsMsg, typename bitmask>
+  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
+  template<typename fault_msg>
+  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
+ 
+  //checking rqt faults
+  void checkArmFaults();
+  void checkAntFaults();
+  void checkCamFaults();
+
+  ///////publishers and subsscribers
+  // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_pub;
 
-  ros::Publisher m_fault_status_pub;
-  ros::Publisher m_arm_fault_status_pub;
+  //power
+  ros::Subscriber m_power_soc_sub;
+  ros::Subscriber m_power_temperature_sub;
+  ros::Publisher m_power_fault_trigger_pub;
+
+  // ft sensor
+  ros::Subscriber m_dist_pitch_ft_sensor_sub;
+  ros::Publisher m_dist_pitch_ft_sensor_pub;
+
+  // camera
+  ros::Subscriber m_camera_trigger_sub;
+  ros::Publisher m_camera_trigger_remapped_pub;
+
+  //antenna 
+  ros::Subscriber m_fault_ant_pan_sub;
+  ros::Subscriber m_fault_ant_tilt_sub;
+  ros::Publisher m_fault_ant_pan_remapped_pub;
+  ros::Publisher m_fault_ant_tilt_remapped_pub;
+
+  // jpl message publishers
+  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
+
+  ////////// vars
+  //system
+  std::bitset<10> m_system_faults_bitset{};
+
+  //general component faults
+  bool m_arm_fault;
+  bool m_ant_fault;
+  bool m_cam_fault = false;
+  bool m_soc_fault = false;
+  bool m_temperature_fault = false;
+
+  //arm joint faults
+  ow_faults::FaultsConfig m_faults;
+
+  //power vars
+  float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
+
+  // antenna vars
+  float m_fault_pan_value;
+  float m_fault_tilt_value;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
+  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
 };
-
 
 #endif
