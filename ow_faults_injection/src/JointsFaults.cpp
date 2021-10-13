@@ -118,7 +118,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
   const float SET_FLAG = 1;
 
   findJointIndex(jfi.landerJoint, index);
-  std::cout << jfi.landerJoint << std::endl;
+  std::cout << joint_name << std::endl;
   std::cout << index << std::endl;
 
   if (!jfi.activated)
@@ -126,7 +126,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
     if (eff_fault_enabled || enc_fault_enabled){
       ROS_INFO_STREAM(joint_name << " activated!");
       jfi.activated = true;
-      // m_flag_msg.flags[index] = SET_FLAG;
+      m_flag_msg.flags[index] = SET_FLAG;
       // lock the joint to current position
       auto j = m_model->GetJoint(joint_name);
       jfi.friction = j->GetParam("friction", 0);
@@ -138,7 +138,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
     if (!eff_fault_enabled && !enc_fault_enabled){
       ROS_INFO_STREAM(joint_name << " de-activated!");
       jfi.activated = false;
-      // m_flag_msg.flags[index] = 0.0;
+      m_flag_msg.flags[index] = 0.0;
       // restore the joint limits
       auto j = m_model->GetJoint(joint_name);
       j->SetParam("friction", 0, jfi.friction);
