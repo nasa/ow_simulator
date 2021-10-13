@@ -69,12 +69,8 @@ void JointsFaults::onUpdate()
 
 void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
-  bool eff_fault_enabled;
-  ros::param::param("/faults/" + jfi.effortFault, eff_fault_enabled, false);
-
-  bool enc_fault_enabled;
-  ros::param::param("/faults/" + jfi.encoderFault, enc_fault_enabled, false);
-
+  bool joint_lock_enabled;
+  ros::param::param("/faults/" + jfi.jointLockedFault, joint_lock_enabled, false);
 
   // Set failed sensor values to 0
   unsigned int index;
@@ -83,7 +79,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
 
   if (!jfi.activated)
   {
-    if (eff_fault_enabled || enc_fault_enabled){
+    if (joint_lock_enabled){
       ROS_INFO_STREAM(joint_name << " activated!");
       jfi.activated = true;
       m_flag_msg.flags[index] = SET_FLAG;
@@ -95,7 +91,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
   }
   else if (jfi.activated)
   {
-    if (!eff_fault_enabled && !enc_fault_enabled){
+    if (!joint_lock_enabled){
       ROS_INFO_STREAM(joint_name << " de-activated!");
       jfi.activated = false;
       m_flag_msg.flags[index] = 0.0;

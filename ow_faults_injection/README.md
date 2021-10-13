@@ -32,13 +32,13 @@ To see all possible faults you can set, do this:
 
 To set a particular fault:
 
-`rosrun dynamic_reconfigure dynparam set /faults ant_pan_encoder_failure True`
+`rosrun dynamic_reconfigure dynparam set /faults ant_pan_joint_locked_failure True`
 
 Here is more information about [dynparam](http://wiki.ros.org/dynamic_reconfigure#dynamic_reconfigure.2BAC8-groovy.dynparam_command-line_tool).
 
 Note: you *cannot* use `rosparam` to set faults:
 
-`rosparam set /faults/ant_pan_encoder_failure True`
+`rosparam set /faults/ant_pan_joint_locked_failure True`
 
 That will set the param on the `faults` node, but it won't be changed in the
 node's `dynamic_reconfigure::Server` and the change won't propagate to the rest
@@ -53,7 +53,7 @@ Then set faults on the `faults` node from anywhere in your script:
 
 ```
 client = dynamic_reconfigure.client.Client('/faults')
-params = { 'ant_pan_encoder_failure' : 'True', 'ant_tilt_effort_failure' : 'True' }
+params = { 'ant_pan_joint_locked_failure' : 'True'}
 config = client.update_configuration(params)
 ```
 
