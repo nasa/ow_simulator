@@ -22,13 +22,7 @@ JointsFaults::JointsFaults() :
   m_node_handle = make_unique<ros::NodeHandle>("Joint_Faults_Flag");
   m_node_handle->setCallbackQueue(&m_callback_queue);
 
-  // string original_str = "/_original";
-  // //  arm pub and subs
   const char* joint_states_str = "/joint_states";
-  // m_joint_state_sub = m_node_handle->subscribe( original_str + joint_states_str, 
-  //                                   10,
-  //                                   &JointsFaults::jointStateCb, 
-  //                                   this);
   m_joint_state_flags_pub = m_node_handle->advertise<ow_faults_detection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
   m_JointsFaultsMap = {
@@ -46,21 +40,7 @@ JointsFaults::JointsFaults() :
       m_callback_queue.callAvailable();
   });
 
-  m_flag_msg.name = {"j_ant_pan", "j_ant_tilt", "j_dist_pitch", "j_grinder", "j_hand_yaw", "j_prox_pitch", "j_scoop_yaw",
-  "j_shou_pitch", "j_shou_yaw"};
-
-  m_flag_msg.flags = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
-   // Populate the map once here.
-  // This assumes the collection of joints will never change.
-  if (m_joint_state_indices.empty()) {
-    for (int j = 0; j < ow_lander::NUM_JOINTS; j ++) {
-      int index = findPositionInGroup(m_flag_msg.name, ow_lander::joint_names[j]);
-      if (index >= 0)
-        m_joint_state_indices.push_back(index);
-    }
-  }
-
+  initFlagMessage();
 
 }
 
@@ -131,7 +111,20 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
 
 void JointsFaults::initFlagMessage()
 {
+  m_flag_msg.name = {"j_ant_pan", "j_ant_tilt", "j_dist_pitch", "j_grinder", "j_hand_yaw", "j_prox_pitch", "j_scoop_yaw",
+  "j_shou_pitch", "j_shou_yaw"};
 
+  m_flag_msg.flags = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+   // Populate the map once here.
+  // This assumes the collection of joints will never change.
+  if (m_joint_state_indices.empty()) {
+    for (int j = 0; j < ow_lander::NUM_JOINTS; j ++) {
+      int index = findPositionInGroup(m_flag_msg.name, ow_lander::joint_names[j]);
+      if (index >= 0)
+        m_joint_state_indices.push_back(index);
+    }
+  }
 }
 
 int JointsFaults::findPositionInGroup(const std::vector<string>& group, const string& item)
