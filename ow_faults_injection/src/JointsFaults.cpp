@@ -48,14 +48,8 @@ JointsFaults::JointsFaults() :
 
   m_flag_msg.name = {"j_ant_pan", "j_ant_tilt", "j_dist_pitch", "j_grinder", "j_hand_yaw", "j_prox_pitch", "j_scoop_yaw",
   "j_shou_pitch", "j_shou_yaw"};
-  for(int i = 0; i < m_flag_msg.name.size(); i++) {
-    std::cout << m_flag_msg.name[i] << std::endl;
-  }
 
   m_flag_msg.flags = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  for(int i = 0; i < m_flag_msg.flags.size(); i++) {
-    std::cout << m_flag_msg.flags[i] << std::endl;
-  }
 
    // Populate the map once here.
   // This assumes the collection of joints will never change.
@@ -87,17 +81,6 @@ void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 
 void JointsFaults::onUpdate()
 {
-  // m_flag_msg.header.stamp = ros::Time::now();
-  // m_flag_msg.header.frame_id = "world";
-
-  // for(int i = 0; i < m_flag_msg.name.size(); i++) {
-  //   std::cout << m_flag_msg.name[i] << std::endl;
-  // }
-
-  // for(int i = 0; i < m_flag_msg.flags.size(); i++) {
-  //   std::cout << m_flag_msg.flags[i] << std::endl;
-  // }
-
   for (auto& kv : m_JointsFaultsMap)
     injectFault(kv.first, kv.second);
 
@@ -118,8 +101,6 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
   const float SET_FLAG = 1;
 
   findJointIndex(jfi.landerJoint, index);
-  std::cout << joint_name << std::endl;
-  std::cout << index << std::endl;
 
   if (!jfi.activated)
   {
