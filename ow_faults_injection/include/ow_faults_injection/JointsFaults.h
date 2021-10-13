@@ -5,7 +5,13 @@
 #ifndef JOINTS_FAULTS_H
 #define JOINTS_FAULTS_H
 
+#include <ros/ros.h>
+#include <ow_lander/lander_joints.h>
+#include <ros/subscribe_options.h>
+#include <ros/callback_queue.h>
 #include <gazebo/common/Plugin.hh>
+#include <ow_faults_detection/JointStatesFlag.h>
+#include <sensor_msgs/JointState.h>
 
 struct JointFaultInfo
 {
@@ -13,12 +19,14 @@ struct JointFaultInfo
   const std::string encoderFault;
   bool activated;
   double friction;
+  unsigned int landerJoint;
 
-  JointFaultInfo(const std::string& fault_, bool activated_ = false, double friction_ = 0.0)
+  JointFaultInfo(const std::string& fault_, unsigned int lander_joint, bool activated_ = false, double friction_ = 0.0)
   : effortFault(fault_ + "_effort_failure"), 
     encoderFault(fault_ + "_encoder_failure"), 
     activated(activated_), 
-    friction(friction_)
+    friction(friction_),
+    landerJoint(lander_joint)
   {
   }
 };
@@ -35,13 +43,31 @@ public:
 private:
   void onUpdate();
 
+  void initFlagMessage();
   void injectFault(const std::string& joint_name, JointFaultInfo& jfi);
+  void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
+  int findPositionInGroup(const std::vector<std::string>& group, const std::string& item);
+  // Get index from m_joint_index_map. If found, modify out_index and return
+  // true. Otherwise, return false.
+  bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
   static constexpr double MAX_FRICTION = 3000.0;
 
   gazebo::physics::ModelPtr m_model;
   std::map<std::string, JointFaultInfo> m_JointsFaultsMap;
   gazebo::event::ConnectionPtr m_updateConnection;
+  gazebo::event::ConnectionPtr m_on_update_connection;
+
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  ros::CallbackQueue m_callback_queue;
+  std::vector<ros::Subscriber> m_subscribers;
+
+  ros::Subscriber m_joint_state_sub;
+  ros::Publisher m_joint_state_flags_pub;
+
+  std::vector<unsigned int> m_joint_state_indices;
+  ow_faults_detection::JointStatesFlag m_flag_msg;
+
 };
 
 
