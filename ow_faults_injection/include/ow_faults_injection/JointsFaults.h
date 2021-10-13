@@ -52,6 +52,7 @@ private:
   bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
   static constexpr double MAX_FRICTION = 3000.0;
+  const float SET_FLAG = 1;
 
   gazebo::physics::ModelPtr m_model;
   std::map<std::string, JointFaultInfo> m_JointsFaultsMap;
@@ -60,9 +61,7 @@ private:
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
   ros::CallbackQueue m_callback_queue;
-  std::vector<ros::Subscriber> m_subscribers;
 
-  ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_flags_pub;
 
   std::vector<unsigned int> m_joint_state_indices;

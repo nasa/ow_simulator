@@ -78,7 +78,6 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
 
   // Set failed sensor values to 0
   unsigned int index;
-  const float SET_FLAG = 1;
 
   findJointIndex(jfi.landerJoint, index);
 

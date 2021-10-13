@@ -20,7 +20,6 @@ FaultInjector::FaultInjector(ros::NodeHandle& nh)
                                     &FaultInjector::jointStateCb, 
                                     this);
   m_joint_state_remapped_pub = nh.advertise<sensor_msgs::JointState>(joint_states_str, 10);
-  // m_joint_state_flags_pub = nh.advertise<ow_faults_detection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
   const char* ft_sensor_dist_pitch_str = "/ft_sensor_dist_pitch";
   m_dist_pitch_ft_sensor_sub = nh.subscribe( original_str + ft_sensor_dist_pitch_str,
@@ -58,13 +57,8 @@ void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
 
 void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  ow_faults_detection::JointStatesFlag flag_msg;
-  flag_msg.header.stamp = ros::Time::now();
-  flag_msg.header.frame_id = "world";
-
   sensor_msgs::JointState output(*msg);
-  flag_msg.name = output.name;
-  flag_msg.flags = output.effort;
+  unsigned int index;
 
   // Populate the map once here.
   // This assumes the collection of joints will never change.
@@ -76,83 +70,61 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
     }
   }
 
-  for (int i = 0; i < flag_msg.flags.size(); i ++){
-    flag_msg.flags[i] = 0.0;
-  }
-
-  // Set failed sensor values to 0
-  unsigned int index;
-
   // checking rqt
   checkCamFaults();
-  const float SET_FLAG = 1;
+
   //ant faults
   if (m_faults.ant_pan_encoder_failure || m_faults.ant_pan_effort_failure 
       && findJointIndex(J_ANT_PAN, index)){
-    flag_msg.flags[index] = SET_FLAG;
   }
   if ( m_faults.ant_tilt_encoder_failure || m_faults.ant_tilt_effort_failure 
       && findJointIndex(J_ANT_TILT, index)) {
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   //arm faults
   if (m_faults.shou_yaw_encoder_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.shou_yaw_effort_failure && findJointIndex(J_SHOU_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   if (m_faults.shou_pitch_encoder_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.shou_pitch_effort_failure && findJointIndex(J_SHOU_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   if (m_faults.prox_pitch_encoder_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.prox_pitch_effort_failure && findJointIndex(J_PROX_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   if (m_faults.dist_pitch_encoder_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.dist_pitch_effort_failure && findJointIndex(J_DIST_PITCH, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   if (m_faults.hand_yaw_encoder_failure && findJointIndex(J_HAND_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.hand_yaw_effort_failure && findJointIndex(J_HAND_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   if (m_faults.scoop_yaw_encoder_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.position[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
   if (m_faults.scoop_yaw_effort_failure && findJointIndex(J_SCOOP_YAW, index)) {
     output.effort[index]  = FAULT_ZERO_TELEMETRY;
-    flag_msg.flags[index] = SET_FLAG;
   }
 
   m_joint_state_remapped_pub.publish(output);
-  // m_joint_state_flags_pub.publish(flag_msg);
 }
 
 void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)

@@ -69,7 +69,6 @@ private:
   // arm faults
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_remapped_pub;
-  ros::Publisher m_joint_state_flags_pub;
 
   // ft sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
