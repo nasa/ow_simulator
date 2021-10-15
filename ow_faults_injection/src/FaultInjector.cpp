@@ -8,7 +8,6 @@
 using namespace ow_lander;
 
 using std::string;
-// static constexpr float64 SET_FLAG = 1.0;
 
 FaultInjector::FaultInjector(ros::NodeHandle& nh)
 { 
