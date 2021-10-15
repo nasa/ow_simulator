@@ -77,9 +77,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
 
   findJointIndex(jfi.landerJoint, index);
 
-  if (!jfi.activated)
-  {
-    if (joint_lock_enabled){
+  if (!jfi.activated && joint_lock_enabled) {
       ROS_INFO_STREAM(joint_name << " joint locked!");
       jfi.activated = true;
       m_flag_msg.flags[index] = SET_FLAG;
