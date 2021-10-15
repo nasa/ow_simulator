@@ -96,8 +96,6 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
       j->SetParam("friction", 0, jfi.friction);
     }
   }
-
-
 }
 
 void JointsFaults::initFlagMessage()
