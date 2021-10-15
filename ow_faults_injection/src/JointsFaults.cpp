@@ -87,9 +87,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
       j->SetParam("friction", 0, MAX_FRICTION);
     }
   }
-  else if (jfi.activated)
-  {
-    if (!joint_lock_enabled){
+  else if (jfi.activated && !joint_lock_enabled) {
       ROS_INFO_STREAM(joint_name << " joint unlocked!");
       jfi.activated = false;
       m_flag_msg.flags[index] = 0.0;
