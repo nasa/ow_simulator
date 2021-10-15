@@ -111,7 +111,7 @@ void JointsFaults::initFlagMessage()
 
   m_flag_msg.flags = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-   // Populate the map once here.
+  // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_state_indices.empty()) {
     for (int j = 0; j < ow_lander::NUM_JOINTS; j ++) {
