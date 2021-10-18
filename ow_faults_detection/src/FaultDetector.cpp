@@ -160,9 +160,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
                   J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
   //ant faults
-  std::cout << msg->flags[0] << std::endl;
-  std::cout << typeid(msg->flags[0]).name() << std::endl;
-
   m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
   m_tilt_fault = isFlagSet( J_ANT_TILT, msg->flags);
   antPublishFaultMessages();
