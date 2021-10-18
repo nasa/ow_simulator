@@ -128,7 +128,7 @@ void FaultDetector::publishPowerSystemFault()
 
 // Listeners
 // Arm listeners
-bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags) 
+bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
 {
   unsigned int index;
   auto found = findJointIndex(joint, index);
@@ -136,7 +136,7 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<double>& flags)
   if (!found){
     return false;
   }
-  if (flags[index] == 1.0){
+  if (flags[index] == true){
     return true;
   }
   return false;
@@ -160,6 +160,9 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
                   J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
   //ant faults
+  std::cout << msg->flags[0] << std::endl;
+  std::cout << typeid(msg->flags[0]).name() << std::endl;
+
   m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
   m_tilt_fault = isFlagSet( J_ANT_TILT, msg->flags);
   antPublishFaultMessages();

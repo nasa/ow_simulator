@@ -50,7 +50,7 @@ private:
   bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
   static constexpr double MAX_FRICTION = 3000.0;
-  const float SET_FLAG = 1;
+  const bool SET_FLAG = true;
 
   gazebo::physics::ModelPtr m_model;
   std::map<std::string, JointFaultInfo> m_JointsFaultsMap;

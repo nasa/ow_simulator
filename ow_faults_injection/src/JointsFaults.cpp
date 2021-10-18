@@ -85,16 +85,14 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
       auto j = m_model->GetJoint(joint_name);
       jfi.friction = j->GetParam("friction", 0);
       j->SetParam("friction", 0, MAX_FRICTION);
-    }
   }
   else if (jfi.activated && !joint_lock_enabled) {
       ROS_INFO_STREAM(joint_name << " joint unlocked!");
       jfi.activated = false;
-      m_flag_msg.flags[index] = 0.0;
+      m_flag_msg.flags[index] = false;
       // restore the joint limits
       auto j = m_model->GetJoint(joint_name);
       j->SetParam("friction", 0, jfi.friction);
-    }
   }
 }
 
@@ -103,7 +101,7 @@ void JointsFaults::initFlagMessage()
   m_flag_msg.name = {"j_ant_pan", "j_ant_tilt", "j_dist_pitch", "j_grinder", "j_hand_yaw", "j_prox_pitch", "j_scoop_yaw",
   "j_shou_pitch", "j_shou_yaw"};
 
-  m_flag_msg.flags = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  m_flag_msg.flags = {false, false, false, false, false, false, false, false, false};
 
   // Populate the map once here.
   // This assumes the collection of joints will never change.

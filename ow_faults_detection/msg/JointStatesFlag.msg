@@ -2,4 +2,4 @@
 
 Header header
 string[] name
-float64[] flags
+bool[] flags

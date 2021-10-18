@@ -77,7 +77,7 @@ private:
   // COMPONENT FUNCTIONS
   // arm functions
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
-  bool isFlagSet(uint joint, const std::vector<double>& flags);
+  bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
