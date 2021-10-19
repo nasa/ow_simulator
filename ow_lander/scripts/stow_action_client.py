@@ -4,11 +4,9 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from __future__ import print_function
 import rospy
 import actionlib
 import ow_lander.msg
-
 
 def unstow_client():
  
@@ -33,7 +31,6 @@ if __name__ == '__main__':
         # publish and subscribe over ROS.
         rospy.init_node('stow_client_py')
         result = unstow_client()
-        print("Result:", ', ',result)
-        #print("Result:", ', '.join([str(n) for n in result.sequence]))
+        rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        print("program interrupted before completion", file=sys.stderr)
+        rospy.logerror("program interrupted before completion")

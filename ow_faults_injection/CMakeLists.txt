@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_faults)
+project(ow_faults_injection)
 
 set(EXEC_NAME faults)
 
@@ -12,8 +12,15 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   ow_lander
   std_msgs
-  message_generation
+  ow_faults_detection
 )
+
+include(FindPkgConfig)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(GAZEBO gazebo)
+  pkg_check_modules(OGRE OGRE)
+  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -49,14 +56,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  SystemFaults.msg
-  ArmFaults.msg
-  PowerFaults.msg
-  PTFaults.msg
-  CamFaults.msg
-)
+# add_message_files(
+#   FILES
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -73,10 +75,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,13 +108,13 @@ generate_dynamic_reconfigure_options(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ow_faults
-#  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
-#  DEPENDS system_lib
-  CATKIN_DEPENDS message_runtime
-)
+# catkin_package(
+# #  INCLUDE_DIRS include
+# #  LIBRARIES ow_faults
+# #  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
+# #  DEPENDS system_lib
+#   CATKIN_DEPENDS message_runtime
+# )
 
 ###########
 ## Build ##
@@ -123,12 +125,26 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ow_faults.cpp
-# )
+add_library(${PROJECT_NAME}_joints
+  src/JointsFaults.cpp
+)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(${PROJECT_NAME}_joints
+   ${catkin_LIBRARIES}
+   ${GAZEBO_LIBRARIES}
+)
+
+link_directories(
+  ${Boost_LIBRARY_DIR}
+  ${catkin_LIBRARY_DIRS}
+  ${GAZEBO_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

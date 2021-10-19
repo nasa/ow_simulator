@@ -4,13 +4,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from __future__ import print_function
-
 import rospy
 import actionlib
 import ow_lander.msg
 import constants
-
 
 def Grind_client():
  
@@ -33,7 +30,7 @@ def Grind_client():
     #goal.x_start = 1.55
     #goal.y_start = 0.1
     #goal.depth = 0.045
-    #goal.length = 0.5 # 0.6
+    #goal.length = 0.5 # 0.6 
     #goal.parallel = False
     #goal.ground_position = -0.155
 
@@ -61,7 +58,6 @@ if __name__ == '__main__':
         # publish and subscribe over ROS.
         rospy.init_node('Grind_client_py')
         result = Grind_client()
-        print("Result:", ', ',result)
-        #print("Result:", ', '.join([str(n) for n in result.sequence]))
+        rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        print("program interrupted before completion", file=sys.stderr)
+        rospy.logerror("program interrupted before completion")

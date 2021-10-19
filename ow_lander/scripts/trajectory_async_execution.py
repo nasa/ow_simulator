@@ -7,7 +7,7 @@
 import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from ow_faults.msg import SystemFaults
+from ow_faults_detection.msg import SystemFaults
 
 ARM_EXECUTION_ERROR = 4
 

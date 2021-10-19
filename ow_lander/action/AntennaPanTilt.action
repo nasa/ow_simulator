@@ -1,0 +1,11 @@
+#goal definition
+float32 pan
+float32 tilt
+---
+# result
+float32 pan_position
+float32 tilt_position
+---
+# feedback
+float32 pan_position
+float32 tilt_position

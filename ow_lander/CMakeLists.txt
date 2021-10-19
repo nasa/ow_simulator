@@ -20,10 +20,11 @@ add_service_files(
   DigLinear.srv
   Grind.srv
   GuardedMove.srv
+  Light.srv
   PublishTrajectory.srv
+  Stop.srv
   Stow.srv
   Unstow.srv
-  Stop.srv
 )
 
 add_action_files(
@@ -35,6 +36,7 @@ add_action_files(
   FILES DigCircular.action
   FILES Grind.action
   FILES GuardedMove.action
+  FILES AntennaPanTilt.action
 )
 
 

@@ -8,7 +8,6 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Point, WrenchStamped
 
-
 FORCE_X_THRESHOLD = -10.0 # TODO: Optimize for sensor noise as part of OCEANWATERS-617
 
 class GroundDetector:
@@ -37,7 +36,7 @@ class GroundDetector:
     """
     :type msg: WrenchStamped
     """
-    # print(msg.wrench.force.x)
+    # rospy.logdebug("msg.wrench.force.x = %f", msg.wrench.force.x)
     if msg.wrench.force.x < FORCE_X_THRESHOLD:
       self._ground_detected = True
       self._dist_pitch_ft_sensor_sub.unregister()

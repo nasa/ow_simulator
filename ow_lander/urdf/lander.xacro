@@ -767,7 +767,7 @@
     <child link="l_grinder" />
     <axis xyz="-1 0 0" />
     <dynamics damping="1" />
-    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="0.1" />
+    <limit effort="1.0" velocity="0.1" lower="-3.14" upper="3.14"/>
   </joint>
   <transmission name="grinder_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -934,6 +934,10 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+
+    <plugin name="ow_faults_injection_joints" filename="libow_faults_injection_joints.so">
       <robotNamespace>/</robotNamespace>
     </plugin>
 
