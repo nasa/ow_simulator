@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "regolith_node");
   ros::NodeHandle nh("regolith_node");
 
-  auto rs = RegolithSpawner(&nh);
+  RegolithSpawner rs(&nh);
   
   if (!rs.initialize()) {
     ROS_ERROR("Failed to initialize regolith node");

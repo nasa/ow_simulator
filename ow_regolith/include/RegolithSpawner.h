@@ -17,25 +17,26 @@ class RegolithSpawner
 {
 public:
   RegolithSpawner() = delete;
+  RegolithSpawner(const RegolithSpawner&) = delete;
+  RegolithSpawner& operator=(const RegolithSpawner&) = delete;
 
   RegolithSpawner(ros::NodeHandle* nh);
 
   // loads regolith SDF and computes its mass
   // must be called before the other functions
-  bool initialize(void);
+  bool initialize();
 
   // spawn the regolith model just above the tip of the scoop and apply a force
   // that keeps it in the scoop during the remainder of scooping operation
   bool spawnRegolithInScoop(tf::Vector3 pushback_direction = tf::Vector3());
 
-  void clearAllPsuedoForces(void);
+  void clearAllPsuedoForces();
 
-  void removeAllRegolithModels(void);
+  void removeAllRegolithModels();
 
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
-  void terrainVisualModCb(
-    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+  void terrainVisualModCb(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
   // both call clearAllPsuedoForces at the end of digs
   void armDigLinearResultCb(const ow_lander::DigLinearActionResult::ConstPtr &msg);

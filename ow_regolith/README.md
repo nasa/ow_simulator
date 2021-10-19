@@ -16,9 +16,9 @@ this repository.
 
 ## Introduction
 
-Creates a node called `regolith_node` that responds to modifications made to the 
-visual terrain model by spawning a model in the scoop to simulate the collection
-of material from the terrain. 
+This package creates node called `regolith_node` that responds to modifications 
+made to the visual terrain model by spawning a model in the scoop to simulate 
+the collection of material from the terrain. 
 
 ## Dependencies
 
@@ -64,7 +64,7 @@ not necessarily realistic to what a digging scoop may experience. Keep this in
 mind when using this plug-in for any study that records forces on the arm.
 - This node will not work properly if the user calls the ROS Service versions of
 arm operations, instead of their action counterparts. The ROS Service arm 
-operations are deprecated in this simulator, and should be avoided anyways.
+operations are deprecated in this simulator, and should be avoided anyway.
 - While sample is in the scoop you may see the following error flood the console
 ```ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)```
 We're still looking into how to avoid or suppress this message. For now it just
@@ -74,7 +74,7 @@ has to be ignored.
 
 ### Launch File
 
-The `regolith_node` may be added to a launch file like so
+The `regolith_node` may be added to a launch file as follows
 ```xml
 <node name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
     <param name="spawn_volume_threshold" type="double" value="1e-3"/>
@@ -95,7 +95,7 @@ should be spawned each time the `spawn_volume_threshold` is reached.
 
 ### ROS Service
 
-ROS Service support for this node is still to come...
+ROS services are not supported by this package at this time.
 
 ## Generating Custom Regolith Models
 

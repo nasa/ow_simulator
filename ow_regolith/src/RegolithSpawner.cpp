@@ -33,17 +33,17 @@ using std::cos;
 using std::unique_ptr;
 
 // service paths used in class
-const static string SRV_GET_PHYS_PROPS = "/gazebo/get_physics_properties";
-const static string SRV_SPAWN_MODEL    = "/gazebo/spawn_sdf_model";
-const static string SRV_DELETE_MODEL   = "/gazebo/delete_model";
-const static string SRV_APPLY_WRENCH   = "/gazebo/apply_body_wrench";
-const static string SRV_CLEAR_WRENCH   = "/gazebo/clear_body_wrenches";
+const static std::string SRV_GET_PHYS_PROPS = "/gazebo/get_physics_properties";
+const static std::string SRV_SPAWN_MODEL    = "/gazebo/spawn_sdf_model";
+const static std::string SRV_DELETE_MODEL   = "/gazebo/delete_model";
+const static std::string SRV_APPLY_WRENCH   = "/gazebo/apply_body_wrench";
+const static std::string SRV_CLEAR_WRENCH   = "/gazebo/clear_body_wrenches";
 
 // topic paths used in class
-const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
-const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
-const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
-const static string TOPIC_DELIVER_RESULT        = "/Deliver/result";
+const static std::string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
+const static std::string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
+const static std::string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
+const static std::string TOPIC_DELIVER_RESULT        = "/Deliver/result";
 
 template <class T>
 static bool callRosService(ros::ServiceClient &srv, T &msg) 
@@ -87,7 +87,7 @@ RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
     ROS_ERROR("Regolith node requires the regolith_model_uri paramter.");
 }
 
-bool RegolithSpawner::initialize(void) 
+bool RegolithSpawner::initialize() 
 {
   // set the maximum scoop inclination that the psuedo force can counteract
   // to be 45 degrees (excluding friction)
@@ -213,7 +213,7 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
 }
 
 
-void RegolithSpawner::clearAllPsuedoForces(void)
+void RegolithSpawner::clearAllPsuedoForces()
 {
   for (auto &regolith : m_active_models) {
     BodyRequest msg;
@@ -223,7 +223,7 @@ void RegolithSpawner::clearAllPsuedoForces(void)
   }
 }
 
-void RegolithSpawner::removeAllRegolithModels(void)
+void RegolithSpawner::removeAllRegolithModels()
 {
   auto it = m_active_models.begin();
   while (it != m_active_models.end()) {
