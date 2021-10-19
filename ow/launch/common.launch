@@ -5,7 +5,7 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
-  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states" />
+  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states StereoCamera/left/image_raw:=/_original/StereoCamera/left/image_raw" />
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true" />
@@ -73,7 +73,10 @@
   <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
   <!-- Start faults node -->
-  <node name="faults" pkg="ow_faults" type="faults" output="screen" />
+  <node name="faults" pkg="ow_faults_injection" type="faults" output="screen" />
+  
+  <!-- Start faults detection node -->
+  <node name="faults_detection" pkg="ow_faults_detection" type="faults_detection" output="screen" />
 
   <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
   <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
@@ -88,7 +91,6 @@
   <node if="$(arg rqt_gui)" pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     args="&#45;&#45;perspective-file $(find ow)/config/default.perspective">
-    <remap from="/StereoCamera/left/image_trigger" to="/_original/StereoCamera/left/image_trigger"/> 
   </node>
 
   <!-- == start bag_recorder_node =========== -->
