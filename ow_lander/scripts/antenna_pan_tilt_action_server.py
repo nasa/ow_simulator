@@ -12,6 +12,7 @@ from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
 from math import pi
+from antenna_pan_tilt_action_client import wrap_angle
 
 
 class AntennaPanTiltActionServer(object):
@@ -33,17 +34,6 @@ class AntennaPanTiltActionServer(object):
         self._pan_value = None
         self._tilt_value = None
 
-    def wrap_angle(self, angle):
-        """
-        :param angle: (float)
-        :return: (float) the angle in [-pi, pi]
-         """
-        while angle > pi:
-            angle -= 2 * pi
-        while angle < -pi:
-            angle += 2 * pi
-        return angle
-
     def _handle_joint_states(self, data):
         # position of pan and tlt of the lander is obtained from JointStates
         """
@@ -56,8 +46,8 @@ class AntennaPanTiltActionServer(object):
             rospy.logerr_throttle(
                 1, "LanderInterface: j_ant_pan or j_ant_tilt not found in joint_states")
             return
-        self._tilt_value = self.wrap_angle(data.position[id_tilt])
-        self._pan_value = self.wrap_angle(data.position[id_pan])
+        self._tilt_value = wrap_angle(data.position[id_tilt])
+        self._pan_value = wrap_angle(data.position[id_pan])
 
 
     def _update_feedback(self):
