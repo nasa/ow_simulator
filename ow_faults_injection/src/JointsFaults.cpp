@@ -70,7 +70,7 @@ void JointsFaults::onUpdate()
 void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
   bool fault_enabled = false;
-  auto success = ros::param::getCached("/faults/" + jfi.fault, fault_enabled);
+  bool success = ros::param::getCached("/faults/" + jfi.fault, fault_enabled);
 
   if (!success)
     return;
