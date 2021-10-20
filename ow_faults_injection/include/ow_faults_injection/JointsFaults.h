@@ -21,7 +21,7 @@ struct JointFaultInfo
   unsigned int landerJoint;
 
   JointFaultInfo(const std::string& fault_, unsigned int lander_joint, bool activated_ = false, double friction_ = 0.0)
-  : fault(fault_ + "_failure"),
+  : fault(fault_ + "_joint_locked_failure"),
     activated(activated_), 
     friction(friction_),
     landerJoint(lander_joint)
