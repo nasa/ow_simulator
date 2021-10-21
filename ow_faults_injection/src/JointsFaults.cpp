@@ -69,15 +69,18 @@ void JointsFaults::onUpdate()
 
 void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
 {
-  bool joint_lock_enabled;
-  ros::param::param("/faults/" + jfi.jointLockedFault, joint_lock_enabled, false);
+  bool fault_enabled = false;
+  bool success = ros::param::getCached("/faults/" + jfi.fault, fault_enabled);
+
+  if (!success)
+    return;
 
   // Set failed sensor values to 0
   unsigned int index;
 
   findJointIndex(jfi.landerJoint, index);
 
-  if (!jfi.activated && joint_lock_enabled) {
+  if (!jfi.activated && fault_enabled) {
       ROS_INFO_STREAM(joint_name << " joint locked!");
       jfi.activated = true;
       m_flag_msg.flags[index] = SET_FLAG;
@@ -86,7 +89,7 @@ void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jf
       jfi.friction = j->GetParam("friction", 0);
       j->SetParam("friction", 0, MAX_FRICTION);
   }
-  else if (jfi.activated && !joint_lock_enabled) {
+  else if (jfi.activated && !fault_enabled) {
       ROS_INFO_STREAM(joint_name << " joint unlocked!");
       jfi.activated = false;
       m_flag_msg.flags[index] = false;
