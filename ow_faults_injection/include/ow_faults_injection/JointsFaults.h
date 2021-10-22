@@ -15,13 +15,13 @@
 
 struct JointFaultInfo
 {
-  const std::string jointLockedFault;
+  const std::string fault;
   bool activated;
   double friction;
   unsigned int landerJoint;
 
   JointFaultInfo(const std::string& fault_, unsigned int lander_joint, bool activated_ = false, double friction_ = 0.0)
-  : jointLockedFault(fault_ + "_joint_locked_failure"), 
+  : fault(fault_ + "_joint_locked_failure"),
     activated(activated_), 
     friction(friction_),
     landerJoint(lander_joint)
