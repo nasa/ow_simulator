@@ -68,10 +68,7 @@ class antenna_client_multiple_goals():
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
-        # publish and subscribe over ROS.
-        #rospy.init_node('antenna_client_py')
+        # Initializes a rospy node 
         antenna_client_multiple_goals()
-        #rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
         rospy.logerror("program interrupted before completion")
