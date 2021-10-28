@@ -1,26 +1,28 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_power_system)
+project(ow_faults_detection)
 
-if(DEFINED ENV{GSAP_HOME})
-  set(GSAP_DIR $ENV{GSAP_HOME})
-else()
-  message(FATAL_ERROR, "GSAP_HOME environment variable is not set")
-endif()
+set(EXEC_NAME faults_detection)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
   roscpp
-  std_msgs
-  roslib
+  rospy
   ow_lander
+  std_msgs
+  message_generation
 )
-find_package(roslaunch)
 
-link_directories(
-  ${GSAP_DIR}/build
-)
+## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED COMPONENTS system)
+
+
+## Uncomment this if the package has a setup.py. This macro ensures
+## modules and global scripts declared therein get installed
+## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
+# catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -35,7 +37,7 @@ link_directories(
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add an exec_depend tag for "message_runtime"
+##     * add a exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -47,11 +49,15 @@ link_directories(
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  SystemFaults.msg
+  ArmFaults.msg
+  PowerFaults.msg
+  PTFaults.msg
+  CamFaults.msg
+  JointStatesFlag.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,11 +73,11 @@ link_directories(
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#)# Uncommented gives error:  Unknown CMake command "generate_messages"
+# ## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -89,8 +95,6 @@ link_directories(
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 # generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
 # )
 
 ###################################
@@ -104,9 +108,10 @@ link_directories(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES power_system_node 
-  CATKIN_DEPENDS roscpp std_msgs message_runtime
+#  LIBRARIES ow_faults
+#  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -117,14 +122,12 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  ${GSAP_DIR}/inc
   ${catkin_INCLUDE_DIRS}
 )
 
-
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/power_system_node.cpp
+#   src/${PROJECT_NAME}/ow_faults.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -135,8 +138,13 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(power_system_node
-  src/power_system_node.cpp)
+add_executable(${EXEC_NAME} src/main.cpp src/FaultDetector.cpp)
+
+# make sure configure headers are built before any node using them
+add_dependencies (
+  ${EXEC_NAME} ${PROJECT_NAME}_gencfg
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,9 +157,8 @@ add_executable(power_system_node
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(power_system_node
-  ${catkin_LIBRARIES}
-  gsap
+target_link_libraries(${EXEC_NAME}
+   ${catkin_LIBRARIES}
 )
 
 #############
@@ -170,9 +177,9 @@ target_link_libraries(power_system_node
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS power_system_node
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# install(TARGETS ${PROJECT_NAME}_node
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -201,7 +208,7 @@ install(TARGETS power_system_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_power_system_node.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ow_faults.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
