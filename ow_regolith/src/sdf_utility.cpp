@@ -12,11 +12,11 @@
 
 using namespace sdf;
 
-using sdf_utility::getModelLink;
-
 using std::string;
 using std::ifstream;
 using std::stringstream;
+
+using sdf_utility::getModelLink;
 
 bool sdf_utility::getSdfFromUri(const string &uri, string &out_sdf_text) 
 {

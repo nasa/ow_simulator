@@ -6,6 +6,7 @@
 
 #include "sdf_utility.h"
 
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 #include <sensor_msgs/image_encodings.h>
@@ -46,10 +47,10 @@ const static std::string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
 const static std::string TOPIC_DELIVER_RESULT        = "/Deliver/result";
 
 template <class T>
-static bool callRosService(ros::ServiceClient &srv, T &msg) 
+static bool callRosService(ros::ServiceClient &srv, T &msg)
 {
   if (!srv.isValid()) {
-    ROS_ERROR("Connection to service %s has been lost", 
+    ROS_ERROR("Connection to service %s has been lost",
       srv.getService().c_str()
     );
     return false;
@@ -62,11 +63,11 @@ static bool callRosService(ros::ServiceClient &srv, T &msg)
 }
 
 template <class T>
-static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh, 
+static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
   string service_path, ros::ServiceClient &out_srv, bool persistent = false)
 {
   // maximum time we will wait for the service to exist
-  constexpr auto SERVICE_TIMEOUT = 5.0f; // seconds
+  constexpr auto SERVICE_TIMEOUT = 5.0; // seconds
   out_srv = nh->serviceClient<T>(service_path, persistent);
   if (!out_srv.waitForExistence(ros::Duration(SERVICE_TIMEOUT))) {
     ROS_ERROR("Timed out waiting for service %s to advertise", 
@@ -78,7 +79,7 @@ static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
 }
 
 RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
-  : m_volume_displaced(0.0), m_node_handle(nh) 
+  : m_volume_displaced(0.0), m_node_handle(nh), m_previous_center(0.0, 0.0, 0.0)
 {
   // get node parameters, which mirror class data member
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
@@ -87,16 +88,14 @@ RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
     ROS_ERROR("Regolith node requires the regolith_model_uri paramter.");
 }
 
-bool RegolithSpawner::initialize() 
+bool RegolithSpawner::initialize()
 {
   // set the maximum scoop inclination that the psuedo force can counteract
   // to be 45 degrees (excluding friction)
   // NOTE: do not use a value that makes cosine zero!
   constexpr auto MAX_SCOOP_INCLINATION_DEG = 70.0f; // degrees
-  constexpr auto MAX_SCOOP_INCLINATION_RAD 
-    = MAX_SCOOP_INCLINATION_DEG * acos(-1) / 180.0f; // radians
-  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR 
-    = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
+  constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
+  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
 
   // load SDF model
   if (!getSdfFromUri(m_model_uri, m_model_sdf)) {
@@ -114,16 +113,27 @@ bool RegolithSpawner::initialize()
 
   // connect to all ROS services
   ros::ServiceClient gz_get_phys_prop;
-  if (!createRosServiceClient<GetPhysicsProperties>(m_node_handle, 
-        SRV_GET_PHYS_PROPS, gz_get_phys_prop, false) ||
-      !createRosServiceClient<SpawnModel>(m_node_handle, 
-        SRV_SPAWN_MODEL, m_gz_spawn_model, true) ||
-      !createRosServiceClient<DeleteModel>(m_node_handle, 
-        SRV_DELETE_MODEL, m_gz_delete_model, true) ||
-      !createRosServiceClient<ApplyBodyWrench>(m_node_handle, 
-        SRV_APPLY_WRENCH, m_gz_apply_wrench, true) ||
-      !createRosServiceClient<BodyRequest>(m_node_handle, 
-        SRV_CLEAR_WRENCH, m_gz_clear_wrench, true)) {
+  if (!createRosServiceClient<GetPhysicsProperties>(m_node_handle,
+                                                    SRV_GET_PHYS_PROPS,
+                                                    gz_get_phys_prop,
+                                                    false) ||
+      !createRosServiceClient<SpawnModel>(m_node_handle,
+                                          SRV_SPAWN_MODEL,
+                                          m_gz_spawn_model,
+                                          true) ||
+      !createRosServiceClient<DeleteModel>(m_node_handle,
+                                           SRV_DELETE_MODEL,
+                                           m_gz_delete_model,
+                                           true) ||
+      !createRosServiceClient<ApplyBodyWrench>(m_node_handle,
+                                               SRV_APPLY_WRENCH,
+                                               m_gz_apply_wrench,
+                                               true) ||
+      !createRosServiceClient<BodyRequest>(m_node_handle,
+                                           SRV_CLEAR_WRENCH,
+                                           m_gz_clear_wrench,
+                                           true))
+  {
     ROS_ERROR("Failed to connect to all required ROS services");
     return false;
   }
@@ -138,7 +148,7 @@ bool RegolithSpawner::initialize()
     msg.response.gravity.x, msg.response.gravity.y, msg.response.gravity.z
   );
   // set psuedo force to the model's weight multiplied by the weight factor
-  m_psuedo_force_mag 
+  m_psuedo_force_mag
     = model_mass * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
 
   // subscribe callbacks to ROS topics
@@ -154,7 +164,7 @@ bool RegolithSpawner::initialize()
   return true;
 }
 
-bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
+bool RegolithSpawner::spawnRegolithInScoop(const Vector3 &pushback_direction)
 {
   ROS_INFO("Spawning regolith");
 
@@ -215,8 +225,8 @@ bool RegolithSpawner::spawnRegolithInScoop(Vector3 pushback_direction)
 
 void RegolithSpawner::clearAllPsuedoForces()
 {
+  BodyRequest msg;
   for (auto &regolith : m_active_models) {
-    BodyRequest msg;
     msg.request.body_name = regolith.body_name;
     if (!callRosService(m_gz_clear_wrench, msg))
       ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());

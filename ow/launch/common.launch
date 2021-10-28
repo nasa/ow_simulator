@@ -90,7 +90,7 @@
     <!-- cubed meters that must be removed from terrain before a regolith particle is spawned -->
     <param name="spawn_volume_threshold" type="double" value="1e-3"/>
     <!-- model that gets spawned into scoop -->
-    <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
+    <param name="regolith_model_uri" type="string" value="model://ball_icefrag_2cm"/>
   </node>
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->

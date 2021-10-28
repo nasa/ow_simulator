@@ -21,6 +21,20 @@ using namespace cv;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
+static void formatDiffMsg(const CvImage& diff_image, const Point32& position,
+                          float scale_factor, int rows, int cols, string op_name,
+                          ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
+{
+  diff_image.toImageMsg(out_diff_msg.diff);
+  out_diff_msg.position = position;
+  out_diff_msg.height = rows / scale_factor;
+  out_diff_msg.width  = cols / scale_factor;
+
+  gzlog << "DynamicTerrain: " << op_name << " operation performed at (" 
+        << position.x << ", " << position.y << ")"
+        << endl;
+}
+
 bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
                                    const function<float(int, int)>& get_height_value,
                                    const function<void(int, int, float)>& set_height_value,
@@ -65,15 +79,8 @@ bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
                                        differential_image);
 
   if (changed)
-  {
-    differential_image.toImageMsg(out_diff_msg.diff);
-    out_diff_msg.position = msg->position;
-    out_diff_msg.height = image.rows / h_scale;
-    out_diff_msg.width  = image.cols / h_scale;
-
-    gzlog << "DynamicTerrain: circle operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
-          << endl;
-  }
+    formatDiffMsg(differential_image, msg->position, h_scale,
+                  image.rows, image.cols, "circle", out_diff_msg);
 
   return changed;
 }
@@ -130,17 +137,9 @@ bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
                                        get_height_value, set_height_value, *merge_method,
                                        differential_image);
 
-
   if (changed)
-  {
-    differential_image.toImageMsg(out_diff_msg.diff);
-    out_diff_msg.position = msg->position;
-    out_diff_msg.height = image.rows / h_scale;
-    out_diff_msg.width  = image.cols / h_scale;
-
-    gzlog << "DynamicTerrain: ellipse operation performed at (" << msg->position.x << ", " << msg->position.y << ")"
-        << endl;
-  }
+    formatDiffMsg(differential_image, msg->position, h_scale,
+                  image.rows, image.cols, "ellipse", out_diff_msg);
 
   return changed;
 }
@@ -196,14 +195,8 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
                                        differential_image);
 
   if (changed)
-  {
-    differential_image.toImageMsg(out_diff_msg.diff);
-    out_diff_msg.position = msg->position;
-    out_diff_msg.height = image.rows / h_scale;
-    out_diff_msg.width  = image.cols / h_scale;
-
-    gzlog << "DynamicTerrain: patch applied at (" << msg->position.x << ", " << msg->position.y << ")" << endl;    
-  }
+    formatDiffMsg(differential_image, msg->position, h_scale,
+                  image.rows, image.cols, "patch", out_diff_msg);
 
   return changed;
 }
@@ -257,7 +250,7 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
   auto right = min(center.x - image.cols / 2 + image.cols - 1, heightmap_size);
   auto bottom = min(center.y - image.rows / 2 + image.rows - 1, heightmap_size);
 
-  auto diff = TerrainBrush::createZerosMatLike(image);
+  auto diff = OpenCV_Util::createZerosMatLike(image);
 
   bool change_occurred = false;
 
@@ -280,12 +273,9 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i&
       // if we make it here, flag that a change has occurred
       change_occurred = true;
     }
-
-    if (change_occurred)
-    {
-      out_diff_image.image    = diff;
-      out_diff_image.encoding = image_encodings::TYPE_32FC1;
-    }
-
+  
+    out_diff_image.image    = diff;
+    out_diff_image.encoding = image_encodings::TYPE_32FC1;
+  
     return change_occurred;
 }

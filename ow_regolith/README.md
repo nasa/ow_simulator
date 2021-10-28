@@ -62,9 +62,9 @@ node when a delivery arm action is performed.
 transferred to the joints of the arm, but the magnitude of the force itself is 
 not necessarily realistic to what a digging scoop may experience. Keep this in 
 mind when using this plug-in for any study that records forces on the arm.
-- This node will not work properly if the user calls the ROS Service versions of
-arm operations, instead of their action counterparts. The ROS Service arm 
-operations are deprecated in this simulator, and should be avoided anyway.
+- ROS services arm activities are not supported by this node, and it will not 
+work properly if the user calls either the dig linear, dig circular, or delivery
+ROS service.
 - While sample is in the scoop you may see the following error flood the console
 ```ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)```
 We're still looking into how to avoid or suppress this message. For now it just

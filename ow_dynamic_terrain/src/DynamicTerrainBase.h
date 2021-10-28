@@ -20,7 +20,7 @@ class DynamicTerrainBase
 protected:
   DynamicTerrainBase(const std::string& package_name, const std::string& plugin_name) :
     m_package_name{ package_name },
-    m_plugin_name{ plugin_name }  
+    m_plugin_name{ plugin_name }
   {
   }
 

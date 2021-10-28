@@ -16,9 +16,10 @@
 class RegolithSpawner
 {
 public:
-  RegolithSpawner() = delete;
+  RegolithSpawner()  = delete;
+  ~RegolithSpawner() = default;
   RegolithSpawner(const RegolithSpawner&) = delete;
-  RegolithSpawner& operator=(const RegolithSpawner&) = delete;
+  RegolithSpawner& operator=(const RegolithSpawner&) = default;
 
   RegolithSpawner(ros::NodeHandle* nh);
 
@@ -28,7 +29,7 @@ public:
 
   // spawn the regolith model just above the tip of the scoop and apply a force
   // that keeps it in the scoop during the remainder of scooping operation
-  bool spawnRegolithInScoop(tf::Vector3 pushback_direction = tf::Vector3());
+  bool spawnRegolithInScoop(const tf::Vector3 &pushback_direction = tf::Vector3());
 
   void clearAllPsuedoForces();
 
@@ -53,7 +54,7 @@ private:
   double m_spawn_threshold;
   // where terrain modification previously occurred
   tf::Vector3 m_previous_center;
-
+  
   // regolith model that spawns in the scoop when digging occurs
   std::string m_model_uri;
   std::string m_model_sdf;
