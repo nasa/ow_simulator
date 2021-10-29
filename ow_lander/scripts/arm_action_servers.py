@@ -231,7 +231,7 @@ class GrindActionServer(object):
             self._timeout = (end_time - start_time)
 
     def on_Grind_action(self, goal):
-        plan = self._update_motion(goal)
+        self._update_motion(goal)
         if self.current_traj == False:
             self._server.set_aborted(self._result)
             return
@@ -353,7 +353,7 @@ class GuardedMoveActionServer(object):
             self._timeout = end_time - start_time
 
     def on_guarded_move_action(self, goal):
-        plan = self._update_motion(goal)
+        self._update_motion(goal)
         if self.guarded_move_traj == False:
             self._server.set_aborted(self._result)
             return
@@ -452,7 +452,7 @@ class DigCircularActionServer(object):
             self._timeout = (end_time - start_time)
 
     def on_DigCircular_action(self, goal):
-        plan = self._update_motion(goal)
+        self._update_motion(goal)
         if self.current_traj == False:
             self._server.set_aborted(self._result)
             return
@@ -530,7 +530,7 @@ class DigLinearActionServer(object):
             self._timeout = (end_time - start_time)
 
     def on_DigLinear_action(self, goal):
-        plan = self._update_motion(goal)
+        self._update_motion(goal)
         if self.current_traj == False:
             self._server.set_aborted(self._result)
             return
@@ -605,7 +605,7 @@ class DeliverActionServer(object):
             self._timeout = end_time - start_time
 
     def on_deliver_action(self, goal):
-        plan = self._update_motion(goal)
+        self._update_motion(goal)
         if self.deliver_sample_traj == False:
             self._server.set_aborted(self._result)
             return
