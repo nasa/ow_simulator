@@ -58,7 +58,6 @@ if __name__ == '__main__':
         # Initializes a rospy node
 
         rospy.init_node('antenna_client_py')
-        #result = antenna_client(sys.argv[1:])
         result = antenna_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
