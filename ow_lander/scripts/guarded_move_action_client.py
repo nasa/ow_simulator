@@ -7,32 +7,40 @@
 import rospy
 import actionlib
 import ow_lander.msg
-import sys
 import argparse
+
 
 def guarded_move_client():
     parser = argparse.ArgumentParser()
-    parser.add_argument('x_start', type=float, help='x coordinates of guarded move starting point', nargs='?', default=2.0, const=0)
-    parser.add_argument('y_start', type=float, help='y coordinates of guarded move starting point', nargs='?', default=0.0, const=0)
-    parser.add_argument('z_start', type=float, help='z coordinates of guarded move starting point', nargs='?', default=0.3, const=0)
-    parser.add_argument('direction_x', type=float, help='x coordinates of the vector normal to the surface', nargs='?', default=0.0, const=0)
-    parser.add_argument('direction_y', type=float, help='y coordinates of the vector normal to the surface', nargs='?', default=0.0, const=0)
-    parser.add_argument('direction_z', type=float, help='z coordinates of the vector normal to the surface', nargs='?', default=1.0, const=0)
-    parser.add_argument('search_distance', type=float, help='Search Distance', nargs='?', default=0.5, const= 0 )
+    parser.add_argument('x_start', type=float,
+                        help='x coordinates of guarded move starting point', nargs='?', default=2.0, const=0)
+    parser.add_argument('y_start', type=float,
+                        help='y coordinates of guarded move starting point', nargs='?', default=0.0, const=0)
+    parser.add_argument('z_start', type=float,
+                        help='z coordinates of guarded move starting point', nargs='?', default=0.3, const=0)
+    parser.add_argument('direction_x', type=float,
+                        help='x coordinates of the vector normal to the surface', nargs='?', default=0.0, const=0)
+    parser.add_argument('direction_y', type=float,
+                        help='y coordinates of the vector normal to the surface', nargs='?', default=0.0, const=0)
+    parser.add_argument('direction_z', type=float,
+                        help='z coordinates of the vector normal to the surface', nargs='?', default=1.0, const=0)
+    parser.add_argument('search_distance', type=float,
+                        help='Search Distance', nargs='?', default=0.5, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requetsed x_start: %s", args.x_start)
-    rospy.loginfo("Requetsed y_start: %s", args.y_start)
-    rospy.loginfo("Requetsed z_start: %s", args.z_start)
-    rospy.loginfo("Requetsed normal.x: %s", args.direction_x)
-    rospy.loginfo("Requetsed normal.y: %s", args.direction_y)
-    rospy.loginfo("Requetsed normal.z: %s", args.direction_z)
-    rospy.loginfo("Requetsed search distance: %s", args.search_distance)
-    client = actionlib.SimpleActionClient('GuardedMove', ow_lander.msg.GuardedMoveAction)
+    rospy.loginfo("Requested x_start: %s", args.x_start)
+    rospy.loginfo("Requested y_start: %s", args.y_start)
+    rospy.loginfo("Requested z_start: %s", args.z_start)
+    rospy.loginfo("Requested normal.x: %s", args.direction_x)
+    rospy.loginfo("Requested normal.y: %s", args.direction_y)
+    rospy.loginfo("Requested normal.z: %s", args.direction_z)
+    rospy.loginfo("Requested search distance: %s", args.search_distance)
+    client = actionlib.SimpleActionClient(
+        'GuardedMove', ow_lander.msg.GuardedMoveAction)
 
     client.wait_for_server()
 
     goal = ow_lander.msg.GuardedMoveGoal()
-    
+
     goal.start.x = args.x_start
     goal.start.y = args.y_start
     goal.start.z = args.z_start
@@ -48,7 +56,8 @@ def guarded_move_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # 
+    return client.get_result()  #
+
 
 if __name__ == '__main__':
     try:
