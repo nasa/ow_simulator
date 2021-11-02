@@ -6,8 +6,12 @@
 
 import rospy
 import actionlib
+import sys
+import getopt
 from math import pi
+import argparse
 import ow_lander.msg
+
 
 def wrap_angle(angle):
     """
@@ -19,18 +23,24 @@ def wrap_angle(angle):
         angle -= 2 * pi
     while angle < -(pi-tolerance):
         angle += 2 * pi
-    return angle 
+    return angle
 
 def antenna_client():
- 
-    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
+    parser.add_argument('tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
+    args = parser.parse_args()
+    rospy.loginfo("Requetsed pan value: %s", args.pan)
+    rospy.loginfo("Requetsed tilt value: %s", args.tilt)
 
+    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
     client.wait_for_server()
 
     goal = ow_lander.msg.AntennaPanTiltGoal()
-
-    goal.pan = 0.0
-    goal.tilt = 0.5
+    goal.pan = args.pan
+    goal.tilt = args.tilt
+        
     goal.tilt = wrap_angle(goal.tilt)
     goal.pan = wrap_angle(goal.pan)
 
@@ -45,9 +55,10 @@ def antenna_client():
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
-        # publish and subscribe over ROS.
+        # Initializes a rospy node
+
         rospy.init_node('antenna_client_py')
+        #result = antenna_client(sys.argv[1:])
         result = antenna_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
