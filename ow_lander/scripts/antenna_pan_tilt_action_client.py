@@ -6,8 +6,6 @@
 
 import rospy
 import actionlib
-import sys
-import getopt
 from math import pi
 import argparse
 import ow_lander.msg
