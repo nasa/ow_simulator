@@ -61,7 +61,7 @@ def guarded_move_client():
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
+        # Initializes a rospy node so that the guarded_move can
         # publish and subscribe over ROS.
         rospy.init_node('guarded_move_client_py')
         result = guarded_move_client()
