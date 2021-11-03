@@ -54,10 +54,6 @@ incorporate smarter logic around when to clean-up regolith models.
 
 ## Caveats
 
-- The majority of models spawned by `regolith_node` will wind up firmly held in
-the scoop, but at time of writing 1 out of every 4 may fall out and be lost in
-the collision geometry below. They will, however, still be cleaned up by the
-node when a delivery arm action is performed.
 - The fake force applied to particles during any dig operation will be 
 transferred to the joints of the arm, but the magnitude of the force itself is 
 not necessarily realistic to what a digging scoop may experience. Keep this in 
