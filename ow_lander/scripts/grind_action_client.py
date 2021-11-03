@@ -4,6 +4,31 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+# Default trenching values
+# goal.x_start = 1.65
+# goal.y_start = 0.0
+# goal.depth = 0.05
+# goal.length = 0.6 # 0.6
+# goal.parallel = False
+# goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+
+# General trenching values for non- parallel circular/linear trenching
+# goal.x_start = 1.55
+# goal.y_start = 0.1
+# goal.depth = 0.045
+# goal.length = 0.5 # 0.6
+# goal.parallel = False
+# goal.ground_position = -0.155
+
+# General trenching values for linear trenching
+# goal.x_start = 1.65
+# goal.y_start = 0.2
+# goal.depth = 0.045
+# choose a generous value for goal length to avoid collision
+# goal.length = 0.7
+# goal.parallel = True
+# goal.ground_position = -0.155
+
 import rospy
 import actionlib
 import ow_lander.msg
@@ -45,32 +70,6 @@ def Grind_client():
     goal.length = args.length
     goal.parallel = args.parallel
     goal.ground_position = args.ground_position
-
-    # Default trenching values
-
-    # goal.x_start = 1.65
-    # goal.y_start = 0.0
-    # goal.depth = 0.05
-    # goal.length = 0.6 # 0.6
-    # goal.parallel = False
-    # goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
-
-    # General trenching values for non- parallel circular/linear trenching
-    #goal.x_start = 1.55
-    #goal.y_start = 0.1
-    #goal.depth = 0.045
-    # goal.length = 0.5 # 0.6
-    #goal.parallel = False
-    #goal.ground_position = -0.155
-
-    # General trenching values for linear trenching
-    #goal.x_start = 1.65
-    #goal.y_start = 0.2
-    #goal.depth = 0.045
-    # choose a generous value for goal length to avoid collision
-    #goal.length = 0.7
-    #goal.parallel = True
-    #goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)

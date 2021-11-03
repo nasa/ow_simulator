@@ -4,6 +4,20 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+# Default trenching values
+# goal.x_start = 1.65
+# goal.y_start = 0
+# goal.depth = 0.01
+# goal.parallel = False
+# goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+
+# General trenching values
+# goal.x_start = 1.55
+# goal.y_start = 0.2
+# goal.depth = 0.045
+# goal.parallel = False
+# goal.ground_position = -0.155
+
 import rospy
 import actionlib
 import ow_lander.msg
@@ -43,19 +57,6 @@ def DigCircular_client():
     goal.depth = args.depth
     goal.parallel = args.parallel
     goal.ground_position = args.ground_position
-    # Default trenching values
-    # goal.x_start = 1.65
-    # goal.y_start = 0
-    # goal.depth = 0.01
-    # goal.parallel = False
-    # goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
-
-    # General trenching values
-    #goal.x_start = 1.55
-    #goal.y_start = 0.2
-    #goal.depth = 0.045
-    #goal.parallel = False
-    #goal.ground_position = -0.155
 
     # Sends the goal to the action server.
     client.send_goal(goal)
@@ -69,7 +70,7 @@ def DigCircular_client():
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
+        # Initializes a rospy node so that the dig circular client can
         # publish and subscribe over ROS.
         rospy.init_node('digCircular_client_py')
         result = DigCircular_client()

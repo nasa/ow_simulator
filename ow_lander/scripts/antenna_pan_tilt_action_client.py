@@ -23,22 +23,26 @@ def wrap_angle(angle):
         angle += 2 * pi
     return angle
 
+
 def antenna_client():
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
-    parser.add_argument('tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
+    parser.add_argument(
+        'pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
+    parser.add_argument(
+        'tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
     args = parser.parse_args()
     rospy.loginfo("Requetsed pan value: %s", args.pan)
     rospy.loginfo("Requetsed tilt value: %s", args.tilt)
 
-    client = actionlib.SimpleActionClient('AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
+    client = actionlib.SimpleActionClient(
+        'AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
     client.wait_for_server()
 
     goal = ow_lander.msg.AntennaPanTiltGoal()
     goal.pan = args.pan
     goal.tilt = args.tilt
-        
+
     goal.tilt = wrap_angle(goal.tilt)
     goal.pan = wrap_angle(goal.pan)
 
@@ -49,7 +53,8 @@ def antenna_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # 
+    return client.get_result()  #
+
 
 if __name__ == '__main__':
     try:

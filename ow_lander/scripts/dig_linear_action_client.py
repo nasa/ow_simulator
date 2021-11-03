@@ -4,6 +4,20 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+# Default trenching values
+# goal.x_start = 1.46
+# goal.y_start = 0
+# goal.depth = 0.01
+# goal.length = 0.1
+# goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
+
+# General trenching values
+# goal.x_start = 1.45
+# goal.y_start = 0.2
+# goal.depth = 0.045
+# goal.length = 0.1 #
+# goal.ground_position = -0.155
+
 import rospy
 import actionlib
 import ow_lander.msg
@@ -47,20 +61,6 @@ def DigLinear_client():
     goal.length = args.length
     goal.ground_position = args.ground_position
 
-    # Default trenching values
-    # goal.x_start = 1.46
-    # goal.y_start = 0
-    # goal.depth = 0.01
-    # goal.length = 0.1
-    # goal.ground_position = constants.DEFAULT_GROUND_HEIGHT
-
-    # General trenching values
-    #goal.x_start = 1.45
-    #goal.y_start = 0.2
-    #goal.depth = 0.045
-    #goal.length = 0.1 #
-    #goal.ground_position = -0.155
-
     # Sends the goal to the action server.
     client.send_goal(goal)
 
@@ -73,7 +73,7 @@ def DigLinear_client():
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
+        # Initializes a rospy node so that the deliver client can
         # publish and subscribe over ROS.
         rospy.init_node('digLinear_client_py')
         result = DigLinear_client()
