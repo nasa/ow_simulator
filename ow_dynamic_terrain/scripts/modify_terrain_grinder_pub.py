@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 """
 The modify_terrain_grinder_pub module updates the terrain in line with the  

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -131,53 +131,19 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
     else:
         move_arm.set_pose_target(goal_pose)
 
-    plan = move_arm.plan()
+    _, plan, _, _ = move_arm.plan()
 
     if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
 
     return plan
 
-
-def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
-    """
-    :param approximate: use an approximate solution. default True
-    :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-    :type x_start: float
-    :type y_start: float
-    :type z_start: float
-    :type approximate: bool
-    """
-
-    move_arm.set_start_state(cs)
-    goal_pose.position.z = z_start
-
-    goal_pose.orientation.x = goal_pose.orientation.x
-    goal_pose.orientation.y = goal_pose.orientation.y
-    goal_pose.orientation.z = goal_pose.orientation.z
-    goal_pose.orientation.w = goal_pose.orientation.w
-
-    # Ask the planner to generate a plan to the approximate joint values generated
-    # by kinematics builtin IK solver. For more insight on this issue refer to:
-    # https://github.com/nasa/ow_simulator/pull/60
-    if approximate:
-        move_arm.set_joint_value_target(goal_pose, True)
-    else:
-        move_arm.set_pose_target(goal_pose)
-
-    plan = move_arm.plan()
-
-    if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-        return False
-
-    return plan
-
-def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, x_start, y_start, z_start, approximate=True):
+def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, z_start, approximate=True):
   """
   :param approximate: use an approximate solution. default True
-  :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type x_start: float
-  :type y_start: float
+  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+  :type cs: robot current state
+  :type goal_pose: Pose
   :type z_start: float
   :type approximate: bool
   """
@@ -198,8 +164,7 @@ def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, x_start, y_start, z
   else:
     move_arm.set_pose_target(goal_pose)
 
-  plan = move_arm.plan()
-  
+  _, plan, _, _ = move_arm.plan()
   
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
@@ -238,7 +203,8 @@ def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start)
 
     joint_goal[constants.J_SCOOP_YAW] = 0
 
-    plan = move_arm.plan(joint_goal)
+    move_arm.set_joint_value_target(joint_goal)
+    _, plan, _, _ = move_arm.plan()
     return plan
 
 
@@ -274,7 +240,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
 
         move_arm.set_start_state(cs)
         move_arm.set_pose_target(end_pose)
-        plan_b = move_arm.plan()
+        _, plan_b, _, _ = move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
         circ_traj = cascade_plans(plan_a, plan_b)
@@ -296,7 +262,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
         z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
 
         plan_d = go_to_Z_coordinate_dig_circular(
-            move_arm, cs, end_pose, x_start, y_start, z_start)
+            move_arm, cs, end_pose, z_start)
         circ_traj = cascade_plans(circ_traj, plan_d)
 
         # Rotate hand perpendicular to arm direction
@@ -383,7 +349,8 @@ def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
         return False
 
     joint_goal[constants.J_SCOOP_YAW] = 0
-    plan = move_arm.plan(joint_goal)
+    move_arm.set_joint_value_target(joint_goal)
+    _, plan, _, _ = move_arm.plan()
     return plan
 
 
@@ -446,7 +413,8 @@ def change_joint_value(move_arm, cs, start_state, joint_index, target_value):
         joint_goal[k] = start_state[k]
 
     joint_goal[joint_index] = target_value
-    plan = move_arm.plan(joint_goal)
+    move_arm.set_joint_value_target(joint_goal)
+    _, plan, _, _ = move_arm.plan()
     return plan
 
 
@@ -473,7 +441,7 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
         move_arm.set_joint_value_target(goal_pose, True)
     else:
         move_arm.set_pose_target(goal_pose)
-    plan = move_arm.plan()
+    _, plan, _, _ = move_arm.plan()
     if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
     return plan
@@ -672,7 +640,7 @@ def grind(move_grinder, robot, moveit_fk, args):
     goal_pose.orientation.z = -0.706723318474
     goal_pose.orientation.w = 0.0307192507001
     move_grinder.set_pose_target(goal_pose)
-    plan_a = move_grinder.plan()
+    _, plan_a, _, _ = move_grinder.plan()
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
 
@@ -770,7 +738,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
 
     joint_goal[constants.J_SCOOP_YAW] = 0
 
-    plan_a = move_arm.plan(joint_goal)
+    move_arm.set_joint_value_target(joint_goal)
+    _, plan_a, _, _ = move_arm.plan()
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
 
@@ -783,7 +752,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
     goal_pose.position.z = targ_z
 
     move_arm.set_pose_target(goal_pose)
-    plan_b = move_arm.plan()
+    _, plan_b, _, _ = move_arm.plan()
     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
     pre_guarded_move_traj = cascade_plans(plan_a, plan_b)
@@ -803,7 +772,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
     goal_pose.position.z -= direction_z*search_distance
 
     move_arm.set_pose_target(goal_pose)
-    plan_c = move_arm.plan()
+    _, plan_c, _, _ = move_arm.plan()
 
     guarded_move_traj = cascade_plans(pre_guarded_move_traj, plan_c)
 
@@ -848,7 +817,7 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
 
     move_arm.set_pose_target(goal_pose)
 
-    plan_a = move_arm.plan()
+    _, plan_a, _, _ = move_arm.plan()
 
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
@@ -882,7 +851,7 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
     goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
     move_arm.set_pose_target(goal_pose)
-    plan_b = move_arm.plan()
+    _, plan_b, _, _ = move_arm.plan()
 
     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
         return plan_a
