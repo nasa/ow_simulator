@@ -32,8 +32,8 @@ def antenna_client():
     parser.add_argument(
         'tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requetsed pan value: %s", args.pan)
-    rospy.loginfo("Requetsed tilt value: %s", args.tilt)
+    rospy.loginfo("Requested pan value: %s", args.pan)
+    rospy.loginfo("Requested tilt value: %s", args.tilt)
 
     client = actionlib.SimpleActionClient(
         'AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
