@@ -33,13 +33,16 @@ using namespace cv_bridge;
 using namespace sdf_utility;
 
 using tf::Vector3;
-using tf::Quaternion;
 
 using std::string;
 using std::stringstream;
 using std::acos;
 using std::cos;
 using std::unique_ptr;
+using std::find;
+using std::distance;
+using std::begin;
+using std::end;
 
 // service paths used in class
 const static std::string SRV_GET_PHYS_PROPS  = "/gazebo/get_physics_properties";
@@ -92,7 +95,7 @@ RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
     m_volume_displaced(0.0),
     m_scoop_forward(1.0, 0.0, 0.0),
     m_scoop_spawn_offset(0.0, 0.0, -0.05),
-    m_scoop_link_name("lander::l_scoop_tip")
+    m_scoop_linkname("lander::l_scoop_tip")
 {
   // get node parameters
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
@@ -191,7 +194,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   spawn_msg.request.model_name                  = model_name.str();
   spawn_msg.request.model_xml                   = m_model_sdf;
   spawn_msg.request.robot_namespace             = "/regolith";
-  spawn_msg.request.reference_frame             = m_scoop_link_name;
+  spawn_msg.request.reference_frame             = m_scoop_linkname;
 
   spawn_msg.request.initial_pose.orientation.x  = 0.0;
   spawn_msg.request.initial_pose.orientation.y  = 0.0;
@@ -271,20 +274,14 @@ void RegolithSpawner::removeAllRegolithModels()
 
 void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg) 
 {
-  auto name_it = msg->name.begin();
-  auto pose_it = msg->pose.begin();
-  while (name_it != msg->name.end() && pose_it != msg->pose.end()) {
-    if (*name_it == m_scoop_link_name) {
-      m_scoop_orientation = Quaternion(pose_it->orientation.x, 
-                                       pose_it->orientation.y,
-                                       pose_it->orientation.z,
-                                       pose_it->orientation.w);
-      return;
-    }
-    ++name_it;
-    ++pose_it;
+  auto name_it = find(begin(msg->name), end(msg->name), m_scoop_linkname);
+  if (name_it == end(msg->name)) {
+    ROS_WARN("Failed to find %s in link states", m_scoop_linkname.c_str());      
+    return;
   }
-  ROS_WARN("Failed to find %s in link states", m_scoop_link_name.c_str());
+
+  auto pose_it = begin(msg->pose) + distance(begin(msg->name), name_it);
+  tf::quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
 }
 
 void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
@@ -316,7 +313,7 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // spawn a regolith model
-    if (!spawnRegolithInScoop())
+    if (!spawnRegolithInScoop(true))
       ROS_ERROR("Failed to spawn regolith in scoop");
   }
 }

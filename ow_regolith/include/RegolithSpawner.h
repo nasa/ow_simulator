@@ -30,7 +30,7 @@ public:
 
   // spawn the regolith model just above the tip of the scoop and apply a force
   // that keeps it in the scoop during the remainder of scooping operation
-  bool spawnRegolithInScoop(bool with_pushback = true);
+  bool spawnRegolithInScoop(bool with_pushback);
 
   // clears all artificial forces still being applied to regolith models
   void clearAllPsuedoForces();
@@ -74,7 +74,7 @@ private:
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
   // Gazebo link name of the scoop particles will spawn in
-  std::string m_scoop_link_name;
+  std::string m_scoop_linkname;
   // a vector that describes the forward direction of the scoop
   tf::Vector3 m_scoop_forward;
   // an offset relative to the scoop's frame where regolith will be spawned
