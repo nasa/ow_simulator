@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration

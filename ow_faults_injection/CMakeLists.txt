@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_sim_tests)
+project(ow_faults_injection)
 
 ## libiginition-math6-dev which is a dependency of this module seem to require
 ## the C++17 standard when compiling against ros noetic distro.
@@ -7,13 +7,18 @@ if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
   add_compile_options(-std=c++17)
 endif()
 
+set(EXEC_NAME faults)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
   roscpp
-  std_msgs
+  rospy
   ow_lander
+  std_msgs
+  ow_faults_detection
 )
 
 include(FindPkgConfig)
@@ -22,23 +27,6 @@ if(PKG_CONFIG_FOUND)
   pkg_check_modules(OGRE OGRE)
   pkg_check_modules(OGRE-Terrain OGRE-Terrain)
 endif()
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${Boost_INCLUDE_DIR}
-  ${catkin_INCLUDE_DIRS}
-  ${GAZEBO_INCLUDE_DIRS}
-  ${OGRE-Terrain_INCLUDE_DIRS}
-)
-
-link_directories(
-  ${Boost_LIBRARY_DIR}
-  ${catkin_LIBRARY_DIRS}
-  ${GAZEBO_LIBRARY_DIRS}
-  ${OGRE-Terrain_LIBRARY_DIRS}
-)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -59,10 +47,10 @@ link_directories(
 ##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
 ## * In the file package.xml:
 ##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
+##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add a run_depend tag for "message_runtime"
+##     * add a exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -77,11 +65,26 @@ link_directories(
 # add_message_files(
 #   FILES
 # )
-#
+
+## Generate services in the 'srv' folder
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
+
+## Generate actions in the 'action' folder
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
+
+## Generate added messages and services with any dependencies listed here
 # generate_messages(
-#    DEPENDENCIES
-#    std_msgs
-#)
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -90,7 +93,7 @@ link_directories(
 ## To declare and build dynamic reconfigure parameters within this
 ## package, follow these steps:
 ## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
+##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
 ## * In this file (CMakeLists.txt):
 ##   * add "dynamic_reconfigure" to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -98,30 +101,56 @@ link_directories(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/Faults.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
 ###################################
 ## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
+## INCLUDE_DIRS: uncomment this if your package contains header files
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ow_fps_monitor
-  CATKIN_DEPENDS message_runtime
-#  DEPENDS system_lib
-)
+# catkin_package(
+# #  INCLUDE_DIRS include
+# #  LIBRARIES ow_faults
+# #  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
+# #  DEPENDS system_lib
+#   CATKIN_DEPENDS message_runtime
+# )
 
 ###########
 ## Build ##
 ###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${GAZEBO_INCLUDE_DIRS}
+)
+
+## Declare a C++ library
+add_library(${PROJECT_NAME}_joints
+  src/JointsFaults.cpp
+)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(${PROJECT_NAME}_joints
+   ${catkin_LIBRARIES}
+   ${GAZEBO_LIBRARIES}
+)
+
+link_directories(
+  ${Boost_LIBRARY_DIR}
+  ${catkin_LIBRARY_DIRS}
+  ${GAZEBO_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -131,7 +160,13 @@ catkin_package(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/fps_monitor_node.cpp)
+add_executable(${EXEC_NAME} src/main.cpp src/FaultInjector.cpp)
+
+# make sure configure headers are built before any node using them
+add_dependencies (
+  ${EXEC_NAME} ${PROJECT_NAME}_gencfg
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -139,18 +174,13 @@ catkin_package(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-add_library(ow_fps_monitor
-  src/fps_monitor.cpp
-)
+## Add cmake target dependencies of the executable
+## same as for the library above
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(ow_fps_monitor
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS}
-)
-
-target_link_libraries(ow_fps_monitor
-  ${catkin_LIBRARIES}
-  ${GAZEBO_LIBRARIES}
+## Specify libraries to link a library or executable target against
+target_link_libraries(${EXEC_NAME}
+   ${catkin_LIBRARIES}
 )
 
 #############
@@ -167,13 +197,19 @@ target_link_libraries(ow_fps_monitor
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables and/or libraries for installation
-install(TARGETS
-  ow_fps_monitor
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+## Mark executables for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
+# install(TARGETS ${PROJECT_NAME}_node
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+## Mark libraries for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
+# install(TARGETS ${PROJECT_NAME}
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+# )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -182,23 +218,22 @@ install(TARGETS
 #   PATTERN ".svn" EXCLUDE
 # )
 
-# Mark other files for installation (e.g. launch and bag files, etc.)
-install(DIRECTORY
-  launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+## Mark other files for installation (e.g. launch and bag files, etc.)
+# install(FILES
+#   # myfile1
+#   # myfile2
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )
 
 #############
 ## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
-# if (CATKIN_ENABLE_TESTING)
-#  catkin_add_gtest(${PROJECT_NAME}_test test/test_MergeMethods.cpp)
-#  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME}_shared)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ow_faults.cpp)
+# if(TARGET ${PROJECT_NAME}-test)
+#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
-# if (CATKIN_ENABLE_TESTING)
-#  catkin_add_nosetests(test DEPENDENCIES ${${PROJECT_NAME}_EXPORTED_TARGETS})
-# endif()
+# catkin_add_nosetests(test)

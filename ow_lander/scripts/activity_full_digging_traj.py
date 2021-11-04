@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -32,7 +32,8 @@ def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):
     move_group.set_joint_value_target(goal_pose, True)
   else:
     move_group.set_pose_target(goal_pose)
-  plan = move_group.plan()
+  
+  _, plan, _, _ = move_group.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
   plan = move_group.go(wait=True)
@@ -48,7 +49,8 @@ def change_joint_value(move_group, joint_index, target_value):
   """
   joint_goal = move_group.get_current_joint_values()
   joint_goal[joint_index] = target_value
-  plan = move_group.plan(joint_goal)
+  move_group.set_joint_value_target(joint_goal)
+  _, plan, _, _ = move_group.plan()
   move_group.execute(plan, wait=True)
   #move_group.go(joint_goal, wait=True)
   move_group.stop()
@@ -79,7 +81,8 @@ def move_to_pre_trench_configuration(move_arm, x_start, y_start):
     return False
 
   joint_goal[constants.J_SCOOP_YAW] = 0
-  plan = move_arm.plan(joint_goal)
+  move_arm.set_joint_value_target(joint_goal)
+  _, plan, _, _ = move_arm.plan()
   #move_arm.asyncExecute(plan, wait=True)
   move_arm.execute(plan, wait=True)
   #move_arm.go(joint_goal, wait=True)

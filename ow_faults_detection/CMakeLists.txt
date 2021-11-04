@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_faults)
+project(ow_faults_detection)
 
-set(EXEC_NAME faults)
+set(EXEC_NAME faults_detection)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -14,13 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 )
-
-include(FindPkgConfig)
-if(PKG_CONFIG_FOUND)
-  pkg_check_modules(GAZEBO gazebo)
-  pkg_check_modules(OGRE OGRE)
-  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
-endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -63,6 +56,7 @@ add_message_files(
   PowerFaults.msg
   PTFaults.msg
   CamFaults.msg
+  JointStatesFlag.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -79,7 +73,7 @@ add_message_files(
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
+# ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
@@ -100,9 +94,8 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-  cfg/Faults.cfg
-)
+# generate_dynamic_reconfigure_options(
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -130,26 +123,12 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}_joints
-  src/JointsFaults.cpp
-)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_joints
-   ${catkin_LIBRARIES}
-   ${GAZEBO_LIBRARIES}
-)
-
-link_directories(
-  ${Boost_LIBRARY_DIR}
-  ${catkin_LIBRARY_DIRS}
-  ${GAZEBO_LIBRARY_DIRS}
-  ${OGRE-Terrain_LIBRARY_DIRS}
-)
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/ow_faults.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -159,7 +138,7 @@ link_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${EXEC_NAME} src/main.cpp src/FaultInjector.cpp)
+add_executable(${EXEC_NAME} src/main.cpp src/FaultDetector.cpp)
 
 # make sure configure headers are built before any node using them
 add_dependencies (
