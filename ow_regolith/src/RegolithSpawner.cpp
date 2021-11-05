@@ -95,7 +95,7 @@ RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
     m_volume_displaced(0.0),
     m_scoop_forward(1.0, 0.0, 0.0),
     m_scoop_spawn_offset(0.0, 0.0, -0.05),
-    m_scoop_linkname("lander::l_scoop_tip")
+    m_scoop_link_name("lander::l_scoop_tip")
 {
   // get node parameters
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
@@ -121,7 +121,7 @@ bool RegolithSpawner::initialize()
   auto sdf = parseSdf(m_model_sdf);
   float model_mass;
   if (!getModelLinkMass(sdf, model_mass) ||
-      !getModelLinkName(sdf, m_model_linkname)) {
+      !getModelLinkName(sdf, m_model_link_name)) {
     ROS_ERROR("Failed to acquire regolith model SDF parameters");
     return false;
   }
@@ -194,7 +194,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   spawn_msg.request.model_name                  = model_name.str();
   spawn_msg.request.model_xml                   = m_model_sdf;
   spawn_msg.request.robot_namespace             = "/regolith";
-  spawn_msg.request.reference_frame             = m_scoop_linkname;
+  spawn_msg.request.reference_frame             = m_scoop_link_name;
 
   spawn_msg.request.initial_pose.orientation.x  = 0.0;
   spawn_msg.request.initial_pose.orientation.y  = 0.0;
@@ -221,7 +221,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
 
   // apply psuedo force to keep model in the scoop
   stringstream body_name;
-  body_name << model_name.str() << "::" << m_model_linkname;
+  body_name << model_name.str() << "::" << m_model_link_name;
 
   ApplyBodyWrench wrench_msg;
   
@@ -274,9 +274,9 @@ void RegolithSpawner::removeAllRegolithModels()
 
 void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg) 
 {
-  auto name_it = find(begin(msg->name), end(msg->name), m_scoop_linkname);
+  auto name_it = find(begin(msg->name), end(msg->name), m_scoop_link_name);
   if (name_it == end(msg->name)) {
-    ROS_WARN("Failed to find %s in link states", m_scoop_linkname.c_str());      
+    ROS_WARN("Failed to find %s in link states", m_scoop_link_name.c_str());      
     return;
   }
 

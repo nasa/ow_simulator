@@ -74,7 +74,7 @@ private:
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
   // Gazebo link name of the scoop particles will spawn in
-  std::string m_scoop_linkname;
+  std::string m_scoop_link_name;
   // a vector that describes the forward direction of the scoop
   tf::Vector3 m_scoop_forward;
   // an offset relative to the scoop's frame where regolith will be spawned
@@ -83,7 +83,7 @@ private:
   // regolith model that spawns in the scoop when digging occurs
   std::string m_model_uri;
   std::string m_model_sdf;
-  std::string m_model_linkname;
+  std::string m_model_link_name;
   // magnitude of the force that pushes each model into the back of the scoop
   float m_psuedo_force_mag;
 
