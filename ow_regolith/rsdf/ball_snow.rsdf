@@ -1,14 +1,12 @@
 <?xml version="1.0" ?>
 
 <%
-  # Ice fragment bulk material sphere of variable diameter
+  # Snow bulk material sphere of variable diameter
   # Specified in SI units
-
-  # Geometry
 
   # material properties
   # values copied from https://github.com/nasa/ow_simulator/wiki/Appendices
-  density          = 900.0 # kg/m^3
+  density          = 300.0 # kg/m^3
   rolling_friction = 0.05
   static_friction  = 0.58
   restitution_coef = 0.88

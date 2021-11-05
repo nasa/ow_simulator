@@ -22,6 +22,8 @@ public:
   static cv::Mat rotateImage(const cv::Mat& image, float angle);
   // A utility function that linearly scales a single channel 32-bit float format image to an 8-bit unsigned int format
   static cv::Mat scaleImage_32FC1_To_8UC1(const cv::Mat& image);
+  // A utility function that returns a Mat filled with zeroes that is the same type and size as the image argument
+  static cv::Mat createZerosMatLike(const cv::Mat &image);
 };
 }  // namespace ow_dynamic_terrain
 

@@ -88,6 +88,7 @@ add_message_files(
   modify_terrain_circle.msg
   modify_terrain_ellipse.msg
   modify_terrain_patch.msg
+  modified_terrain_diff.msg
 )
 
 generate_messages(

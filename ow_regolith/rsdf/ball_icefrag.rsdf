@@ -1,18 +1,16 @@
 <?xml version="1.0" ?>
 
 <%
-  # Sand bulk material sphere of variable diameter
+  # Ice fragment bulk material sphere of variable diameter
   # Specified in SI units
-
-  # Geometry
-
+  
   # material properties
   # values copied from https://github.com/nasa/ow_simulator/wiki/Appendices
-  density          = 1600.0 # kg/m^3
+  density          = 900.0 # kg/m^3
   rolling_friction = 0.05
-  static_friction  = 0.35
+  static_friction  = 0.58
   restitution_coef = 0.88
-  poissons_ratio   = 0.25
+  poissons_ratio   = 0.36
   shear_modulus    = 1e+07 # Pa (not used)
   
   # Convert parameters
