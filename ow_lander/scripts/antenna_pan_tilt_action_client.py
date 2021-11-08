@@ -9,6 +9,7 @@ import actionlib
 from math import pi
 import argparse
 import ow_lander.msg
+from guarded_move_action_client import print_arguments
 
 
 def wrap_angle(angle):
@@ -26,14 +27,14 @@ def wrap_angle(angle):
 
 def antenna_client():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         'pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
     parser.add_argument(
         'tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requested pan value: %s", args.pan)
-    rospy.loginfo("Requested tilt value: %s", args.tilt)
+    print_arguments(args)
 
     client = actionlib.SimpleActionClient(
         'AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
@@ -53,7 +54,7 @@ def antenna_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  #
+    return client.get_result()
 
 
 if __name__ == '__main__':

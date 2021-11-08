@@ -18,11 +18,13 @@ import rospy
 import actionlib
 import ow_lander.msg
 import argparse
+from guarded_move_action_client import print_arguments
 
 
 def deliver_client():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('x_start', type=float,
                         help='x coordinates of sample delivery location', nargs='?', default=0.55, const=0)
     parser.add_argument('y_start', type=float,
@@ -30,9 +32,7 @@ def deliver_client():
     parser.add_argument('z_start', type=float,
                         help='z coordinates of sample delivery location', nargs='?', default=0.82, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requested x_start: %s", args.x_start)
-    rospy.loginfo("Requested y_start: %s", args.y_start)
-    rospy.loginfo("Requested z_start: %s", args.z_start)
+    print_arguments(args)
 
     client = actionlib.SimpleActionClient(
         'Deliver', ow_lander.msg.DeliverAction)
@@ -52,7 +52,7 @@ def deliver_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  #
+    return client.get_result()
 
 
 if __name__ == '__main__':

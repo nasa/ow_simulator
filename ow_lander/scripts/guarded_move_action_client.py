@@ -9,9 +9,14 @@ import actionlib
 import ow_lander.msg
 import argparse
 
+def print_arguments(args):
+    # convert from namespace to dict and print pairs
+    for name, value in zip(vars(args).keys(), vars(args).values()):
+        rospy.loginfo("Requested %s value: %s" % (name, value))
 
 def guarded_move_client():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('x_start', type=float,
                         help='x coordinates of guarded move starting point', nargs='?', default=2.0, const=0)
     parser.add_argument('y_start', type=float,
@@ -27,13 +32,7 @@ def guarded_move_client():
     parser.add_argument('search_distance', type=float,
                         help='Search Distance', nargs='?', default=0.5, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requested x_start: %s", args.x_start)
-    rospy.loginfo("Requested y_start: %s", args.y_start)
-    rospy.loginfo("Requested z_start: %s", args.z_start)
-    rospy.loginfo("Requested normal.x: %s", args.direction_x)
-    rospy.loginfo("Requested normal.y: %s", args.direction_y)
-    rospy.loginfo("Requested normal.z: %s", args.direction_z)
-    rospy.loginfo("Requested search distance: %s", args.search_distance)
+    print_arguments(args)
     client = actionlib.SimpleActionClient(
         'GuardedMove', ow_lander.msg.GuardedMoveAction)
 
@@ -56,7 +55,7 @@ def guarded_move_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  #
+    return client.get_result()
 
 
 if __name__ == '__main__':

@@ -23,11 +23,13 @@ import actionlib
 import ow_lander.msg
 import constants
 import argparse
+from guarded_move_action_client import print_arguments
 
 
 def DigLinear_client():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('x_start', type=float,
                         help='X coordinate of trenching starting point', nargs='?', default=1.46, const=0)
     parser.add_argument('y_start', type=float,
@@ -41,12 +43,7 @@ def DigLinear_client():
     parser.add_argument('ground_position', type=float, help='Z coordinate of ground level in base_link frame',
                         nargs='?', default=constants.DEFAULT_GROUND_HEIGHT, const=0)
     args = parser.parse_args()
-    rospy.loginfo("Requested x_start: %s", args.x_start)
-    rospy.loginfo("Requested y_start: %s", args.y_start)
-    rospy.loginfo("Requested depth: %s", args.depth)
-    rospy.loginfo("Requested length: %s", args.length)
-    rospy.loginfo("Requested parallel: %s", args.parallel)
-    rospy.loginfo("Requested ground_position: %s", args.ground_position)
+    print_arguments(args)
 
     client = actionlib.SimpleActionClient(
         'DigLinear', ow_lander.msg.DigLinearAction)
@@ -68,7 +65,7 @@ def DigLinear_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  #
+    return client.get_result()
 
 
 if __name__ == '__main__':
