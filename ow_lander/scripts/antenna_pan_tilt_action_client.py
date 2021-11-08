@@ -26,7 +26,8 @@ def wrap_angle(angle):
 
 def antenna_client():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         'pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
     parser.add_argument(
