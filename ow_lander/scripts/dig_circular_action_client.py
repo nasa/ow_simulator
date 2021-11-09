@@ -37,7 +37,7 @@ def DigCircular_client():
     parser.add_argument('depth', type=float,
                         help='Desired depth', nargs='?', default=0.01, const=0)
     parser.add_argument('parallel', type=lambda x: eval(x[0].upper() + x[1:].lower()),
-                        help='If True, resulting trench is parallel to arm. If False, perpendicular to arm', nargs='?', default=False)
+                        help='If True, resulting trench is parallel to arm. If False, perpendicular to arm', nargs='?', default= True)
     parser.add_argument('ground_position', type=float, help='Z coordinate of ground level in base_link frame',
                         nargs='?', default=constants.DEFAULT_GROUND_HEIGHT, const=0)
     args = parser.parse_args()
