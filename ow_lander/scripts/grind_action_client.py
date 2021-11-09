@@ -49,7 +49,7 @@ def Grind_client():
     parser.add_argument('length', type=float,
                         help='Desired length', nargs='?', default=0.6, const=0)
     parser.add_argument('parallel', type=lambda x: eval(x[0].upper() + x[1:].lower()),
-                        help='If True, resulting trench is parallel to arm. If False, perpendicular to arm', nargs='?', default=False)
+                        help='If True, resulting trench is parallel to arm. If False, perpendicular to arm', nargs='?', default = True)
     parser.add_argument('ground_position', type=float, help='Z coordinate of ground level in base_link frame',
                         nargs='?', default=constants.DEFAULT_GROUND_HEIGHT, const=0)
     args = parser.parse_args()
@@ -62,7 +62,7 @@ def Grind_client():
     goal = ow_lander.msg.GrindGoal()
 
     goal.x_start = args.x_start
-    goal.y_start = args.y_start
+    goal.y_start = args.y_start   
     goal.depth = args.depth
     goal.length = args.length
     goal.parallel = args.parallel
