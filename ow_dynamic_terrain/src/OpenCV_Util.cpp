@@ -45,3 +45,8 @@ Mat OpenCV_Util::scaleImage_32FC1_To_8UC1(const Mat& image)
 
   return result;
 }
+
+Mat OpenCV_Util::createZerosMatLike(const Mat &image)
+{
+  return Mat::zeros(image.size(), image.type());
+}
