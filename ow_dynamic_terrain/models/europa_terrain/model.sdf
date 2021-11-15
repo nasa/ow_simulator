@@ -1,10 +1,7 @@
 <?xml version="1.0" ?>
-<sdf version="1.6">
-
+<sdf version="1.7">
   <model name="heightmap">
-
     <plugin name="ow_dynamic_terrain_model" filename="libow_dynamic_terrain_model.so"/>
-
     <pose>0 0 0  0 0 0</pose>
     <static>true</static>
     <link name="terrain-link">
