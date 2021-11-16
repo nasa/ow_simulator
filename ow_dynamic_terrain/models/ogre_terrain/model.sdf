@@ -1,15 +1,9 @@
 <?xml version="1.0" ?>
-
-<sdf version="1.0">
-
+<sdf version="1.7">
   <model name="heightmap">
-
     <plugin name="ow_dynamic_terrain_model" filename="libow_dynamic_terrain_model.so"/>
-
     <static>true</static>
-
     <link name="terrain-link">
-
       <collision name="collision">
         <geometry>
           <heightmap>
@@ -19,7 +13,6 @@
           </heightmap>
         </geometry>
       </collision>
-
       <visual name="terrain-visual">
         <plugin name="ow_dynamic_terrain_visual" filename="libow_dynamic_terrain_visual.so"/>
         <geometry>
@@ -53,9 +46,6 @@
           </heightmap>
         </geometry>
       </visual>
-
     </link>
-
   </model>
-
 </sdf>
