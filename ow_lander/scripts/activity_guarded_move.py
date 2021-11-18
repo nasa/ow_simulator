@@ -4,8 +4,9 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import constants
 import math
+import constants
+import rospy
 from utils import is_shou_yaw_goal_in_range
 
 
@@ -115,5 +116,5 @@ def guarded_move_plan(move_arm, args):
   goal_pose.position.z -= direction_z*search_distance
   waypoints = [goal_pose]
   plan, _ = move_arm.compute_cartesian_path(waypoints, 0.01, 0.0)
-  rospay.loginfo("Done planning safe part of guarded_move")
+  rospy.loginfo("Done planning safe part of guarded_move")
   return plan

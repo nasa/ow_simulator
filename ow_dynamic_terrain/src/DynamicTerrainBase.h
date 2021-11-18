@@ -11,6 +11,7 @@
 #include "ow_dynamic_terrain/modify_terrain_circle.h"
 #include "ow_dynamic_terrain/modify_terrain_ellipse.h"
 #include "ow_dynamic_terrain/modify_terrain_patch.h"
+#include "ow_dynamic_terrain/modified_terrain_diff.h"
 
 namespace ow_dynamic_terrain
 {
@@ -44,6 +45,7 @@ protected:
   std::unique_ptr<ros::NodeHandle> m_node_handle;
   ros::CallbackQueue m_callback_queue;
   std::vector<ros::Subscriber> m_subscribers;
+  ros::Publisher m_differential_pub;
 };
 
 }  // namespace ow_dynamic_terrain

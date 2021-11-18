@@ -7,10 +7,17 @@
 import rospy
 import actionlib
 import ow_lander.msg
+import argparse
+from guarded_move_action_client import print_arguments
 
 def unstow_client():
- 
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        'default', type=float, help='This action client UnStows the lander arm', nargs='?', default=0, const=0)
     client = actionlib.SimpleActionClient('Unstow', ow_lander.msg.UnstowAction)
+    args = parser.parse_args()
+    print_arguments(args)
 
     client.wait_for_server()
     #dummy goal for action server
@@ -23,7 +30,7 @@ def unstow_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # 
+    return client.get_result()
 
 if __name__ == '__main__':
     try:

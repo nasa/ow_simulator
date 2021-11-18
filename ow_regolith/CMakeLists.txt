@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ow_dynamic_terrain)
+project(ow_regolith)
 
 ## libiginition-math6-dev which is a dependency of this module seem to require
 ## the C++17 standard when compiling against ros noetic distro.
@@ -12,51 +12,29 @@ endif()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  message_generation
-  std_msgs
-  geometry_msgs
-  sensor_msgs
+  gazebo_ros
   cv_bridge
-)
-
-find_package(OpenCV REQUIRED
-  core
+  ow_dynamic_terrain
+  ow_lander
 )
 
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
-  pkg_check_modules(OGRE OGRE)
-  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
 endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
-  ${OGRE-Terrain_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
 )
 
 link_directories(
-  ${Boost_LIBRARY_DIR}
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
-  ${OGRE-Terrain_LIBRARY_DIRS}
-  ${OpenCV_LIBRARY_DIRS}
 )
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -83,40 +61,14 @@ link_directories(
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 # Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  modify_terrain_circle.msg
-  modify_terrain_ellipse.msg
-  modify_terrain_patch.msg
-  modified_terrain_diff.msg
-)
+#add_message_files(
+#  FILES
+#)
 
-generate_messages(
-    DEPENDENCIES
-    std_msgs
-    geometry_msgs
-    sensor_msgs
-)
-
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+#generate_messages(
+#    DEPENDENCIES
+#    std_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -128,15 +80,13 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ow_dynamic_terrain
-  CATKIN_DEPENDS message_runtime
-#  DEPENDS system_lib
+   CATKIN_DEPENDS message_runtime ow_dynamic_terrain ow_lander
 )
 
 catkin_add_env_hooks(
-  80.ow_dynamic_terrain
-  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+  ow_regolith
+  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks
+)
 
 ###########
 ## Build ##
@@ -158,53 +108,20 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-## ow_dynamic_terrain_shared library
-
-add_library(${PROJECT_NAME}_shared SHARED
-  src/OpenCV_Util.cpp
-  src/TerrainBrush.cpp
-  src/MergeMethods.cpp
-  src/TerrainModifier.cpp
-  src/DynamicTerrainBase.cpp
+add_executable(regolith_node 
+  src/regolith_node.cpp
+  src/RegolithSpawner.cpp
+  src/sdf_utility.cpp
 )
 
-add_dependencies(${PROJECT_NAME}_shared
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+add_dependencies(regolith_node 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(${PROJECT_NAME}_shared
+target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-)
-
-## ow_dynamic_terrain_model (Model Plugin)
-
-add_library(${PROJECT_NAME}_model
-  src/DynamicTerrainModel.cpp
-)
-
-add_dependencies(${PROJECT_NAME}_model
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_model
-  ${PROJECT_NAME}_shared
-)
-
-## ow_dynamic_terrain_model (Visual Plugin)
-
-add_library(${PROJECT_NAME}_visual
-  src/DynamicTerrainVisual.cpp
-)
-
-add_dependencies(${PROJECT_NAME}_visual
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_visual
-  ${PROJECT_NAME}_shared
 )
 
 #############
@@ -221,41 +138,13 @@ target_link_libraries(${PROJECT_NAME}_visual
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables and/or libraries for installation
-install(TARGETS
-  ${PROJECT_NAME}_model
-  ${PROJECT_NAME}_visual
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
+# Mark other files for installation (e.g. launch and bag files, etc.)
+# install(DIRECTORY
+#   models
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-# Mark other files for installation (e.g. launch and bag files, etc.)
-install(DIRECTORY
-  launch
-  worlds
-  models
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-if (CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(${PROJECT_NAME}_test test/test_MergeMethods.cpp)
-  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME}_shared)
-endif()
-
-## Add folders to be run by python nosetests
-if (CATKIN_ENABLE_TESTING)
-  catkin_add_nosetests(test DEPENDENCIES ${${PROJECT_NAME}_EXPORTED_TARGETS})
-endif()
+# install(DIRECTORY
+#   models
+#   DESTINATION share/${PROJECT_NAME}/
+# )
