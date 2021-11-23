@@ -38,7 +38,7 @@ class ArmCheck(unittest.TestCase):
 
   def _normalize_angle(self, angle):
     """
-    Convenience method to nomrlaize angles to the range [-pi, pi]
+    Convenience method to normalize angles to the range [-pi, pi]
     @param angle: An angle that might need to be normalized
     @returns: the normalized value of the angle
     """
@@ -78,7 +78,7 @@ class ArmCheck(unittest.TestCase):
     success = arm_activity() if service_args is None else arm_activity(*service_args)
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
-    joints_abs_diff_array = np.full(joints_goal_array.shape, np.inf)
+    joints_diff_array = np.full(joints_goal_array.shape, np.inf)
 
     elapsed = 0
     while not rospy.is_shutdown() and \
@@ -86,18 +86,19 @@ class ArmCheck(unittest.TestCase):
             not goal_state_achieved:
 
       joints_state = self._arm_move_group.get_current_joint_values()
-      norm_joints_state_array = np.array(
-          [self._normalize_angle(e) for e in joints_state])
-      joints_abs_diff_array = np.abs(
-          joints_goal_array - norm_joints_state_array)
-      goal_state_achieved = all(joints_abs_diff_array < tolerance)
+      joints_state_array = np.array(joints_state)
+      joints_diff_array = np.array([
+        self._normalize_angle(goal - state) 
+        for goal, state in zip(joints_goal_array, joints_state_array)
+      ])
+      goal_state_achieved = all(np.abs(joints_diff_array) < tolerance)
       rospy.loginfo("""
       current joints state: {}
       diff joints state: {}
       maximum diff between expected/current: {}""".format(
-        np.round(norm_joints_state_array, 2),
-        np.round(joints_abs_diff_array, 2),
-        np.round(np.max(joints_abs_diff_array), 2)
+        np.round(joints_state_array, 2),
+        np.round(joints_diff_array, 2),
+        np.round(joints_diff_array[np.argmax(np.abs(joints_diff_array))], 2)
       ))
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
@@ -175,12 +176,14 @@ class ArmCheck(unittest.TestCase):
         service_args=[True, 0, 0, 0, 0, 0])
 
   def test_08_deliver_sample(self):
+    joints_target = self._arm_move_group.get_named_target_values(
+        "arm_deliver_final")
+    joints_goal = self._map_named_joint_target_to_list(joints_target)
     self._test_activity(
         service_name='/arm/deliver_sample',
         service_type=DeliverSample,
-        joints_goal=[0.98, 1.78, 0.96, 1.98, 2.55, 1.58],
-        test_duration=90,
-        service_args=[True, 0, 0, 0])
+        joints_goal=joints_goal,
+        test_duration=90)
 
   def test_09_unstow(self):
     joints_target = self._arm_move_group.get_named_target_values(
