@@ -66,20 +66,19 @@ class ArmCheck(unittest.TestCase):
 
     rospy.wait_for_service(service_name)
     test_start_time = rospy.get_time()
-    norm_joints_goal_array = np.array(
-      [self._normalize_angle(e) for e in joints_goal])
+    joints_goal_array = np.array(joints_goal)
     rospy.loginfo("""
     test info:
     ----------
     service name: {}
     joints goal: {}
     start time: {}""".format(
-      service_name, np.round(norm_joints_goal_array, 2), test_start_time))
+      service_name, np.round(joints_goal_array, 2), test_start_time))
     arm_activity = rospy.ServiceProxy(service_name, service_type)
     success = arm_activity() if service_args is None else arm_activity(*service_args)
     self.assertTrue(success, "submitted request to " + service_name)
     goal_state_achieved = False
-    joints_abs_diff_array = np.full(norm_joints_goal_array.shape, np.inf)
+    joints_diff_array = np.full(joints_goal_array.shape, np.inf)
 
     elapsed = 0
     while not rospy.is_shutdown() and \
@@ -87,18 +86,19 @@ class ArmCheck(unittest.TestCase):
             not goal_state_achieved:
 
       joints_state = self._arm_move_group.get_current_joint_values()
-      norm_joints_state_array = np.array(
-          [self._normalize_angle(e) for e in joints_state])
-      joints_abs_diff_array = np.abs(
-          norm_joints_goal_array - norm_joints_state_array)
-      goal_state_achieved = all(joints_abs_diff_array < tolerance)
+      joints_state_array = np.array(joints_state)
+      joints_diff_array = np.array([
+        self._normalize_angle(goal - state) 
+        for goal, state in zip(joints_goal_array, joints_state_array)
+      ])
+      goal_state_achieved = all(np.abs(joints_diff_array) < tolerance)
       rospy.loginfo("""
       current joints state: {}
       diff joints state: {}
       maximum diff between expected/current: {}""".format(
-        np.round(norm_joints_state_array, 2),
-        np.round(joints_abs_diff_array, 2),
-        np.round(np.max(joints_abs_diff_array), 2)
+        np.round(joints_state_array, 2),
+        np.round(joints_diff_array, 2),
+        np.round(joints_diff_array[np.argmax(np.abs(joints_diff_array))], 2)
       ))
       rospy.sleep(0.2)
       elapsed = rospy.get_time() - test_start_time
