@@ -6,6 +6,7 @@ project(ow_dynamic_terrain)
 if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
   add_compile_options(-std=c++17)
 endif()
+add_compile_options(-Wno-register)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
