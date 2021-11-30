@@ -80,7 +80,7 @@
     </group_state>
     <group_state name="arm_deliver_final" group="arm">
         <joint name="j_dist_pitch" value="1.97512"/>
-        <joint name="j_hand_yaw" value="-3.73328"/>
+        <joint name="j_hand_yaw" value="2.54991"/>
         <joint name="j_prox_pitch" value="0.95687"/>
         <joint name="j_scoop_yaw" value="1.56586"/>
         <joint name="j_shou_pitch" value="1.78236"/>
