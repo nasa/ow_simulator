@@ -8,7 +8,7 @@
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true"/>
   <arg name="use_rviz" default="true"/>
-  <arg name="sim_regolith" default="false" />
+  <arg name="sim_regolith" default="true" />
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="gazebo_launch_file" default="$(arg gazebo_launch_file)" />
