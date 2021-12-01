@@ -5,6 +5,7 @@ project(ow_dynamic_terrain)
 ## the C++17 standard when compiling against ros noetic distro.
 if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
   add_compile_options(-std=c++17)
+  add_compile_options(-Wno-register)
 endif()
 
 ## Find catkin macros and libraries
