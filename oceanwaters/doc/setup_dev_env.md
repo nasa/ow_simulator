@@ -236,7 +236,7 @@ sudo apt install git \
                  ros-noetic-tf2-geometry-msgs \
                  ros-noetic-gazebo-ros-control \
                  ros-noetic-xacro \
-								 ros-noetic-rviz-visual-tools \
+                 ros-noetic-rviz-visual-tools \
                  ros-noetic-rqt-plot ros-noetic-rqt-rviz \
                  ros-noetic-rqt-image-view \
                  ros-noetic-rqt-common-plugins \
