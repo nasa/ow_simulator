@@ -23,7 +23,7 @@ required):
 -   The Ubuntu 20.04 LTS (Focal Fossa) Linux operating system, with:
     -   The Bash command shell
     -   The git version control system
--   The Robot Operating System (ROS), Noetic distribution, with:
+-   [ROS Noetic Ninjemys](http://wiki.ros.org/noetic) distribution, with:
     -   The Catkin build system
 -   Gazebo 11.9+
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
