@@ -1,17 +1,22 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from __future__ import print_function
 import rospy
 import actionlib
 import ow_lander.msg
-
+import argparse
+from guarded_move_action_client import print_arguments
 
 def unstow_client():
- 
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        'default', type=float, help='This action client Stows the lander arm', nargs='?', default=0, const=0)
+    args = parser.parse_args()
+    print_arguments(args)
     client = actionlib.SimpleActionClient('Stow', ow_lander.msg.UnstowAction)
 
     client.wait_for_server()
@@ -25,15 +30,14 @@ def unstow_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # 
+    return client.get_result()
 
 if __name__ == '__main__':
     try:
-        # Initializes a rospy node so that the UnstowActionClient can
+        # Initializes a rospy node so that the StowActionClient can
         # publish and subscribe over ROS.
         rospy.init_node('stow_client_py')
         result = unstow_client()
-        print("Result:", ', ',result)
-        #print("Result:", ', '.join([str(n) for n in result.sequence]))
+        rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        print("program interrupted before completion", file=sys.stderr)
+        rospy.logerror("program interrupted before completion")

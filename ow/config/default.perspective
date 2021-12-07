@@ -1,11 +1,36 @@
 {
   "keys": {},
   "groups": {
+    "mainwindow": {
+      "keys": {
+        "geometry": {
+          "repr(QByteArray.hex)": "QtCore.QByteArray(b'01d9d0cb000300000000001a000000d80000063f000004400000001a000000f10000063f00000440000000000000000007800000001a000000f10000063f00000440')",
+          "type": "repr(QByteArray.hex)",
+          "pretty-print": "         ? @     ? @          ? @"
+        },
+        "state": {
+          "repr(QByteArray.hex)": "QtCore.QByteArray(b'000000ff00000000fd00000001000000030000062600000321fc0100000002fc0000000000000626000003ba00fffffffa000000010100000005fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740300000260000000d80000018d00000305fb00000030005f005f0044006f0063006b0057006900640067006500740043006f006e007400610069006e00650072005f005f00310100000000ffffffff000003ba01000003fb00000072007200710074005f0073006500720076006900630065005f00630061006c006c00650072005f005f005300650072007600690063006500430061006c006c00650072005f005f0031005f005f005300650072007600690063006500430061006c006c006500720057006900640067006500740100000000000003cf0000033f01000003fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f0077006900640067006500740100000000ffffffff000000eb01000003fb00000074006f0077005f0070006c006500780069006c005f005f0050004c004500580049004c00200050006c0061006e002000530065006c0065006300740069006f006e005f005f0031005f005f0050006c006500780069006c0050006c0061006e00530065006c0065006300740069006f006e005500490100000000ffffffff0000022f01000003fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c006900730068006500720057006900640067006500740300000256000000b90000022800000193000006260000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
+          "type": "repr(QByteArray.hex)",
+          "pretty-print": "                   &                                                          `                                                                                                          ?                                                                                                                                     /                                                  V   (   &                                                      "
+        }
+      },
+      "groups": {
+        "toolbar_areas": {
+          "keys": {
+            "MinimizedDockWidgetsToolbar": {
+              "repr": "8",
+              "type": "repr"
+            }
+          },
+          "groups": {}
+        }
+      }
+    },
     "pluginmanager": {
       "keys": {
         "running-plugins": {
-          "type": "repr",
-          "repr": "{u'rqt_service_caller/ServiceCaller': [1], u'__DockWidgetContainer': [1], u'rqt_reconfigure/Param': [1], u'rqt_image_view/ImageView': [1], u'rqt_publisher/Publisher': [1]}"
+          "repr": "{'__DockWidgetContainer': [1], 'ow_plexil/PLEXIL Plan Selection': [1], 'rqt_image_view/ImageView': [1], 'rqt_publisher/Publisher': [1], 'rqt_reconfigure/Param': [1], 'rqt_service_caller/ServiceCaller': [1]}",
+          "type": "repr"
         }
       },
       "groups": {
@@ -14,31 +39,31 @@
           "groups": {
             "dock_widget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Control and Viz'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'&Control and Viz'"
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {
                 "mainwindow": {
                   "keys": {
                     "geometry": {
+                      "repr(QByteArray.hex)": "QtCore.QByteArray(b'01d9d0cb00030000000000020000001400000623000003020000000000000000ffffffffffffffff0000000000000000078000000002000000140000062300000302')",
                       "type": "repr(QByteArray.hex)",
-                      "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000000000020000001e00000635000003100000000000000000ffffffffffffffff00000000000000000780')",
-                      "pretty-print": "         5               "
+                      "pretty-print": "         #                    #  "
                     },
                     "state": {
+                      "repr(QByteArray.hex)": "QtCore.QByteArray(b'000000ff00000000fd000000010000000200000622000002effc0100000002fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c0069007300680065007200570069006400670065007401000000000000034a0000022801000003fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074010000034b000002d70000018d01000003000006220000000000000004000000040000000800000008fc00000000')",
                       "type": "repr(QByteArray.hex)",
-                      "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd000000010000000200000634000002f3fc0100000003fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c006900730068006500720057006900640067006500740100000000000003470000026201000003fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000348000002ec000001c001000003fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f00770069006400670065007403000004be0000009c0000013e00000312000006340000000000000004000000040000000800000008fc00000000')",
-                      "pretty-print": "                 Xrqt_publisher__Publisher__1__PublisherWidget          Zrqt_image_view__ImageView__1__ImageViewWidget          lrqt_reconfigure__Param__1___plugincontainer_top_widget                       "
+                      "pretty-print": "                 Xrqt_publisher__Publisher__1__PublisherWidget          Zrqt_image_view__ImageView__1__ImageViewWidget                       "
                     }
                   },
                   "groups": {}
@@ -47,173 +72,22 @@
             }
           }
         },
-        "plugin__rqt_robot_steering__RobotSteering__2": {
+        "plugin__ow_plexil__PLEXIL Plan Selection__1": {
           "keys": {},
           "groups": {
-            "plugin": {
+            "dock_widget__PlexilPlanSelectionUI": {
               "keys": {
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/cmd_vel'"
+                "dock_widget_title": {
+                  "repr": "'PlexilPlanSelection'",
+                  "type": "repr"
                 },
-                "vx_min": {
-                  "type": "repr",
-                  "repr": "u'-1'"
-                },
-                "vw_min": {
-                  "type": "repr",
-                  "repr": "u'-3'"
-                },
-                "vw_max": {
-                  "type": "repr",
-                  "repr": "u'3'"
-                },
-                "vx_max": {
-                  "type": "repr",
-                  "repr": "u'1'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_robot_steering__RobotSteering__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget__RobotSteeringUi": {
-              "keys": {
                 "dockable": {
-                  "type": "repr",
-                  "repr": "u'true'"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Ro&bot Steering'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/cmd_vel'"
-                },
-                "vx_min": {
-                  "type": "repr",
-                  "repr": "u'-1'"
-                },
-                "vw_min": {
-                  "type": "repr",
-                  "repr": "u'-3'"
-                },
-                "vw_max": {
-                  "type": "repr",
-                  "repr": "u'3'"
-                },
-                "vx_max": {
-                  "type": "repr",
-                  "repr": "u'1'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_rpgsim_tools__PanTilt__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget__PanTiltWidget": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'P&anTilt'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "tiltMax": {
-                  "type": "repr",
-                  "repr": "u'1.57'"
-                },
-                "panTopic": {
-                  "type": "repr",
-                  "repr": "u'/krex2/pan_position_controller/command'"
-                },
-                "panDefault": {
-                  "type": "repr",
-                  "repr": "u'0'"
-                },
-                "tiltMin": {
-                  "type": "repr",
-                  "repr": "u'-1.57'"
-                },
-                "panMax": {
-                  "type": "repr",
-                  "repr": "u'3.14'"
-                },
-                "tiltTopic": {
-                  "type": "repr",
-                  "repr": "u'/krex2/tilt_position_controller/command'"
-                },
-                "tiltDefault": {
-                  "type": "repr",
-                  "repr": "u'0'"
-                },
-                "panMin": {
-                  "type": "repr",
-                  "repr": "u'-3.14'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_reconfigure__Param__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget___plugincontainer_top_widget": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "True"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'&Dynamic Reconfigure'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "splitter": {
-                  "type": "repr(QByteArray.hex)",
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000010000000200000159000004da01ffffffff010000000100')",
-                  "pretty-print": "       Y       "
-                },
-                "_splitter": {
-                  "type": "repr(QByteArray.hex)",
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000020000012c000000640100000009010000000200')",
-                  "pretty-print": "       , d     "
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -225,183 +99,62 @@
           "groups": {
             "dock_widget__ImageViewWidget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Image View'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "1"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'&Image View'"
+                  "repr": "1",
+                  "type": "repr"
                 }
               },
               "groups": {}
             },
             "plugin": {
               "keys": {
+                "dynamic_range": {
+                  "repr": "False",
+                  "type": "repr"
+                },
                 "max_range": {
-                  "type": "repr",
-                  "repr": "10.0"
-                },
-                "rotate": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "smooth_image": {
-                  "type": "repr",
-                  "repr": "False"
+                  "repr": "10.0",
+                  "type": "repr"
                 },
                 "mouse_pub_topic": {
-                  "type": "repr",
-                  "repr": "u'/StereoCamera/left/image_raw_mouse_left'"
+                  "repr": "'/StereoCamera/left/image_raw_mouse_left'",
+                  "type": "repr"
                 },
                 "num_gridlines": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "toolbar_hidden": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "zoom1": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "dynamic_range": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/StereoCamera/left/image_raw'"
+                  "repr": "0",
+                  "type": "repr"
                 },
                 "publish_click_location": {
-                  "type": "repr",
-                  "repr": "False"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_rpgsim_tools__ImageTrigger__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget__ImageTriggerPanel": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "u'true'"
+                  "repr": "False",
+                  "type": "repr"
                 },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
+                "rotate": {
+                  "repr": "0",
+                  "type": "repr"
                 },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Ima&geTrigger'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_plot__Plot__1": {
-          "keys": {},
-          "groups": {
-            "plugin": {
-              "keys": {
-                "autoscroll": {
-                  "type": "repr",
-                  "repr": "u'true'"
+                "smooth_image": {
+                  "repr": "False",
+                  "type": "repr"
                 },
-                "plot_type": {
-                  "type": "repr",
-                  "repr": "u'1'"
+                "toolbar_hidden": {
+                  "repr": "False",
+                  "type": "repr"
                 },
-                "topics": {
-                  "type": "repr",
-                  "repr": "u''"
+                "topic": {
+                  "repr": "'/StereoCamera/left/image_raw'",
+                  "type": "repr"
                 },
-                "y_limits": {
-                  "type": "repr",
-                  "repr": "[u'0', u'1']"
-                },
-                "x_limits": {
-                  "type": "repr",
-                  "repr": "[u'0', u'1']"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_robot_monitor__RobotMonitor__1": {
-          "keys": {},
-          "groups": {
-            "plugin": {
-              "keys": {
-                "splitter": {
-                  "type": "repr(QByteArray.hex)",
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000030000006400000064000000c80100000009010000000200')",
-                  "pretty-print": "       d d       "
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_graph__RosGraph__1": {
-          "keys": {},
-          "groups": {
-            "plugin": {
-              "keys": {
-                "graph_type_combo_box_index": {
-                  "type": "repr",
-                  "repr": "u'0'"
-                },
-                "topic_filter_line_edit_text": {
-                  "type": "repr",
-                  "repr": "u'/'"
-                },
-                "filter_line_edit_text": {
-                  "type": "repr",
-                  "repr": "u'/'"
-                },
-                "highlight_connections_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "unreachable_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "actionlib_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "quiet_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "dead_sinks_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "leaf_topics_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
-                },
-                "namespace_cluster_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'false'"
-                },
-                "auto_fit_graph_check_box_state": {
-                  "type": "repr",
-                  "repr": "u'true'"
+                "zoom1": {
+                  "repr": "False",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -413,17 +166,17 @@
           "groups": {
             "dock_widget__PublisherWidget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Message Publisher'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "1"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'&Message Publisher'"
+                  "repr": "1",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -431,85 +184,57 @@
             "plugin": {
               "keys": {
                 "publishers": {
-                  "type": "repr",
-                  "repr": "u\"[{'type_name': 'std_msgs/Float64', 'topic_name': '/ant_pan_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/ant_tilt_position_controller/command', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 1, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/exposure/data': '0.02'}, 'publisher_id': 8, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}, 'publisher_id': 9, 'counter': 0}, {'type_name': 'std_msgs/Float64', 'topic_name': '/gazebo/plugins/camera_sim/exposure', 'enabled': False, 'rate': 1.0, 'expressions': {u'/gazebo/plugins/camera_sim/exposure/data': '0.02'}, 'publisher_id': 10, 'counter': 0}, {'type_name': 'std_msgs/Empty', 'topic_name': '/StereoCamera/left/image_trigger', 'enabled': False, 'rate': 1.0, 'expressions': {}, 'publisher_id': 11, 'counter': 0}]\""
+                  "repr": "\"[{'topic_name': '/ant_pan_position_controller/command', 'type_name': 'std_msgs/Float64', 'rate': 1.0, 'enabled': False, 'publisher_id': 0, 'counter': 0, 'expressions': {}}, {'topic_name': '/ant_tilt_position_controller/command', 'type_name': 'std_msgs/Float64', 'rate': 1.0, 'enabled': False, 'publisher_id': 1, 'counter': 0, 'expressions': {}}, {'topic_name': '/StereoCamera/left/image_trigger', 'type_name': 'std_msgs/Empty', 'rate': 1.0, 'enabled': False, 'publisher_id': 2, 'counter': 0, 'expressions': {}}, {'topic_name': '/gazebo/plugins/camera_sim/exposure', 'type_name': 'std_msgs/Float64', 'rate': 1.0, 'enabled': False, 'publisher_id': 3, 'counter': 0, 'expressions': {'/gazebo/plugins/camera_sim/exposure/data': '0.05'}}, {'topic_name': '/gazebo/plugins/camera_sim/gui/exposure', 'type_name': 'std_msgs/Float64', 'rate': 1.0, 'enabled': False, 'publisher_id': 4, 'counter': 0, 'expressions': {'/gazebo/plugins/camera_sim/gui/exposure/data': '0.05'}}, {'topic_name': '/gazebo/plugins/camera_sim/gui/gamma', 'type_name': 'std_msgs/Float64', 'rate': 1.0, 'enabled': False, 'publisher_id': 5, 'counter': 0, 'expressions': {'/gazebo/plugins/camera_sim/gui/gamma/data': '1'}}]\"",
+                  "type": "repr"
                 }
               },
               "groups": {}
             }
           }
         },
-        "plugin__rqt_vipersim_tools__PanTilt__1": {
+        "plugin__rqt_reconfigure__Param__1": {
           "keys": {},
           "groups": {
-            "dock_widget__PanTiltWidget": {
+            "dock_widget___plugincontainer_top_widget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Dynamic Reconfigure'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "u'true'"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'P&anTilt'"
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {}
             },
             "plugin": {
               "keys": {
-                "tiltMax": {
-                  "type": "repr",
-                  "repr": "u'1.57'"
+                "_splitter": {
+                  "repr(QByteArray.hex)": "QtCore.QByteArray(b'000000ff00000001000000020000012c000000640100000009010000000200')",
+                  "type": "repr(QByteArray.hex)",
+                  "pretty-print": "       , d     "
                 },
-                "panTopic": {
-                  "type": "repr",
-                  "repr": "u''"
+                "expanded_nodes": {
+                  "repr": "[]",
+                  "type": "repr"
                 },
-                "panDefault": {
-                  "type": "repr",
-                  "repr": "u'0'"
+                "selected_nodes": {
+                  "repr": "[]",
+                  "type": "repr"
                 },
-                "tiltMin": {
-                  "type": "repr",
-                  "repr": "u'-1.57'"
+                "splitter": {
+                  "repr(QByteArray.hex)": "QtCore.QByteArray(b'000000ff0000000100000002000000a80000006401ffffffff010000000100')",
+                  "type": "repr(QByteArray.hex)",
+                  "pretty-print": "         d     "
                 },
-                "panMax": {
-                  "type": "repr",
-                  "repr": "u'1.57'"
-                },
-                "tiltTopic": {
-                  "type": "repr",
-                  "repr": "u''"
-                },
-                "tiltDefault": {
-                  "type": "repr",
-                  "repr": "u'0'"
-                },
-                "panMin": {
-                  "type": "repr",
-                  "repr": "u'-1.57'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_joint_trajectory_controller__JointTrajectoryController__1": {
-          "keys": {},
-          "groups": {
-            "plugin": {
-              "keys": {
-                "jtc_name": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "cm_ns": {
-                  "type": "repr",
-                  "repr": "None"
+                "text": {
+                  "repr": "''",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -521,17 +246,17 @@
           "groups": {
             "dock_widget__ServiceCallerWidget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Service Caller'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'&Service Caller'"
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -539,64 +264,17 @@
             "plugin": {
               "keys": {
                 "current_service_name": {
-                  "type": "repr",
-                  "repr": "u'/GlobalShaderParam/describe_parameters'"
+                  "repr": "'/StereoCamera/left/image_color/compressed/set_parameters'",
+                  "type": "repr"
                 },
                 "splitter_orientation": {
-                  "type": "repr",
-                  "repr": "2"
+                  "repr": "2",
+                  "type": "repr"
                 }
               },
               "groups": {}
             }
           }
-        },
-        "plugin__rqt_vipersim_tools__ImageTrigger__1": {
-          "keys": {},
-          "groups": {
-            "dock_widget__ImageTriggerPanel": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "u'false'"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Im&ageTrigger'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        }
-      }
-    },
-    "mainwindow": {
-      "keys": {
-        "geometry": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb000200000000004f0000023f00000692000005e700000055000002680000068c000005e100000000000000000780')",
-          "pretty-print": "     O ?     U h         "
-        },
-        "state": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000063800000335fc0100000002fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074030000039b000000cb000001c000000312fc00000000000006380000042700fffffffc0200000002fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c0069007300680065007200570069006400670065007403000001d3000000b60000026200000312fc00000026000003350000016901000021fa000000000100000004fb00000030005f005f0044006f0063006b0057006900640067006500740043006f006e007400610069006e00650072005f005f00310100000000ffffffff0000042701000003fb00000072007200710074005f0073006500720076006900630065005f00630061006c006c00650072005f005f005300650072007600690063006500430061006c006c00650072005f005f0031005f005f005300650072007600690063006500430061006c006c006500720057006900640067006500740100000000ffffffff000003ae01000003fb00000030005f005f0044006f0063006b0057006900640067006500740043006f006e007400610069006e00650072005f005f00320100000000ffffffff0000000000000000fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f0077006900640067006500740100000000000005970000013e01000003000006380000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
-          "pretty-print": "                 Zrqt_image_view__ImageView__1__ImageViewWidget            8 '                                                         b                 0__DockWidgetContainer__1          rrqt_service_caller__ServiceCaller__1__ServiceCallerWidget          0__DockWidgetContainer__2          lrqt_reconfigure__Param__1___plugincontainer_top_widget                            6MinimizedDockWidgetsToolbar        "
-        }
-      },
-      "groups": {
-        "toolbar_areas": {
-          "keys": {
-            "MinimizedDockWidgetsToolbar": {
-              "type": "repr",
-              "repr": "8"
-            }
-          },
-          "groups": {}
         }
       }
     }

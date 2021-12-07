@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -7,7 +7,6 @@
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Point, WrenchStamped
-
 
 FORCE_X_THRESHOLD = -10.0 # TODO: Optimize for sensor noise as part of OCEANWATERS-617
 
@@ -37,7 +36,7 @@ class GroundDetector:
     """
     :type msg: WrenchStamped
     """
-    # print(msg.wrench.force.x)
+    # rospy.logdebug("msg.wrench.force.x = %f", msg.wrench.force.x)
     if msg.wrench.force.x < FORCE_X_THRESHOLD:
       self._ground_detected = True
       self._dist_pitch_ft_sensor_sub.unregister()

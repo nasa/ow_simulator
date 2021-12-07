@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
@@ -7,7 +7,7 @@
 import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from ow_faults.msg import SystemFaults
+from ow_faults_detection.msg import SystemFaults
 
 ARM_EXECUTION_ERROR = 4
 

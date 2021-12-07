@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+
+<%
+  # Sand bulk material sphere of variable diameter
+  # Specified in SI units
+
+  # material properties
+  # values copied from https://github.com/nasa/ow_simulator/wiki/Appendices
+  density          = 1600.0 # kg/m^3
+  rolling_friction = 0.05
+  static_friction  = 0.35
+  restitution_coef = 0.88
+  poissons_ratio   = 0.25
+  shear_modulus    = 1e+07 # Pa (not used)
+  
+  # Convert parameters
+  d = diameter.to_f
+
+  r = d/2.0
+
+  # Inertia
+  m    = density * 4.0/3.0 * Math::PI * r ** 2
+  ixx  = 2.0*m*r**2/5.0
+  iyy  = 2.0*m*r**2/5.0
+  izz  = 2.0*m*r**2/5.0
+%>
+
+<sdf version="1.5">
+  <model name="regolith">
+    <link name="link">
+      <pose>0 0 <%= r %> 0 0 0</pose>
+      <inertial>
+        <mass><%= m %></mass>
+        <inertia>
+          <ixx><%= ixx %></ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy><%= iyy %></iyy>
+          <iyz>0</iyz>
+          <izz><%= izz %></izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <bounce>
+          <restitution_coefficient><%= restitution_coef %></restitution_coefficient>
+        </bounce>
+        <geometry>
+          <sphere>
+            <radius><%= r %></radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <poissons_ratio><%= poissons_ratio %></poissons_ratio>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.0001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <torsional>
+              <!-- torsional (or spin) friction is approximated by rolling friction -->
+              <coefficient><%= rolling_friction %></coefficient>
+            </torsional>
+            <ode>
+              <mu><%= static_friction %></mu>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius><%= r %></radius>
+          </sphere>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Chrome</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

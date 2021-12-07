@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_sim_tests</name>
+  <version>0.0.0</version>
+  <description>A module that implements a set of test for the ow simulator</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <!-- Example:  -->
+  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="ussama.naal@nasa.gov">Ussama Naal</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>NASA OPEN SOURCE AGREEMENT VERSION 1.3</license>
+
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintainers, but could be -->
+  <!-- Example: -->
+  <author email="ussama.naal@nasa.gov">Ussama Naal</author>
+
+  <!-- The *depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>ow_lander</build_depend>
+  <build_depend>rostest</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <test_depend>rosunit</test_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    <gazebo_ros plugin_path="${prefix}/../../lib" gazebo_media_path="${prefix}" />
+  </export>
+</package>

@@ -125,37 +125,15 @@ There are various reasons why you may need to re-run the setup assistant:
 * Define new arm/antenna poses or revise existing ones.
 
 ## ROS Actions
-All the motion planning services have been converted into ROS Actions. With ROS actions we can dynamically interact with the arm while performing any of the above mentioned tasks and also receive real-time feedback about the end effector's position.
 
-A series if ROS Action client files have been added to the scripts folder 
+All the motion planning services have been converted into ROS
+Actions. With ROS actions we can dynamically interact with the arm
+while performing any of the above mentioned tasks and also receive
+real-time feedback about the end effector's position.
 
-```bash
-cd ow_simulator/ow_lander/scripts
-```
+The ROS Action server scripts, as well as client scripts to test the
+actions, are found in the `scripts` directory.
 
-Each individual arm action can be invoked using the cleint scripts. 
-
-```bash
-python unstow_action_client.py
-```
-```bash
-python guarded_move_action_client.py
-```
-```bash
-python grind_action_client.py
-```
-```bash
-python dig_circular_action_client.py
-```
-```bash
-python dig_linear_action_client.py
-```
-```bash
-python deliver_action_client.py
-```
-```bash
-python stow_action_client.py
-```
 ## Misc Information
 
 ### Common Code

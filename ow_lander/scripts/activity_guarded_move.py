@@ -1,11 +1,12 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import constants
 import math
+import constants
+import rospy
 from utils import is_shou_yaw_goal_in_range
 
 
@@ -85,7 +86,7 @@ def pre_guarded_move(move_arm, args):
   goal_pose.position.y = targ_y
   goal_pose.position.z = targ_z
   move_arm.set_pose_target(goal_pose)
-  plan = move_arm.plan()
+  _, plan, _, _ = move_arm.plan()
   if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
     return False
 
@@ -93,7 +94,7 @@ def pre_guarded_move(move_arm, args):
   move_arm.stop()
   move_arm.clear_pose_targets()
 
-  print("Done planning approach of guarded_move")
+  rospy.loginfo("Done planning approach of guarded_move")
 
   return True
 
@@ -115,5 +116,5 @@ def guarded_move_plan(move_arm, args):
   goal_pose.position.z -= direction_z*search_distance
   waypoints = [goal_pose]
   plan, _ = move_arm.compute_cartesian_path(waypoints, 0.01, 0.0)
-  print("Done planning safe part of guarded_move")
+  rospy.loginfo("Done planning safe part of guarded_move")
   return plan
