@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--This does not replace URDF, and is not an extension of URDF.
     This is a format for representing semantic information about the robot structure.
     A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
@@ -10,108 +10,124 @@
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
     <group name="arm">
-        <chain base_link="base_link" tip_link="l_scoop" />
+        <chain base_link="base_link" tip_link="l_scoop"/>
     </group>
     <group name="antenna">
-        <chain base_link="base_link" tip_link="l_ant_panel" />
+        <chain base_link="base_link" tip_link="l_ant_panel"/>
     </group>
     <group name="limbs">
-        <chain base_link="base_link" tip_link="l_hand" />
+        <chain base_link="base_link" tip_link="l_hand"/>
     </group>
     <group name="grinder">
-        <chain base_link="base_link" tip_link="l_grinder" />
+        <chain base_link="base_link" tip_link="l_grinder"/>
     </group>
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
     <group_state name="default_pose" group="arm">
-        <joint name="j_dist_pitch" value="0" />
-        <joint name="j_hand_yaw" value="0" />
-        <joint name="j_prox_pitch" value="0" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="1.125" />
-        <joint name="j_shou_yaw" value="0" />
+        <joint name="j_dist_pitch" value="0"/>
+        <joint name="j_hand_yaw" value="0"/>
+        <joint name="j_prox_pitch" value="0"/>
+        <joint name="j_scoop_yaw" value="0"/>
+        <joint name="j_shou_pitch" value="1.125"/>
+        <joint name="j_shou_yaw" value="0"/>
     </group_state>
     <group_state name="arm_stowed" group="arm">
-        <joint name="j_dist_pitch" value="2.9" />
-        <joint name="j_hand_yaw" value="0" />
-        <joint name="j_prox_pitch" value="-2.65" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="1.5708" />
-        <joint name="j_shou_yaw" value="-1.5" />
+        <joint name="j_dist_pitch" value="2.9"/>
+        <joint name="j_hand_yaw" value="0"/>
+        <joint name="j_prox_pitch" value="-2.65"/>
+        <joint name="j_scoop_yaw" value="0"/>
+        <joint name="j_shou_pitch" value="1.5708"/>
+        <joint name="j_shou_yaw" value="-1.5"/>
     </group_state>
     <group_state name="arm_extended" group="arm">
-        <joint name="j_dist_pitch" value="0" />
-        <joint name="j_hand_yaw" value="0" />
-        <joint name="j_prox_pitch" value="0" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="0" />
-        <joint name="j_shou_yaw" value="0" />
+        <joint name="j_dist_pitch" value="0"/>
+        <joint name="j_hand_yaw" value="0"/>
+        <joint name="j_prox_pitch" value="0"/>
+        <joint name="j_scoop_yaw" value="0"/>
+        <joint name="j_shou_pitch" value="0"/>
+        <joint name="j_shou_yaw" value="0"/>
     </group_state>
     <group_state name="arm_unstowed" group="arm">
-        <joint name="j_dist_pitch" value="0" />
-        <joint name="j_hand_yaw" value="1.5707" />
-        <joint name="j_prox_pitch" value="-1.5707" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="1.5707" />
-        <joint name="j_shou_yaw" value="0" />
+        <joint name="j_dist_pitch" value="0"/>
+        <joint name="j_hand_yaw" value="1.5707"/>
+        <joint name="j_prox_pitch" value="-1.5707"/>
+        <joint name="j_scoop_yaw" value="0"/>
+        <joint name="j_shou_pitch" value="1.5707"/>
+        <joint name="j_shou_yaw" value="0"/>
     </group_state>
     <group_state name="arm_digging" group="arm">
-        <joint name="j_dist_pitch" value="0.7171" />
-        <joint name="j_hand_yaw" value="1.5" />
-        <joint name="j_prox_pitch" value="-1.5707" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="0.8537" />
-        <joint name="j_shou_yaw" value="0" />
+        <joint name="j_dist_pitch" value="0.7171"/>
+        <joint name="j_hand_yaw" value="1.5"/>
+        <joint name="j_prox_pitch" value="-1.5707"/>
+        <joint name="j_scoop_yaw" value="0"/>
+        <joint name="j_shou_pitch" value="0.8537"/>
+        <joint name="j_shou_yaw" value="0"/>
     </group_state>
-    <group_state name="arm_deliver" group="arm">
-        <joint name="j_dist_pitch" value="0" />
-        <joint name="j_hand_yaw" value="3.1415" />
-        <joint name="j_prox_pitch" value="1.5708" />
-        <joint name="j_scoop_yaw" value="0" />
-        <joint name="j_shou_pitch" value="1.5708" />
-        <joint name="j_shou_yaw" value="0.4439" />
+    <group_state name="arm_deliver_staging_1" group="arm">
+        <joint name="j_dist_pitch" value="-0.3227029514634703"/>
+        <joint name="j_hand_yaw" value="3.478370505409056"/>
+        <joint name="j_prox_pitch" value="7.8778027735874705"/>
+        <joint name="j_scoop_yaw" value="2.2865253926542763"/>
+        <joint name="j_shou_pitch" value="1.4818469651445243"/>
+        <joint name="j_shou_yaw" value="0.8402852993447851"/>
+    </group_state>
+    <group_state name="arm_deliver_staging_2" group="arm">
+        <joint name="j_dist_pitch" value="0.09507765635244159"/>
+        <joint name="j_hand_yaw" value="-3.1610326972124074"/>
+        <joint name="j_prox_pitch" value="8.083221368093394"/>
+        <joint name="j_scoop_yaw" value="2.3804006911422295"/>
+        <joint name="j_shou_pitch" value="1.2417232488293664"/>
+        <joint name="j_shou_yaw" value="0.7523490003853812"/>
+    </group_state>
+    <group_state name="arm_deliver_final" group="arm">
+        <joint name="j_dist_pitch" value="1.97512"/>
+        <joint name="j_hand_yaw" value="2.54991"/>
+        <joint name="j_prox_pitch" value="0.95687"/>
+        <joint name="j_scoop_yaw" value="1.56586"/>
+        <joint name="j_shou_pitch" value="1.78236"/>
+        <joint name="j_shou_yaw" value="0.977762"/>
     </group_state>
     <group_state name="antenna_stow" group="antenna">
-        <joint name="j_ant_pan" value="0" />
-        <joint name="j_ant_tilt" value="1.8781" />
+        <joint name="j_ant_pan" value="0"/>
+        <joint name="j_ant_tilt" value="1.8781"/>
     </group_state>
     <group_state name="antenna_deployed" group="antenna">
-        <joint name="j_ant_pan" value="-2.2878" />
-        <joint name="j_ant_tilt" value="0.9561" />
+        <joint name="j_ant_pan" value="-2.2878"/>
+        <joint name="j_ant_tilt" value="0.9561"/>
     </group_state>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
-    <virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="base_link" />
+    <virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="base_link"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-    <disable_collisions link1="StereoCamera_head_link" link2="l_ant_foot" reason="Never" />
-    <disable_collisions link1="StereoCamera_head_link" link2="l_ant_panel" reason="Adjacent" />
-    <disable_collisions link1="StereoCamera_head_link" link2="l_prox" reason="Never" />
-    <disable_collisions link1="StereoCamera_head_link" link2="l_shou" reason="Never" />
-    <disable_collisions link1="StereoCamera_head_link" link2="lander_light0" reason="Never" />
-    <disable_collisions link1="StereoCamera_head_link" link2="lander_light1" reason="Never" />
-    <disable_collisions link1="StereoCamera_head_link" link2="lander_sample_dock0" reason="Never" />
-    <disable_collisions link1="base_link" link2="l_ant_foot" reason="Adjacent" />
-    <disable_collisions link1="base_link" link2="l_shou" reason="Adjacent" />
-    <disable_collisions link1="base_link" link2="lander_sample_dock0" reason="Adjacent" />
-    <disable_collisions link1="l_ant_foot" link2="l_ant_panel" reason="Adjacent" />
-    <disable_collisions link1="l_ant_foot" link2="l_dist" reason="Never" />
-    <disable_collisions link1="l_ant_foot" link2="l_prox" reason="Never" />
-    <disable_collisions link1="l_ant_foot" link2="l_shou" reason="Never" />
-    <disable_collisions link1="l_ant_foot" link2="lander_light0" reason="Never" />
-    <disable_collisions link1="l_ant_foot" link2="lander_light1" reason="Never" />
-    <disable_collisions link1="l_ant_foot" link2="lander_sample_dock0" reason="Never" />
-    <disable_collisions link1="l_ant_panel" link2="lander_light0" reason="Adjacent" />
-    <disable_collisions link1="l_ant_panel" link2="lander_light1" reason="Adjacent" />
-    <disable_collisions link1="l_dist" link2="l_prox" reason="Adjacent" />
-    <disable_collisions link1="l_dist" link2="l_wrist" reason="Adjacent" />
-    <disable_collisions link1="l_grinder" link2="l_hand" reason="Adjacent" />
-    <disable_collisions link1="l_grinder" link2="l_scoop" reason="Never" />
-    <disable_collisions link1="l_grinder" link2="l_wrist" reason="Never" />
-    <disable_collisions link1="l_hand" link2="l_scoop" reason="Adjacent" />
-    <disable_collisions link1="l_hand" link2="l_wrist" reason="Adjacent" />
-    <disable_collisions link1="l_prox" link2="l_shou" reason="Adjacent" />
-    <disable_collisions link1="l_scoop" link2="l_wrist" reason="Never" />
-    <disable_collisions link1="l_shou" link2="lander_light1" reason="Never" />
-    <disable_collisions link1="l_shou" link2="lander_sample_dock0" reason="Never" />
-    <disable_collisions link1="lander_light0" link2="lander_light1" reason="Adjacent" />
-    <disable_collisions link1="lander_light0" link2="lander_sample_dock0" reason="Never" />
-    <disable_collisions link1="lander_light1" link2="lander_sample_dock0" reason="Never" />
+    <disable_collisions link1="StereoCamera_head_link" link2="l_ant_foot" reason="Never"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="l_ant_panel" reason="Adjacent"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="l_prox" reason="Never"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="l_shou" reason="Never"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="lander_light0" reason="Never"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="lander_light1" reason="Never"/>
+    <disable_collisions link1="StereoCamera_head_link" link2="lander_sample_dock0" reason="Never"/>
+    <disable_collisions link1="base_link" link2="l_ant_foot" reason="Adjacent"/>
+    <disable_collisions link1="base_link" link2="l_shou" reason="Adjacent"/>
+    <disable_collisions link1="base_link" link2="lander_sample_dock0" reason="Adjacent"/>
+    <disable_collisions link1="l_ant_foot" link2="l_ant_panel" reason="Adjacent"/>
+    <disable_collisions link1="l_ant_foot" link2="l_dist" reason="Never"/>
+    <disable_collisions link1="l_ant_foot" link2="l_prox" reason="Never"/>
+    <disable_collisions link1="l_ant_foot" link2="l_shou" reason="Never"/>
+    <disable_collisions link1="l_ant_foot" link2="lander_light0" reason="Never"/>
+    <disable_collisions link1="l_ant_foot" link2="lander_light1" reason="Never"/>
+    <disable_collisions link1="l_ant_foot" link2="lander_sample_dock0" reason="Never"/>
+    <disable_collisions link1="l_ant_panel" link2="lander_light0" reason="Adjacent"/>
+    <disable_collisions link1="l_ant_panel" link2="lander_light1" reason="Adjacent"/>
+    <disable_collisions link1="l_dist" link2="l_prox" reason="Adjacent"/>
+    <disable_collisions link1="l_dist" link2="l_wrist" reason="Adjacent"/>
+    <disable_collisions link1="l_grinder" link2="l_hand" reason="Adjacent"/>
+    <disable_collisions link1="l_grinder" link2="l_scoop" reason="Never"/>
+    <disable_collisions link1="l_grinder" link2="l_wrist" reason="Never"/>
+    <disable_collisions link1="l_hand" link2="l_scoop" reason="Adjacent"/>
+    <disable_collisions link1="l_hand" link2="l_wrist" reason="Adjacent"/>
+    <disable_collisions link1="l_prox" link2="l_shou" reason="Adjacent"/>
+    <disable_collisions link1="l_scoop" link2="l_wrist" reason="Never"/>
+    <disable_collisions link1="l_shou" link2="lander_light1" reason="Never"/>
+    <disable_collisions link1="l_shou" link2="lander_sample_dock0" reason="Never"/>
+    <disable_collisions link1="lander_light0" link2="lander_light1" reason="Adjacent"/>
+    <disable_collisions link1="lander_light0" link2="lander_sample_dock0" reason="Never"/>
+    <disable_collisions link1="lander_light1" link2="lander_sample_dock0" reason="Never"/>
 </robot>

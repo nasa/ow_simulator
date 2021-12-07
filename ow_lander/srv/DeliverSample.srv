@@ -1,7 +1,3 @@
-bool use_defaults     # Set to true to use the default trench location
-float32 x             # X coordinate of sample delivery location
-float32 y             # Y coordinate of sample delivery location
-float32 z             # Z coordinate of sample delivery location
 ---
 bool success
 string message

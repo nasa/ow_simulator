@@ -135,19 +135,19 @@ bool RegolithSpawner::initialize()
       !createRosServiceClient<SpawnModel>(          m_node_handle,
                                                     SRV_SPAWN_MODEL,
                                                     m_gz_spawn_model,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<DeleteModel>(         m_node_handle,
                                                     SRV_DELETE_MODEL,
                                                     m_gz_delete_model,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<ApplyBodyWrench>(     m_node_handle,
                                                     SRV_APPLY_WRENCH,
                                                     m_gz_apply_wrench,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<BodyRequest>(         m_node_handle,
                                                     SRV_CLEAR_WRENCH,
                                                     m_gz_clear_wrench,
-                                                    true))
+                                                    false))
   {
     ROS_ERROR("Failed to connect to all required ROS services");
     return false;
