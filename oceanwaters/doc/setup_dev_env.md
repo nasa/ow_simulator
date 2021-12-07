@@ -55,19 +55,16 @@ used with OceanWATERS, because the binaries are out of date or might not be
 compatible.
 
 
-* Check out the source code:
+* Check out the `releases/plexil-4` branch of the source code:
 ```
-git clone https://git.code.sf.net/p/plexil/git plexil
+git clone --branch releases/plexil-4 https://git.code.sf.net/p/plexil/git plexil
 ```
 
-The default git branch of PLEXIL is `releases/plexil-4`, which is maintained as
-a stable version of PLEXIL compatible with OceanWATERS and suitable for general
-use.
-
-NOTE: At the time of this writing, OceanWATERS has been tested with a version of
-this branch tagged `OceanWATERS-v9.0`.  Its git commit hash begins with `77bbf96`.
-Newer versions of this branch should work with the newest version of the
-`master` branches of OceanWATERS.
+NOTE: the default git branch of PLEXIL is in fact `releases/plexil-4` at the
+time of this writing.  OceanWATERS has been tested with a version of this branch
+tagged `OceanWATERS-v9.0`.  Its git commit hash begins with `77bbf96`.  Newer
+versions of this branch should work with the newest version of the `master`
+branches of OceanWATERS.
 
 * Install any of the following build prerequisites needed. If you're not sure
 which, if any, are missing on your system, try the build, and if there are
@@ -196,7 +193,7 @@ we assume that ROS is installed in `/opt/ros/noetic`.
 
 ### Gazebo
 
-* Install Gazebo 11.9+. 
+* Install Gazebo 11.9+.
 
   * First run `gazebo --version` and check the version that is currently installed,
 if you have 11.9 or higher installed then you may skip this Gazebo upgrade.
