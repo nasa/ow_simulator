@@ -188,8 +188,7 @@ and instructions for installing ROS are available at
 [these instructions](http://wiki.ros.org/noetic/Installation/Ubuntu). Select the
 ros-noetic-desktop-full package when you get to that step.
 
-By default, ROS is installed in `/opt/ros/release`. In the remainder of this document,
-we assume that ROS is installed in `/opt/ros/noetic`.
+In the remainder of this document, we assume that ROS has been installed under `/opt/ros/noetic`.
 
 ### Gazebo
 
