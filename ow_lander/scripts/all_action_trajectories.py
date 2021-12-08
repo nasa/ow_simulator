@@ -138,38 +138,39 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
 
     return plan
 
+
 def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, z_start, approximate=True):
-  """
-  :param approximate: use an approximate solution. default True
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type cs: robot current state
-  :type goal_pose: Pose
-  :type z_start: float
-  :type approximate: bool
-  """
-  
-  move_arm.set_start_state(cs)
-  goal_pose.position.z = z_start
-  
-  goal_pose.orientation.x = goal_pose.orientation.x
-  goal_pose.orientation.y = goal_pose.orientation.y
-  goal_pose.orientation.z = goal_pose.orientation.z
-  goal_pose.orientation.w = goal_pose.orientation.w
+    """
+    :param approximate: use an approximate solution. default True
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type cs: robot current state
+    :type goal_pose: Pose
+    :type z_start: float
+    :type approximate: bool
+    """
 
-  # Ask the planner to generate a plan to the approximate joint values generated
-  # by kinematics builtin IK solver. For more insight on this issue refer to:
-  # https://github.com/nasa/ow_simulator/pull/60
-  if approximate:
-    move_arm.set_joint_value_target(goal_pose, True)
-  else:
-    move_arm.set_pose_target(goal_pose)
+    move_arm.set_start_state(cs)
+    goal_pose.position.z = z_start
 
-  _, plan, _, _ = move_arm.plan()
-  
-  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-    return False
+    goal_pose.orientation.x = goal_pose.orientation.x
+    goal_pose.orientation.y = goal_pose.orientation.y
+    goal_pose.orientation.z = goal_pose.orientation.z
+    goal_pose.orientation.w = goal_pose.orientation.w
 
-  return plan
+    # Ask the planner to generate a plan to the approximate joint values generated
+    # by kinematics builtin IK solver. For more insight on this issue refer to:
+    # https://github.com/nasa/ow_simulator/pull/60
+    if approximate:
+        move_arm.set_joint_value_target(goal_pose, True)
+    else:
+        move_arm.set_pose_target(goal_pose)
+
+    _, plan, _, _ = move_arm.plan()
+
+    if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
+        return False
+
+    return plan
 
 
 def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start):
@@ -785,7 +786,84 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
     return guarded_move_traj, estimated_time_ratio
 
 
-def deliver_sample(move_arm, robot, moveit_fk, args):
+# def deliver_sample(move_arm, robot, moveit_fk, args):
+#     """
+#     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+#     :type args: List[bool, float, float, float]
+#     """
+#     move_arm.set_planner_id("RRTstar")
+#     robot_state = robot.get_current_state()
+#     move_arm.set_start_state(robot_state)
+#     x_delivery = args.delivery.x
+#     y_delivery = args.delivery.y
+#     z_delivery = args.delivery.z
+
+#     # after sample collect
+#     mypi = 3.14159
+#     d2r = mypi/180
+#     r2d = 180/mypi
+
+#     goal_pose = move_arm.get_current_pose().pose
+#     # position was found from rviz tool
+#     goal_pose.position.x = x_delivery
+#     goal_pose.position.y = y_delivery
+#     goal_pose.position.z = z_delivery
+
+#     r = -179
+#     p = -20
+#     y = -90
+
+#     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+#     goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+
+#     move_arm.set_pose_target(goal_pose)
+
+#     _, plan_a, _, _ = move_arm.plan()
+
+#     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+#         return False
+
+#     # rotate scoop to deliver sample at current location...
+
+#     # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
+#     pos_constraint = PositionConstraint()
+#     pos_constraint.header.frame_id = "base_link"
+#     pos_constraint.link_name = "l_scoop"
+#     pos_constraint.target_point_offset.x = 0.1
+#     pos_constraint.target_point_offset.y = 0.1
+#     # rotate scoop to deliver sample at current location begin
+#     pos_constraint.target_point_offset.z = 0.1
+#     pos_constraint.constraint_region.primitives.append(
+#         SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+#     pos_constraint.weight = 1
+
+#     # using euler angles for own verification..
+
+#     r = +180
+#     p = 90  # 45 worked get
+#     y = -90
+#     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+
+#     cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+#         robot, plan_a, move_arm, moveit_fk)
+
+#     move_arm.set_start_state(cs)
+
+#     goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+
+#     move_arm.set_pose_target(goal_pose)
+#     _, plan_b, _, _ = move_arm.plan()
+
+#     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
+#         return plan_a
+
+#     deliver_sample_traj = cascade_plans(plan_a, plan_b)
+
+#     # move_arm.set_planner_id("RRTconnect")
+
+#     return deliver_sample_traj
+
+def deliver_sample(move_arm, robot, moveit_fk, goal):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type args: List[bool, float, float, float]
@@ -793,71 +871,34 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
     move_arm.set_planner_id("RRTstar")
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
-    x_delivery = args.delivery.x
-    y_delivery = args.delivery.y
-    z_delivery = args.delivery.z
-
-    # after sample collect
-    mypi = 3.14159
-    d2r = mypi/180
-    r2d = 180/mypi
-
-    goal_pose = move_arm.get_current_pose().pose
-    # position was found from rviz tool
-    goal_pose.position.x = x_delivery
-    goal_pose.position.y = y_delivery
-    goal_pose.position.z = z_delivery
-
-    r = -179
-    p = -20
-    y = -90
-
-    q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-    goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-
-    move_arm.set_pose_target(goal_pose)
-
+    goal = move_arm.get_current_pose().pose
+    goal = move_arm.get_named_target_values("arm_deliver_staging_1")
+    move_arm.set_joint_value_target(goal)
     _, plan_a, _, _ = move_arm.plan()
-
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
 
-    # rotate scoop to deliver sample at current location...
-
-    # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
-    pos_constraint = PositionConstraint()
-    pos_constraint.header.frame_id = "base_link"
-    pos_constraint.link_name = "l_scoop"
-    pos_constraint.target_point_offset.x = 0.1
-    pos_constraint.target_point_offset.y = 0.1
-    # rotate scoop to deliver sample at current location begin
-    pos_constraint.target_point_offset.z = 0.1
-    pos_constraint.constraint_region.primitives.append(
-        SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
-    pos_constraint.weight = 1
-
-    # using euler angles for own verification..
-
-    r = +180
-    p = 90  # 45 worked get
-    y = -90
-    q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-
     cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
         robot, plan_a, move_arm, moveit_fk)
-
     move_arm.set_start_state(cs)
 
-    goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-
-    move_arm.set_pose_target(goal_pose)
+    goal = move_arm.get_named_target_values("arm_deliver_staging_2")
+    # move_arm.set_pose_target(goal_pose)
+    move_arm.set_joint_value_target(goal)
     _, plan_b, _, _ = move_arm.plan()
-
     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
         return plan_a
-
     deliver_sample_traj = cascade_plans(plan_a, plan_b)
 
-    # move_arm.set_planner_id("RRTconnect")
+    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+        robot, deliver_sample_traj, move_arm, moveit_fk)
+    move_arm.set_start_state(cs)
+    goal = move_arm.get_named_target_values("arm_deliver_final")
+    move_arm.set_joint_value_target(goal)
+    _, plan_c, _, _ = move_arm.plan()
+
+    if len(plan_c.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
+        return deliver_sample_traj
+    deliver_sample_traj = cascade_plans(deliver_sample_traj, plan_c)
 
     return deliver_sample_traj
