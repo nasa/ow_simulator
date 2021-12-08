@@ -217,8 +217,8 @@ sudo apt-get upgrade
 
 ```
 sudo apt install git \
-                 python-wstool \
-                 python-catkin-tools \
+                 python3-wstool \
+                 python3-catkin-tools \
                  ros-noetic-tf2-ros \
                  ros-noetic-robot-state-publisher \
                  ros-noetic-joint-state-publisher \
