@@ -667,11 +667,11 @@ class DeliverActionServer(object):
         self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
-    def _update_motion(self, goal):
+    def _update_motion(self):
         rospy.loginfo("Deliver sample activity started")
         self.deliver_sample_traj = all_action_trajectories.deliver_sample(self._interface.move_arm,
                                                                           self._interface.robot,
-                                                                          self._interface.moveit_fk, goal)
+                                                                          self._interface.moveit_fk)
         if self.deliver_sample_traj == False:
             return
         else:
@@ -679,9 +679,9 @@ class DeliverActionServer(object):
             start_time = self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
             end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
             self._timeout = end_time - start_time
-
+    #executive call back of simple action server requires a dummy goal 
     def on_deliver_action(self, goal):
-        self._update_motion(goal)
+        self._update_motion()
         if self.deliver_sample_traj == False:
             self._server.set_aborted(self._result)
             return

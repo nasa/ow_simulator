@@ -863,7 +863,7 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
 
 #     return deliver_sample_traj
 
-def deliver_sample(move_arm, robot, moveit_fk, goal):
+def deliver_sample(move_arm, robot, moveit_fk):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type args: List[bool, float, float, float]
