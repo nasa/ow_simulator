@@ -34,6 +34,12 @@ public:
 
     m_model = model;
 
+    auto world = model->GetWorld();
+    if (world) {
+      world->Physics()->SetParam("ode_quiet", true);
+      gzerr << m_plugin_name << ": ODE's LCP Error messages have been suppressed!" << endl;
+    }
+
     Initialize("collision");
   }
 
