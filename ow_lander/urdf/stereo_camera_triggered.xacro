@@ -118,7 +118,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>R16G16B16</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -132,7 +132,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>R16G16B16</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.1</near>
