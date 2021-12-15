@@ -55,9 +55,10 @@ incorporate smarter logic around when to clean-up regolith models.
 ## Caveats
 
 - The *fake force* applied to particles during any dig operation will be 
-transferred to the joints of the arm, but the magnitude of the force itself is 
-not necessarily realistic to what a digging scoop may experience. Keep this in 
-mind when using this plug-in for any study that records forces on the arm.
+transferred to the joints of the arm, but the magnitude and direction of the 
+force itself is not necessarily realistic to what a digging scoop may 
+experience. Keep this in mind when using this plug-in for any study that records
+forces on the arm.
 - ROS services arm activities are not supported by this node, and it will not 
 work properly if the user calls either the dig linear, dig circular, or delivery
 ROS service.
