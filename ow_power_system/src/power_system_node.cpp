@@ -160,7 +160,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   auto power_watts = 0.0;  // This includes the arm + antenna
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts += fabs(msg->velocity[i]) * fabs(msg->effort[i]);
+    power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
   m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
   auto mean_mechanical_power =
