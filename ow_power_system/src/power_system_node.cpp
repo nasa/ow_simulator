@@ -76,9 +76,8 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
     string line;
     getline(file, line);
     if (line.empty())
-    {
       continue;
-    }
+
     stringstream line_stream(line);
     string cell;
     getline(line_stream, cell, ',');
@@ -152,10 +151,8 @@ bool PowerSystemNode::initTopics()
   m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
   m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
   m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
-
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
-
   return true;
 }
 
@@ -163,7 +160,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   auto power_watts = 0.0;  // This includes the arm + antenna
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts = msg->velocity[i] * msg->effort[i];
+    power_watts += fabs(msg->velocity[i]) * fabs(msg->effort[i]);
 
   m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
   auto mean_mechanical_power =
@@ -210,8 +207,11 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
                                   const vector<map<MessageId, Datum<double>>>& sequence, size_t& sequence_index,
                                   double& power, double& voltage, double& temperature)
 {
-  bool fault_enabled;
-  ros::param::param("/faults/" + power_fault_name, fault_enabled, false);
+  bool fault_enabled = false;
+  bool success = ros::param::getCached("/faults/" + power_fault_name, fault_enabled);
+  if (!success)
+    return;
+
   if (!fault_activated && fault_enabled)
   {
     ROS_INFO_STREAM(power_fault_name << " activated!");
@@ -229,8 +229,8 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
     auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
                                                                // the This is unlikely the end case. Re-visit
 
-    auto m = 1.0 / m_power_node_processing_rate; // multiplier that should be applied since this profile data are given in seconds
-                                      // but the processing rate can be lesser or higher than that
+    auto m = 1.0 / m_power_node_processing_rate;  // multiplier that should be applied since this profile data are given in seconds
+                                                  // but the processing rate can be lesser or higher than that
     power += m * data[MessageId::Watts];
     voltage += m * data[MessageId::Volts];
     temperature += m * data[MessageId::Centigrade];
@@ -269,35 +269,35 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event, Float64& soc_ms
   {
     // Log warning and don't update the last value
     ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+    return;
   }
-  else  // valid prediction
-  {
-    // Determine the median RUL.
-    auto samplesRUL = eod_time.getVec();
-    sort(samplesRUL.begin(), samplesRUL.end());
-    double eod_median = samplesRUL.at(samplesRUL.size() / 2);
-    auto now = MessageClock::now();
-    auto now_s = duration_cast<chrono::seconds>(now.time_since_epoch());
-    double rul_median = eod_median - now_s.count();
-    rul_msg.data = rul_median;
 
-    // Determine the median SOC.
-    UData currentSOC = eod_event.getState()[0];
-    auto samplesSOC = currentSOC.getVec();
-    sort(samplesSOC.begin(), samplesSOC.end());
-    double soc_median = samplesSOC.at(samplesSOC.size() / 2);
-    soc_msg.data = soc_median;
+  // valid prediction
+  // Determine the median RUL.
+  auto samplesRUL = eod_time.getVec();
+  sort(samplesRUL.begin(), samplesRUL.end());
+  double eod_median = samplesRUL.at(samplesRUL.size() / 2);
+  auto now = MessageClock::now();
+  auto now_s = duration_cast<chrono::seconds>(now.time_since_epoch());
+  double rul_median = eod_median - now_s.count();
+  rul_msg.data = rul_median;
 
-    // Determine the Battery Temperature
-    auto stateSamples = eod_event.getSystemState()[0];
-    vector<double> state;
-    for (auto sample : stateSamples)
-      state.push_back(sample[0]);
+  // Determine the median SOC.
+  UData currentSOC = eod_event.getState()[0];
+  auto samplesSOC = currentSOC.getVec();
+  sort(samplesSOC.begin(), samplesSOC.end());
+  double soc_median = samplesSOC.at(samplesSOC.size() / 2);
+  soc_msg.data = soc_median;
 
-    auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
-    auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
-    battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
-  }
+  // Determine the Battery Temperature
+  auto stateSamples = eod_event.getSystemState()[0];
+  vector<double> state;
+  for (auto sample : stateSamples)
+    state.push_back(sample[0]);
+
+  auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
+  auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
+  battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
 }
 
 void PowerSystemNode::powerCb(double electrical_power)
