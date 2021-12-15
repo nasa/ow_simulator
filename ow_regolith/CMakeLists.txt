@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   ow_dynamic_terrain
   ow_lander
+  message_generation
 )
 
 include(FindPkgConfig)
@@ -61,14 +62,16 @@ link_directories(
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 # Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#)
+add_service_files(
+  FILES
+  SpawnRegolithInScoop.srv
+  RemoveAllRegolith.srv
+)
 
-#generate_messages(
-#    DEPENDENCIES
-#    std_msgs
-#)
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -80,7 +83,10 @@ link_directories(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-   CATKIN_DEPENDS message_runtime ow_dynamic_terrain ow_lander
+   CATKIN_DEPENDS
+   ow_dynamic_terrain
+   ow_lander 
+   message_runtime
 )
 
 catkin_add_env_hooks(
