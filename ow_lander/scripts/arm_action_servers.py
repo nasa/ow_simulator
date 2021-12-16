@@ -574,7 +574,7 @@ class DiscardActionServer(object):
     def __init__(self, name):
         self._action_name = name
         self._server = actionlib.SimpleActionServer(
-            self._action_name, ow_lander.msg.DeliverAction, execute_cb=self.on_deliver_action, auto_start=False)
+            self._action_name, ow_lander.msg.DiscardAction, execute_cb=self.on_discard_action, auto_start=False)
         self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
@@ -584,7 +584,7 @@ class DiscardActionServer(object):
         self._timeout = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
-        self.deliver_sample_traj = RobotTrajectory()
+        self.discard_sample_traj = RobotTrajectory()
 
     def _update_feedback(self):
         self._ls = self._current_link_state._link_value
@@ -595,25 +595,25 @@ class DiscardActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Discard sample activity started")
-        self.deliver_sample_traj = all_action_trajectories.discard_sample(self._interface.move_arm,
+        self.discard_sample_traj = all_action_trajectories.discard_sample(self._interface.move_arm,
                                                                           self._interface.robot,
                                                                           self._interface.moveit_fk, goal)
-        if self.deliver_sample_traj == False:
+        if self.discard_sample_traj == False:
             return
         else:
-            n_points = len(self.deliver_sample_traj.joint_trajectory.points)
-            start_time = self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
-            end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
+            n_points = len(self.discard_sample_traj.joint_trajectory.points)
+            start_time = self.discard_sample_traj.joint_trajectory.points[0].time_from_start
+            end_time = self.discard_sample_traj.joint_trajectory.points[n_points-1].time_from_start
             self._timeout = end_time - start_time
 
     def on_discard_action(self, goal):
         self._update_motion(goal)
-        if self.deliver_sample_traj == False:
+        if self.discard_sample_traj == False:
             self._server.set_aborted(self._result)
             return
         success = False
 
-        self.trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
+        self.trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
                                                done_cb=None,
                                                active_cb=None,
                                                feedback_cb=self.trajectory_async_executer.stop_arm_if_fault)
@@ -725,4 +725,5 @@ if __name__ == '__main__':
     server_dig_circular = DigCircularActionServer("DigCircular")
     server_dig_linear = DigLinearActionServer("DigLinear")
     server_deliver = DeliverActionServer("Deliver")
+    server_discard = DiscardActionServer("Discard")
     rospy.spin()
