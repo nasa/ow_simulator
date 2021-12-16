@@ -1,5 +1,5 @@
 #goal definition
-geometry_msgs/Point delivery
+geometry_msgs/Point discard
 ---
 # result
 geometry_msgs/Point final     # arm final position

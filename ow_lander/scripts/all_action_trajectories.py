@@ -786,87 +786,82 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
     return guarded_move_traj, estimated_time_ratio
 
 
-# def deliver_sample(move_arm, robot, moveit_fk, args):
-#     """
-#     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-#     :type args: List[bool, float, float, float]
-#     """
-#     move_arm.set_planner_id("RRTstar")
-#     robot_state = robot.get_current_state()
-#     move_arm.set_start_state(robot_state)
-#     x_delivery = args.delivery.x
-#     y_delivery = args.delivery.y
-#     z_delivery = args.delivery.z
+def discard_sample(move_arm, robot, moveit_fk, args):
+    """
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type args: List[bool, float, float, float]
+    """
+    move_arm.set_planner_id("RRTstar")
+    robot_state = robot.get_current_state()
+    move_arm.set_start_state(robot_state)
+    x_discard = args.discard.x
+    y_discard = args.discard.y
+    z_discard = args.discard.z
 
-#     # after sample collect
-#     mypi = 3.14159
-#     d2r = mypi/180
-#     r2d = 180/mypi
+    # after sample collect
+    mypi = 3.14159
+    d2r = mypi/180
+    r2d = 180/mypi
 
-#     goal_pose = move_arm.get_current_pose().pose
-#     # position was found from rviz tool
-#     goal_pose.position.x = x_delivery
-#     goal_pose.position.y = y_delivery
-#     goal_pose.position.z = z_delivery
+    goal_pose = move_arm.get_current_pose().pose
+    # position was found from rviz tool
+    goal_pose.position.x = x_discard
+    goal_pose.position.y = y_discard
+    goal_pose.position.z = z_discard
 
-#     r = -179
-#     p = -20
-#     y = -90
+    r = -179
+    p = -20
+    y = -90
 
-#     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-#     goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+    q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+    goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
-#     move_arm.set_pose_target(goal_pose)
+    move_arm.set_pose_target(goal_pose)
 
-#     _, plan_a, _, _ = move_arm.plan()
+    _, plan_a, _, _ = move_arm.plan()
 
-#     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-#         return False
+    if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+        return False
 
-#     # rotate scoop to deliver sample at current location...
+    # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
+    pos_constraint = PositionConstraint()
+    pos_constraint.header.frame_id = "base_link"
+    pos_constraint.link_name = "l_scoop"
+    pos_constraint.target_point_offset.x = 0.1
+    pos_constraint.target_point_offset.y = 0.1
+    # rotate scoop to discard sample at current location begin
+    pos_constraint.target_point_offset.z = 0.1
+    pos_constraint.constraint_region.primitives.append(
+        SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+    pos_constraint.weight = 1
 
-#     # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
-#     pos_constraint = PositionConstraint()
-#     pos_constraint.header.frame_id = "base_link"
-#     pos_constraint.link_name = "l_scoop"
-#     pos_constraint.target_point_offset.x = 0.1
-#     pos_constraint.target_point_offset.y = 0.1
-#     # rotate scoop to deliver sample at current location begin
-#     pos_constraint.target_point_offset.z = 0.1
-#     pos_constraint.constraint_region.primitives.append(
-#         SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
-#     pos_constraint.weight = 1
+    # using euler angles for own verification..
 
-#     # using euler angles for own verification..
+    r = +180
+    p = 90
+    y = -90
+    q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
 
-#     r = +180
-#     p = 90  # 45 worked get
-#     y = -90
-#     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+        robot, plan_a, move_arm, moveit_fk)
 
-#     cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
-#         robot, plan_a, move_arm, moveit_fk)
+    move_arm.set_start_state(cs)
 
-#     move_arm.set_start_state(cs)
+    goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
-#     goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+    move_arm.set_pose_target(goal_pose)
+    _, plan_b, _, _ = move_arm.plan()
 
-#     move_arm.set_pose_target(goal_pose)
-#     _, plan_b, _, _ = move_arm.plan()
+    if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
+        return plan_a
 
-#     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
-#         return plan_a
+    discard_sample_traj = cascade_plans(plan_a, plan_b)
 
-#     deliver_sample_traj = cascade_plans(plan_a, plan_b)
-
-#     # move_arm.set_planner_id("RRTconnect")
-
-#     return deliver_sample_traj
+    return discard_sample_traj
 
 def deliver_sample(move_arm, robot, moveit_fk):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-    :type args: List[bool, float, float, float]
     """
     move_arm.set_planner_id("RRTstar")
     robot_state = robot.get_current_state()
