@@ -49,7 +49,7 @@ if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the discard client can
         # publish and subscribe over ROS.
-        rospy.init_node('deliver_client_py')
+        rospy.init_node('discard_client_py')
         result = discard_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
