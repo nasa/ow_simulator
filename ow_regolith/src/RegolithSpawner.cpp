@@ -31,6 +31,7 @@ using namespace gazebo_msgs;
 using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace sdf_utility;
+using namespace std::chrono_literals;
 
 using tf::Vector3;
 
@@ -230,8 +231,9 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
 
   wrench_msg.request.body_name         = body_name.str();
   
-  // negative duration means the force is applied until we clear it
-  wrench_msg.request.duration          = ros::Duration(-1);
+  // Choose a long ros duration (1 year), to delay the automatic disable of wrench force.
+  auto one_year_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(1h*24*365).count();
+  wrench_msg.request.duration          = ros::Duration(one_year_in_seconds);
 
   wrench_msg.request.reference_point.x = 0.0;
   wrench_msg.request.reference_point.y = 0.0;
