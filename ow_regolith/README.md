@@ -54,10 +54,11 @@ incorporate smarter logic around when to clean-up regolith models.
 
 ## Caveats
 
-- The fake force applied to particles during any dig operation will be 
-transferred to the joints of the arm, but the magnitude of the force itself is 
-not necessarily realistic to what a digging scoop may experience. Keep this in 
-mind when using this plug-in for any study that records forces on the arm.
+- The *fake force* applied to particles during any dig operation will be 
+transferred to the joints of the arm, but the magnitude and direction of the 
+force itself is not necessarily realistic to what a digging scoop may 
+experience. Keep this in mind when using this plug-in for any study that records
+forces on the arm.
 - ROS services arm activities are not supported by this node, and it will not 
 work properly if the user calls either the dig linear, dig circular, or delivery
 ROS service.
@@ -81,17 +82,28 @@ The two parameters, `spawn_volume_threshold` and `regolith_model_uri`, are
 required by the node, and there will be an error printed if it is ran without
 these two being set. 
 
-`spawn_volume_threshold` is the cubic meters that must be removed from the
+#### Parameters
+
+- `spawn_volume_threshold` is the cubic meters that must be removed from the
 terrain before a regolith model is spawned. It may have to be fine-tuned if a 
 regolith model of larger size is used in place of the default to avoid 
 consecutively spawned models colliding with each other.
-
-`regolith_model_uri` tells the node which model out of the Gazebo model database
+- `regolith_model_uri` tells the node which model out of the Gazebo model database
 should be spawned each time the `spawn_volume_threshold` is reached.
 
-### ROS Service
+### ROS Services
 
-ROS services are not supported by this package at this time.
+A minimal interface to `regolith_node` is supported via ROS Services that 
+enables debugging and manual handling of specific test cases.
+
+#### Services
+
+- `ow_regolith/spawn_regolith_in_scoop` will spawn a single regolith model just 
+above the tip of the scoop. Unlike when spawning is triggered by terrain 
+modification, there will be no *fake force* applied to the model when this 
+service is called.
+- `ow_regolith/remove_all_regolith` will delete all regolith models from the 
+Gazebo world.
 
 ## Generating Custom Regolith Models
 
