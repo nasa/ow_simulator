@@ -6,24 +6,20 @@
 
 import sys
 import rospy
-import time
 import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
-from ow_faults_detection.msg import SystemFaults
+from ow_faults_detection.msg import ArmFaults
 
 from ow_lander.srv import *
 from ow_lander.msg import *
 import activity_full_digging_traj
 import activity_guarded_move
-import activity_deliver_sample
 import activity_grind
 
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from ground_detection import GroundDetector
-
-ARM_EXECUTION_ERROR = 4
 
 class PathPlanningCommander(object):
 
@@ -34,7 +30,6 @@ class PathPlanningCommander(object):
     self.limbs_move_group = moveit_commander.MoveGroupCommander("limbs", wait_for_servers=20.0)
     self.grinder_move_group = moveit_commander.MoveGroupCommander("grinder", wait_for_servers=20.0)
     self.trajectory_async_executer = TrajectoryAsyncExecuter()
-    self.arm_fault = False
 
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stop(self, req):
@@ -85,9 +80,20 @@ class PathPlanningCommander(object):
     :type req: class 'ow_lander.srv._DeliverSample.DeliverSampleRequest'
     """
     self.log_started("Deliver Sample")
-    deliver_sample_args = activity_deliver_sample.arg_parsing(req)
-    success = activity_deliver_sample.deliver_sample(
-        self.arm_move_group, deliver_sample_args)
+    success = True
+    targets = [
+      "arm_deliver_staging_1",
+      "arm_deliver_staging_2",
+      "arm_deliver_final"]
+    for t in targets:
+      goal = self.arm_move_group.get_named_target_values(t)
+      self.arm_move_group.set_joint_value_target(goal)
+      _, plan, _, _ = self.arm_move_group.plan()
+      if len(plan.joint_trajectory.points) == 0:
+        success = False
+        break
+      self.trajectory_async_executer.execute(plan.joint_trajectory)
+      self.trajectory_async_executer.wait()
     return self.log_finish_and_return("Deliver Sample", success)
 
   # === SERVICE ACTIVITIES - Dig Linear Trench =============================
@@ -129,7 +135,7 @@ class PathPlanningCommander(object):
     finally:
       # This sleep is a workaround for "start point deviates from current robot
       # state" error on dig_circular trajectory execution.
-      time.sleep(0.2)
+      rospy.sleep(0.2)
       return success
 
   # === SERVICE ACTIVITIES - Grind =============================
@@ -164,7 +170,6 @@ class PathPlanningCommander(object):
     """
     :type feedback: FollowJointTrajectoryFeedback
     """
-
     if self.ground_detector.detect():
       self.trajectory_async_executer.stop()
 
@@ -195,10 +200,8 @@ class PathPlanningCommander(object):
 
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
-
-    # subscribe to system_fault_status for any arm faults
-    rospy.Subscriber("/faults/system_faults_status", SystemFaults, self.callback)
-
+    self.arm_faults_sub = rospy.Subscriber(
+        '/faults/arm_faults_status', ArmFaults, self.handle_arm_faults)
     self.stop_srv = rospy.Service(
         'arm/stop', Stop, self.handle_stop)
     self.stow_srv = rospy.Service(
@@ -231,11 +234,12 @@ class PathPlanningCommander(object):
     rospy.loginfo("%s arm activity completed", activity_name)
     return success, "Done"
 
-  def callback(self, data):
+  def handle_arm_faults(self, data):
     """
     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
-    """ 
-    self.arm_fault = (data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR)
+    """
+    if data.value:
+      self.trajectory_async_executer.stop()
 
 if __name__ == '__main__':
   ppc = PathPlanningCommander()

@@ -27,10 +27,12 @@
 
 using namespace ow_dynamic_terrain;
 using namespace ow_lander;
+using namespace ow_regolith;
 using namespace gazebo_msgs;
 using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace sdf_utility;
+using namespace std::chrono_literals;
 
 using tf::Vector3;
 
@@ -50,6 +52,10 @@ const static std::string SRV_SPAWN_MODEL     = "/gazebo/spawn_sdf_model";
 const static std::string SRV_DELETE_MODEL    = "/gazebo/delete_model";
 const static std::string SRV_APPLY_WRENCH    = "/gazebo/apply_body_wrench";
 const static std::string SRV_CLEAR_WRENCH    = "/gazebo/clear_body_wrenches";
+
+// service paths served by this class
+const static std::string SRV_SPAWN_REGOLITH_IN_SCOOP = "/ow_regolith/spawn_regolith_in_scoop";
+const static std::string SRV_REMOVE_ALL_REGOLITH     = "/ow_regolith/remove_all_regolith";
 
 // topic paths used in class
 const static std::string TOPIC_LINK_STATES           = "/gazebo/link_states";
@@ -135,23 +141,29 @@ bool RegolithSpawner::initialize()
       !createRosServiceClient<SpawnModel>(          m_node_handle,
                                                     SRV_SPAWN_MODEL,
                                                     m_gz_spawn_model,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<DeleteModel>(         m_node_handle,
                                                     SRV_DELETE_MODEL,
                                                     m_gz_delete_model,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<ApplyBodyWrench>(     m_node_handle,
                                                     SRV_APPLY_WRENCH,
                                                     m_gz_apply_wrench,
-                                                    true)   ||
+                                                    false)   ||
       !createRosServiceClient<BodyRequest>(         m_node_handle,
                                                     SRV_CLEAR_WRENCH,
                                                     m_gz_clear_wrench,
-                                                    true))
+                                                    false))
   {
     ROS_ERROR("Failed to connect to all required ROS services");
     return false;
   }
+
+  // advertise services served by this class
+  m_spawn_regolith_in_scoop = m_node_handle->advertiseService(
+    SRV_SPAWN_REGOLITH_IN_SCOOP, &RegolithSpawner::spawnRegolithInScoopSrv, this);
+  m_remove_all_regolith = m_node_handle->advertiseService(
+    SRV_REMOVE_ALL_REGOLITH, &RegolithSpawner::removeAllRegolithSrv, this);
 
   // subscribe to all ROS topics
   m_link_states         = m_node_handle->subscribe(
@@ -184,10 +196,10 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
 {
   ROS_INFO("Spawning regolith");
 
-  // spawn model
   static auto spawn_count = 0;
-  stringstream model_name;
+  stringstream model_name, body_name;
   model_name << "regolith_" << spawn_count++;
+  body_name << model_name.str() << "::" << m_model_link_name;
 
   SpawnModel spawn_msg;
   
@@ -208,6 +220,8 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   if (!callRosService(m_gz_spawn_model, spawn_msg))
     return false;
 
+  m_active_models.push_back({model_name.str(), body_name.str()});
+
   // if no pushback is desired, we're done
   if (!with_pushback)
     return true;
@@ -220,18 +234,15 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   Vector3 pushback_vec(-scooping_vec.normalize());
 
   // apply psuedo force to keep model in the scoop
-  stringstream body_name;
-  body_name << model_name.str() << "::" << m_model_link_name;
-
   ApplyBodyWrench wrench_msg;
-  
   tf::vector3TFToMsg(m_psuedo_force_mag * pushback_vec, 
                      wrench_msg.request.wrench.force);
 
   wrench_msg.request.body_name         = body_name.str();
   
-  // negative duration means the force is applied until we clear it
-  wrench_msg.request.duration          = ros::Duration(-1);
+  // Choose a long ros duration (1 year), to delay the automatic disable of wrench force.
+  auto one_year_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(1h*24*365).count();
+  wrench_msg.request.duration          = ros::Duration(one_year_in_seconds);
 
   wrench_msg.request.reference_point.x = 0.0;
   wrench_msg.request.reference_point.y = 0.0;
@@ -241,35 +252,53 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   wrench_msg.request.wrench.torque.y   = 0.0;
   wrench_msg.request.wrench.torque.z   = 0.0;
 
-  m_active_models.push_back({model_name.str(), body_name.str()});
-
   return callRosService(m_gz_apply_wrench, wrench_msg);
 }
 
-
-void RegolithSpawner::clearAllPsuedoForces()
+bool RegolithSpawner::clearAllPsuedoForces()
 {
+  bool service_call_error_occurred = false;
   BodyRequest msg;
   for (auto &regolith : m_active_models) {
     msg.request.body_name = regolith.body_name;
-    if (!callRosService(m_gz_clear_wrench, msg))
+    if (!callRosService(m_gz_clear_wrench, msg)) {
       ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
+      service_call_error_occurred = true;
+    }
   }
+  return !service_call_error_occurred;
 }
 
-void RegolithSpawner::removeAllRegolithModels()
+bool RegolithSpawner::removeAllRegolithModels()
 {
+  bool service_call_error_occurred = false;
+  DeleteModel msg;
   auto it = m_active_models.begin();
   while (it != m_active_models.end()) {
-    DeleteModel msg;
     msg.request.model_name = it->model_name;
     if (callRosService(m_gz_delete_model, msg)) {
       it = m_active_models.erase(it);
     } else {
       ROS_WARN("Failed to delete model %s", it->model_name.c_str());
       ++it;
+      service_call_error_occurred = true;
     }
   }
+  return !service_call_error_occurred;
+}
+
+bool RegolithSpawner::spawnRegolithInScoopSrv(SpawnRegolithInScoopRequest &request,
+                                              SpawnRegolithInScoopResponse &response)
+{
+  response.success = spawnRegolithInScoop(false);
+  return response.success;
+}
+
+bool RegolithSpawner::removeAllRegolithSrv(RemoveAllRegolithRequest &request,
+                                           RemoveAllRegolithResponse &response)
+{
+  response.success = removeAllRegolithModels();
+  return response.success;
 }
 
 void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg) 

@@ -118,7 +118,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>R16G16B16</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -132,7 +132,7 @@
         <image>
           <width>${img_w}</width>
           <height>${img_h}</height>
-          <format>R16G16B16</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.1</near>
@@ -155,8 +155,9 @@
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
       </plugin>
-      <!-- TODO: Figure out why lens flare is causing black camera images. -->
-      <!--plugin name="LensFlare" filename="libLensFlareSensorPlugin.so"/-->
+      <plugin name="LensFlare" filename="libOWLensFlareSensorPlugin.so">
+        <compositor>CameraLensFlare/PF_FLOAT32_R</compositor>
+      </plugin>
       <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
         <exposure>0.05</exposure>
         <energy_conversion>0.005</energy_conversion>
@@ -194,8 +195,9 @@
           <far>200000</far>
         </clip>
       </camera>
-      <!-- TODO: Figure out why lens flare is causing black camera images. -->
-      <!--plugin name="lensflare" filename="libLensFlareSensorPlugin.so"/-->
+      <plugin name="lensflare" filename="libOWLensFlareSensorPlugin.so">
+        <compositor>CameraLensFlare/PF_FLOAT32_R</compositor>
+      </plugin>
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
         <updateRate>0.0</updateRate>

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<sdf version="1.0">
+<sdf version="1.7">
   <model name='small_box'>
     <link name='link'>
       <inertial>
@@ -13,7 +13,7 @@
           <iyz>0</iyz>
           <izz>0.166667</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
       </inertial>
       <collision name='collision'>
         <geometry>
