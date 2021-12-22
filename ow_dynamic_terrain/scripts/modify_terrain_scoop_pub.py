@@ -24,8 +24,6 @@ class ModifyTerrainScoop:
     self.scoop_yaw_position = 0.0
     self.visual_pub = rospy.Publisher(
         'ow_dynamic_terrain/modify_terrain_ellipse/visual', modify_terrain_ellipse, queue_size=1)
-    self.collision_pub = rospy.Publisher(
-        'ow_dynamic_terrain/modify_terrain_ellipse/collision', modify_terrain_ellipse, queue_size=1)
     self.link_states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
     self.joint_states_sub = rospy.Subscriber(
