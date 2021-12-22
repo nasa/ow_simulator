@@ -12,6 +12,7 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import Point
 from gazebo_msgs.msg import LinkStates
+from sensor_msgs.msg import JointState
 from tf.transformations import euler_from_quaternion
 from ow_dynamic_terrain.msg import modify_terrain_ellipse
 
@@ -20,12 +21,15 @@ class ModifyTerrainScoop:
   def __init__(self, *args):
     rospy.init_node("modify_terrain_scoop_pub", anonymous=True)
     self.last_translation = np.zeros(3)
+    self.scoop_yaw_position = 0.0
     self.visual_pub = rospy.Publisher(
         'ow_dynamic_terrain/modify_terrain_ellipse/visual', modify_terrain_ellipse, queue_size=1)
     self.collision_pub = rospy.Publisher(
         'ow_dynamic_terrain/modify_terrain_ellipse/collision', modify_terrain_ellipse, queue_size=1)
-    self.states_sub = rospy.Subscriber(
+    self.link_states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
+    self.joint_states_sub = rospy.Subscriber(
+        "/joint_states", JointState, self.handle_joint_states)
 
   def compose_modify_terrain_ellipse_message(self, position, orientation, scale=1.0):
     """ Composes a modify_terrain_ellipse that matches the tip of scoop end effector
@@ -46,6 +50,10 @@ class ModifyTerrainScoop:
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
 
+    effective_scoop_yaw = 90
+    if not np.isclose(self.scoop_yaw_position, effective_scoop_yaw, atol=5):
+      return # scoop is not in scooping position
+
     current_translation = np.array([new_position.x, new_position.y, new_position.z])
     if all(np.isclose(current_translation, self.last_translation, atol=1.e-4)):
       return  # no significant change, abort
@@ -57,8 +65,17 @@ class ModifyTerrainScoop:
 
     msg = self.compose_modify_terrain_ellipse_message(new_position, degrees(yaw))
     self.visual_pub.publish(msg)
-    
+
     rospy.logdebug_throttle(1, "modify_terrain_scoop message:\n" + str(msg))
+
+  def handle_joint_states(self, data):
+    try:
+      idx = data.name.index("j_scoop_yaw")
+    except ValueError:
+      rospy.logerr_throttle(1, "j_scoop_yaw not found in joint_states")
+      return
+
+    self.scoop_yaw_position = degrees(data.position[idx])
 
   def handle_link_states(self, data):
     try:
@@ -70,7 +87,6 @@ class ModifyTerrainScoop:
     position = data.pose[idx].position
     orientation = data.pose[idx].orientation
     self.check_and_submit(position, orientation)
-
 
 if __name__ == '__main__':
   mtg = ModifyTerrainScoop()
