@@ -9,10 +9,15 @@
 #include <tf/tf.h>
 
 #include "gazebo_msgs/LinkStates.h"
+
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
+
 #include "ow_lander/DigLinearActionResult.h"
 #include "ow_lander/DigCircularActionResult.h"
 #include "ow_lander/DeliverActionResult.h"
+
+#include "ow_regolith/SpawnRegolithInScoop.h"
+#include "ow_regolith/RemoveAllRegolith.h"
 
 class RegolithSpawner
 {
@@ -33,10 +38,18 @@ public:
   bool spawnRegolithInScoop(bool with_pushback);
 
   // clears all artificial forces still being applied to regolith models
-  void clearAllPsuedoForces();
+  bool clearAllPsuedoForces();
 
   // deletes all regolith models
-  void removeAllRegolithModels();
+  bool removeAllRegolithModels();
+
+  // service callback for spawnRegolithInScoop
+  bool spawnRegolithInScoopSrv(ow_regolith::SpawnRegolithInScoopRequest &request,
+                               ow_regolith::SpawnRegolithInScoopResponse &response);
+
+  // servcie callback for removeAllRegolithModels
+  bool removeAllRegolithSrv(ow_regolith::RemoveAllRegolithRequest &request,
+                            ow_regolith::RemoveAllRegolithResponse &response);
 
   // saves the orientation of scoop to a member variable
   void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
@@ -56,10 +69,15 @@ public:
 private:
   // ROS interfaces
   std::unique_ptr<ros::NodeHandle> m_node_handle;
+
   ros::ServiceClient m_gz_spawn_model;
   ros::ServiceClient m_gz_delete_model;
   ros::ServiceClient m_gz_apply_wrench;
   ros::ServiceClient m_gz_clear_wrench;
+
+  ros::ServiceServer m_spawn_regolith_in_scoop;
+  ros::ServiceServer m_remove_all_regolith;
+
   ros::Subscriber m_link_states;
   ros::Subscriber m_mod_diff_visual;
   ros::Subscriber m_dig_linear_result;

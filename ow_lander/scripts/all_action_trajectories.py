@@ -791,7 +791,6 @@ def discard_sample(move_arm, robot, moveit_fk, args):
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type args: List[bool, float, float, float]
     """
-    move_arm.set_planner_id("RRTstar")
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
     x_discard = args.discard.x
@@ -863,37 +862,29 @@ def deliver_sample(move_arm, robot, moveit_fk):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     """
-    move_arm.set_planner_id("RRTstar")
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
     goal = move_arm.get_current_pose().pose
+
     goal = move_arm.get_named_target_values("arm_deliver_staging_1")
     move_arm.set_joint_value_target(goal)
-    _, plan_a, _, _ = move_arm.plan()
-    if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-        return False
-
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
-        robot, plan_a, move_arm, moveit_fk)
-    move_arm.set_start_state(cs)
-
-    goal = move_arm.get_named_target_values("arm_deliver_staging_2")
-    # move_arm.set_pose_target(goal_pose)
-    move_arm.set_joint_value_target(goal)
-    _, plan_b, _, _ = move_arm.plan()
-    if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
-        return plan_a
-    deliver_sample_traj = cascade_plans(plan_a, plan_b)
-
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    _, deliver_sample_traj, _, _ = move_arm.plan()
+    if len(deliver_sample_traj.joint_trajectory.points) == 0:  # If no plan found, abort
+         return False
+    
+    targets = [
+      "arm_deliver_staging_2",
+      "arm_deliver_final"]
+    for t in targets:
+        cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
         robot, deliver_sample_traj, move_arm, moveit_fk)
-    move_arm.set_start_state(cs)
-    goal = move_arm.get_named_target_values("arm_deliver_final")
-    move_arm.set_joint_value_target(goal)
-    _, plan_c, _, _ = move_arm.plan()
-
-    if len(plan_c.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
-        return deliver_sample_traj
-    deliver_sample_traj = cascade_plans(deliver_sample_traj, plan_c)
+        move_arm.set_start_state(cs)
+        
+        goal =  move_arm.get_named_target_values(t)
+        move_arm.set_joint_value_target(goal)
+        _, plan, _, _ = move_arm.plan()
+        if len(plan.joint_trajectory.points) == 0:
+            break
+        deliver_sample_traj = cascade_plans(deliver_sample_traj, plan)
 
     return deliver_sample_traj
