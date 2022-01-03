@@ -53,9 +53,12 @@
           </sphere>
         </geometry>
         <material>
+          <diffuse>0.8 0.8 0.8 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
           <script>
-            <uri> file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Blue</name>
+            <uri>file://../../../ow_lander/materials/scripts</uri>
+            <uri>file://../../../ow_lander/materials/textures</uri>
+            <name>ow/lander</name>
           </script>
         </material>
       </visual>
