@@ -93,8 +93,8 @@ private:
   double m_spawn_threshold;
   // Gazebo link name of the scoop particles will spawn in
   std::string m_scoop_link_name;
-  // a vector that describes the forward direction of the scoop
-  tf::Vector3 m_scoop_forward;
+  // vectors that describe the forward and down direction of the scoop
+  tf::Vector3 m_scoop_forward, m_scoop_down;
   // an offset relative to the scoop's frame where regolith will be spawned
   tf::Vector3 m_scoop_spawn_offset;
 
