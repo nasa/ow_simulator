@@ -176,6 +176,7 @@ def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, z_start, approximat
 def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
     :type x_start: float
     :type y_start: float
     """
@@ -212,6 +213,8 @@ def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start)
 def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, int, float, float, float]
     """
 
@@ -322,6 +325,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
 def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
     :type x_start: float
     :type y_start: float
     """
@@ -451,6 +455,8 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
 def dig_linear(move_arm, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, int, float, float, float]
     """
     x_start = args.x_start
@@ -568,6 +574,11 @@ def calculate_joint_state_end_pose_from_plan_grinder(robot, plan, move_arm, move
     from the current plan
     inputs:  current plan, robot, grinder interface, and moveit forward kinematics object
     outputs: goal_pose, robot state and joint states at end of the plan
+    
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type plan: JointTrajectory
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     '''
     #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_scoop_yaw]
     # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
@@ -595,6 +606,8 @@ def calculate_joint_state_end_pose_from_plan_grinder(robot, plan, move_arm, move
 def grind(move_grinder, robot, moveit_fk, args):
     """
     :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, float, float, float, bool, float, bool]
     """
 
@@ -696,6 +709,12 @@ def grind(move_grinder, robot, moveit_fk, args):
 
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
+    """
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
+    :type args: List[bool, float, float, float, float, float, float, float]
+    """
 
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
@@ -789,6 +808,8 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
 def discard_sample(move_arm, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, float, float]
     """
     robot_state = robot.get_current_state()
@@ -861,6 +882,8 @@ def discard_sample(move_arm, robot, moveit_fk, args):
 def deliver_sample(move_arm, robot, moveit_fk):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     """
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
