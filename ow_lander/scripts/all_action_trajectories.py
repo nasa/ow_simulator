@@ -142,7 +142,7 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
 def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, z_start, approximate=True):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-    :type cs: robot current state
+    :type cs: class 'moveit_msgs/RobotState' 
     :type goal_pose: Pose
     :type z_start: float
     :param approximate: use an approximate solution. default True
