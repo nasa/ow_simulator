@@ -138,43 +138,44 @@ def go_to_XYZ_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, app
 
     return plan
 
+
 def go_to_Z_coordinate_dig_circular(move_arm, cs, goal_pose, z_start, approximate=True):
-  """
-  :param approximate: use an approximate solution. default True
-  :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-  :type cs: robot current state
-  :type goal_pose: Pose
-  :type z_start: float
-  :type approximate: bool
-  """
-  
-  move_arm.set_start_state(cs)
-  goal_pose.position.z = z_start
-  
-  goal_pose.orientation.x = goal_pose.orientation.x
-  goal_pose.orientation.y = goal_pose.orientation.y
-  goal_pose.orientation.z = goal_pose.orientation.z
-  goal_pose.orientation.w = goal_pose.orientation.w
+    """
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type cs: class 'moveit_msgs/RobotState' 
+    :type goal_pose: Pose
+    :type z_start: float
+    :param approximate: use an approximate solution. default True
+    """
 
-  # Ask the planner to generate a plan to the approximate joint values generated
-  # by kinematics builtin IK solver. For more insight on this issue refer to:
-  # https://github.com/nasa/ow_simulator/pull/60
-  if approximate:
-    move_arm.set_joint_value_target(goal_pose, True)
-  else:
-    move_arm.set_pose_target(goal_pose)
+    move_arm.set_start_state(cs)
+    goal_pose.position.z = z_start
 
-  _, plan, _, _ = move_arm.plan()
-  
-  if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-    return False
+    goal_pose.orientation.x = goal_pose.orientation.x
+    goal_pose.orientation.y = goal_pose.orientation.y
+    goal_pose.orientation.z = goal_pose.orientation.z
+    goal_pose.orientation.w = goal_pose.orientation.w
 
-  return plan
+    # Ask the planner to generate a plan to the approximate joint values generated
+    # by kinematics builtin IK solver. For more insight on this issue refer to:
+    # https://github.com/nasa/ow_simulator/pull/60
+    if approximate:
+        move_arm.set_joint_value_target(goal_pose, True)
+    else:
+        move_arm.set_pose_target(goal_pose)
+
+    _, plan, _, _ = move_arm.plan()
+
+    if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
+        return False
+
+    return plan
 
 
 def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
     :type x_start: float
     :type y_start: float
     """
@@ -211,6 +212,8 @@ def move_to_pre_trench_configuration_dig_circ(move_arm, robot, x_start, y_start)
 def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, int, float, float, float]
     """
 
@@ -321,6 +324,7 @@ def dig_circular(move_arm, move_limbs, robot, moveit_fk, args):
 def move_to_pre_trench_configuration(move_arm, robot, x_start, y_start):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
     :type x_start: float
     :type y_start: float
     """
@@ -450,6 +454,8 @@ def go_to_Z_coordinate(move_arm, cs, goal_pose, x_start, y_start, z_start, appro
 def dig_linear(move_arm, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, int, float, float, float]
     """
     x_start = args.x_start
@@ -567,6 +573,11 @@ def calculate_joint_state_end_pose_from_plan_grinder(robot, plan, move_arm, move
     from the current plan
     inputs:  current plan, robot, grinder interface, and moveit forward kinematics object
     outputs: goal_pose, robot state and joint states at end of the plan
+    
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type plan: JointTrajectory
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     '''
     #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_scoop_yaw]
     # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
@@ -594,6 +605,8 @@ def calculate_joint_state_end_pose_from_plan_grinder(robot, plan, move_arm, move
 def grind(move_grinder, robot, moveit_fk, args):
     """
     :type move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, float, float, float, bool, float, bool]
     """
 
@@ -695,6 +708,12 @@ def grind(move_grinder, robot, moveit_fk, args):
 
 
 def guarded_move_plan(move_arm, robot, moveit_fk, args):
+    """
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
+    :type args: List[bool, float, float, float, float, float, float, float]
+    """
 
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
@@ -785,17 +804,18 @@ def guarded_move_plan(move_arm, robot, moveit_fk, args):
     return guarded_move_traj, estimated_time_ratio
 
 
-def deliver_sample(move_arm, robot, moveit_fk, args):
+def discard_sample(move_arm, robot, moveit_fk, args):
     """
     :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
     :type args: List[bool, float, float, float]
     """
-    move_arm.set_planner_id("RRTstar")
     robot_state = robot.get_current_state()
     move_arm.set_start_state(robot_state)
-    x_delivery = args.delivery.x
-    y_delivery = args.delivery.y
-    z_delivery = args.delivery.z
+    x_discard = args.discard.x
+    y_discard = args.discard.y
+    z_discard = args.discard.z
 
     # after sample collect
     mypi = 3.14159
@@ -804,9 +824,9 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
 
     goal_pose = move_arm.get_current_pose().pose
     # position was found from rviz tool
-    goal_pose.position.x = x_delivery
-    goal_pose.position.y = y_delivery
-    goal_pose.position.z = z_delivery
+    goal_pose.position.x = x_discard
+    goal_pose.position.y = y_discard
+    goal_pose.position.z = z_discard
 
     r = -179
     p = -20
@@ -822,15 +842,13 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
 
-    # rotate scoop to deliver sample at current location...
-
     # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
     pos_constraint = PositionConstraint()
     pos_constraint.header.frame_id = "base_link"
     pos_constraint.link_name = "l_scoop"
     pos_constraint.target_point_offset.x = 0.1
     pos_constraint.target_point_offset.y = 0.1
-    # rotate scoop to deliver sample at current location begin
+    # rotate scoop to discard sample at current location begin
     pos_constraint.target_point_offset.z = 0.1
     pos_constraint.constraint_region.primitives.append(
         SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
@@ -839,7 +857,7 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
     # using euler angles for own verification..
 
     r = +180
-    p = 90  # 45 worked get
+    p = 90
     y = -90
     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
 
@@ -856,8 +874,32 @@ def deliver_sample(move_arm, robot, moveit_fk, args):
     if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
         return plan_a
 
-    deliver_sample_traj = cascade_plans(plan_a, plan_b)
+    discard_sample_traj = cascade_plans(plan_a, plan_b)
 
-    # move_arm.set_planner_id("RRTconnect")
+    return discard_sample_traj
 
-    return deliver_sample_traj
+def deliver_sample(move_arm, robot, moveit_fk):
+    """
+    :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
+    :type robot: class 'moveit_commander.RobotCommander'
+    :type moveit_fk: class moveit_msgs/GetPositionFK
+    """
+    total_plan = None
+    targets = [
+        "arm_deliver_staging_1",
+        "arm_deliver_staging_2",
+        "arm_deliver_final"]
+    for t in targets:
+        cs = robot.get_current_state() if total_plan is None else \
+            calculate_joint_state_end_pose_from_plan_arm(
+                robot, total_plan, move_arm, moveit_fk)[0]
+        move_arm.set_start_state(cs)
+        goal = move_arm.get_named_target_values(t)
+        move_arm.set_joint_value_target(goal)
+        _, plan, _, _ = move_arm.plan()
+        if len(plan.joint_trajectory.points) == 0:
+            return False
+        total_plan = plan if total_plan is None else \
+            cascade_plans(total_plan, plan)
+
+    return total_plan

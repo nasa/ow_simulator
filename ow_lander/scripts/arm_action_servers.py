@@ -569,6 +569,80 @@ class DigLinearActionServer(object):
             self._server.set_aborted(self._result)
 
 
+class DiscardActionServer(object):
+
+    def __init__(self, name):
+        self._action_name = name
+        self._server = actionlib.SimpleActionServer(
+            self._action_name, ow_lander.msg.DiscardAction, execute_cb=self.on_discard_action, auto_start=False)
+        self._server.start()
+        # Action Feedback/Result
+        self._fdbk = ow_lander.msg.UnstowFeedback()
+        self._result = ow_lander.msg.UnstowResult()
+        self._current_link_state = LinkStateSubscriber()
+        self._interface = MoveItInterface()
+        self._timeout = 0.0
+        self.trajectory_async_executer = TrajectoryAsyncExecuter()
+        self.trajectory_async_executer.connect("arm_controller")
+        self.discard_sample_traj = RobotTrajectory()
+
+    def _update_feedback(self):
+        self._ls = self._current_link_state._link_value
+        self._fdbk.current.x = self._ls.x
+        self._fdbk.current.y = self._ls.y
+        self._fdbk.current.z = self._ls.z
+        self._server.publish_feedback(self._fdbk)
+
+    def _update_motion(self, goal):
+        rospy.loginfo("Discard sample activity started")
+        self.discard_sample_traj = all_action_trajectories.discard_sample(self._interface.move_arm,
+                                                                          self._interface.robot,
+                                                                          self._interface.moveit_fk, goal)
+        if self.discard_sample_traj == False:
+            return
+        else:
+            n_points = len(self.discard_sample_traj.joint_trajectory.points)
+            start_time = self.discard_sample_traj.joint_trajectory.points[0].time_from_start
+            end_time = self.discard_sample_traj.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout = end_time - start_time
+
+    def on_discard_action(self, goal):
+        self._update_motion(goal)
+        if self.discard_sample_traj == False:
+            self._server.set_aborted(self._result)
+            return
+        success = False
+
+        self.trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
+                                               done_cb=None,
+                                               active_cb=None,
+                                               feedback_cb=self.trajectory_async_executer.stop_arm_if_fault)
+
+        # Record start time
+        start_time = rospy.get_time()
+
+        def now_from_start(start):
+            # return rospy.get_time() - start
+            return rospy.Duration(secs=rospy.get_time() - start)
+
+        while ((now_from_start(start_time) < self._timeout)):
+
+            self._update_feedback()
+
+        success = self.trajectory_async_executer.success(
+        ) and self.trajectory_async_executer.wait()
+
+        if success:
+            self._result.final.x = self._fdbk.current.x
+            self._result.final.y = self._fdbk.current.y
+            self._result.final.z = self._fdbk.current.z
+            rospy.loginfo('%s: Succeeded' % self._action_name)
+            self._server.set_succeeded(self._result)
+        else:
+            rospy.loginfo('%s: Failed' % self._action_name)
+            self._server.set_aborted(self._result)
+
+
 class DeliverActionServer(object):
 
     def __init__(self, name):
@@ -593,11 +667,11 @@ class DeliverActionServer(object):
         self._fdbk.current.z = self._ls.z
         self._server.publish_feedback(self._fdbk)
 
-    def _update_motion(self, goal):
+    def _update_motion(self):
         rospy.loginfo("Deliver sample activity started")
         self.deliver_sample_traj = all_action_trajectories.deliver_sample(self._interface.move_arm,
                                                                           self._interface.robot,
-                                                                          self._interface.moveit_fk, goal)
+                                                                          self._interface.moveit_fk)
         if self.deliver_sample_traj == False:
             return
         else:
@@ -605,9 +679,9 @@ class DeliverActionServer(object):
             start_time = self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
             end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
             self._timeout = end_time - start_time
-
+    #executive call back of simple action server requires a dummy goal 
     def on_deliver_action(self, goal):
-        self._update_motion(goal)
+        self._update_motion()
         if self.deliver_sample_traj == False:
             self._server.set_aborted(self._result)
             return
@@ -642,7 +716,6 @@ class DeliverActionServer(object):
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
 
-
 if __name__ == '__main__':
     rospy.init_node('arm_action_servers')
     server_unstow = UnstowActionServer("Unstow")
@@ -652,4 +725,5 @@ if __name__ == '__main__':
     server_dig_circular = DigCircularActionServer("DigCircular")
     server_dig_linear = DigLinearActionServer("DigLinear")
     server_deliver = DeliverActionServer("Deliver")
+    server_discard = DiscardActionServer("Discard")
     rospy.spin()
