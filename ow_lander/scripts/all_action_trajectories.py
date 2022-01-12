@@ -884,29 +884,22 @@ def deliver_sample(move_arm, robot, moveit_fk):
     :type robot: class 'moveit_commander.RobotCommander'
     :type moveit_fk: class moveit_msgs/GetPositionFK
     """
-    robot_state = robot.get_current_state()
-    move_arm.set_start_state(robot_state)
-    goal = move_arm.get_current_pose().pose
-
-    goal = move_arm.get_named_target_values("arm_deliver_staging_1")
-    move_arm.set_joint_value_target(goal)
-    _, deliver_sample_traj, _, _ = move_arm.plan()
-    if len(deliver_sample_traj.joint_trajectory.points) == 0:  # If no plan found, abort
-         return False
-    
+    total_plan = None
     targets = [
-      "arm_deliver_staging_2",
-      "arm_deliver_final"]
+        "arm_deliver_staging_1",
+        "arm_deliver_staging_2",
+        "arm_deliver_final"]
     for t in targets:
-        cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
-        robot, deliver_sample_traj, move_arm, moveit_fk)
+        cs = robot.get_current_state() if total_plan is None else \
+            calculate_joint_state_end_pose_from_plan_arm(
+                robot, total_plan, move_arm, moveit_fk)[0]
         move_arm.set_start_state(cs)
-        
-        goal =  move_arm.get_named_target_values(t)
+        goal = move_arm.get_named_target_values(t)
         move_arm.set_joint_value_target(goal)
         _, plan, _, _ = move_arm.plan()
         if len(plan.joint_trajectory.points) == 0:
-            break
-        deliver_sample_traj = cascade_plans(deliver_sample_traj, plan)
+            return False
+        total_plan = plan if total_plan is None else \
+            cascade_plans(total_plan, plan)
 
-    return deliver_sample_traj
+    return total_plan
