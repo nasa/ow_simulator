@@ -37,6 +37,7 @@ add_action_files(
   FILES Grind.action
   FILES GuardedMove.action
   FILES AntennaPanTilt.action
+  FILES Discard.action
 )
 
 
