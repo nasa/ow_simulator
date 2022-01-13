@@ -35,6 +35,11 @@ using namespace sdf_utility;
 using namespace std::chrono_literals;
 
 using tf::Vector3;
+using tf::tfDot;
+using tf::quatRotate;
+using tf::vector3MsgToTF;
+using tf::vector3TFToMsg;
+using tf::quaternionMsgToTF;
 
 using std::string;
 using std::stringstream;
@@ -63,6 +68,14 @@ const static std::string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modi
 const static std::string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
 const static std::string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
 const static std::string TOPIC_DELIVER_RESULT        = "/Deliver/result";
+
+// constants specific to the scoop end-effector
+const static std::string scoop_link_name  = "lander::l_scoop_tip";
+const static Vector3 scoop_forward        = Vector3(1.0, 0.0, 0.0);
+const static Vector3 scoop_downward       = Vector3(0.0, 0.0, 1.0);
+const static Vector3 scoop_spawn_offset   = Vector3(0.0, 0.0, -0.05);
+
+const static Vector3 world_downward = Vector3(0.0, 0.0, -1.0);
 
 template <class T>
 static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
@@ -97,11 +110,7 @@ static bool callRosService(ros::ServiceClient &srv, T &msg)
 }
 
 RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
-  : m_node_handle(nh), 
-    m_volume_displaced(0.0),
-    m_scoop_forward(1.0, 0.0, 0.0),
-    m_scoop_spawn_offset(0.0, 0.0, -0.05),
-    m_scoop_link_name("lander::l_scoop_tip")
+  : m_node_handle(nh), m_volume_displaced(0.0)
 {
   // get node parameters
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
@@ -183,9 +192,8 @@ bool RegolithSpawner::initialize()
     ROS_ERROR("Failed to query Gazebo for gravity vector");
     return false;
   }
-  Vector3 gravity(msg.response.gravity.x, 
-                  msg.response.gravity.y, 
-                  msg.response.gravity.z);
+  Vector3 gravity;
+  vector3MsgToTF(msg.response.gravity, gravity);
   // psuedo force magnitude = model's weight X weight factor
   m_psuedo_force_mag = model_mass * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
 
@@ -206,16 +214,16 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   spawn_msg.request.model_name                  = model_name.str();
   spawn_msg.request.model_xml                   = m_model_sdf;
   spawn_msg.request.robot_namespace             = "/regolith";
-  spawn_msg.request.reference_frame             = m_scoop_link_name;
+  spawn_msg.request.reference_frame             = scoop_link_name;
 
   spawn_msg.request.initial_pose.orientation.x  = 0.0;
   spawn_msg.request.initial_pose.orientation.y  = 0.0;
   spawn_msg.request.initial_pose.orientation.z  = 0.0;
   spawn_msg.request.initial_pose.orientation.w  = 0.0;
 
-  spawn_msg.request.initial_pose.position.x     = m_scoop_spawn_offset.getX();
-  spawn_msg.request.initial_pose.position.y     = m_scoop_spawn_offset.getY();
-  spawn_msg.request.initial_pose.position.z     = m_scoop_spawn_offset.getZ();
+  spawn_msg.request.initial_pose.position.x     = scoop_spawn_offset.getX();
+  spawn_msg.request.initial_pose.position.y     = scoop_spawn_offset.getY();
+  spawn_msg.request.initial_pose.position.z     = scoop_spawn_offset.getZ();
 
   if (!callRosService(m_gz_spawn_model, spawn_msg))
     return false;
@@ -227,20 +235,20 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
     return true;
 
   // compute scooping direction from scoop orientation
-  Vector3 scooping_vec(tf::quatRotate(m_scoop_orientation, m_scoop_forward));
-  // flatten scooping direction against X-Y plane
+  Vector3 scooping_vec(quatRotate(m_scoop_orientation, scoop_forward));
+  // flatten scooping_vec against the X-Y plane
   scooping_vec.setZ(0.0);
   // define pushback direction as opposite to the scooping direction
   Vector3 pushback_vec(-scooping_vec.normalize());
 
   // apply psuedo force to keep model in the scoop
   ApplyBodyWrench wrench_msg;
-  tf::vector3TFToMsg(m_psuedo_force_mag * pushback_vec, 
-                     wrench_msg.request.wrench.force);
+  vector3TFToMsg(m_psuedo_force_mag * pushback_vec,
+                 wrench_msg.request.wrench.force);
 
   wrench_msg.request.body_name         = body_name.str();
   
-  // Choose a long ros duration (1 year), to delay the automatic disable of wrench force.
+  // Choose a long ros duration (1 year), to delay the disabling of wrench force
   auto one_year_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(1h*24*365).count();
   wrench_msg.request.duration          = ros::Duration(one_year_in_seconds);
 
@@ -303,18 +311,26 @@ bool RegolithSpawner::removeAllRegolithSrv(RemoveAllRegolithRequest &request,
 
 void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg) 
 {
-  auto name_it = find(begin(msg->name), end(msg->name), m_scoop_link_name);
+  auto name_it = find(begin(msg->name), end(msg->name), scoop_link_name);
   if (name_it == end(msg->name)) {
-    ROS_WARN("Failed to find %s in link states", m_scoop_link_name.c_str());      
+    ROS_WARN("Failed to find %s in link states", scoop_link_name.c_str());      
     return;
   }
 
   auto pose_it = begin(msg->pose) + distance(begin(msg->name), name_it);
-  tf::quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
+  quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
 }
 
 void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
 {
+  // check if visual terrain modification was caused by the scoop
+  Vector3 scoop_bottom(quatRotate(m_scoop_orientation, scoop_downward));
+  if (tfDot(scoop_bottom, world_downward) < 0.0)
+    // Scoop bottom is pointing up, which is not a proper scooping orientation.
+    // This can be the result of a deep grind, and should not result in 
+    // particles being spawned.
+    return;
+
   // import image to so we can traverse it
   auto image_handle = CvImageConstPtr();
   try {
