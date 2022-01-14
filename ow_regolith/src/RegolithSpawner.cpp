@@ -5,8 +5,6 @@
 // TODO:
 //  1. Support sloped scooping.
 //  2. Work around reliance on action callbacks from ow_lander.
-//  3. Delete particles based on where they are and what they are doing. Try and
-//     avoid use of the deliver result callback.
 
 #include "RegolithSpawner.h"
 
@@ -52,25 +50,26 @@ using std::begin;
 using std::end;
 
 // service paths used in class
-const static std::string SRV_GET_PHYS_PROPS  = "/gazebo/get_physics_properties";
-const static std::string SRV_SPAWN_MODEL     = "/gazebo/spawn_sdf_model";
-const static std::string SRV_DELETE_MODEL    = "/gazebo/delete_model";
-const static std::string SRV_APPLY_WRENCH    = "/gazebo/apply_body_wrench";
-const static std::string SRV_CLEAR_WRENCH    = "/gazebo/clear_body_wrenches";
+const static string SRV_GET_PHYS_PROPS  = "/gazebo/get_physics_properties";
+const static string SRV_SPAWN_MODEL     = "/gazebo/spawn_sdf_model";
+const static string SRV_DELETE_MODEL    = "/gazebo/delete_model";
+const static string SRV_APPLY_WRENCH    = "/gazebo/apply_body_wrench";
+const static string SRV_CLEAR_WRENCH    = "/gazebo/clear_body_wrenches";
 
 // service paths served by this class
-const static std::string SRV_SPAWN_REGOLITH_IN_SCOOP = "/ow_regolith/spawn_regolith_in_scoop";
-const static std::string SRV_REMOVE_ALL_REGOLITH     = "/ow_regolith/remove_all_regolith";
+const static string SRV_SPAWN_REGOLITH_IN_SCOOP = "/ow_regolith/spawn_regolith_in_scoop";
+const static string SRV_REMOVE_ALL_REGOLITH     = "/ow_regolith/remove_all_regolith";
 
 // topic paths used in class
-const static std::string TOPIC_LINK_STATES           = "/gazebo/link_states";
-const static std::string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
-const static std::string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
-const static std::string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
-const static std::string TOPIC_DELIVER_RESULT        = "/Deliver/result";
+const static string TOPIC_LINK_STATES           = "/gazebo/link_states";
+const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
+const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
+const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
+const static string TOPIC_DELIVER_RESULT        = "/Deliver/result";
+const static string TOPIC_DISCARD_RESULT        = "/Discard/result";
 
 // constants specific to the scoop end-effector
-const static std::string scoop_link_name  = "lander::l_scoop_tip";
+const static string scoop_link_name  = "lander::l_scoop_tip";
 const static Vector3 scoop_forward        = Vector3(1.0, 0.0, 0.0);
 const static Vector3 scoop_downward       = Vector3(0.0, 0.0, 1.0);
 const static Vector3 scoop_spawn_offset   = Vector3(0.0, 0.0, -0.05);
@@ -185,6 +184,8 @@ bool RegolithSpawner::initialize()
     TOPIC_DIG_CIRCULAR_RESULT, 1, &RegolithSpawner::onDigCircularResultMsg, this);
   m_deliver_result      = m_node_handle->subscribe(
     TOPIC_DELIVER_RESULT, 1, &RegolithSpawner::onDeliverResultMsg, this);
+  m_discard_result      = m_node_handle->subscribe(
+    TOPIC_DISCARD_RESULT, 1, &RegolithSpawner::onDiscardResultMsg, this);
 
   // query gazebo for the gravity vector
   GetPhysicsProperties msg;
@@ -377,6 +378,11 @@ void RegolithSpawner::onDigCircularResultMsg(const DigCircularActionResult::Cons
 }
 
 void RegolithSpawner::onDeliverResultMsg(const DeliverActionResult::ConstPtr &msg)
+{
+  removeAllRegolithModels();
+}
+
+void RegolithSpawner::onDiscardResultMsg(const DiscardActionResult::ConstPtr &msg)
 {
   removeAllRegolithModels();
 }

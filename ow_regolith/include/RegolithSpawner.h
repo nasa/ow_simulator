@@ -15,6 +15,7 @@
 #include "ow_lander/DigLinearActionResult.h"
 #include "ow_lander/DigCircularActionResult.h"
 #include "ow_lander/DeliverActionResult.h"
+#include "ow_lander/DiscardActionResult.h"
 
 #include "ow_regolith/SpawnRegolithInScoop.h"
 #include "ow_regolith/RemoveAllRegolith.h"
@@ -47,7 +48,7 @@ public:
   bool spawnRegolithInScoopSrv(ow_regolith::SpawnRegolithInScoopRequest &request,
                                ow_regolith::SpawnRegolithInScoopResponse &response);
 
-  // servcie callback for removeAllRegolithModels
+  // service callback for removeAllRegolithModels
   bool removeAllRegolithSrv(ow_regolith::RemoveAllRegolithRequest &request,
                             ow_regolith::RemoveAllRegolithResponse &response);
 
@@ -63,8 +64,9 @@ public:
   void onDigLinearResultMsg(const ow_lander::DigLinearActionResult::ConstPtr &msg);
   void onDigCircularResultMsg(const ow_lander::DigCircularActionResult::ConstPtr &msg);
 
-  // calls deleteAllRegolithModels
+  // both call removeAllRegolithModels
   void onDeliverResultMsg(const ow_lander::DeliverActionResult::ConstPtr &msg);
+  void onDiscardResultMsg(const ow_lander::DiscardActionResult::ConstPtr &msg);
 
 private:
   // ROS interfaces
@@ -83,6 +85,7 @@ private:
   ros::Subscriber m_dig_linear_result;
   ros::Subscriber m_dig_circular_result;
   ros::Subscriber m_deliver_result;
+  ros::Subscriber m_discard_result;
 
   // sum of volume displaced since previous reoglith spawning
   double m_volume_displaced;
