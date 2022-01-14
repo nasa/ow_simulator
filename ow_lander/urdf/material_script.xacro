@@ -4,7 +4,7 @@
      Research and Simulation can be found in README.md in the root directory of
      this repository. -->
 
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="lander_lights">
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
 
   <xacro:macro name="material_script">
     <script>
