@@ -17,10 +17,6 @@
 #include <cv_bridge/cv_bridge.h>
 
 #include <gazebo_msgs/GetPhysicsProperties.h>
-#include <gazebo_msgs/SpawnModel.h>
-#include <gazebo_msgs/DeleteModel.h>
-#include <gazebo_msgs/ApplyBodyWrench.h>
-#include <gazebo_msgs/BodyRequest.h>
 #include <gazebo_msgs/LinkStates.h>
 
 using namespace ow_dynamic_terrain;
@@ -31,6 +27,7 @@ using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace sdf_utility;
 using namespace std::chrono_literals;
+using namespace ow_regolith;
 
 using tf::Vector3;
 using tf::tfDot;
@@ -41,7 +38,6 @@ using tf::quaternionMsgToTF;
 
 using std::string;
 using std::stringstream;
-using std::acos;
 using std::cos;
 using std::unique_ptr;
 using std::find;
@@ -76,40 +72,10 @@ const static Vector3 scoop_spawn_offset   = Vector3(0.0, 0.0, -0.05);
 
 const static Vector3 world_downward = Vector3(0.0, 0.0, -1.0);
 
-template <class T>
-static bool createRosServiceClient(unique_ptr<ros::NodeHandle> &nh,
-                                   string service_path, 
-                                   ros::ServiceClient &out_srv, 
-                                   bool persistent)
-{
-  // maximum time we will wait for the service to exist
-  constexpr auto SERVICE_TIMEOUT = 5.0; // seconds
-  out_srv = nh->serviceClient<T>(service_path, persistent);
-  if (!out_srv.waitForExistence(ros::Duration(SERVICE_TIMEOUT))) {
-    ROS_ERROR("Timed out waiting for service %s to advertise", 
-              service_path.c_str());
-    return false;
-  } 
-  return true;
-}
-
-template <class T>
-static bool callRosService(ros::ServiceClient &srv, T &msg)
-{
-  if (!srv.isValid()) {
-    ROS_ERROR("Connection to service %s has been lost",
-              srv.getService().c_str());
-    return false;
-  }
-  if (!srv.call(msg)) {
-    ROS_ERROR("Failed to call service %s", srv.getService().c_str());
-    return false;
-  } 
-  return true;
-}
-
 RegolithSpawner::RegolithSpawner(ros::NodeHandle* nh)
-  : m_node_handle(nh), m_volume_displaced(0.0)
+  : m_node_handle(nh), m_volume_displaced(0.0), 
+    m_gz_spawn_model(nh), m_gz_delete_model(nh), 
+    m_gz_apply_wrench(nh), m_gz_clear_wrench(nh)
 {
   // get node parameters
   if (!m_node_handle->getParam("spawn_volume_threshold", m_spawn_threshold))
@@ -141,27 +107,10 @@ bool RegolithSpawner::initialize()
   }
 
   // connect to all ROS services
-  ros::ServiceClient gz_get_phys_prop;
-  if (!createRosServiceClient<GetPhysicsProperties>(m_node_handle,
-                                                    SRV_GET_PHYS_PROPS,
-                                                    gz_get_phys_prop,
-                                                    false)  ||
-      !createRosServiceClient<SpawnModel>(          m_node_handle,
-                                                    SRV_SPAWN_MODEL,
-                                                    m_gz_spawn_model,
-                                                    false)   ||
-      !createRosServiceClient<DeleteModel>(         m_node_handle,
-                                                    SRV_DELETE_MODEL,
-                                                    m_gz_delete_model,
-                                                    false)   ||
-      !createRosServiceClient<ApplyBodyWrench>(     m_node_handle,
-                                                    SRV_APPLY_WRENCH,
-                                                    m_gz_apply_wrench,
-                                                    false)   ||
-      !createRosServiceClient<BodyRequest>(         m_node_handle,
-                                                    SRV_CLEAR_WRENCH,
-                                                    m_gz_clear_wrench,
-                                                    false))
+  if (!m_gz_spawn_model.connect(SRV_SPAWN_MODEL)    ||
+      !m_gz_delete_model.connect(SRV_DELETE_MODEL)  ||
+      !m_gz_apply_wrench.connect(SRV_APPLY_WRENCH)  ||
+      !m_gz_clear_wrench.connect(SRV_CLEAR_WRENCH))
   {
     ROS_ERROR("Failed to connect to all required ROS services");
     return false;
@@ -188,8 +137,10 @@ bool RegolithSpawner::initialize()
     TOPIC_DISCARD_RESULT, 1, &RegolithSpawner::onDiscardResultMsg, this);
 
   // query gazebo for the gravity vector
+  auto get_phys = m_node_handle->serviceClient<GetPhysicsProperties>(SRV_GET_PHYS_PROPS);
   GetPhysicsProperties msg;
-  if (!callRosService(gz_get_phys_prop, msg)) {
+  if (!get_phys.waitForExistence(ros::Duration(5.0)) ||
+      !get_phys.call(msg)) {
     ROS_ERROR("Failed to query Gazebo for gravity vector");
     return false;
   }
@@ -226,7 +177,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   spawn_msg.request.initial_pose.position.y     = scoop_spawn_offset.getY();
   spawn_msg.request.initial_pose.position.z     = scoop_spawn_offset.getZ();
 
-  if (!callRosService(m_gz_spawn_model, spawn_msg))
+  if (!m_gz_spawn_model.call(spawn_msg))
     return false;
 
   m_active_models.push_back({model_name.str(), body_name.str()});
@@ -261,7 +212,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   wrench_msg.request.wrench.torque.y   = 0.0;
   wrench_msg.request.wrench.torque.z   = 0.0;
 
-  return callRosService(m_gz_apply_wrench, wrench_msg);
+  return m_gz_apply_wrench.call(wrench_msg);
 }
 
 bool RegolithSpawner::clearAllPsuedoForces()
@@ -270,7 +221,7 @@ bool RegolithSpawner::clearAllPsuedoForces()
   BodyRequest msg;
   for (auto &regolith : m_active_models) {
     msg.request.body_name = regolith.body_name;
-    if (!callRosService(m_gz_clear_wrench, msg)) {
+    if (!m_gz_clear_wrench.call(msg)) {
       ROS_WARN("Failed to clear force on %s", regolith.body_name.c_str());
       service_call_error_occurred = true;
     }
@@ -285,7 +236,7 @@ bool RegolithSpawner::removeAllRegolithModels()
   auto it = m_active_models.begin();
   while (it != m_active_models.end()) {
     msg.request.model_name = it->model_name;
-    if (callRosService(m_gz_delete_model, msg)) {
+    if (m_gz_delete_model.call(msg)) {
       it = m_active_models.erase(it);
     } else {
       ROS_WARN("Failed to delete model %s", it->model_name.c_str());

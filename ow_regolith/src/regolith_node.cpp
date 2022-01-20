@@ -10,6 +10,8 @@
 
 #include "RegolithSpawner.h"
 
+using namespace ow_regolith;
+
 int main(int argc, char* argv[]) 
 {
   // initialize ROS

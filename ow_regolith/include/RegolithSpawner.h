@@ -8,9 +8,16 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 
-#include "gazebo_msgs/LinkStates.h"
+#include <gazebo_msgs/LinkStates.h>
+
+#include <gazebo_msgs/SpawnModel.h>
+#include <gazebo_msgs/DeleteModel.h>
+#include <gazebo_msgs/ApplyBodyWrench.h>
+#include <gazebo_msgs/BodyRequest.h>
 
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
+
+#include "PersistentServiceClient.h"
 
 #include "ow_lander/DigLinearActionResult.h"
 #include "ow_lander/DigCircularActionResult.h"
@@ -19,6 +26,8 @@
 
 #include "ow_regolith/SpawnRegolithInScoop.h"
 #include "ow_regolith/RemoveAllRegolith.h"
+
+namespace ow_regolith {
 
 class RegolithSpawner
 {
@@ -72,10 +81,10 @@ private:
   // ROS interfaces
   std::unique_ptr<ros::NodeHandle> m_node_handle;
 
-  ros::ServiceClient m_gz_spawn_model;
-  ros::ServiceClient m_gz_delete_model;
-  ros::ServiceClient m_gz_apply_wrench;
-  ros::ServiceClient m_gz_clear_wrench;
+  PersistentServiceClient<gazebo_msgs::SpawnModel>      m_gz_spawn_model;
+  PersistentServiceClient<gazebo_msgs::DeleteModel>     m_gz_delete_model;
+  PersistentServiceClient<gazebo_msgs::ApplyBodyWrench> m_gz_apply_wrench;
+  PersistentServiceClient<gazebo_msgs::BodyRequest>     m_gz_clear_wrench;
 
   ros::ServiceServer m_spawn_regolith_in_scoop;
   ros::ServiceServer m_remove_all_regolith;
@@ -109,5 +118,7 @@ private:
   };
   std::vector<Regolith> m_active_models;
 };
+
+} // namespace ow_regolith
 
 #endif // REGOLITH_SPAWNER_H
