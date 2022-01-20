@@ -64,12 +64,6 @@
     <arg name="load_robot_description" value="false"/>
   </include>
 
-  <!-- We do not have a robot connected, so publish fake joint states -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <param name="use_gui" value="$(arg use_gui)"/>
-    <rosparam param="source_list">[/joint_states]</rosparam>
-  </node>
-
   <!-- Convert joint states from Gazebo to tf-tree for rviz -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
     <param name="publish_frequency" value="30"/>
