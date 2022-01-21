@@ -6,18 +6,18 @@
 //  1. Support sloped scooping.
 //  2. Work around reliance on action callbacks from ow_lander.
 
-#include "RegolithSpawner.h"
-
-#include "sdf_utility.h"
-
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#include <sensor_msgs/image_encodings.h>
+#include <gazebo_msgs/GetPhysicsProperties.h>
+
 #include <cv_bridge/cv_bridge.h>
 
-#include <gazebo_msgs/GetPhysicsProperties.h>
-#include <gazebo_msgs/LinkStates.h>
+#include <sdf_utility.h>
+
+#include <RegolithSpawner.h>
+
+using namespace ow_regolith;
 
 using namespace ow_dynamic_terrain;
 using namespace ow_lander;
@@ -26,8 +26,17 @@ using namespace gazebo_msgs;
 using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace sdf_utility;
-using namespace std::chrono_literals;
-using namespace ow_regolith;
+using namespace std::literals::chrono_literals;
+
+using std::string;
+using std::stringstream;
+using std::cos;
+using std::find;
+using std::distance;
+using std::begin;
+using std::end;
+using std::chrono::duration_cast;
+using std::chrono::seconds;
 
 using tf::Vector3;
 using tf::tfDot;
@@ -35,15 +44,6 @@ using tf::quatRotate;
 using tf::vector3MsgToTF;
 using tf::vector3TFToMsg;
 using tf::quaternionMsgToTF;
-
-using std::string;
-using std::stringstream;
-using std::cos;
-using std::unique_ptr;
-using std::find;
-using std::distance;
-using std::begin;
-using std::end;
 
 // service paths used in class
 const static string SRV_GET_PHYS_PROPS  = "/gazebo/get_physics_properties";
@@ -212,7 +212,7 @@ bool RegolithSpawner::spawnRegolithInScoop(bool with_pushback)
   wrench_msg.request.body_name         = body_name.str();
   
   // Choose a long ros duration (1 year), to delay the disabling of wrench force
-  auto one_year_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(1h*24*365).count();
+  auto one_year_in_seconds = duration_cast<seconds>(1h*24*365).count();
   wrench_msg.request.duration          = ros::Duration(one_year_in_seconds);
 
   wrench_msg.request.reference_point.x = 0.0;

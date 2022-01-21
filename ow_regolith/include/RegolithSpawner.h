@@ -8,6 +8,8 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 
+#include <ServiceClientFacade.h>
+
 #include <gazebo_msgs/LinkStates.h>
 
 #include <gazebo_msgs/SpawnModel.h>
@@ -15,17 +17,15 @@
 #include <gazebo_msgs/ApplyBodyWrench.h>
 #include <gazebo_msgs/BodyRequest.h>
 
-#include "ow_dynamic_terrain/modified_terrain_diff.h"
+#include <ow_dynamic_terrain/modified_terrain_diff.h>
 
-#include "ServiceClientFacade.h"
+#include <ow_lander/DigLinearActionResult.h>
+#include <ow_lander/DigCircularActionResult.h>
+#include <ow_lander/DeliverActionResult.h>
+#include <ow_lander/DiscardActionResult.h>
 
-#include "ow_lander/DigLinearActionResult.h"
-#include "ow_lander/DigCircularActionResult.h"
-#include "ow_lander/DeliverActionResult.h"
-#include "ow_lander/DiscardActionResult.h"
-
-#include "ow_regolith/SpawnRegolithInScoop.h"
-#include "ow_regolith/RemoveAllRegolith.h"
+#include <ow_regolith/SpawnRegolithInScoop.h>
+#include <ow_regolith/RemoveAllRegolith.h>
 
 namespace ow_regolith {
 

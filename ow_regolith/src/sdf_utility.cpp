@@ -2,13 +2,13 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "sdf_utility.h"
-
 #include <fstream>
 #include <sstream>
 
 #include <ros/ros.h>
 #include <gazebo/common/common.hh>
+
+#include <sdf_utility.h>
 
 using namespace sdf;
 

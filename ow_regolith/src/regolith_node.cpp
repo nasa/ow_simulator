@@ -6,7 +6,7 @@
 
 #include <ros/ros.h>
 
-#include "RegolithSpawner.h"
+#include <RegolithSpawner.h>
 
 using namespace ow_regolith;
 

@@ -38,7 +38,7 @@ public:
   {
     if (!m_node_handle) {
       ROS_ERROR(
-        "ServiceClientFacade::call was called before its connect method."
+        "ServiceClientFacade called before being connected."
       );
       return false;
     }
@@ -58,7 +58,7 @@ public:
     return true;
   }
 
-private: 
+private:
 
   bool attempt_reconnect()
   {
