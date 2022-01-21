@@ -37,7 +37,7 @@ public:
   RegolithSpawner(const RegolithSpawner&) = delete;
   RegolithSpawner& operator=(const RegolithSpawner&) = delete;
 
-  RegolithSpawner(std::string node_name);
+  RegolithSpawner(const std::string &node_name);
 
   // loads regolith SDF and computes its mass
   // NOTE: this must be called before any other functions

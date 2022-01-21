@@ -74,7 +74,7 @@ const static Vector3 WORLD_DOWNWARD = Vector3(0.0, 0.0, -1.0);
 
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
-RegolithSpawner::RegolithSpawner(string node_name)
+RegolithSpawner::RegolithSpawner(const string &node_name)
   : m_node_handle(new ros::NodeHandle(node_name)),
     m_volume_displaced(0.0)
 {

@@ -15,12 +15,16 @@ template <class T>
 class ServiceClientFacade
 {
 public:
-  ServiceClientFacade() : m_node_handle(nullptr)
+  ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false)
   {
     // do nothing
   }
+  ServiceClientFacade(const ServiceClientFacade&) = delete;
+  ~ServiceClientFacade() = default;
+  ServiceClientFacade& operator=(const ServiceClientFacade&) = delete;
 
-  bool connect(std::shared_ptr<ros::NodeHandle> &nh, std::string service_path,
+  bool connect(std::shared_ptr<ros::NodeHandle> &nh,
+               const std::string &service_path,
                ros::Duration timeout, bool persistent)
   {
     m_node_handle = nh;
