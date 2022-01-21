@@ -17,7 +17,7 @@
 
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
 
-#include "PersistentServiceClient.h"
+#include "ServiceClientFacade.h"
 
 #include "ow_lander/DigLinearActionResult.h"
 #include "ow_lander/DigCircularActionResult.h"
@@ -37,7 +37,7 @@ public:
   RegolithSpawner(const RegolithSpawner&) = delete;
   RegolithSpawner& operator=(const RegolithSpawner&) = delete;
 
-  RegolithSpawner(ros::NodeHandle* nh);
+  RegolithSpawner(std::string node_name);
 
   // loads regolith SDF and computes its mass
   // NOTE: this must be called before any other functions
@@ -79,12 +79,12 @@ public:
 
 private:
   // ROS interfaces
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  std::shared_ptr<ros::NodeHandle> m_node_handle;
 
-  PersistentServiceClient<gazebo_msgs::SpawnModel>      m_gz_spawn_model;
-  PersistentServiceClient<gazebo_msgs::DeleteModel>     m_gz_delete_model;
-  PersistentServiceClient<gazebo_msgs::ApplyBodyWrench> m_gz_apply_wrench;
-  PersistentServiceClient<gazebo_msgs::BodyRequest>     m_gz_clear_wrench;
+  ServiceClientFacade<gazebo_msgs::SpawnModel>      m_gz_spawn_model;
+  ServiceClientFacade<gazebo_msgs::DeleteModel>     m_gz_delete_model;
+  ServiceClientFacade<gazebo_msgs::ApplyBodyWrench> m_gz_apply_wrench;
+  ServiceClientFacade<gazebo_msgs::BodyRequest>     m_gz_clear_wrench;
 
   ros::ServiceServer m_spawn_regolith_in_scoop;
   ros::ServiceServer m_remove_all_regolith;

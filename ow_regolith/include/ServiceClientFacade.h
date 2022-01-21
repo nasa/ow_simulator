@@ -2,27 +2,31 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#ifndef PERSISTENT_SERVICE_CLIENT_H
-#define PERSISTENT_SERVICE_CLIENT_H
+#ifndef SERVICE_CLIENT_FACADE_H
+#define SERVICE_CLIENT_FACADE_H
+
+#include <memory>
 
 #include <ros/ros.h>
 
 namespace ow_regolith {
 
 template <class T>
-class PersistentServiceClient
+class ServiceClientFacade
 {
 public:
-  PersistentServiceClient(ros::NodeHandle* nh, bool persistent = true)
-    : m_node_handle(nh), m_persistent(persistent)
+  ServiceClientFacade() : m_node_handle(nullptr)
   {
     // do nothing
   }
 
-  bool connect(std::string service_path, int timeout = 5.0)
+  bool connect(std::shared_ptr<ros::NodeHandle> &nh, std::string service_path,
+               ros::Duration timeout, bool persistent)
   {
+    m_node_handle = nh;
+    m_persistent = persistent;
     m_client = m_node_handle->serviceClient<T>(service_path, m_persistent);
-    if (!m_client.waitForExistence(ros::Duration(timeout))) {
+    if (!m_client.waitForExistence(timeout)) {
       ROS_ERROR("Timed out waiting for service %s to advertise",
                 service_path.c_str());
       return false;
@@ -32,6 +36,13 @@ public:
 
   bool call(T &message)
   {
+    if (!m_node_handle) {
+      ROS_ERROR(
+        "ServiceClientFacade::call was called before its connect method."
+      );
+      return false;
+    }
+
     if (!m_client.isValid() && !attempt_reconnect()) {
       ROS_ERROR(
         "Connection to service %s has been lost and reconnection failed",
@@ -48,20 +59,22 @@ public:
   }
 
 private: 
+
   bool attempt_reconnect()
   {
-    constexpr auto RECONNECT_TIMEOUT = 0.5;
-    return connect(m_client.getService().c_str(), RECONNECT_TIMEOUT);
+    m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(),
+                                               m_persistent);
+    return m_client.exists();
   }
 
-  bool m_persistent;
+  std::shared_ptr<ros::NodeHandle> m_node_handle;
 
   ros::ServiceClient m_client;
 
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  bool m_persistent;
 
 };
 
-}
+} // namespace ow_regolith
 
-#endif //PERSISTENT_SERVICE_CLIENT_H
+#endif //SERVICE_CLIENT_FACADE_H
