@@ -2,6 +2,11 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// RegolithSpawner is a ROS node that detects when digging by the scoop
+// end-effector occurs and spawns a model in the scoop to represent collected
+// material. The node will also clean-up models it has spawned when a
+// deliver/discard action occurs.
+
 #ifndef REGOLITH_SPAWNER_H
 #define REGOLITH_SPAWNER_H
 
@@ -11,11 +16,6 @@
 #include <ServiceClientFacade.h>
 
 #include <gazebo_msgs/LinkStates.h>
-
-#include <gazebo_msgs/SpawnModel.h>
-#include <gazebo_msgs/DeleteModel.h>
-#include <gazebo_msgs/ApplyBodyWrench.h>
-#include <gazebo_msgs/BodyRequest.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
 
@@ -81,10 +81,8 @@ private:
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
-  ServiceClientFacade<gazebo_msgs::SpawnModel>      m_gz_spawn_model;
-  ServiceClientFacade<gazebo_msgs::DeleteModel>     m_gz_delete_model;
-  ServiceClientFacade<gazebo_msgs::ApplyBodyWrench> m_gz_apply_wrench;
-  ServiceClientFacade<gazebo_msgs::BodyRequest>     m_gz_clear_wrench;
+  ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
+                      m_gz_apply_wrench, m_gz_clear_wrench;
 
   ros::ServiceServer m_spawn_regolith_in_scoop;
   ros::ServiceServer m_remove_all_regolith;

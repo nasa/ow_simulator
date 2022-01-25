@@ -10,6 +10,10 @@
 #include <cmath>
 
 #include <gazebo_msgs/GetPhysicsProperties.h>
+#include <gazebo_msgs/SpawnModel.h>
+#include <gazebo_msgs/DeleteModel.h>
+#include <gazebo_msgs/ApplyBodyWrench.h>
+#include <gazebo_msgs/BodyRequest.h>
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -108,14 +112,14 @@ bool RegolithSpawner::initialize()
   }
 
   // connect to all ROS services
-  if (!m_gz_spawn_model.connect(m_node_handle, SRV_SPAWN_MODEL,
-                                SERVICE_CONNECT_TIMEOUT, true)    ||
-      !m_gz_delete_model.connect(m_node_handle, SRV_DELETE_MODEL,
-                                 SERVICE_CONNECT_TIMEOUT, true)   ||
-      !m_gz_apply_wrench.connect(m_node_handle, SRV_APPLY_WRENCH,
-                                 SERVICE_CONNECT_TIMEOUT, true)   ||
-      !m_gz_clear_wrench.connect(m_node_handle, SRV_CLEAR_WRENCH,
-                                 SERVICE_CONNECT_TIMEOUT, true))
+  if (!m_gz_spawn_model.connect<SpawnModel>(
+        m_node_handle, SRV_SPAWN_MODEL, SERVICE_CONNECT_TIMEOUT, true)  ||
+      !m_gz_delete_model.connect<DeleteModel>(
+        m_node_handle, SRV_DELETE_MODEL, SERVICE_CONNECT_TIMEOUT, true) ||
+      !m_gz_apply_wrench.connect<ApplyBodyWrench>(
+        m_node_handle, SRV_APPLY_WRENCH, SERVICE_CONNECT_TIMEOUT, true) ||
+      !m_gz_clear_wrench.connect<BodyRequest>(
+        m_node_handle, SRV_CLEAR_WRENCH, SERVICE_CONNECT_TIMEOUT, true) )
   {
     ROS_ERROR("Failed to connect to all required ROS services");
     return false;
@@ -147,10 +151,10 @@ bool RegolithSpawner::initialize()
   constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
   constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
   // query gazebo for the gravity vector
-  ServiceClientFacade<GetPhysicsProperties> gz_get_phys_props;
+  ServiceClientFacade gz_get_phys_props;
   GetPhysicsProperties phys_prop_msg;
-  if (!gz_get_phys_props.connect(m_node_handle, SRV_GET_PHYS_PROPS,
-                                 SERVICE_CONNECT_TIMEOUT, false)    ||
+  if (!gz_get_phys_props.connect<GetPhysicsProperties>(
+        m_node_handle, SRV_GET_PHYS_PROPS, SERVICE_CONNECT_TIMEOUT, false) ||
       !gz_get_phys_props.call(phys_prop_msg)) {
     ROS_ERROR("Failed to connect Gazebo for gravity vector");
     return false;
