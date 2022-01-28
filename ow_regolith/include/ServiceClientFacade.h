@@ -53,7 +53,7 @@ public:
 private:
 
   template <typename T>
-  bool attempt_reconnect();
+  bool attemptReconnect();
 
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
@@ -89,7 +89,7 @@ bool ServiceClientFacade::call(T &message)
     return false;
   }
 
-  if (!m_client.isValid() && !attempt_reconnect<T>()) {
+  if (!m_client.isValid() && !attemptReconnect<T>()) {
     ROS_ERROR(
       "Connection to service %s has been lost and reconnection failed",
       m_client.getService().c_str()
@@ -105,7 +105,7 @@ bool ServiceClientFacade::call(T &message)
 };
 
 template <typename T>
-bool ServiceClientFacade::attempt_reconnect()
+bool ServiceClientFacade::attemptReconnect()
 {
   m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(),
                                              m_persistent);
