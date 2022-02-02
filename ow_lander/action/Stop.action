@@ -1,5 +1,5 @@
 #goal definition
-float32 goal
+std_msgs/Empty goal
 ---
 # result
 geometry_msgs/Point final     # arm final position

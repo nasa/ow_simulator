@@ -21,7 +21,7 @@ def stop_client():
 
     client.wait_for_server()
     #dummy goal for action server
-    goal = ow_lander.msg.StopGoal(goal=20)
+    goal = ow_lander.msg.StopGoal(goal='')
 
     # Sends the goal to the action server.
     client.send_goal(goal)
