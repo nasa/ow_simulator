@@ -22,11 +22,6 @@ class UnstowActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.UnstowAction,
-                                                    execute_cb=self.on_unstow_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
         self._result = ow_lander.msg.UnstowResult()
@@ -35,6 +30,11 @@ class UnstowActionServer(object):
         self._timeout = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.UnstowAction,
+                                                    execute_cb=self.on_unstow_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
 
@@ -101,11 +101,6 @@ class StowActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.StowAction,
-                                                    execute_cb=self.on_stow_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.StowFeedback()
         self._result = ow_lander.msg.StowResult()
@@ -114,6 +109,11 @@ class StowActionServer(object):
         self._timeout = 0.0
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.StowAction,
+                                                    execute_cb=self.on_stow_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
 
@@ -179,11 +179,6 @@ class GrindActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.GrindAction,
-                                                    execute_cb=self.on_Grind_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.GrindFeedback()
         self._result = ow_lander.msg.GrindResult()
@@ -193,6 +188,11 @@ class GrindActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("grinder_controller")
         self.current_traj = RobotTrajectory()
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.GrindAction,
+                                                    execute_cb=self.on_Grind_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
 
@@ -284,11 +284,6 @@ class GuardedMoveActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.GuardedMoveAction,
-                                                    execute_cb=self.on_guarded_move_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.GuardedMoveFeedback()
         self._result = ow_lander.msg.GuardedMoveResult()
@@ -304,6 +299,11 @@ class GuardedMoveActionServer(object):
         self.ground_detector = GroundDetector()
         self.pos = Point()
         self.guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.GuardedMoveAction,
+                                                    execute_cb=self.on_guarded_move_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def handle_guarded_move_done(self, state, result):
         """
@@ -399,11 +399,6 @@ class DigCircularActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.DigCircularAction,
-                                                    execute_cb=self.on_DigCircular_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.DigCircularFeedback()
         self._result = ow_lander.msg.DigCircularResult()
@@ -413,6 +408,11 @@ class DigCircularActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.current_traj = RobotTrajectory()
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.DigCircularAction,
+                                                    execute_cb=self.on_DigCircular_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def switch_controllers(self, start_controller, stop_controller):
         rospy.wait_for_service('/controller_manager/switch_controller')
@@ -493,11 +493,6 @@ class DigLinearActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.DigLinearAction,
-                                                    execute_cb=self.on_DigLinear_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.DigLinearFeedback()
         self._result = ow_lander.msg.DigLinearResult()
@@ -507,6 +502,11 @@ class DigLinearActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.current_traj = RobotTrajectory()
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.DigLinearAction,
+                                                    execute_cb=self.on_DigLinear_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
 
@@ -573,9 +573,6 @@ class DiscardActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(
-            self._action_name, ow_lander.msg.DiscardAction, execute_cb=self.on_discard_action, auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
         self._result = ow_lander.msg.UnstowResult()
@@ -585,6 +582,11 @@ class DiscardActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.discard_sample_traj = RobotTrajectory()
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.DiscardAction,
+                                                    execute_cb=self.on_discard_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
         self._ls = self._current_link_state._link_value
@@ -647,9 +649,6 @@ class DeliverActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(
-            self._action_name, ow_lander.msg.DeliverAction, execute_cb=self.on_deliver_action, auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.UnstowFeedback()
         self._result = ow_lander.msg.UnstowResult()
@@ -659,6 +658,11 @@ class DeliverActionServer(object):
         self.trajectory_async_executer = TrajectoryAsyncExecuter()
         self.trajectory_async_executer.connect("arm_controller")
         self.deliver_sample_traj = RobotTrajectory()
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.DeliverAction,
+                                                    execute_cb=self.on_deliver_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _update_feedback(self):
         self._ls = self._current_link_state._link_value
