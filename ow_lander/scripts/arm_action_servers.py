@@ -34,7 +34,6 @@ class UnstowActionServer(object):
         self._interface = MoveItInterface()
         self._timeout = 0.0
 
-
     def _update_feedback(self):
 
         self._ls = self._current_link_state._link_value
@@ -67,9 +66,9 @@ class UnstowActionServer(object):
         success = False
 
         trajectory_async_executer.execute(plan.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -111,8 +110,6 @@ class StowActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
 
     def _update_feedback(self):
 
@@ -146,9 +143,9 @@ class StowActionServer(object):
         success = False
 
         trajectory_async_executer.execute(plan.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -172,8 +169,8 @@ class StowActionServer(object):
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
-            
-            
+
+
 class StopActionServer(object):
 
     def __init__(self, name):
@@ -189,12 +186,9 @@ class StopActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
-
 
     def on_stop_action(self, goal):
-        
+
         self._ls = self._current_link_state._link_value
         self._result.final.x = self._ls.x
         self._result.final.y = self._ls.y
@@ -202,7 +196,7 @@ class StopActionServer(object):
 
         trajectory_async_executer.stop()
         rospy.loginfo('%s: Succeeded' % self._action_name)
-        self._server.set_succeeded(self._result)       
+        self._server.set_succeeded(self._result)
 
 
 class GrindActionServer(object):
@@ -220,8 +214,6 @@ class GrindActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("grinder_controller")
         self.current_traj = RobotTrajectory()
 
     def _update_feedback(self):
@@ -274,9 +266,9 @@ class GrindActionServer(object):
             return False, "Failed switching controllers"
 
         trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -328,12 +320,11 @@ class GuardedMoveActionServer(object):
         self._estimated_plan_fraction_completed = 0.0
         # ratio between guarded pre-guarded move trajectory and the whole trajectory
         self._guarded_move_plan_ratio = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self.guarded_move_traj = RobotTrajectory()
         self.ground_detector = GroundDetector()
         self.pos = Point()
-        self.guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
+        self.guarded_move_pub = rospy.Publisher(
+            '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
 
     def handle_guarded_move_done(self, state, result):
         """
@@ -395,9 +386,9 @@ class GuardedMoveActionServer(object):
         self.ground_detector.reset()
 
         trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
-                                               done_cb=self.handle_guarded_move_done,
-                                               active_cb=None,
-                                               feedback_cb=self.handle_guarded_move_feedback)
+                                          done_cb=self.handle_guarded_move_done,
+                                          active_cb=None,
+                                          feedback_cb=self.handle_guarded_move_feedback)
 
         # Record start time
         start_time = rospy.get_time()
@@ -440,8 +431,6 @@ class DigCircularActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self.current_traj = RobotTrajectory()
 
     def switch_controllers(self, start_controller, stop_controller):
@@ -491,9 +480,9 @@ class DigCircularActionServer(object):
         success = False
 
         trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -534,8 +523,6 @@ class DigLinearActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self.current_traj = RobotTrajectory()
 
     def _update_feedback(self):
@@ -570,9 +557,9 @@ class DigLinearActionServer(object):
         success = False
 
         trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -607,13 +594,11 @@ class DiscardActionServer(object):
             self._action_name, ow_lander.msg.DiscardAction, execute_cb=self.on_discard_action, auto_start=False)
         self._server.start()
         # Action Feedback/Result
-        self._fdbk = ow_lander.msg.UnstowFeedback()
-        self._result = ow_lander.msg.UnstowResult()
+        self._fdbk = ow_lander.msg.DiscardFeedback()
+        self._result = ow_lander.msg.DiscardResult()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self.discard_sample_traj = RobotTrajectory()
 
     def _update_feedback(self):
@@ -644,15 +629,14 @@ class DiscardActionServer(object):
         success = False
 
         trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            # return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
         while ((now_from_start(start_time) < self._timeout)):
@@ -681,13 +665,11 @@ class DeliverActionServer(object):
             self._action_name, ow_lander.msg.DeliverAction, execute_cb=self.on_deliver_action, auto_start=False)
         self._server.start()
         # Action Feedback/Result
-        self._fdbk = ow_lander.msg.UnstowFeedback()
-        self._result = ow_lander.msg.UnstowResult()
+        self._fdbk = ow_lander.msg.DeliverFeedback()
+        self._result = ow_lander.msg.DeliverResult()
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self.deliver_sample_traj = RobotTrajectory()
 
     def _update_feedback(self):
@@ -709,7 +691,8 @@ class DeliverActionServer(object):
             start_time = self.deliver_sample_traj.joint_trajectory.points[0].time_from_start
             end_time = self.deliver_sample_traj.joint_trajectory.points[n_points-1].time_from_start
             self._timeout = end_time - start_time
-    #executive call back of simple action server requires a dummy goal 
+    # executive call back of simple action server requires a dummy goal
+
     def on_deliver_action(self, goal):
         self._update_motion()
         if self.deliver_sample_traj == False:
@@ -718,9 +701,9 @@ class DeliverActionServer(object):
         success = False
 
         trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
-                                               done_cb=None,
-                                               active_cb=None,
-                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                          done_cb=None,
+                                          active_cb=None,
+                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
 
         # Record start time
         start_time = rospy.get_time()
@@ -745,6 +728,7 @@ class DeliverActionServer(object):
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
+
 
 if __name__ == '__main__':
     rospy.init_node('arm_action_servers')
