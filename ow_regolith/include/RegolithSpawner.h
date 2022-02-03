@@ -2,23 +2,32 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// RegolithSpawner is a ROS node that detects when digging by the scoop
+// end-effector occurs and spawns a model in the scoop to represent collected
+// material. The node will also clean-up models it has spawned when a
+// deliver/discard action occurs.
+
 #ifndef REGOLITH_SPAWNER_H
 #define REGOLITH_SPAWNER_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
 
-#include "gazebo_msgs/LinkStates.h"
+#include <ServiceClientFacade.h>
 
-#include "ow_dynamic_terrain/modified_terrain_diff.h"
+#include <gazebo_msgs/LinkStates.h>
 
-#include "ow_lander/DigLinearActionResult.h"
-#include "ow_lander/DigCircularActionResult.h"
-#include "ow_lander/DeliverActionResult.h"
-#include "ow_lander/DiscardActionResult.h"
+#include <ow_dynamic_terrain/modified_terrain_diff.h>
 
-#include "ow_regolith/SpawnRegolithInScoop.h"
-#include "ow_regolith/RemoveAllRegolith.h"
+#include <ow_lander/DigLinearActionResult.h>
+#include <ow_lander/DigCircularActionResult.h>
+#include <ow_lander/DeliverActionResult.h>
+#include <ow_lander/DiscardActionResult.h>
+
+#include <ow_regolith/SpawnRegolithInScoop.h>
+#include <ow_regolith/RemoveAllRegolith.h>
+
+namespace ow_regolith {
 
 class RegolithSpawner
 {
@@ -28,7 +37,7 @@ public:
   RegolithSpawner(const RegolithSpawner&) = delete;
   RegolithSpawner& operator=(const RegolithSpawner&) = delete;
 
-  RegolithSpawner(ros::NodeHandle* nh);
+  RegolithSpawner(const std::string &node_name);
 
   // loads regolith SDF and computes its mass
   // NOTE: this must be called before any other functions
@@ -70,12 +79,10 @@ public:
 
 private:
   // ROS interfaces
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  std::shared_ptr<ros::NodeHandle> m_node_handle;
 
-  ros::ServiceClient m_gz_spawn_model;
-  ros::ServiceClient m_gz_delete_model;
-  ros::ServiceClient m_gz_apply_wrench;
-  ros::ServiceClient m_gz_clear_wrench;
+  ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
+                      m_gz_apply_wrench, m_gz_clear_wrench;
 
   ros::ServiceServer m_spawn_regolith_in_scoop;
   ros::ServiceServer m_remove_all_regolith;
@@ -109,5 +116,7 @@ private:
   };
   std::vector<Regolith> m_active_models;
 };
+
+} // namespace ow_regolith
 
 #endif // REGOLITH_SPAWNER_H

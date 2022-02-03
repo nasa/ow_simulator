@@ -2,21 +2,22 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// TODO:
-//   1. Suppress or prevent "ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)"
-//   2. Have a service for regolith_node that allows spawning of regolith
+#include <string>
 
-#include <ros/ros.h> 
+#include <ros/ros.h>
 
-#include "RegolithSpawner.h"
+#include <RegolithSpawner.h>
+
+using namespace ow_regolith;
+
+const static std::string NODE_NAME = "regolith_node";
 
 int main(int argc, char* argv[]) 
 {
   // initialize ROS
-  ros::init(argc, argv, "regolith_node");
-  ros::NodeHandle nh("regolith_node");
+  ros::init(argc, argv, NODE_NAME);
 
-  RegolithSpawner rs(&nh);
+  RegolithSpawner rs(NODE_NAME);
   
   if (!rs.initialize()) {
     ROS_ERROR("Failed to initialize regolith node");
