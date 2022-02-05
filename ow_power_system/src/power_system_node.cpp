@@ -199,13 +199,18 @@ double PowerSystemNode::generateVoltageEstimate()
     min_V = m_base_voltage;
 
   // Voltage estimate based on pseudorandom noise and moving range
-  uniform_real_distribution<double> m_voltage_dist(min_V, max_V);
-  return m_voltage_dist(m_random_generator);
+  uniform_real_distribution<double> voltage_dist(min_V, max_V);
+  return voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_activated,
-                                  const vector<map<MessageId, Datum<double>>>& sequence, size_t& sequence_index,
-                                  double& power, double& voltage, double& temperature)
+void PowerSystemNode::injectFault(const string& power_fault_name,
+				  bool& fault_activated,
+                                  const vector<map<MessageId,
+				  Datum<double>>>& sequence,
+				  size_t& sequence_index,
+                                  double& power,
+				  double& voltage,
+				  double& temperature)
 {
   bool fault_enabled = false;
   bool success = ros::param::getCached("/faults/" + power_fault_name, fault_enabled);
@@ -226,39 +231,70 @@ void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_ac
 
   if (fault_activated && fault_enabled)
   {
-    auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
-                                                               // the This is unlikely the end case. Re-visit
+    // TODO: for now we replay the sequence once it reaches the end.
+    // This is unlikely the end case. Re-visit.
+    auto data = sequence[sequence_index++ % sequence.size()];
 
-    auto m = 1.0 / m_power_node_processing_rate;  // multiplier that should be applied since this profile data are given in seconds
-                                                  // but the processing rate can be lesser or higher than that
+    // Multiplier that should be applied since this profile data are
+    // given in seconds but the processing rate can be lesser or
+    // higher than that.
+    // [Why?]
+    //    auto m = 1.0 / m_power_node_processing_rate;
+    auto m = 1.0;
+
+    ROS_INFO_STREAM("---Power before: " << power);
     power += m * data[MessageId::Watts];
+    ROS_INFO_STREAM("---Power after: " << power);
+
+    ROS_INFO_STREAM("---Voltage before: " << voltage);
     voltage += m * data[MessageId::Volts];
+    ROS_INFO_STREAM("---Voltage after: " << voltage);
+
+    ROS_INFO_STREAM("---Temperature before: " << temperature);
     temperature += m * data[MessageId::Centigrade];
+    ROS_INFO_STREAM("---Temperature after: " << temperature);
   }
 }
 
-void PowerSystemNode::injectFaults(double& power, double& voltage, double& temperature)
+void PowerSystemNode::injectFaults(double& power,
+				   double& voltage,
+				   double& temperature)
 {
-  injectFault("low_state_of_charge_power_failure", m_low_state_of_charge_power_failure_activated,
-              m_low_state_of_charge_power_failure_sequence, m_low_state_of_charge_power_failure_sequence_index, power,
-              voltage, temperature);
+  injectFault("low_state_of_charge_power_failure",
+	      m_low_state_of_charge_power_failure_activated,
+              m_low_state_of_charge_power_failure_sequence,
+	      m_low_state_of_charge_power_failure_sequence_index,
+	      power, voltage, temperature);
 
-  injectFault("instantaneous_capacity_loss_power_failure", m_instantaneous_capacity_loss_power_failure_activated,
+  injectFault("instantaneous_capacity_loss_power_failure",
+	      m_instantaneous_capacity_loss_power_failure_activated,
               m_instantaneous_capacity_loss_power_failure_sequence,
-              m_instantaneous_capacity_loss_power_failure_sequence_index, power, voltage, temperature);
+              m_instantaneous_capacity_loss_power_failure_sequence_index,
+	      power, voltage, temperature);
 
-  injectFault("thermal_power_failure", m_thermal_power_failure_activated, m_thermal_power_failure_sequence,
-              m_thermal_power_failure_sequence_index, power, voltage, temperature);
+  injectFault("thermal_power_failure",
+	      m_thermal_power_failure_activated,
+	      m_thermal_power_failure_sequence,
+              m_thermal_power_failure_sequence_index,
+	      power, voltage, temperature);
 }
 
-map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double voltage, double temperature)
+map<MessageId, Datum<double>>
+PowerSystemNode::composePrognoserData(double power,
+				      double voltage,
+				      double temperature)
 {
-  return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
-                                        { MessageId::Volts, Datum<double>{ voltage } },
-                                        { MessageId::Centigrade, Datum<double>{ temperature } } };
+  return map<MessageId, Datum<double>>{
+    { MessageId::Watts, Datum<double>{ power } },
+    { MessageId::Volts, Datum<double>{ voltage } },
+    { MessageId::Centigrade, Datum<double>{ temperature } }
+  };
 }
 
-void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event, Float64& soc_msg, Int16& rul_msg, Float64& battery_temperature_msg)
+void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
+				     Float64& soc_msg,
+				     Int16& rul_msg,
+				     Float64& battery_temperature_msg)
 {
   // The time of event is a `UData` structure, which represents a data
   // point while maintaining uncertainty. For the MonteCarlo predictor
