@@ -229,17 +229,11 @@ class TerrainInteraction(unittest.TestCase):
     )
 
     # verify action ended where we expected
-    acceptable_pose_point_variance = 0.02 # meters
-    final_fail_message = "Arm did not complete the %s action in the position expected!" % action_name
-    self.assertAlmostEqual(result.final.x, expected_final.x,
-                           delta=acceptable_pose_point_variance,
-                           msg=final_fail_message)
-    self.assertAlmostEqual(result.final.y, expected_final.y,
-                           delta=acceptable_pose_point_variance,
-                           msg=final_fail_message)
-    self.assertAlmostEqual(result.final.z, expected_final.z,
-                           delta=acceptable_pose_point_variance,
-                           msg=final_fail_message)
+    self._assert_point_is_near(
+      result.final, expected_final, 0.02,
+      "Arm did not complete the %s action in the position expected!"
+        % action_name
+    )
 
     return result
 
@@ -280,7 +274,7 @@ class TerrainInteraction(unittest.TestCase):
     DIG_LINEAR_MAX_DURATION = 110.0
     DIG_LINEAR_EXPECTED_FINAL = Point(2.2404188541487606,
                                       -0.012052180209644802,
-                                      -7.019289939169855)
+                                      -7.049335444887187)
 
     # call Grind action asynchronously
     dig_linear_result = self._test_action(
