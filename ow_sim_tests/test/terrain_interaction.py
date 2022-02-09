@@ -253,9 +253,9 @@ class TerrainInteraction(unittest.TestCase):
   def test_01_grind(self):
 
     GRIND_MAX_DURATION = 60.0 # seconds
-    GRIND_EXPECTED_FINAL = Point(1.4715559423041809,
-                                 -0.14057547008097895,
-                                 -6.739779746454913)
+    GRIND_EXPECTED_FINAL = Point(1.4720579324199088
+                                 -0.14069361533007319
+                                 -6.739956216168468)
 
     # call Grind action asynchronously
     grind_result = self._test_action(
@@ -269,7 +269,7 @@ class TerrainInteraction(unittest.TestCase):
       x_start         = 1.65,
       y_start         = 0.0,
       depth           = 0.15, # grind deep so terrain is modified
-      length          = 0.6,
+      length          = 0.7,
       parallel        = True,
       ground_position = GROUND_POSITION
     )
