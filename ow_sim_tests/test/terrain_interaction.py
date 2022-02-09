@@ -19,8 +19,6 @@ import ow_lander.msg
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
 
-ACCEPTABLE_POSE_POINT_VARIANCE = 0.01 # meters
-
 GROUND_POSITION = -0.155
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
@@ -231,15 +229,16 @@ class TerrainInteraction(unittest.TestCase):
     )
 
     # verify action ended where we expected
+    acceptable_pose_point_variance = 0.02 # meters
     final_fail_message = "Arm did not complete the %s action in the position expected!" % action_name
     self.assertAlmostEqual(result.final.x, expected_final.x,
-                           delta=ACCEPTABLE_POSE_POINT_VARIANCE,
+                           delta=acceptable_pose_point_variance,
                            msg=final_fail_message)
     self.assertAlmostEqual(result.final.y, expected_final.y,
-                           delta=ACCEPTABLE_POSE_POINT_VARIANCE,
+                           delta=acceptable_pose_point_variance,
                            msg=final_fail_message)
     self.assertAlmostEqual(result.final.z, expected_final.z,
-                           delta=ACCEPTABLE_POSE_POINT_VARIANCE,
+                           delta=acceptable_pose_point_variance,
                            msg=final_fail_message)
 
     return result
@@ -247,14 +246,12 @@ class TerrainInteraction(unittest.TestCase):
   """
   Tests an extra deep grind action and asserts no regolith is spawned during the
   operation.
-  TODO:
-    1. verify terrain has been modified
   """
   def test_01_grind(self):
 
-    GRIND_MAX_DURATION = 60.0 # seconds
-    GRIND_EXPECTED_FINAL = Point(1.4720579324199088
-                                 -0.14069361533007319
+    GRIND_MAX_DURATION = 80.0 # seconds
+    GRIND_EXPECTED_FINAL = Point(1.4720579324199088,
+                                 -0.14069361533007319,
                                  -6.739956216168468)
 
     # call Grind action asynchronously
@@ -283,7 +280,7 @@ class TerrainInteraction(unittest.TestCase):
     DIG_LINEAR_MAX_DURATION = 110.0
     DIG_LINEAR_EXPECTED_FINAL = Point(2.2404188541487606,
                                       -0.012052180209644802,
-                                      -7.052169181987205)
+                                      -7.019289939169855)
 
     # call Grind action asynchronously
     dig_linear_result = self._test_action(
