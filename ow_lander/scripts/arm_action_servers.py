@@ -28,8 +28,6 @@ class UnstowActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        # self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        # self.trajectory_async_executer.connect("arm_controller")
         self._server = actionlib.SimpleActionServer(self._action_name,
                                                     ow_lander.msg.UnstowAction,
                                                     execute_cb=self.on_unstow_action,
