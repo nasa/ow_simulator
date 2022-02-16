@@ -107,8 +107,6 @@ class StowActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
-        self.trajectory_async_executer = TrajectoryAsyncExecuter()
-        self.trajectory_async_executer.connect("arm_controller")
         self._server = actionlib.SimpleActionServer(self._action_name,
                                                     ow_lander.msg.StowAction,
                                                     execute_cb=self.on_stow_action,
@@ -197,10 +195,16 @@ class StopActionServer(object):
         self._result.final.x = self._ls.x
         self._result.final.y = self._ls.y
         self._result.final.z = self._ls.z
-
-        trajectory_async_executer.stop()
-        rospy.loginfo('%s: Succeeded' % self._action_name)
-        self._server.set_succeeded(self._result)
+        
+        goal_active = trajectory_async_executer.is_active()
+        
+        if goal_active == 1:
+            trajectory_async_executer.stop()
+            rospy.loginfo('%s: Succeeded' % self._action_name)
+            self._server.set_succeeded(self._result)
+        else:
+            rospy.loginfo('Goal not active') 
+            self._server.set_aborted(self._result)
 
 
 class GrindActionServer(object):
@@ -268,6 +272,8 @@ class GrindActionServer(object):
             'grinder_controller', 'arm_controller')
         if not switch_success:
             return False, "Failed switching controllers"
+        # connect grinder controller to the trajectory executer
+        trajectory_async_executer.connect("grinder_controller")
 
         trajectory_async_executer.execute(self.current_traj.joint_trajectory,
                                           done_cb=None,
@@ -294,6 +300,9 @@ class GrindActionServer(object):
                 'arm_controller', 'grinder_controller')
             if not switch_success:
                 return False, "Failed Switching Controllers"
+            # switch controller after completing grind operation
+            trajectory_async_executer.connect("arm_controller")
+            
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
         else:
@@ -304,6 +313,8 @@ class GrindActionServer(object):
             if not switch_success:
                 return False, "Failed Switching Controllers"
             rospy.loginfo('%s: Succeeded' % self._action_name)
+            # switch controller if grind operation was aborted
+            trajectory_async_executer.connect("arm_controller")
 
 
 class GuardedMoveActionServer(object):

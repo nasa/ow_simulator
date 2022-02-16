@@ -11,6 +11,12 @@ from ow_faults_detection.msg import SystemFaults
 
 ARM_EXECUTION_ERROR = 4
 
+# class SimpleGoalState:
+#      PENDING = 0
+#      ACTIVE = 1
+#      DONE = 2
+# SimpleGoalState.to_string = classmethod(get_name_of_constant)
+
 class TrajectoryAsyncExecuter:
   """
   Interfaces with a Joint Trajectory Action Server of a given controller to execute
@@ -21,6 +27,7 @@ class TrajectoryAsyncExecuter:
     self._connected = False
     self._goal_time_tolerance = rospy.Time(0.1)
     self._client = None
+    #self.simple_state = SimpleGoalState.DONE
     self.arm_fault = False
 
     # rospy.init_node('trajectoryAsyncExecuter')
@@ -107,3 +114,11 @@ class TrajectoryAsyncExecuter:
     if not self._connected:
       return None    
     return self._client.get_result()
+  
+  def is_active(self):
+    """
+    returns if the goal is active
+    """
+    if not self._connected:
+      return None  
+    return self._client.get_state()
