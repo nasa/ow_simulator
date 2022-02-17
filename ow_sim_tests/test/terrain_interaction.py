@@ -11,7 +11,7 @@ import rospy
 import roslib
 import actionlib
 
-from gazebo_msgs.msg import ModelStates, LinkStates, LinkState
+from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
 
 import ow_lander.msg
@@ -80,7 +80,7 @@ class TerrainInteraction(unittest.TestCase):
   @param name: Name of a model/link
   """
   def _is_regolith(self, name):
-    return name[:len(REGOLITH_PREFIX)] == REGOLITH_PREFIX
+    return name.startswith(REGOLITH_PREFIX)
 
   """
   Returns the position of a givne link
@@ -132,14 +132,15 @@ class TerrainInteraction(unittest.TestCase):
   Assert that, if regolith exists, it is in the scoop
   """
   def _assert_regolith_is_in_scoop(self):
-    # Verify regolith models remain in the scoop after spawning
+    SCOOP_CONTAINMENT_RADIUS = 0.12 # meters
     scoop_position = self._get_link_position(SCOOP_LINK_NAME)
     if scoop_position is None:
       return
-    for i, (name, pose) in enumerate(zip(self._gz_link_names, self._gz_link_poses)):
+    # Verify regolith models remain in the scoop after spawning
+    for name, pose in zip(self._gz_link_names, self._gz_link_poses):
       if self._is_regolith(name):
         self._assert_point_is_near(
-          pose.position, scoop_position, 0.12,
+          pose.position, scoop_position, SCOOP_CONTAINMENT_RADIUS,
           "Regolith fell out of scoop!\n"
           "regolith name     : %s\n"
           "regolith position : (%.2f, %.2f, %.2f)\n"
@@ -301,7 +302,7 @@ class TerrainInteraction(unittest.TestCase):
   """
   def test_03_deliver(self):
 
-    DELIVER_MAX_DURATION = 60.0 # TODO: constrain
+    DELIVER_MAX_DURATION = 60.0
     DELIVER_EXPECTED_FINAL = Point(0.5562290134759807,
                                    -0.21354780470240303,
                                    -6.351096861727068)
