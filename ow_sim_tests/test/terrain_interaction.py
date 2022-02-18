@@ -129,23 +129,38 @@ class TerrainInteraction(unittest.TestCase):
     self.assertLessEqual(distance(p1, p2), delta, msg)
 
   """
+  Asserts two Points are far enough from each
+  @param p1: First point
+  @param p2: Second point
+  @param delta: Distance above which points are considered "far"
+  @param msg: Assert message
+  """
+  def _assert_point_is_far(self, p1, p2, delta, msg):
+    self.assertGreater(distance(p1, p2), delta, msg)
+
+  """
   Assert that, if regolith exists, it is in the scoop
   """
-  def _assert_regolith_is_in_scoop(self):
+  def _assert_scoop_regolith_containment(self, assert_regolith_in_scoop=True):
     SCOOP_CONTAINMENT_RADIUS = 0.12 # meters
     scoop_position = self._get_link_position(SCOOP_LINK_NAME)
     if scoop_position is None:
       return
+    # setup assertion and assertion message conditionally
+    assert_func = self._assert_point_is_far
+    assert_msg = "Regolith remains in scoop!\n"
+    if assert_regolith_in_scoop:
+      assert_func = self._assert_point_is_near
+      assert_msg = "Regolith fell out of scoop!\n"
+    assert_msg += ( "regolith name     : %s\n"
+                    "regolith position : (%.2f, %.2f, %.2f)\n"
+                    "scoop position    : (%.2f, %.2f, %.2f)"  )
     # Verify regolith models remain in the scoop after spawning
     for name, pose in zip(self._gz_link_names, self._gz_link_poses):
       if self._is_regolith(name):
-        self._assert_point_is_near(
+        assert_func(
           pose.position, scoop_position, SCOOP_CONTAINMENT_RADIUS,
-          "Regolith fell out of scoop!\n"
-          "regolith name     : %s\n"
-          "regolith position : (%.2f, %.2f, %.2f)\n"
-          "scoop position    : (%.2f, %.2f, %.2f)"
-            % (
+          assert_msg % (
                 name,
                 pose.position.x, pose.position.y, pose.position.z,
                 scoop_position.x, scoop_position.y, scoop_position.z
@@ -163,8 +178,7 @@ class TerrainInteraction(unittest.TestCase):
       return
     # check if scoop is still transitioning to sample dock
     if distance_flat_xy(scoop_position, dock_position) > 0.2:
-      self._assert_regolith_is_in_scoop()
-
+      self._assert_scoop_regolith_containment(True)
 
   """
   Calls an action asynchronously allowing checks to occur during its execution.
@@ -284,7 +298,7 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.DigLinearGoal(),
       DIG_LINEAR_MAX_DURATION,
       DIG_LINEAR_EXPECTED_FINAL,
-      self._assert_regolith_is_in_scoop,
+      self._assert_scoop_regolith_containment,
       x_start         = 1.46,
       y_start         = 0.0,
       depth           = 0.01,
@@ -317,6 +331,9 @@ class TerrainInteraction(unittest.TestCase):
       DELIVER_EXPECTED_FINAL,
       self._assert_regolith_transports_and_delivers
     )
+
+    # verify regolith has fallen out of the scoop
+    self._assert_scoop_regolith_containment(False)
 
     # verify regolith is removed from the scene following deliver
     rospy.sleep(REGOLITH_CLEANUP_WAIT)
