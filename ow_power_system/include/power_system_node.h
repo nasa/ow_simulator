@@ -8,6 +8,9 @@
 #include <sensor_msgs/JointState.h>
 #include <PrognoserFactory.h>
 
+using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
+using PrognoserVector = std::vector<PrognoserMap>;
+
 class PowerSystemNode
 {
 public:
@@ -17,20 +20,28 @@ public:
 
 private:
   bool loadSystemConfig();
-  std::vector<std::map<MessageId, Datum<double>>> loadPowerProfile(const std::string& filename);
+  PrognoserVector loadPowerProfile(const std::string& filename);
   bool loadFaultPowerProfiles();
   bool initPrognoser();
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
-  void injectFault(const std::string& power_fault_name, bool& fault_activated,
-                   const std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>>& sequence, size_t& sequence_index,
-                   double& power, double& voltage, double& temperature);
+  void injectFault(const std::string& power_fault_name,
+                   bool& fault_activated,
+                   const PrognoserVector& sequence,
+                   size_t& sequence_index,
+                   double& power,
+                   double& voltage,
+                   double& temperature);
   void injectFaults(double& power, double& temperature, double& voltage);
-  std::map<PCOE::MessageId, PCOE::Datum<double>> composePrognoserData(double power, double voltage, double temperature);
+  PrognoserMap composePrognoserData(double power,
+                                    double voltage,
+                                    double temperature);
   void parseEoD_Event(const ProgEvent& eod_event,
-                      std_msgs::Float64& soc_msg, std_msgs::Int16& rul_msg, std_msgs::Float64& battery_temperature_msg);
+                      std_msgs::Float64& soc_msg,
+                      std_msgs::Int16& rul_msg,
+                      std_msgs::Float64& battery_temperature_msg);
   void powerCb(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -60,23 +71,26 @@ private:
   double m_voltage_range = 0.1;         // [V]
   double m_efficiency = 0.9;            // default 90% efficiency
 
-  std::mt19937 m_random_generator;  // Utilize a Mersenne Twister pesduo random generation
+  // Utilize a Mersenne Twister pesduo random generation
+  std::mt19937 m_random_generator;
+
   std::uniform_real_distribution<double> m_temperature_dist;
 
   bool m_low_state_of_charge_power_failure_activated = false;
-  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_low_state_of_charge_power_failure_sequence;
+  PrognoserVector m_low_state_of_charge_power_failure_sequence;
   size_t m_low_state_of_charge_power_failure_sequence_index = 0;
 
   bool m_instantaneous_capacity_loss_power_failure_activated = false;
-  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_instantaneous_capacity_loss_power_failure_sequence;
+  PrognoserVector m_instantaneous_capacity_loss_power_failure_sequence;
   size_t m_instantaneous_capacity_loss_power_failure_sequence_index = 0;
 
   bool m_thermal_power_failure_activated = false;
-  std::vector<std::map<PCOE::MessageId, PCOE::Datum<double>>> m_thermal_power_failure_sequence;
+  PrognoserVector m_thermal_power_failure_sequence;
   size_t m_thermal_power_failure_sequence_index = 0;
 
-  double m_power_node_processing_rate = 0.5;   // [Hz] hard code processing rate for now
-  bool m_processing_power_batch = false;       // flag that indicates that the prognoser is handling current batch
+  // Flag that indicates that the prognoser is handling current batch.
+  bool m_processing_power_batch = false;
+
   bool m_trigger_processing_new_power_batch = false;
   double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;

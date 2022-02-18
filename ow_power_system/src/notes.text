@@ -1,233 +1,36 @@
-Sequence from profile processing:
+Issues (in priority)
+------
 
-[ INFO]: thermal_power_failure activated!
-[ INFO]: ---Power before: 5.21017e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.07369
-[ INFO]: ---Voltage after: 4.07369
-[ INFO]: ---Temperature before: 19.1507
-[ INFO]: ---Temperature after: 19.1507
-[ INFO]: ---Power before: 5.18181e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.02141
-[ INFO]: ---Voltage after: 4.02141
-[ INFO]: ---Temperature before: 19.8238
-[ INFO]: ---Temperature after: 19.8238
-[ INFO]: ---Power before: 5.18876e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 3.99431
-[ INFO]: ---Voltage after: 3.99431
-[ INFO]: ---Temperature before: 20.5469
-[ INFO]: ---Temperature after: 20.5469
-[ INFO]: ---Power before: 5.18553e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.00093
-[ INFO]: ---Voltage after: 4.00093
-[ INFO]: ---Temperature before: 20.7389
-[ INFO]: ---Temperature after: 20.7389
-[ INFO]: ---Power before: 5.20909e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.07618
-[ INFO]: ---Voltage after: 4.07618
-[ INFO]: ---Temperature before: 18.8298
-[ INFO]: ---Temperature after: 18.8298
-[ INFO]: ---Power before: 5.20887e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.00672
-[ INFO]: ---Voltage after: 4.00672
-[ INFO]: ---Temperature before: 17.5542
-[ INFO]: ---Temperature after: 17.5542
-[ INFO]: ---Power before: 6.18607e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 3.99788
-[ INFO]: ---Voltage after: 3.99788
-[ INFO]: ---Temperature before: 21.1295
-[ INFO]: ---Temperature after: 21.1295
-[ INFO]: ---Power before: 6.15373e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.06041
-[ INFO]: ---Voltage after: 4.06041
-[ INFO]: ---Temperature before: 21.3201
-[ INFO]: ---Temperature after: 21.3201
-[ INFO]: ---Power before: 6.11189e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.05287
-[ INFO]: ---Voltage after: 4.05287
-[ INFO]: ---Temperature before: 21.4498
-[ INFO]: ---Temperature after: 21.4498
-[ INFO]: ---Power before: 6.07014e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 3.98115
-[ INFO]: ---Voltage after: 3.98115
-[ INFO]: ---Temperature before: 20.6744
-[ INFO]: ---Temperature after: 20.6744
-[ INFO]: ---Power before: 6.03216e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.03326
-[ INFO]: ---Voltage after: 4.03326
-[ INFO]: ---Temperature before: 20.4312
-[ INFO]: ---Temperature after: 20.4312
-[ INFO]: ---Power before: 5.99962e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.04274
-[ INFO]: ---Voltage after: 4.04274
-[ INFO]: ---Temperature before: 20.2193
-[ INFO]: ---Temperature after: 20.2193
-[ INFO]: ---Power before: 5.93465e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.01186
-[ INFO]: ---Voltage after: 4.01186
-[ INFO]: ---Temperature before: 19.7462
-[ INFO]: ---Temperature after: 19.7462
-[ INFO]: ---Power before: 5.92776e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 3.99285
-[ INFO]: ---Voltage after: 3.99285
-[ INFO]: ---Temperature before: 19.6095
-[ INFO]: ---Temperature after: 19.6095
-[ INFO]: ---Power before: 5.85346e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.01188
-[ INFO]: ---Voltage after: 4.01188
-[ INFO]: ---Temperature before: 18.911
-[ INFO]: ---Temperature after: 18.911
-[ INFO]: ---Power before: 5.83281e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.03015
-[ INFO]: ---Voltage after: 4.03015
-[ INFO]: ---Temperature before: 18.9254
-[ INFO]: ---Temperature after: 18.9254
-[ INFO]: ---Power before: 5.81181e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.06677
-[ INFO]: ---Voltage after: 4.06677
-[ INFO]: ---Temperature before: 18.1178
-[ INFO]: ---Temperature after: 18.1178
-[ INFO]: ---Power before: 5.82785e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.00918
-[ INFO]: ---Voltage after: 4.00918
-[ INFO]: ---Temperature before: 19.0492
-[ INFO]: ---Temperature after: 19.0492
-[ INFO]: ---Power before: 5.81685e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.0418
-[ INFO]: ---Voltage after: 4.0418
-[ INFO]: ---Temperature before: 19.0543
-[ INFO]: ---Temperature after: 19.0543
-[ INFO]: ---Power before: 5.73156e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.06126
-[ INFO]: ---Voltage after: 4.06126
-[ INFO]: ---Temperature before: 19.2445
-[ INFO]: ---Temperature after: 19.2445
-[ INFO]: ---Power before: 5.7896e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.0542
-[ INFO]: ---Voltage after: 4.0542
-[ INFO]: ---Temperature before: 19.9814
-[ INFO]: ---Temperature after: 19.9814
-[ INFO]: ---Power before: 5.75168e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 3.9793
-[ INFO]: ---Voltage after: 3.9793
-[ INFO]: ---Temperature before: 19.3878
-[ INFO]: ---Temperature after: 19.3878
-[ INFO]: ---Power before: 5.69672e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.00078
-[ INFO]: ---Voltage after: 4.00078
-[ INFO]: ---Temperature before: 19.6194
-[ INFO]: ---Temperature after: 19.6194
-[ INFO]: ---Power before: 5.75065e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.03778
-[ INFO]: ---Voltage after: 4.03778
-[ INFO]: ---Temperature before: 21.4535
-[ INFO]: ---Temperature after: 21.4535
-[ INFO]: ---Power before: 5.74695e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.03764
-[ INFO]: ---Voltage after: 4.03764
-[ INFO]: ---Temperature before: 21.1503
-[ INFO]: ---Temperature after: 21.1503
+Hotfix for Release 9
+  Replace multiplier with using every other line (for power, volts,
+  temp)
+  Put cap on power input to GSAP.
+  Average, not accumulate, the power to batch process.
+  Don't replay the profile, use last line.
+  Eliminate this file from branch.
+  Code reformatting?
+  Abstraction?
 
-[ INFO]: ---Power before: 5.68709e-09
-[ INFO]: ---Power after: 50
-[ INFO]: ---Voltage before: 4.01555
-[ INFO]: ---Voltage after: 4.01555
-[ INFO]: ---Temperature before: 19.7331
-[ INFO]: ---Temperature after: 19.7331
+Future work
+  Should we support a profile with slower rate than GSAP?
+    Invoke GSAP less frequently (match profile rate), OR
+    Re-use previous profile values.
+Restrict simulation to ONE power fault per simulation.
+  It can be resolved, but can it be toggled?
+  Investigate realistic power fault combinations (Jira for Chetan)
+Are there better voltage and temperature inputs to GSAP?
+  Do they matter at all?
+  Should the progosed values be fed back into the system? (closed loop)
+Alternatives to fault profiles (instead, in addition)
+  Use a function, or parametric model.
 
-And (approximately) corresponding published temperature:
+Behavior
+========
 
-$ rostopic echo /power_system_node/battery_temperature 
-data: 19.999990850225572
----
-data: 19.99996640232672
----
-data: 19.99998168377323
----
-data: 19.999980165952422
----
-data: 20.000013216240063
----
-data: 20.000012094832243
----
-data: 20.000000383521638
----
-data: 20.00000889908989
----
-data: 19.999982070086332
----
-data: 20.0082420284034
----
-data: 20.00807082893192
----
-data: 20.00793932893822
----
-data: 20.046652734210966
----
-data: 20.44881581281402
----
-data: 21.2210264196342
----
-data: 22.388835228685195
----
-data: 24.005925677491177
----
-data: 26.192512183920087
----
-data: 29.179565846552634
----
-data: 33.60141445298427
----
-data: 42.33503011679716
----
-data: 7.743054323762522
----
-data: 6.83466576959961
----
-data: 6.273901596890994
----
-data: 6.076347091215325
----
-data: 6.238708794858951
----
-data: 6.763338269367807
----
-data: 7.661098247961661
----
-data: 8.948281108886874
----
-data: 10.670397236479516
----
-data: 12.923988217618216
----
-data: 15.898351339954559
----
-data: 20.094746369620395
----
-data: 27.37265069532407
----
-data: 0.0
+2/9 Injected thermal fault.
+RUL goes to 0 quickly.
+SOC went to 20 before going 0.
+Temperature raised steadily, reaching 57.
+
+
+

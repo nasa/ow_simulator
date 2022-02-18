@@ -4,6 +4,7 @@
 
 #include <numeric>
 #include <fstream>
+#include <math.h>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -18,8 +19,12 @@ using namespace std_msgs;
 // This might change to median SOC or RUL index or fixed percentile
 static constexpr int TEMPERATURE_INDEX = 1;
 
+const float GSAP_RATE_HZ = 0.5;
+const float PROFILE_RATE_HZ = 1.0;
+const double MAX_GSAP_INPUT_WATTS = 30.0;
+
 PowerSystemNode::PowerSystemNode() :
-m_power_values(m_moving_average_window, 0)
+  m_power_values(m_moving_average_window, 0)
 {
 }
 
@@ -57,7 +62,7 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const string& filename)
+PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
 {
   ifstream file(filename);
   if (file.fail())
@@ -69,10 +74,10 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
 
   auto now = system_clock::now();
 
-  vector<map<MessageId, Datum<double>>> result;
+  PrognoserVector result;
   while (file.good())
   {
-    map<MessageId, Datum<double>> data;
+    PrognoserMap data;
     string line;
     getline(file, line);
     if (line.empty())
@@ -172,7 +177,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
-  m_unprocessed_mechanical_power += power_watts;
+  m_unprocessed_mechanical_power = mean_mechanical_power;
 
   if (!m_processing_power_batch)
   {
@@ -203,24 +208,25 @@ double PowerSystemNode::generateVoltageEstimate()
   return voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFault(const string& power_fault_name,
-				  bool& fault_activated,
-                                  const vector<map<MessageId,
-				  Datum<double>>>& sequence,
-				  size_t& sequence_index,
-                                  double& power,
-				  double& voltage,
-				  double& temperature)
+void PowerSystemNode::injectFault (const string& power_fault_name,
+                                   bool& fault_activated,
+                                   const PrognoserVector& sequence,
+                                   size_t& index,
+                                   double& wattage,
+                                   double& voltage,
+                                   double& temperature)
 {
   bool fault_enabled = false;
-  bool success = ros::param::getCached("/faults/" + power_fault_name, fault_enabled);
-  if (!success)
+
+  // Do nothing unless the specified fault has been injected.
+  if (! ros::param::getCached("/faults/" + power_fault_name, fault_enabled)) {
     return;
+  }
 
   if (!fault_activated && fault_enabled)
   {
     ROS_INFO_STREAM(power_fault_name << " activated!");
-    sequence_index = 0;
+    index = 0;
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
@@ -231,27 +237,25 @@ void PowerSystemNode::injectFault(const string& power_fault_name,
 
   if (fault_activated && fault_enabled)
   {
-    // TODO: for now we replay the sequence once it reaches the end.
-    // This is unlikely the end case. Re-visit.
-    auto data = sequence[sequence_index++ % sequence.size()];
-
-    // Multiplier that should be applied since this profile data are
-    // given in seconds but the processing rate can be lesser or
-    // higher than that.
-    // [Why?]
-    //    auto m = 1.0 / m_power_node_processing_rate;
-    auto m = 1.0;
-
-    ROS_INFO_STREAM("---Power before: " << power);
-    power += m * data[MessageId::Watts];
-    ROS_INFO_STREAM("---Power after: " << power);
+    // TODO: Unspecified how to handle end of fault profile, which is
+    // unlikely.  For now, replay the last entry.
+    if (index++ >= sequence.size()) {
+      ROS_WARN_STREAM(power_fault_name
+                      << ": reached end of fault profile, reusing last entry.");
+      index = 0;
+    }
+    
+    ROS_INFO_STREAM("---Wattage before: " << wattage);
+    double wattage_gain = profile_average (sequence, index, MessageId::Watts);
+    wattage = std::min (wattage + wattage_gain, MAX_GSAP_INPUT_WATTS);
+    ROS_INFO_STREAM("---Wattage after: " << wattage);
 
     ROS_INFO_STREAM("---Voltage before: " << voltage);
-    voltage += m * data[MessageId::Volts];
+    voltage += profile_average (sequence, index, MessageId::Volts);
     ROS_INFO_STREAM("---Voltage after: " << voltage);
 
     ROS_INFO_STREAM("---Temperature before: " << temperature);
-    temperature += m * data[MessageId::Centigrade];
+    temperature += profile_average (sequence, index, MessageId::Centigrade);
     ROS_INFO_STREAM("---Temperature after: " << temperature);
   }
 }
@@ -279,12 +283,12 @@ void PowerSystemNode::injectFaults(double& power,
 	      power, voltage, temperature);
 }
 
-map<MessageId, Datum<double>>
+PrognoserMap
 PowerSystemNode::composePrognoserData(double power,
 				      double voltage,
 				      double temperature)
 {
-  return map<MessageId, Datum<double>>{
+  return PrognoserMap {
     { MessageId::Watts, Datum<double>{ power } },
     { MessageId::Volts, Datum<double>{ voltage } },
     { MessageId::Centigrade, Datum<double>{ temperature } }
@@ -342,7 +346,9 @@ void PowerSystemNode::powerCb(double electrical_power)
   double voltage_estimate = generateVoltageEstimate();
   double temperature_estimate = generateTemperatureEstimate();
   injectFaults(electrical_power, voltage_estimate, temperature_estimate);
-  auto current_data = composePrognoserData(electrical_power, voltage_estimate, temperature_estimate);
+  auto current_data = composePrognoserData(electrical_power,
+                                           voltage_estimate,
+                                           temperature_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
@@ -365,9 +371,10 @@ void PowerSystemNode::powerCb(double electrical_power)
 
 void PowerSystemNode::Run()
 {
-  ROS_INFO("Power system node running");
+  ROS_INFO("Power system node running.");
 
-  ros::Rate rate(m_power_node_processing_rate);
+  // For simplicity, we run the power node at the same rate as GSAP.
+  ros::Rate rate(GSAP_RATE_HZ);
 
   while (ros::ok())
   {
