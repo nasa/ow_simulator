@@ -233,11 +233,13 @@ sudo apt install git \
                  ros-noetic-gazebo-ros-control \
                  ros-noetic-xacro \
                  ros-noetic-rviz-visual-tools \
-                 ros-noetic-rqt-plot ros-noetic-rqt-rviz \
+                 ros-noetic-rqt-plot \
+                 ros-noetic-rqt-rviz \
                  ros-noetic-rqt-image-view \
                  ros-noetic-rqt-common-plugins \
                  ros-noetic-gazebo-plugins \
                  ros-noetic-moveit \
+                 ros-noetic-moveit-commander \
                  ros-noetic-moveit-ros-visualization \
                  ros-noetic-geometry-msgs \
                  ros-noetic-cmake-modules \
