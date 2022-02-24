@@ -15,6 +15,11 @@ rostest ow_sim_tests arm_check.test
 rostest ow_sim_tests fps_monitor.test
 ```
 
+* To test terrain modification and regolith spawning run the following command:
+```bash
+rostest ow_sim_tests terrain_interaction.test
+```
+
 ## Plugins
 
 ### FPS Monitor
