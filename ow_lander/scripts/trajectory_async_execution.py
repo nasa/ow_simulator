@@ -94,7 +94,8 @@ class TrajectoryAsyncExecuter:
     """
     Stops the execution of the last trajectory submitted for executoin
     """
-    if self._connected:
+    goal_active = self.is_active()
+    if self._connected and goal_active == 1:
       self._client.cancel_goal()
 
   def wait(self, timeout=0):

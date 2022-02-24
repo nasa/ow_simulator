@@ -186,6 +186,10 @@ class StopActionServer(object):
         self._current_link_state = LinkStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
+        self.stopped = False
+        
+    def reset(self):
+        self.stopped = False    
 
     def on_stop_action(self, goal):
 
@@ -194,15 +198,21 @@ class StopActionServer(object):
         self._result.final.y = self._ls.y
         self._result.final.z = self._ls.z
         
-        goal_active = trajectory_async_executer.is_active()
+        self.stopped = True
         
-        if goal_active == 1:
-            trajectory_async_executer.stop()
-            rospy.loginfo('%s: Succeeded' % self._action_name)
-            self._server.set_succeeded(self._result)
-        else:
-            rospy.loginfo('Goal not active') 
-            self._server.set_aborted(self._result)
+        #goal_active = trajectory_async_executer.is_active()
+        
+        trajectory_async_executer.stop()
+        rospy.loginfo('%s: Succeeded' % self._action_name)
+        self._server.set_succeeded(self._result)
+        
+        # if goal_active == 1:
+        #     trajectory_async_executer.stop()
+        #     rospy.loginfo('%s: Succeeded' % self._action_name)
+        #     self._server.set_succeeded(self._result)
+        # else:
+        #     rospy.loginfo('Goal not active') 
+        #     self._server.set_aborted(self._result)
 
 
 class GrindActionServer(object):
@@ -485,16 +495,21 @@ class DigCircularActionServer(object):
             self._timeout = (end_time - start_time)
 
     def on_DigCircular_action(self, goal):
+        server_stop.reset()
         self._update_motion(goal)
         if self.current_traj == False:
             self._server.set_aborted(self._result)
             return
         success = False
 
-        trajectory_async_executer.execute(self.current_traj.joint_trajectory,
+        if server_stop.stopped is False:      
+            trajectory_async_executer.execute(self.current_traj.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -502,7 +517,7 @@ class DigCircularActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
+        while ((now_from_start(start_time) < self._timeout)) and server_stop.stopped is False:
 
             self._update_feedback()
 
@@ -751,6 +766,7 @@ if __name__ == '__main__':
     # start the trajectory executer in the main file
     trajectory_async_executer = TrajectoryAsyncExecuter()
     trajectory_async_executer.connect("arm_controller")
+    #stopped = False
     # start all the arm action servers
     server_unstow = UnstowActionServer("Unstow")
     server_stow = StowActionServer("Stow")
