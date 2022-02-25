@@ -59,26 +59,28 @@ class UnstowActionServer(object):
             return plan
 
     def on_unstow_action(self, goal):
+        server_stop.reset()
         plan = self._update_motion()
         if plan is None:
             self._server.set_aborted(self._result)
             return
         success = False
-
-        trajectory_async_executer.execute(plan.joint_trajectory,
+        if server_stop.stopped is False: 
+            trajectory_async_executer.execute(plan.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return      
 
         # Record start time
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            # return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
-
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -136,16 +138,20 @@ class StowActionServer(object):
             return plan
 
     def on_stow_action(self, goal):
+        server_stop.reset()
         plan = self._update_motion()
         if plan is None:
             self._server.set_aborted(self._result)
             return
         success = False
-
-        trajectory_async_executer.execute(plan.joint_trajectory,
+        if server_stop.stopped is False:
+            trajectory_async_executer.execute(plan.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return  
 
         # Record start time
         start_time = rospy.get_time()
@@ -153,8 +159,7 @@ class StowActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
-
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -198,21 +203,12 @@ class StopActionServer(object):
         self._result.final.y = self._ls.y
         self._result.final.z = self._ls.z
         
-        self.stopped = True
-        
-        #goal_active = trajectory_async_executer.is_active()
-        
+        self.stopped = True 
         trajectory_async_executer.stop()
+        
         rospy.loginfo('%s: Succeeded' % self._action_name)
         self._server.set_succeeded(self._result)
-        
-        # if goal_active == 1:
-        #     trajectory_async_executer.stop()
-        #     rospy.loginfo('%s: Succeeded' % self._action_name)
-        #     self._server.set_succeeded(self._result)
-        # else:
-        #     rospy.loginfo('Goal not active') 
-        #     self._server.set_aborted(self._result)
+
 
 
 class GrindActionServer(object):
@@ -269,24 +265,44 @@ class GrindActionServer(object):
             end_time = self.current_traj.joint_trajectory.points[n_points -
                                                                  1].time_from_start
             self._timeout = (end_time - start_time)
-
-    def on_Grind_action(self, goal):
-        self._update_motion(goal)
-        if self.current_traj == False:
-            self._server.set_aborted(self._result)
-            return
+            
+    def switch_to_grind_controller(self): 
         success = False
         switch_success = self.switch_controllers(
             'grinder_controller', 'arm_controller')
         if not switch_success:
             return False, "Failed switching controllers"
         # connect grinder controller to the trajectory executer
-        trajectory_async_executer.connect("grinder_controller")
+        trajectory_async_executer.connect("grinder_controller")       
+        
+    def switch_to_arm_controller(self):    
+        switch_success = self.switch_controllers(
+                'arm_controller', 'grinder_controller')
+        if not switch_success:
+            return False, "Failed Switching Controllers"
+            # switch controller after completing grind operation
+        trajectory_async_executer.connect("arm_controller")
+  
 
-        trajectory_async_executer.execute(self.current_traj.joint_trajectory,
+    def on_Grind_action(self, goal):
+        server_stop.reset()
+        self._update_motion(goal)
+        if self.current_traj == False:
+            self._server.set_aborted(self._result)
+            return
+        success = False
+
+        self.switch_to_grind_controller()
+        
+        if server_stop.stopped is False:
+            trajectory_async_executer.execute(self.current_traj.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            self.switch_to_arm_controller()
+            return      
 
         # Record start time
         start_time = rospy.get_time()
@@ -294,7 +310,7 @@ class GrindActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -304,25 +320,16 @@ class GrindActionServer(object):
             self._result.final.x = self._fdbk.current.x
             self._result.final.y = self._fdbk.current.y
             self._result.final.z = self._fdbk.current.z
-            switch_success = self.switch_controllers(
-                'arm_controller', 'grinder_controller')
-            if not switch_success:
-                return False, "Failed Switching Controllers"
-            # switch controller after completing grind operation
-            trajectory_async_executer.connect("arm_controller")
+            
+            self.switch_to_arm_controller()
             
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
-            switch_success = self.switch_controllers(
-                'arm_controller', 'grinder_controller')
-            if not switch_success:
-                return False, "Failed Switching Controllers"
-            rospy.loginfo('%s: Succeeded' % self._action_name)
-            # switch controller if grind operation was aborted
-            trajectory_async_executer.connect("arm_controller")
+            self.switch_to_arm_controller()
+
 
 
 class GuardedMoveActionServer(object):
@@ -398,6 +405,7 @@ class GuardedMoveActionServer(object):
             self._timeout = end_time - start_time
 
     def on_guarded_move_action(self, goal):
+        server_stop.reset()
         self._update_motion(goal)
         if self.guarded_move_traj == False:
             self._server.set_aborted(self._result)
@@ -411,6 +419,15 @@ class GuardedMoveActionServer(object):
                                           done_cb=self.handle_guarded_move_done,
                                           active_cb=None,
                                           feedback_cb=self.handle_guarded_move_feedback)
+        
+        if server_stop.stopped is False:
+            trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
+                                          done_cb=self.handle_guarded_move_done,
+                                          active_cb=None,
+                                          feedback_cb=self.handle_guarded_move_feedback)
+        else:
+            self._server.set_aborted(self._result)
+            return    
 
         # Record start time
         start_time = rospy.get_time()
@@ -418,7 +435,7 @@ class GuardedMoveActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
             self._estimated_plan_fraction_completed = now_from_start(
                 start_time)/self._timeout
@@ -576,6 +593,7 @@ class DigLinearActionServer(object):
             self._timeout = (end_time - start_time)
 
     def on_DigLinear_action(self, goal):
+        server_stop.reset()
         self._update_motion(goal)
         if self.current_traj == False:
             self._server.set_aborted(self._result)
@@ -583,20 +601,26 @@ class DigLinearActionServer(object):
 
         success = False
 
-        trajectory_async_executer.execute(self.current_traj.joint_trajectory,
+        # trajectory_async_executer.execute(self.current_traj.joint_trajectory,
+        #                                   done_cb=None,
+        #                                   active_cb=None,
+        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        if server_stop.stopped is False:      
+            trajectory_async_executer.execute(self.current_traj.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return
 
         # Record start time
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            # return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
-
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -651,16 +675,26 @@ class DiscardActionServer(object):
             self._timeout = end_time - start_time
 
     def on_discard_action(self, goal):
+        server_stop.reset()
         self._update_motion(goal)
         if self.discard_sample_traj == False:
             self._server.set_aborted(self._result)
             return
         success = False
 
-        trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
+        # trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
+        #                                   done_cb=None,
+        #                                   active_cb=None,
+        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        
+        if server_stop.stopped is False:      
+            trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -668,8 +702,7 @@ class DiscardActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
-
+        while ((now_from_start(start_time) < self._timeout)and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -725,26 +758,33 @@ class DeliverActionServer(object):
     # executive call back of simple action server requires a dummy goal
 
     def on_deliver_action(self, goal):
+        server_stop.reset()
         self._update_motion()
         if self.deliver_sample_traj == False:
             self._server.set_aborted(self._result)
             return
         success = False
 
-        trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
+        # trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
+        #                                   done_cb=None,
+        #                                   active_cb=None,
+        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        if server_stop.stopped is False:      
+            trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
                                           done_cb=None,
                                           active_cb=None,
                                           feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            return
 
         # Record start time
         start_time = rospy.get_time()
 
         def now_from_start(start):
-            # return rospy.get_time() - start
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)):
-
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
