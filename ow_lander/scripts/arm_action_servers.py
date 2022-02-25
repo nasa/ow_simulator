@@ -65,14 +65,14 @@ class UnstowActionServer(object):
             self._server.set_aborted(self._result)
             return
         success = False
-        if server_stop.stopped is False: 
+        if server_stop.stopped is False:
             trajectory_async_executer.execute(plan.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
-            return      
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -146,12 +146,12 @@ class StowActionServer(object):
         success = False
         if server_stop.stopped is False:
             trajectory_async_executer.execute(plan.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
-            return  
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -192,9 +192,9 @@ class StopActionServer(object):
         self._interface = MoveItInterface()
         self._timeout = 0.0
         self.stopped = False
-        
+
     def reset(self):
-        self.stopped = False    
+        self.stopped = False
 
     def on_stop_action(self, goal):
 
@@ -202,13 +202,12 @@ class StopActionServer(object):
         self._result.final.x = self._ls.x
         self._result.final.y = self._ls.y
         self._result.final.z = self._ls.z
-        
-        self.stopped = True 
+
+        self.stopped = True
         trajectory_async_executer.stop()
-        
+
         rospy.loginfo('%s: Succeeded' % self._action_name)
         self._server.set_succeeded(self._result)
-
 
 
 class GrindActionServer(object):
@@ -265,24 +264,23 @@ class GrindActionServer(object):
             end_time = self.current_traj.joint_trajectory.points[n_points -
                                                                  1].time_from_start
             self._timeout = (end_time - start_time)
-            
-    def switch_to_grind_controller(self): 
+
+    def switch_to_grind_controller(self):
         success = False
         switch_success = self.switch_controllers(
             'grinder_controller', 'arm_controller')
         if not switch_success:
             return False, "Failed switching controllers"
         # connect grinder controller to the trajectory executer
-        trajectory_async_executer.connect("grinder_controller")       
-        
-    def switch_to_arm_controller(self):    
+        trajectory_async_executer.connect("grinder_controller")
+
+    def switch_to_arm_controller(self):
         switch_success = self.switch_controllers(
-                'arm_controller', 'grinder_controller')
+            'arm_controller', 'grinder_controller')
         if not switch_success:
             return False, "Failed Switching Controllers"
             # switch controller after completing grind operation
         trajectory_async_executer.connect("arm_controller")
-  
 
     def on_Grind_action(self, goal):
         server_stop.reset()
@@ -293,16 +291,16 @@ class GrindActionServer(object):
         success = False
 
         self.switch_to_grind_controller()
-        
+
         if server_stop.stopped is False:
             trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
             self.switch_to_arm_controller()
-            return      
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -320,16 +318,15 @@ class GrindActionServer(object):
             self._result.final.x = self._fdbk.current.x
             self._result.final.y = self._fdbk.current.y
             self._result.final.z = self._fdbk.current.z
-            
+
             self.switch_to_arm_controller()
-            
+
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
             self.switch_to_arm_controller()
-
 
 
 class GuardedMoveActionServer(object):
@@ -348,7 +345,8 @@ class GuardedMoveActionServer(object):
         self.guarded_move_traj = RobotTrajectory()
         self.ground_detector = GroundDetector()
         self.pos = Point()
-        self.guarded_move_pub = rospy.Publisher('/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
+        self.guarded_move_pub = rospy.Publisher(
+            '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
         self._server = actionlib.SimpleActionServer(self._action_name,
                                                     ow_lander.msg.GuardedMoveAction,
                                                     execute_cb=self.on_guarded_move_action,
@@ -419,15 +417,15 @@ class GuardedMoveActionServer(object):
                                           done_cb=self.handle_guarded_move_done,
                                           active_cb=None,
                                           feedback_cb=self.handle_guarded_move_feedback)
-        
+
         if server_stop.stopped is False:
             trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
-                                          done_cb=self.handle_guarded_move_done,
-                                          active_cb=None,
-                                          feedback_cb=self.handle_guarded_move_feedback)
+                                              done_cb=self.handle_guarded_move_done,
+                                              active_cb=None,
+                                              feedback_cb=self.handle_guarded_move_feedback)
         else:
             self._server.set_aborted(self._result)
-            return    
+            return
 
         # Record start time
         start_time = rospy.get_time()
@@ -519,11 +517,11 @@ class DigCircularActionServer(object):
             return
         success = False
 
-        if server_stop.stopped is False:      
+        if server_stop.stopped is False:
             trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
             return
@@ -601,15 +599,11 @@ class DigLinearActionServer(object):
 
         success = False
 
-        # trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-        #                                   done_cb=None,
-        #                                   active_cb=None,
-        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
-        if server_stop.stopped is False:      
+        if server_stop.stopped is False:
             trajectory_async_executer.execute(self.current_traj.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
             return
@@ -682,16 +676,11 @@ class DiscardActionServer(object):
             return
         success = False
 
-        # trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
-        #                                   done_cb=None,
-        #                                   active_cb=None,
-        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
-        
-        if server_stop.stopped is False:      
+        if server_stop.stopped is False:
             trajectory_async_executer.execute(self.discard_sample_traj.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
             return
@@ -702,7 +691,7 @@ class DiscardActionServer(object):
         def now_from_start(start):
             return rospy.Duration(secs=rospy.get_time() - start)
 
-        while ((now_from_start(start_time) < self._timeout)and server_stop.stopped is False):
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
@@ -765,15 +754,11 @@ class DeliverActionServer(object):
             return
         success = False
 
-        # trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
-        #                                   done_cb=None,
-        #                                   active_cb=None,
-        #                                   feedback_cb=trajectory_async_executer.stop_arm_if_fault)
-        if server_stop.stopped is False:      
+        if server_stop.stopped is False:
             trajectory_async_executer.execute(self.deliver_sample_traj.joint_trajectory,
-                                          done_cb=None,
-                                          active_cb=None,
-                                          feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
             return
