@@ -37,6 +37,8 @@ link_directories(
   ${GAZEBO_LIBRARY_DIRS}
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -66,6 +68,11 @@ add_service_files(
   FILES
   SpawnRegolithInScoop.srv
   RemoveAllRegolith.srv
+)
+
+add_message_files(
+  FILES
+  TerrainContact.msg
 )
 
 generate_messages(
@@ -114,19 +121,27 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+# ROS node executable for automated regolith spawning and clean-up
 add_executable(regolith_node 
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
   src/sdf_utility.cpp
 )
-
 add_dependencies(regolith_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
 )
-
 target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
+)
+
+# Gazebo sensor plugin that tracks when regolith collides with the terrain
+add_library(TerrainContactPlugin
+  SHARED
+  src/TerrainContactPlugin.cpp
+)
+target_link_libraries(TerrainContactPlugin
   ${GAZEBO_LIBRARIES}
 )
 
