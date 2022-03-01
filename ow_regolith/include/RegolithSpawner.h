@@ -26,6 +26,7 @@
 
 #include <ow_regolith/SpawnRegolithInScoop.h>
 #include <ow_regolith/RemoveAllRegolith.h>
+#include <ow_regolith/TerrainContact.h>
 
 namespace ow_regolith {
 
@@ -64,6 +65,8 @@ public:
   // saves the orientation of scoop to a member variable
   void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
 
+  void onTerrainContact(const TerrainContact::ConstPtr &msg);
+
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
   void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
@@ -78,16 +81,25 @@ public:
   void onDiscardResultMsg(const ow_lander::DiscardActionResult::ConstPtr &msg);
 
 private:
+
+  inline bool isRegolith(const std::string &name) {
+    return name.rfind("regolith_") == 0;
+  }
+
+  bool removeRegolithModel(const std::string &name);
+
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
   ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
                       m_gz_apply_wrench, m_gz_clear_wrench;
 
-  ros::ServiceServer m_spawn_regolith_in_scoop;
-  ros::ServiceServer m_remove_all_regolith;
+  ros::ServiceServer m_srv_spawn_regolith_in_scoop;
+  ros::ServiceServer m_srv_remove_all_regolith;
 
-  ros::Subscriber m_link_states;
+  ros::Subscriber m_sub_link_states;
+  ros::Subscriber m_sub_terrain_contact;
+
   ros::Subscriber m_mod_diff_visual;
   ros::Subscriber m_dig_linear_result;
   ros::Subscriber m_dig_circular_result;

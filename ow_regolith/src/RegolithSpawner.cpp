@@ -62,6 +62,8 @@ const static string SRV_REMOVE_ALL_REGOLITH     = "/ow_regolith/remove_all_regol
 
 // topic paths used in class
 const static string TOPIC_LINK_STATES           = "/gazebo/link_states";
+const static string TOPIC_TERRAIN_CONTACT       = "/ow_regolith/terrain_contact";
+
 const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
 const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
@@ -126,14 +128,17 @@ bool RegolithSpawner::initialize()
   }
 
   // advertise services served by this class
-  m_spawn_regolith_in_scoop = m_node_handle->advertiseService(
+  m_srv_spawn_regolith_in_scoop = m_node_handle->advertiseService(
     SRV_SPAWN_REGOLITH_IN_SCOOP, &RegolithSpawner::spawnRegolithInScoopSrv, this);
-  m_remove_all_regolith = m_node_handle->advertiseService(
+  m_srv_remove_all_regolith     = m_node_handle->advertiseService(
     SRV_REMOVE_ALL_REGOLITH, &RegolithSpawner::removeAllRegolithSrv, this);
 
   // subscribe to all ROS topics
-  m_link_states         = m_node_handle->subscribe(
+  m_sub_link_states     = m_node_handle->subscribe(
     TOPIC_LINK_STATES, 1, &RegolithSpawner::onLinkStatesMsg, this);
+  m_sub_terrain_contact = m_node_handle->subscribe(
+    TOPIC_TERRAIN_CONTACT, 1, &RegolithSpawner::onTerrainContact, this);
+
   m_mod_diff_visual     = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::onModDiffVisualMsg, this);
   m_dig_linear_result   = m_node_handle->subscribe(
@@ -148,6 +153,7 @@ bool RegolithSpawner::initialize()
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
   constexpr auto MAX_SCOOP_INCLINATION_DEG = 70.0f; // degrees
+
   constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
   constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
   // query gazebo for the gravity vector
@@ -262,6 +268,27 @@ bool RegolithSpawner::removeAllRegolithModels()
   return !service_call_error_occurred;
 }
 
+bool RegolithSpawner::removeRegolithModel(const string &body_name)
+{
+  for (auto regolith_it = m_active_models.begin();
+       regolith_it != m_active_models.end();
+       ++regolith_it) {
+    if (regolith_it->body_name == body_name) {
+      DeleteModel msg;
+      msg.request.model_name = regolith_it->model_name;
+      if (m_gz_delete_model.call(msg)) {
+        m_active_models.erase(regolith_it);
+        return true;
+      } else {
+        ROS_WARN("Failed to delete model %s", regolith_it->model_name.c_str());
+        return false;
+      }
+    }
+  }
+  // no model removed if we reach here
+  return false;
+}
+
 bool RegolithSpawner::spawnRegolithInScoopSrv(SpawnRegolithInScoopRequest &request,
                                               SpawnRegolithInScoopResponse &response)
 {
@@ -286,6 +313,18 @@ void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg)
 
   auto pose_it = begin(msg->pose) + distance(begin(msg->name), name_it);
   quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
+}
+
+void RegolithSpawner::onTerrainContact(const TerrainContact::ConstPtr &msg)
+{
+  for (unsigned int i = 0; i < msg->names.size(); ++i) {
+    if (isRegolith(msg->names[i]) and msg->energies[i] < 0.1) {
+      ROS_INFO("Removing regolith that has settled on terrain %s",
+        msg->names[i].c_str()
+      );
+      removeRegolithModel(msg->names[i]);
+    }
+  }
 }
 
 void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
