@@ -38,6 +38,7 @@ add_action_files(
   FILES GuardedMove.action
   FILES AntennaPanTilt.action
   FILES Discard.action
+  FILES Stop.action
 )
 
 
