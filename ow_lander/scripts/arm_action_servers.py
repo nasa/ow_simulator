@@ -11,6 +11,7 @@ from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 import all_action_trajectories
+from all_action_trajectories_class import ActionTrajectories
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
 from ground_detection import GroundDetector
@@ -253,9 +254,12 @@ class GrindActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Grind activity started")
-        self.current_traj = all_action_trajectories.grind(self._interface.move_grinder,
+        # self.current_traj = all_action_trajectories.grind(self._interface.move_grinder,
+        #                                                   self._interface.robot,
+        #                                                   self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.grind(self._interface.move_grinder,
                                                           self._interface.robot,
-                                                          self._interface.moveit_fk, goal)
+                                                          self._interface.moveit_fk, goal,server_stop)
         if self.current_traj == False:
             return
         else:
@@ -791,7 +795,7 @@ if __name__ == '__main__':
     # start the trajectory executer in the main file
     trajectory_async_executer = TrajectoryAsyncExecuter()
     trajectory_async_executer.connect("arm_controller")
-    #stopped = False
+    action_trajectories = ActionTrajectories()
     # start all the arm action servers
     server_unstow = UnstowActionServer("Unstow")
     server_stow = StowActionServer("Stow")
