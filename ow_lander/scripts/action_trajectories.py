@@ -218,7 +218,7 @@ class ActionTrajectories:
         return plan
 
 
-    def dig_circular(self, move_arm, move_limbs, robot, moveit_fk, args):
+    def dig_circular(self, move_arm, move_limbs, robot, moveit_fk, args, server_stop):
         """
         :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -236,7 +236,10 @@ class ActionTrajectories:
         ground_position = args.ground_position
 
         if not parallel:
-
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
             plan_a = self.move_to_pre_trench_configuration_dig_circ(
                 move_arm, robot, x_start, y_start)
             if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -252,6 +255,10 @@ class ActionTrajectories:
 
             move_arm.set_start_state(cs)
             move_arm.set_pose_target(end_pose)
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
             _, plan_b, _, _ = move_arm.plan()
             if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
@@ -261,7 +268,11 @@ class ActionTrajectories:
 
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
-
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_c = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
 
@@ -273,6 +284,10 @@ class ActionTrajectories:
             # Once aligned to trench goal, place hand above trench middle point
             z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
 
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_d = self.go_to_Z_coordinate_dig_circular(
                 move_arm, cs, end_pose, z_start)
             circ_traj = self.cascade_plans(circ_traj, plan_d)
@@ -280,12 +295,21 @@ class ActionTrajectories:
             # Rotate hand perpendicular to arm direction
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_e = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
             circ_traj = self.cascade_plans(circ_traj, plan_e)
 
         else:
 
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_a = self.move_to_pre_trench_configuration(
                 move_arm, robot, x_start, y_start)
             if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -293,6 +317,11 @@ class ActionTrajectories:
             # Rotate hand so scoop is in middle point
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, plan_a, move_arm, moveit_fk)
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_b = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
             circ_traj = self.cascade_plans(plan_a, plan_b)
@@ -300,6 +329,11 @@ class ActionTrajectories:
             # Rotate scoop
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_c = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
             circ_traj = self.cascade_plans(circ_traj, plan_c)
@@ -307,6 +341,12 @@ class ActionTrajectories:
             # Rotate dist so scoop is back
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
+            
             plan_d = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
             circ_traj = self.cascade_plans(circ_traj, plan_d)
@@ -315,6 +355,11 @@ class ActionTrajectories:
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
             z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             plan_e = self.go_to_XYZ_coordinate(
                 move_arm, cs, end_pose, x_start, y_start, z_start)
             circ_traj = self.cascade_plans(circ_traj, plan_e)
@@ -323,6 +368,12 @@ class ActionTrajectories:
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 robot, circ_traj, move_arm, moveit_fk)
             dist_now = start_state[3]
+            
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
+            
             plan_f = self.change_joint_value(
                 move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
             circ_traj = self.cascade_plans(circ_traj, plan_f)
@@ -460,7 +511,7 @@ class ActionTrajectories:
         return plan
 
 
-    def dig_linear(self, move_arm, robot, moveit_fk, args):
+    def dig_linear(self, move_arm, robot, moveit_fk, args, server_stop):
         """
         :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -473,6 +524,10 @@ class ActionTrajectories:
         length = args.length
         ground_position = args.ground_position
 
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_a = self.move_to_pre_trench_configuration(
             move_arm, robot, x_start, y_start)
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -481,6 +536,10 @@ class ActionTrajectories:
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, plan_a, move_arm, moveit_fk)
         #################### Rotate hand yaw to dig in#################################
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_b = self.change_joint_value(
             move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
 
@@ -493,6 +552,11 @@ class ActionTrajectories:
 
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_c = self.change_joint_value(
             move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
 
@@ -502,7 +566,11 @@ class ActionTrajectories:
 
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
-
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_d = self.change_joint_value(
             move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
 
@@ -517,6 +585,10 @@ class ActionTrajectories:
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False        
 
         plan_e = self.go_to_Z_coordinate(
             move_arm, cs, goal_pose, x_start, y_start, z_start)
@@ -527,6 +599,11 @@ class ActionTrajectories:
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_f = self.change_joint_value(
             move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
 
@@ -553,6 +630,11 @@ class ActionTrajectories:
         #  rotate to dig out
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         plan_g = self.change_joint_value(
             move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
         dig_linear_traj = self.cascade_plans(dig_linear_traj, plan_g)
@@ -740,7 +822,7 @@ class ActionTrajectories:
         return grind_traj
 
 
-    def guarded_move_plan(self, move_arm, robot, moveit_fk, args):
+    def guarded_move_plan(self, move_arm, robot, moveit_fk, args, server_stop):
         """
         :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -791,6 +873,11 @@ class ActionTrajectories:
         joint_goal[constants.J_SCOOP_YAW] = 0
 
         move_arm.set_joint_value_target(joint_goal)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         _, plan_a, _, _ = move_arm.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
@@ -804,6 +891,12 @@ class ActionTrajectories:
         goal_pose.position.z = targ_z
 
         move_arm.set_pose_target(goal_pose)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
+            
         _, plan_b, _, _ = move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
@@ -824,6 +917,11 @@ class ActionTrajectories:
         goal_pose.position.z -= direction_z*search_distance
 
         move_arm.set_pose_target(goal_pose)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
+            
         _, plan_c, _, _ = move_arm.plan()
 
         guarded_move_traj = self.cascade_plans(pre_guarded_move_traj, plan_c)
@@ -837,7 +935,7 @@ class ActionTrajectories:
         return guarded_move_traj, estimated_time_ratio
 
 
-    def discard_sample(self, move_arm, robot, moveit_fk, args):
+    def discard_sample(self, move_arm, robot, moveit_fk, args, server_stop):
         """
         :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -869,7 +967,10 @@ class ActionTrajectories:
         goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
         move_arm.set_pose_target(goal_pose)
-
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False
         _, plan_a, _, _ = move_arm.plan()
 
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -902,6 +1003,10 @@ class ActionTrajectories:
         goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
         move_arm.set_pose_target(goal_pose)
+        
+        server_stop.get_state()
+        if server_stop.stopped is True:
+                return False        
         _, plan_b, _, _ = move_arm.plan()
 
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, send the previous plan only
@@ -912,7 +1017,7 @@ class ActionTrajectories:
         return discard_sample_traj
 
 
-    def deliver_sample(self, move_arm, robot, moveit_fk):
+    def deliver_sample(self, move_arm, robot, moveit_fk, server_stop):
         """
         :type move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -930,6 +1035,10 @@ class ActionTrajectories:
             move_arm.set_start_state(cs)
             goal = move_arm.get_named_target_values(t)
             move_arm.set_joint_value_target(goal)
+            server_stop.get_state()
+            if server_stop.stopped is True:
+                return False
+            
             _, plan, _, _ = move_arm.plan()
             if len(plan.joint_trajectory.points) == 0:
                 return False

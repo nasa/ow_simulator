@@ -10,7 +10,6 @@ from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
-import all_action_trajectories
 from action_trajectories import ActionTrajectories
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
@@ -196,9 +195,9 @@ class StopActionServer(object):
 
     def reset(self):
         self.stopped = False
-        
+
     def get_state(self):
-        return self.stopped    
+        return self.stopped
 
     def on_stop_action(self, goal):
 
@@ -257,12 +256,9 @@ class GrindActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Grind activity started")
-        # self.current_traj = all_action_trajectories.grind(self._interface.move_grinder,
-        #                                                   self._interface.robot,
-        #                                                   self._interface.moveit_fk, goal)
         self.current_traj = action_trajectories.grind(self._interface.move_grinder,
-                                                          self._interface.robot,
-                                                          self._interface.moveit_fk, goal,server_stop)
+                                                      self._interface.robot,
+                                                      self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -396,10 +392,10 @@ class GuardedMoveActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Guarded move activity started")
-        self.guarded_move_traj, self._guarded_move_plan_ratio = all_action_trajectories.guarded_move_plan(
+        self.guarded_move_traj, self._guarded_move_plan_ratio = action_trajectories.guarded_move_plan(
             self._interface.move_arm,
             self._interface.robot,
-            self._interface.moveit_fk, goal)
+            self._interface.moveit_fk, goal, server_stop)
 
         if self.guarded_move_traj == False:
             return
@@ -504,9 +500,9 @@ class DigCircularActionServer(object):
     def _update_motion(self, goal):
         rospy.loginfo("DigCircular activity started")
         self.current_traj = None
-        self.current_traj = all_action_trajectories.dig_circular(self._interface.move_arm,
-                                                                 self._interface.move_limbs,
-                                                                 self._interface.robot, self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.dig_circular(self._interface.move_arm,
+                                                             self._interface.move_limbs,
+                                                             self._interface.robot, self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -585,9 +581,9 @@ class DigLinearActionServer(object):
     def _update_motion(self, goal):
 
         rospy.loginfo("DigLinear activity started")
-        self.current_traj = all_action_trajectories.dig_linear(self._interface.move_arm,
-                                                               self._interface.robot,
-                                                               self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.dig_linear(self._interface.move_arm,
+                                                           self._interface.robot,
+                                                           self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -664,9 +660,9 @@ class DiscardActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Discard sample activity started")
-        self.discard_sample_traj = all_action_trajectories.discard_sample(self._interface.move_arm,
-                                                                          self._interface.robot,
-                                                                          self._interface.moveit_fk, goal)
+        self.discard_sample_traj = action_trajectories.discard_sample(self._interface.move_arm,
+                                                                      self._interface.robot,
+                                                                      self._interface.moveit_fk, goal, server_stop)
         if self.discard_sample_traj == False:
             return
         else:
@@ -741,9 +737,9 @@ class DeliverActionServer(object):
 
     def _update_motion(self):
         rospy.loginfo("Deliver sample activity started")
-        self.deliver_sample_traj = all_action_trajectories.deliver_sample(self._interface.move_arm,
-                                                                          self._interface.robot,
-                                                                          self._interface.moveit_fk)
+        self.deliver_sample_traj = action_trajectories.deliver_sample(self._interface.move_arm,
+                                                                      self._interface.robot,
+                                                                      self._interface.moveit_fk, server_stop)
         if self.deliver_sample_traj == False:
             return
         else:
