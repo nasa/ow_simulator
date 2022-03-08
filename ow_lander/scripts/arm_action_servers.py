@@ -11,7 +11,7 @@ from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
 import all_action_trajectories
-from all_action_trajectories_class import ActionTrajectories
+from action_trajectories import ActionTrajectories
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
 from ground_detection import GroundDetector
@@ -196,6 +196,9 @@ class StopActionServer(object):
 
     def reset(self):
         self.stopped = False
+        
+    def get_state(self):
+        return self.stopped    
 
     def on_stop_action(self, goal):
 
