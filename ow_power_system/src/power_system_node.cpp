@@ -263,18 +263,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
     }
     else index += PROFILE_INCREMENT;
 
-    ROS_INFO_STREAM("---Wattage before: " << wattage);
-    double wattage_gain = profile_average (sequence, index, MessageId::Watts);
-    wattage = std::min (wattage + wattage_gain, MAX_GSAP_INPUT_WATTS);
-    ROS_INFO_STREAM("---Wattage after: " << wattage);
-
-    ROS_INFO_STREAM("---Voltage before: " << voltage);
-    voltage += profile_average (sequence, index, MessageId::Volts);
-    ROS_INFO_STREAM("---Voltage after: " << voltage);
-
-    ROS_INFO_STREAM("---Temperature before: " << temperature);
-    temperature += profile_average (sequence, index, MessageId::Centigrade);
-    ROS_INFO_STREAM("---Temperature after: " << temperature);
+    auto data = sequence[index];
+    wattage = std::min (wattage + data[MessageId::Watts], MAX_GSAP_INPUT_WATTS);
+    voltage += data[MessageId::Volts];
+    temperature += data[MessageId::Centigrade];
   }
 }
 
