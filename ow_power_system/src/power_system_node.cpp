@@ -15,17 +15,31 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
+const string LOW_SOC_FAULT_NAME = "low_state_of_charge_power_failure";
+const string ICL_FAULT_NAME = "instantaneous_capacity_loss_power_failure";
+const string THERMAL_FAULT_NAME = "thermal_power_failure";
+
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile
 static constexpr int TEMPERATURE_INDEX = 1;
 
 const float GSAP_RATE_HZ = 0.5;
-const float PROFILE_RATE_HZ = 1.0;
+
+// Equal to the current profile "rate" of 1Hz divided by the GSAP
+// rate.  These rates are not expected to change in the forseeable
+// future, so not attempting to be more general for now.
+const int PROFILE_INCREMENT = 2;
+
 const double MAX_GSAP_INPUT_WATTS = 30.0;
+
+static map<string, bool> ProfileExhausted;
 
 PowerSystemNode::PowerSystemNode() :
   m_power_values(m_moving_average_window, 0)
 {
+  ProfileExhausted[LOW_SOC_FAULT_NAME] = false;
+  ProfileExhausted[ICL_FAULT_NAME] = false;
+  ProfileExhausted[THERMAL_FAULT_NAME] = false;
 }
 
 bool PowerSystemNode::Initialize()
@@ -208,7 +222,7 @@ double PowerSystemNode::generateVoltageEstimate()
   return voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFault (const string& power_fault_name,
+void PowerSystemNode::injectFault (const string& fault_name,
                                    bool& fault_activated,
                                    const PrognoserVector& sequence,
                                    size_t& index,
@@ -219,32 +233,36 @@ void PowerSystemNode::injectFault (const string& power_fault_name,
   bool fault_enabled = false;
 
   // Do nothing unless the specified fault has been injected.
-  if (! ros::param::getCached("/faults/" + power_fault_name, fault_enabled)) {
+  if (! ros::param::getCached("/faults/" + fault_name, fault_enabled)) {
     return;
   }
 
   if (!fault_activated && fault_enabled)
   {
-    ROS_INFO_STREAM(power_fault_name << " activated!");
+    ROS_INFO_STREAM(fault_name << " activated!");
     index = 0;
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
-    ROS_INFO_STREAM(power_fault_name << " de-activated!");
+    ROS_INFO_STREAM(fault_name << " de-activated!");
     fault_activated = false;
   }
 
   if (fault_activated && fault_enabled)
   {
     // TODO: Unspecified how to handle end of fault profile, which is
-    // unlikely.  For now, replay the last entry.
-    if (index++ >= sequence.size()) {
-      ROS_WARN_STREAM(power_fault_name
-                      << ": reached end of fault profile, reusing last entry.");
-      index = 0;
+    // unlikely.  For now, reuse the last entry.
+    if (index + PROFILE_INCREMENT >= sequence.size()) {
+      if (! ProfileExhausted[fault_name]) {
+        ROS_WARN_STREAM(fault_name
+                        << ": reached end of fault profile, reusing last entry.");
+        ProfileExhausted[fault_name] = true;
+      }
+      index = sequence.size() - 1;
     }
-    
+    else index += PROFILE_INCREMENT;
+
     ROS_INFO_STREAM("---Wattage before: " << wattage);
     double wattage_gain = profile_average (sequence, index, MessageId::Watts);
     wattage = std::min (wattage + wattage_gain, MAX_GSAP_INPUT_WATTS);
@@ -264,19 +282,19 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  injectFault("low_state_of_charge_power_failure",
+  injectFault(LOW_SOC_FAULT_NAME,
 	      m_low_state_of_charge_power_failure_activated,
               m_low_state_of_charge_power_failure_sequence,
 	      m_low_state_of_charge_power_failure_sequence_index,
 	      power, voltage, temperature);
 
-  injectFault("instantaneous_capacity_loss_power_failure",
+  injectFault(ICL_FAULT_NAME,
 	      m_instantaneous_capacity_loss_power_failure_activated,
               m_instantaneous_capacity_loss_power_failure_sequence,
               m_instantaneous_capacity_loss_power_failure_sequence_index,
 	      power, voltage, temperature);
 
-  injectFault("thermal_power_failure",
+  injectFault(THERMAL_FAULT_NAME,
 	      m_thermal_power_failure_activated,
 	      m_thermal_power_failure_sequence,
               m_thermal_power_failure_sequence_index,

@@ -1,12 +1,12 @@
 Issues (in priority)
 ------
 
-Hotfix for Release 9
-  Replace multiplier with using every other line (for power, volts,
-  temp)
-  Put cap on power input to GSAP.
+Current work
+  [x] Don't replay the profile, use last line.
+  [x] Use every other line of power fault profiles
+  [x] Put cap on power input to GSAP.
   Average, not accumulate, the power to batch process.
-  Don't replay the profile, use last line.
+
   Eliminate this file from branch.
   Code reformatting?
   Abstraction?
@@ -27,10 +27,7 @@ Alternatives to fault profiles (instead, in addition)
 Behavior
 ========
 
-2/9 Injected thermal fault.
-RUL goes to 0 quickly.
-SOC went to 20 before going 0.
-Temperature raised steadily, reaching 57.
-
-
-
+2/9/22 Injected thermal fault:
+  RUL goes to 0 quickly.
+  SOC went to 20 before going 0.
+  Temperature raised steadily, reaching 57.
