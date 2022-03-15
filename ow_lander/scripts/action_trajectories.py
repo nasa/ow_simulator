@@ -235,7 +235,7 @@ class ActionTrajectories:
         if not parallel:
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
             plan_a = self.move_to_pre_trench_configuration_dig_circ(
                 move_arm, robot, x_start, y_start)
@@ -254,7 +254,7 @@ class ActionTrajectories:
             move_arm.set_pose_target(end_pose)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
             _, plan_b, _, _ = move_arm.plan()
             if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -267,7 +267,7 @@ class ActionTrajectories:
                 robot, circ_traj, move_arm, moveit_fk)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_c = self.change_joint_value(
@@ -282,7 +282,7 @@ class ActionTrajectories:
             z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_d = self.go_to_Z_coordinate_dig_circular(
@@ -294,7 +294,7 @@ class ActionTrajectories:
                 robot, circ_traj, move_arm, moveit_fk)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_e = self.change_joint_value(
@@ -304,7 +304,7 @@ class ActionTrajectories:
         else:
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_a = self.move_to_pre_trench_configuration(
@@ -316,7 +316,7 @@ class ActionTrajectories:
                 robot, plan_a, move_arm, moveit_fk)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_b = self.change_joint_value(
@@ -328,7 +328,7 @@ class ActionTrajectories:
                 robot, circ_traj, move_arm, moveit_fk)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_c = self.change_joint_value(
@@ -340,7 +340,7 @@ class ActionTrajectories:
                 robot, circ_traj, move_arm, moveit_fk)
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_d = self.change_joint_value(
@@ -353,7 +353,7 @@ class ActionTrajectories:
             z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_e = self.go_to_XYZ_coordinate(
@@ -366,7 +366,7 @@ class ActionTrajectories:
             dist_now = start_state[3]
 
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             plan_f = self.change_joint_value(
@@ -514,7 +514,7 @@ class ActionTrajectories:
         ground_position = args.ground_position
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_a = self.move_to_pre_trench_configuration(
@@ -526,7 +526,7 @@ class ActionTrajectories:
             robot, plan_a, move_arm, moveit_fk)
         #################### Rotate hand yaw to dig in#################################
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_b = self.change_joint_value(
@@ -544,7 +544,7 @@ class ActionTrajectories:
             robot, dig_linear_traj, move_arm, moveit_fk)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_c = self.change_joint_value(
@@ -558,7 +558,7 @@ class ActionTrajectories:
             robot, dig_linear_traj, move_arm, moveit_fk)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_d = self.change_joint_value(
@@ -578,7 +578,7 @@ class ActionTrajectories:
             robot, dig_linear_traj, move_arm, moveit_fk)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_e = self.go_to_Z_coordinate(
@@ -592,7 +592,7 @@ class ActionTrajectories:
             robot, dig_linear_traj, move_arm, moveit_fk)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_f = self.change_joint_value(
@@ -623,7 +623,7 @@ class ActionTrajectories:
             robot, dig_linear_traj, move_arm, moveit_fk)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         plan_g = self.change_joint_value(
@@ -734,7 +734,7 @@ class ActionTrajectories:
         move_grinder.set_pose_target(goal_pose)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
         _, plan_a, _, _ = move_grinder.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -750,7 +750,7 @@ class ActionTrajectories:
         grind_traj = self.cascade_plans(plan_a, plan_b)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         # grinding ice forward
@@ -762,7 +762,7 @@ class ActionTrajectories:
         grind_traj = self.cascade_plans(grind_traj, cartesian_plan)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         # grinding sideways
@@ -781,7 +781,7 @@ class ActionTrajectories:
                 move_grinder, cs, joint_goal, x_goal, y_goal, z_now, False)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         grind_traj = self.cascade_plans(grind_traj, plan_c)
@@ -793,7 +793,7 @@ class ActionTrajectories:
         grind_traj = self.cascade_plans(grind_traj, cartesian_plan2)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         # exiting terrain
@@ -804,7 +804,7 @@ class ActionTrajectories:
         grind_traj = self.cascade_plans(grind_traj, plan_d)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
 
         return grind_traj
@@ -862,7 +862,7 @@ class ActionTrajectories:
         move_arm.set_joint_value_target(joint_goal)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False, False
 
         _, plan_a, _, _ = move_arm.plan()
@@ -880,7 +880,7 @@ class ActionTrajectories:
         move_arm.set_pose_target(goal_pose)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False, False
 
         _, plan_b, _, _ = move_arm.plan()
@@ -905,7 +905,7 @@ class ActionTrajectories:
         move_arm.set_pose_target(goal_pose)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False, False
 
         _, plan_c, _, _ = move_arm.plan()
@@ -954,7 +954,7 @@ class ActionTrajectories:
         move_arm.set_pose_target(goal_pose)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
         _, plan_a, _, _ = move_arm.plan()
 
@@ -990,7 +990,7 @@ class ActionTrajectories:
         move_arm.set_pose_target(goal_pose)
 
         server_stop.get_state()
-        if server_stop.stopped is True:
+        if server_stop.stopped:
             return False
         _, plan_b, _, _ = move_arm.plan()
 
@@ -1021,7 +1021,7 @@ class ActionTrajectories:
             goal = move_arm.get_named_target_values(t)
             move_arm.set_joint_value_target(goal)
             server_stop.get_state()
-            if server_stop.stopped is True:
+            if server_stop.stopped:
                 return False
 
             _, plan, _, _ = move_arm.plan()

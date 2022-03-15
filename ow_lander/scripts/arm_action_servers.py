@@ -180,11 +180,6 @@ class StopActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.StopAction,
-                                                    execute_cb=self.on_stop_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.StopFeedback()
         self._result = ow_lander.msg.StopResult()
@@ -192,6 +187,11 @@ class StopActionServer(object):
         self._interface = MoveItInterface()
         self._timeout = 0.0
         self.stopped = False
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.StopAction,
+                                                    execute_cb=self.on_stop_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def reset(self):
         self.stopped = False
@@ -796,6 +796,7 @@ if __name__ == '__main__':
     trajectory_async_executer.connect("arm_controller")
     action_trajectories = ActionTrajectories()
     # start all the arm action servers
+    server_stop = StopActionServer("Stop")
     server_unstow = UnstowActionServer("Unstow")
     server_stow = StowActionServer("Stow")
     server_grind = GrindActionServer("Grind")
@@ -804,5 +805,4 @@ if __name__ == '__main__':
     server_dig_linear = DigLinearActionServer("DigLinear")
     server_deliver = DeliverActionServer("Deliver")
     server_discard = DiscardActionServer("Discard")
-    server_stop = StopActionServer("Stop")
     rospy.spin()
