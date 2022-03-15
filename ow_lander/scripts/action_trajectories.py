@@ -855,7 +855,7 @@ class ActionTrajectories:
 
         # If out of joint range, abort
         if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False
+            return False, False
 
         joint_goal[constants.J_SCOOP_YAW] = 0
 
@@ -863,11 +863,11 @@ class ActionTrajectories:
 
         server_stop.get_state()
         if server_stop.stopped is True:
-            return False
+            return False, False
 
         _, plan_a, _, _ = move_arm.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
+            return False, False
 
         # Once aligned to move goal and offset, place scoop tip at surface target offset
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
@@ -881,11 +881,11 @@ class ActionTrajectories:
 
         server_stop.get_state()
         if server_stop.stopped is True:
-            return False
+            return False, False
 
         _, plan_b, _, _ = move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
+            return False, False
         pre_guarded_move_traj = self.cascade_plans(plan_a, plan_b)
 
         ### pre-guarded move ends here ###
@@ -906,7 +906,7 @@ class ActionTrajectories:
 
         server_stop.get_state()
         if server_stop.stopped is True:
-            return False
+            return False, False
 
         _, plan_c, _, _ = move_arm.plan()
 
