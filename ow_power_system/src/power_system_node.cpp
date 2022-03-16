@@ -359,6 +359,8 @@ void PowerSystemNode::powerCb(double electrical_power)
   auto current_data = composePrognoserData(electrical_power,
                                            voltage_estimate,
                                            temperature_estimate);
+  ROS_INFO ("-- GSAP input: power: %f voltage: %f temp: %f",
+            electrical_power, voltage_estimate, temperature_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
