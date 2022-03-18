@@ -30,6 +30,7 @@ const float GSAP_RATE_HZ = 0.5;
 // future, so not attempting to be more general for now.
 const int PROFILE_INCREMENT = 2;
 
+const double BASELINE_WATTAGE = 1.0;
 const double MAX_GSAP_INPUT_WATTS = 30.0;
 
 static map<string, bool> ProfileExhausted;
@@ -353,14 +354,15 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
 void PowerSystemNode::powerCb(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  double voltage_estimate = generateVoltageEstimate();
   double temperature_estimate = generateTemperatureEstimate();
-  injectFaults(electrical_power, voltage_estimate, temperature_estimate);
-  auto current_data = composePrognoserData(electrical_power,
+  double voltage_estimate = generateVoltageEstimate();
+  double adjusted_wattage = std::max(electrical_power, BASELINE_WATTAGE);
+  injectFaults(adjusted_wattage, voltage_estimate, temperature_estimate);
+  auto current_data = composePrognoserData(adjusted_wattage,
                                            voltage_estimate,
                                            temperature_estimate);
   ROS_INFO ("-- GSAP input: power: %f voltage: %f temp: %f",
-            electrical_power, voltage_estimate, temperature_estimate);
+            adjusted_wattage, voltage_estimate, temperature_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
