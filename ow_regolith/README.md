@@ -11,7 +11,7 @@ this repository.
 * [Usage](#usage)
   - [Launch File](#launch-file)
   - [ROS Service](#ros-service)
-* [Generating Custom Regolith Models](#generating-custom-regolith-models)
+* [Generating Custom Regolith Particles](#generating-custom-regolith-models)
   - [Adding Models to Gazebo Model Database](#adding-models-to-gazebo-model-database)
 
 ## Introduction
@@ -38,19 +38,18 @@ differential image that represents changes in heights that occurred due to tool
 modification of the visual terrain model. The `regolith_node` computes the total
 volume displaced each time a differential image is published and adds it to a 
 tracked total. When that tracked total volume displaced reaches a threshold, a 
-regolith model is spawned in the scoop and the tracked total volume has the 
-threshold deducted from it.
+regolith model is spawned in the approximate location the terrain was changed.
+The threshold is then deducted from the tracked volume.
 
 Spawning is done by calling the `/gazebo/spawn_sdf_model` ROS service, followed
 by a call to `/gazebo/apply_body_wrench`, so that the model is kept in the scoop
 with a *fake force* of a magnitude that's just enough to keep the particle from 
 rolling out. Upon completion of a dig action, the *fake force* is removed from
-all regolith models, so they may settle within the scoop and behave like normal
-regolith material during any following arm movements.
+all regolith particles, so they may settle within the scoop and behave like
+normal rigid-bodies during arm movement.
 
-All regolith models spawned by this node are removed from the Gazebo world upon
-completion of the delivery arm action. Future versions of this package will 
-incorporate smarter logic around when to clean-up regolith models.
+When a regolith particles is dropped and collides with the terrain, the node
+removes it from the Gazebo world, and logs a message.
 
 ## Caveats
 
@@ -98,18 +97,16 @@ enables debugging and manual handling of specific test cases.
 
 #### Services
 
-- `ow_regolith/spawn_regolith_in_scoop` will spawn a single regolith model just 
-above the tip of the scoop. Unlike when spawning is triggered by terrain 
-modification, there will be no *fake force* applied to the model when this 
-service is called.
-- `ow_regolith/remove_all_regolith` will delete all regolith models from the 
+- `ow_regolith/spawn_regolith position reference_frame` will spawn a single
+regolith model at a `position` relative to `reference_frame`.
+- `ow_regolith/remove_all_regolith` will delete all regolith particles from the
 Gazebo world.
 
-## Generating Custom Regolith Models
+## Generating Custom Regolith Particles
 
 This package contains the directory `rsdf` which has three files that assist
-in the creation of custom regolith models. The files contain syntax used by Ruby
-Templating, which allows for the easy generation an SDF file similar to the 
+in the creation of custom regolith particles. The files contain syntax used by
+Ruby Templating, which allows for the easy generation an SDF file similar to the
 default regolith model, `ball_icefrag_2cm`, that this package comes with.
 
 The following three files--`ball_icefrag.rsdf`, `ball_sand.rsdf`, and
