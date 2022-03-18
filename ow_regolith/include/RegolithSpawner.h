@@ -24,7 +24,7 @@
 #include <ow_lander/DeliverActionResult.h>
 #include <ow_lander/DiscardActionResult.h>
 
-#include <ow_regolith/SpawnRegolithInScoop.h>
+#include <ow_regolith/SpawnRegolith.h>
 #include <ow_regolith/RemoveAllRegolith.h>
 #include <ow_regolith/TerrainContact.h>
 
@@ -46,7 +46,10 @@ public:
 
   // spawn the regolith model just above the tip of the scoop and apply a force
   // that keeps it in the scoop during the remainder of scooping operation
-  bool spawnRegolithInScoop(bool with_pushback);
+  bool spawnRegolith(tf::Point position, std::string reference_frame);
+
+  // adds a force aligned towards the back of the scoop for indefinite duration
+  bool applyScoopPushback(std::string body_name);
 
   // clears all artificial forces still being applied to regolith models
   bool clearAllPsuedoForces();
@@ -55,8 +58,8 @@ public:
   bool removeAllRegolithModels();
 
   // service callback for spawnRegolithInScoop
-  bool spawnRegolithInScoopSrv(ow_regolith::SpawnRegolithInScoopRequest &request,
-                               ow_regolith::SpawnRegolithInScoopResponse &response);
+  bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
+                        ow_regolith::SpawnRegolithResponse &response);
 
   // service callback for removeAllRegolithModels
   bool removeAllRegolithSrv(ow_regolith::RemoveAllRegolithRequest &request,
@@ -76,15 +79,13 @@ public:
   void onDigLinearResultMsg(const ow_lander::DigLinearActionResult::ConstPtr &msg);
   void onDigCircularResultMsg(const ow_lander::DigCircularActionResult::ConstPtr &msg);
 
-  // both call removeAllRegolithModels
-  void onDeliverResultMsg(const ow_lander::DeliverActionResult::ConstPtr &msg);
-  void onDiscardResultMsg(const ow_lander::DiscardActionResult::ConstPtr &msg);
-
 private:
 
   inline bool isRegolith(const std::string &name) {
     return name.rfind("regolith_") == 0;
   }
+
+  void resetTrackedVolume();
 
   bool removeRegolithModel(const std::string &name);
 
@@ -94,7 +95,7 @@ private:
   ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
                       m_gz_apply_wrench, m_gz_clear_wrench;
 
-  ros::ServiceServer m_srv_spawn_regolith_in_scoop;
+  ros::ServiceServer m_srv_spawn_regolith;
   ros::ServiceServer m_srv_remove_all_regolith;
 
   ros::Subscriber m_sub_link_states;
@@ -103,11 +104,10 @@ private:
   ros::Subscriber m_mod_diff_visual;
   ros::Subscriber m_dig_linear_result;
   ros::Subscriber m_dig_circular_result;
-  ros::Subscriber m_deliver_result;
-  ros::Subscriber m_discard_result;
 
   // sum of volume displaced since previous reoglith spawning
   double m_volume_displaced;
+  tf::Point m_volume_center;
   // orientation of scoop in Gazebo
   tf::Quaternion m_scoop_orientation;
 

@@ -1,0 +1,5 @@
+# Spawns a single regolith body just above the tip of the scoop
+geometry_msgs/Point position   # position where regolith will be spawned
+string reference_frame         # link reference frame regolith is spawned in
+---
+bool success

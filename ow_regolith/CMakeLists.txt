@@ -66,7 +66,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 # Generate messages in the 'msg' folder
 add_service_files(
   FILES
-  SpawnRegolithInScoop.srv
+  SpawnRegolith.srv
   RemoveAllRegolith.srv
 )
 
@@ -78,6 +78,7 @@ add_message_files(
 generate_messages(
     DEPENDENCIES
     std_msgs
+    geometry_msgs
 )
 
 ###################################
