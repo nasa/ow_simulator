@@ -11,12 +11,12 @@
         <mass>0.3769911184307752</mass>
         <!-- Set high moments to "disable" rotation -->
         <inertia>
-          <ixx>1e10</ixx>
+          <ixx>1e3</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>1e10</iyy>
+          <iyy>1e3</iyy>
           <iyz>0</iyz>
-          <izz>1e10</izz>
+          <izz>1e3</izz>
         </inertia>
       </inertial>
 
