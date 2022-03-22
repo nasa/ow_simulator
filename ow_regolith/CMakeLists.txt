@@ -72,7 +72,7 @@ add_service_files(
 
 add_message_files(
   FILES
-  TerrainContact.msg
+  Contacts.msg
 )
 
 generate_messages(
@@ -138,11 +138,11 @@ target_link_libraries(regolith_node
 )
 
 # Gazebo sensor plugin that tracks when regolith collides with the terrain
-add_library(TerrainContactPlugin
+add_library(ContactSensorPlugin
   SHARED
-  src/TerrainContactPlugin.cpp
+  src/ContactSensorPlugin.cpp
 )
-target_link_libraries(TerrainContactPlugin
+target_link_libraries(ContactSensorPlugin
   ${GAZEBO_LIBRARIES}
 )
 

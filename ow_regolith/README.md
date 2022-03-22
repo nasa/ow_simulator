@@ -73,8 +73,8 @@ has to be ignored.
 The `regolith_node` may be added to a launch file as follows
 ```xml
 <node name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
-    <param name="spawn_volume_threshold" type="double" value="1e-3"/>
-    <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
+  <param name="spawn_volume_threshold" type="double" value="1e-3"/>
+  <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
 </node>
 ```
 The two parameters, `spawn_volume_threshold` and `regolith_model_uri`, are
@@ -89,6 +89,19 @@ regolith model of larger size is used in place of the default to avoid
 consecutively spawned models colliding with each other.
 - `regolith_model_uri` tells the node which model out of the Gazebo model database
 should be spawned each time the `spawn_volume_threshold` is reached.
+
+### ContactSensorPlugin
+TODO: fill this out
+```xml
+<sensor name="contact_sensor" type="contact">
+  <contact>
+    <collision>collision</collision>
+  </contact>
+  <plugin name='terrain' filename='libContactSensorPlugin.so'>
+    <topic>/ow_regolith/contacts_terrain</topic>
+  </plugin>
+</sensor>
+```
 
 ### ROS Services
 
