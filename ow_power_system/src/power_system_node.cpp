@@ -27,20 +27,18 @@ const float GSAP_RATE_HZ = 0.5;
 
 // Equal to the current profile "rate" of 1Hz divided by the GSAP
 // rate.  These rates are not expected to change in the forseeable
-// future, so not attempting to be more general for now.
+// future, so hardcoding this for now.
 const int PROFILE_INCREMENT = 2;
 
 const double BASELINE_WATTAGE = 1.0;
 const double MAX_GSAP_INPUT_WATTS = 30.0;
 
-static map<string, bool> ProfileExhausted;
-
 PowerSystemNode::PowerSystemNode() :
   m_power_values(m_moving_average_window, 0)
 {
-  ProfileExhausted[LOW_SOC_FAULT_NAME] = false;
-  ProfileExhausted[ICL_FAULT_NAME] = false;
-  ProfileExhausted[THERMAL_FAULT_NAME] = false;
+  m_fault_profile_exhausted[LOW_SOC_FAULT_NAME] = false;
+  m_fault_profile_exhausted[ICL_FAULT_NAME] = false;
+  m_fault_profile_exhausted[THERMAL_FAULT_NAME] = false;
 }
 
 bool PowerSystemNode::Initialize()
@@ -255,10 +253,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
     // TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
     if (index + PROFILE_INCREMENT >= sequence.size()) {
-      if (! ProfileExhausted[fault_name]) {
+      if (! m_fault_profile_exhausted[fault_name]) {
         ROS_WARN_STREAM(fault_name
                         << ": reached end of fault profile, reusing last entry.");
-        ProfileExhausted[fault_name] = true;
+        m_fault_profile_exhausted[fault_name] = true;
       }
       index = sequence.size() - 1;
     }
