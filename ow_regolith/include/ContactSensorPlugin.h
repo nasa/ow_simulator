@@ -5,6 +5,10 @@
 #ifndef TERRAIN_CONTACT_PLUGIN_H
 #define TERRAIN_CONTACT_PLUGIN_H
 
+#include <string>
+#include <set>
+#include <memory>
+
 #include <gazebo/gazebo.hh>
 #include <gazebo/common/common.hh>
 #include <gazebo/sensors/sensors.hh>
@@ -13,22 +17,23 @@
 
 namespace ow_regolith {
 
-  class TerrainContactPlugin : public gazebo::SensorPlugin
+  class ContactSensorPlugin : public gazebo::SensorPlugin
   {
   public:
-    TerrainContactPlugin() : SensorPlugin() { };
+    ContactSensorPlugin() : SensorPlugin(), m_links_in_contact() { };
 
-    void Load(gazebo::sensors::SensorPtr _sensor,
-              sdf::ElementPtr _sdf) override;
+    void Load(gazebo::sensors::SensorPtr sensor, sdf::ElementPtr sdf) override;
 
   private:
     void onUpdate();
+
+    std::set<std::string> m_links_in_contact;
 
     gazebo::sensors::ContactSensorPtr m_parent_sensor;
     gazebo::event::ConnectionPtr m_update_connection;
 
     std::unique_ptr<ros::NodeHandle> m_node_handle;
-    ros::Publisher m_pub_terrain_collision;
+    ros::Publisher m_pub_contacts;
   };
 
 } // namespace ow_regolith
