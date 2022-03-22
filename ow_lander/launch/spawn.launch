@@ -96,6 +96,6 @@
   
   <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />  
-  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " output="screen"/>
   <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_pan_tilt_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>
