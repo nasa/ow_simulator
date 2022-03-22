@@ -27,12 +27,12 @@ class ActionTrajectories:
 
     def __init__(self):
         self.stopped = False
-        
+
     def check_for_stop(self, action_name, server_stop):
         if server_stop.get_state():
             rospy.loginfo('%s was stopped.', action_name)
             return True
-        return False    
+        return False
 
     def calculate_joint_state_end_pose_from_plan_arm(self, robot, plan, move_arm, moveit_fk):
         ''' 
@@ -240,7 +240,7 @@ class ActionTrajectories:
 
             if self.check_for_stop("dig_circular", server_stop):
                 return False
-        
+
             plan_a = self.move_to_pre_trench_configuration_dig_circ(
                 move_arm, robot, x_start, y_start)
             if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -996,8 +996,8 @@ class ActionTrajectories:
             move_arm.set_start_state(cs)
             goal = move_arm.get_named_target_values(t)
             move_arm.set_joint_value_target(goal)
-            server_stop.get_state()
-            if server_stop.stopped:
+            
+            if self.check_for_stop("deliver_sample", server_stop):
                 return False
 
             _, plan, _, _ = move_arm.plan()
