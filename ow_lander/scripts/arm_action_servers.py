@@ -10,7 +10,7 @@ from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from trajectory_async_execution import TrajectoryAsyncExecuter
-import all_action_trajectories
+from action_trajectories import ActionTrajectories
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
 from ground_detection import GroundDetector
@@ -72,6 +72,7 @@ class UnstowActionServer(object):
                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
+            rospy.loginfo('Unstow was stopped.')
             return
 
         # Record start time
@@ -180,11 +181,6 @@ class StopActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.StopAction,
-                                                    execute_cb=self.on_stop_action,
-                                                    auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.StopFeedback()
         self._result = ow_lander.msg.StopResult()
@@ -192,9 +188,17 @@ class StopActionServer(object):
         self._interface = MoveItInterface()
         self._timeout = 0.0
         self.stopped = False
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.StopAction,
+                                                    execute_cb=self.on_stop_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def reset(self):
         self.stopped = False
+
+    def get_state(self):
+        return self.stopped
 
     def on_stop_action(self, goal):
 
@@ -207,6 +211,7 @@ class StopActionServer(object):
         trajectory_async_executer.stop()
 
         rospy.loginfo('%s: Succeeded' % self._action_name)
+        rospy.loginfo('Current Arm Action was stopped.')
         self._server.set_succeeded(self._result)
 
 
@@ -253,9 +258,9 @@ class GrindActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Grind activity started")
-        self.current_traj = all_action_trajectories.grind(self._interface.move_grinder,
-                                                          self._interface.robot,
-                                                          self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.grind(self._interface.move_grinder,
+                                                      self._interface.robot,
+                                                      self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -389,10 +394,10 @@ class GuardedMoveActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Guarded move activity started")
-        self.guarded_move_traj, self._guarded_move_plan_ratio = all_action_trajectories.guarded_move_plan(
+        self.guarded_move_traj, self._guarded_move_plan_ratio = action_trajectories.guarded_move_plan(
             self._interface.move_arm,
             self._interface.robot,
-            self._interface.moveit_fk, goal)
+            self._interface.moveit_fk, goal, server_stop)
 
         if self.guarded_move_traj == False:
             return
@@ -497,9 +502,9 @@ class DigCircularActionServer(object):
     def _update_motion(self, goal):
         rospy.loginfo("DigCircular activity started")
         self.current_traj = None
-        self.current_traj = all_action_trajectories.dig_circular(self._interface.move_arm,
-                                                                 self._interface.move_limbs,
-                                                                 self._interface.robot, self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.dig_circular(self._interface.move_arm,
+                                                             self._interface.move_limbs,
+                                                             self._interface.robot, self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -578,9 +583,9 @@ class DigLinearActionServer(object):
     def _update_motion(self, goal):
 
         rospy.loginfo("DigLinear activity started")
-        self.current_traj = all_action_trajectories.dig_linear(self._interface.move_arm,
-                                                               self._interface.robot,
-                                                               self._interface.moveit_fk, goal)
+        self.current_traj = action_trajectories.dig_linear(self._interface.move_arm,
+                                                           self._interface.robot,
+                                                           self._interface.moveit_fk, goal, server_stop)
         if self.current_traj == False:
             return
         else:
@@ -657,9 +662,9 @@ class DiscardActionServer(object):
 
     def _update_motion(self, goal):
         rospy.loginfo("Discard sample activity started")
-        self.discard_sample_traj = all_action_trajectories.discard_sample(self._interface.move_arm,
-                                                                          self._interface.robot,
-                                                                          self._interface.moveit_fk, goal)
+        self.discard_sample_traj = action_trajectories.discard_sample(self._interface.move_arm,
+                                                                      self._interface.robot,
+                                                                      self._interface.moveit_fk, goal, server_stop)
         if self.discard_sample_traj == False:
             return
         else:
@@ -734,9 +739,9 @@ class DeliverActionServer(object):
 
     def _update_motion(self):
         rospy.loginfo("Deliver sample activity started")
-        self.deliver_sample_traj = all_action_trajectories.deliver_sample(self._interface.move_arm,
-                                                                          self._interface.robot,
-                                                                          self._interface.moveit_fk)
+        self.deliver_sample_traj = action_trajectories.deliver_sample(self._interface.move_arm,
+                                                                      self._interface.robot,
+                                                                      self._interface.moveit_fk, server_stop)
         if self.deliver_sample_traj == False:
             return
         else:
@@ -791,8 +796,9 @@ if __name__ == '__main__':
     # start the trajectory executer in the main file
     trajectory_async_executer = TrajectoryAsyncExecuter()
     trajectory_async_executer.connect("arm_controller")
-    #stopped = False
+    action_trajectories = ActionTrajectories()
     # start all the arm action servers
+    server_stop = StopActionServer("Stop")
     server_unstow = UnstowActionServer("Unstow")
     server_stow = StowActionServer("Stow")
     server_grind = GrindActionServer("Grind")
@@ -801,5 +807,4 @@ if __name__ == '__main__':
     server_dig_linear = DigLinearActionServer("DigLinear")
     server_deliver = DeliverActionServer("Deliver")
     server_discard = DiscardActionServer("Discard")
-    server_stop = StopActionServer("Stop")
     rospy.spin()
