@@ -17,10 +17,7 @@ namespace ow_regolith {
 class ServiceClientFacade
 {
 public:
-  ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false)
-  {
-    // do nothing
-  }
+  ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false) { }
   ServiceClientFacade(const ServiceClientFacade&) = delete;
   ~ServiceClientFacade() = default;
   ServiceClientFacade& operator=(const ServiceClientFacade&) = delete;
@@ -49,6 +46,11 @@ public:
   // persistent and non-persistent clients.
   template <typename T>
   bool call(T &message);
+
+  inline bool isConnected()
+  {
+    return m_client.exists() && m_client.isValid();
+  };
 
 private:
 
@@ -101,16 +103,16 @@ bool ServiceClientFacade::call(T &message)
     ROS_ERROR("Failed to call service %s", m_client.getService().c_str());
     return false;
   }
-  return true;
+  return message.response.success;
 };
 
 template <typename T>
 bool ServiceClientFacade::attemptReconnect()
 {
-  m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(),
-                                             m_persistent);
-  return m_client.exists();
+  m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(), m_persistent);
+  return isConnected();
 };
+
 
 } // namespace ow_regolith
 
