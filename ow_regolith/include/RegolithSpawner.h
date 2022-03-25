@@ -14,6 +14,7 @@
 #include <tf/tf.h>
 
 #include <ServiceClientFacade.h>
+#include <ModelPool.h>
 
 #include <gazebo_msgs/LinkStates.h>
 
@@ -21,12 +22,10 @@
 
 #include <ow_lander/DigLinearActionResult.h>
 #include <ow_lander/DigCircularActionResult.h>
-#include <ow_lander/DeliverActionResult.h>
-#include <ow_lander/DiscardActionResult.h>
 
 #include <ow_regolith/SpawnRegolith.h>
-#include <ow_regolith/RemoveAllRegolith.h>
-#include <ow_regolith/TerrainContact.h>
+#include <ow_regolith/RemoveRegolith.h>
+#include <ow_regolith/Contacts.h>
 
 namespace ow_regolith {
 
@@ -44,31 +43,18 @@ public:
   // NOTE: this must be called before any other functions
   bool initialize();
 
-  // spawn the regolith model just above the tip of the scoop and apply a force
-  // that keeps it in the scoop during the remainder of scooping operation
-  bool spawnRegolith(tf::Point position, std::string reference_frame);
-
-  // adds a force aligned towards the back of the scoop for indefinite duration
-  bool applyScoopPushback(std::string body_name);
-
-  // clears all artificial forces still being applied to regolith models
-  bool clearAllPsuedoForces();
-
-  // deletes all regolith models
-  bool removeAllRegolithModels();
-
   // service callback for spawnRegolithInScoop
   bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
                         ow_regolith::SpawnRegolithResponse &response);
 
   // service callback for removeAllRegolithModels
-  bool removeAllRegolithSrv(ow_regolith::RemoveAllRegolithRequest &request,
-                            ow_regolith::RemoveAllRegolithResponse &response);
+  bool removeRegolithSrv(ow_regolith::RemoveRegolithRequest &request,
+                         ow_regolith::RemoveRegolithResponse &response);
 
   // saves the orientation of scoop to a member variable
   void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
 
-  void onTerrainContact(const TerrainContact::ConstPtr &msg);
+  void onTerrainContact(const ow_regolith::Contacts::ConstPtr &msg);
 
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
@@ -81,19 +67,12 @@ public:
 
 private:
 
-  inline bool isRegolith(const std::string &name) {
-    return name.rfind("regolith_") == 0;
-  }
+  bool isRegolith(const std::string &name);
 
   void resetTrackedVolume();
 
-  bool removeRegolithModel(const std::string &name);
-
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
-
-  ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
-                      m_gz_apply_wrench, m_gz_clear_wrench;
 
   ros::ServiceServer m_srv_spawn_regolith;
   ros::ServiceServer m_srv_remove_all_regolith;
@@ -105,6 +84,9 @@ private:
   ros::Subscriber m_dig_linear_result;
   ros::Subscriber m_dig_circular_result;
 
+  // model pool
+  std::unique_ptr<ModelPool> m_pool;
+
   // sum of volume displaced since previous reoglith spawning
   double m_volume_displaced;
   tf::Point m_volume_center;
@@ -113,20 +95,6 @@ private:
 
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
-
-  // regolith model that spawns in the scoop when digging occurs
-  std::string m_model_uri;
-  std::string m_model_sdf;
-  std::string m_model_link_name;
-  // magnitude of the force that pushes each model into the back of the scoop
-  float m_psuedo_force_mag;
-
-  // keeps track of all regolith models and links present in the simulation
-  struct Regolith {
-    std::string model_name;
-    std::string body_name;
-  };
-  std::vector<Regolith> m_active_models;
 };
 
 } // namespace ow_regolith

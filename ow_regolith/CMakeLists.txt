@@ -67,7 +67,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 add_service_files(
   FILES
   SpawnRegolith.srv
-  RemoveAllRegolith.srv
+  RemoveRegolith.srv
 )
 
 add_message_files(
@@ -126,6 +126,7 @@ catkin_add_env_hooks(
 add_executable(regolith_node 
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
+  src/ModelPool.cpp
   src/sdf_utility.cpp
 )
 add_dependencies(regolith_node 

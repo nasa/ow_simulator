@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <memory>
+#include <regex>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/common/common.hh>
@@ -20,7 +21,10 @@ namespace ow_regolith {
   class ContactSensorPlugin : public gazebo::SensorPlugin
   {
   public:
-    ContactSensorPlugin() : SensorPlugin(), m_links_in_contact() { };
+    ContactSensorPlugin()
+      : SensorPlugin(), m_links_in_contact(), m_report_only_set(false)
+    {
+    };
 
     void Load(gazebo::sensors::SensorPtr sensor, sdf::ElementPtr sdf) override;
 
@@ -28,6 +32,9 @@ namespace ow_regolith {
     void onUpdate();
 
     std::set<std::string> m_links_in_contact;
+
+    bool m_report_only_set;
+    std::regex m_report_only;
 
     gazebo::sensors::ContactSensorPtr m_parent_sensor;
     gazebo::event::ConnectionPtr m_update_connection;

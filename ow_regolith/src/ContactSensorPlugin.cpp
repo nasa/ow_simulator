@@ -9,20 +9,19 @@
 
 #include <ContactSensorPlugin.h>
 
-using namespace ros;
-using namespace gazebo;
 using namespace ow_regolith;
 
-using std::endl;
-using std::string;
-using std::set;
-using std::vector;
+using namespace ros;
+using namespace gazebo;
+
+using namespace std;
 
 const static string NODE_PREFIX = "contact_sensor_";
 
 const static string PLUGIN_NAME = "ContactSensorPlugin";
 
-const static string CONTACTS_TOPIC_PARAMETER = "topic";
+const static string PARAMETER_TOPIC = "topic";
+const static string PARAMETER_REPORT_ONLY = "report_only";
 
 GZ_REGISTER_SENSOR_PLUGIN(ContactSensorPlugin)
 
@@ -32,31 +31,38 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor,
   // connnect parent sensor update signal to update handler
   m_parent_sensor =
     std::dynamic_pointer_cast<sensors::ContactSensor>(sensor);
-  if (!m_parent_sensor) {
-    gzerr << PLUGIN_NAME << ": requires a sensor of type conatact as a parent" << endl;
-    return;
-  }
+  if (!m_parent_sensor)
+    gzthrow(PLUGIN_NAME << ": requires a sensor of type conatact as a parent");
   m_update_connection = m_parent_sensor->ConnectUpdated(
     std::bind(&ContactSensorPlugin::onUpdate, this)
   );
   m_parent_sensor->SetActive(true);
 
-  gzlog << PLUGIN_NAME << ": successfully loaded!" << endl;
+  // get plugin parameters
+  if (!sdf->HasElement(PARAMETER_TOPIC)) // required
+    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defiend");
+  auto topic = sdf->Get<string>(PARAMETER_TOPIC);
+  if (sdf->HasElement(PARAMETER_REPORT_ONLY)) { // optional
+    m_report_only_set = true;
+    const auto regex_str = sdf->Get<string>(PARAMETER_REPORT_ONLY);
+    m_report_only = regex(regex_str);
+    gzlog << PLUGIN_NAME << ": reporting link names that match the regex \""
+          << regex_str << "\"" << endl;
+  }
 
   // setup ROS interface
   m_node_handle = std::make_unique<NodeHandle>(NODE_PREFIX + sdf->GetName());
-  if (!sdf->HasElement(CONTACTS_TOPIC_PARAMETER))
-    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defiend");
-  auto topic = sdf->Get<string>(CONTACTS_TOPIC_PARAMETER);
   m_pub_contacts = m_node_handle->advertise<Contacts>(topic, 1, true);
-  gzlog << PLUGIN_NAME << ": publishing contacts on ROS topic " << topic << endl;
+  gzlog << PLUGIN_NAME << ": reporting contacts on ROS topic " << topic << endl;
+
+  gzlog << PLUGIN_NAME << ": successfully loaded!" << endl;
 }
 
 void ContactSensorPlugin::onUpdate()
 {
   if (m_parent_sensor->GetCollisionCount() < 0)
     return;
-  auto target_name = m_parent_sensor->GetCollisionName(0);
+  const auto target_name = m_parent_sensor->GetCollisionName(0);
   set<string> current_contacts;
   for (auto const &contact : m_parent_sensor->Contacts(target_name)) {
     // collision1 is always the collider, not the terrain
@@ -64,7 +70,10 @@ void ContactSensorPlugin::onUpdate()
       continue;
     const auto link = contact.second.collision1->GetLink();
     const auto model = contact.second.collision1->GetModel();
-    current_contacts.emplace(model->GetName() + "::" + link->GetName());
+    const auto link_name = model->GetName() + "::" + link->GetName();
+    if (m_report_only_set && !regex_match(link_name, m_report_only))
+      continue;
+    current_contacts.emplace(link_name);
   }
 
   // publish only if the list of links in contact with sensor has changed
@@ -72,7 +81,7 @@ void ContactSensorPlugin::onUpdate()
     m_links_in_contact = current_contacts;
     // publish list of all contacts
     Contacts msg;
-    msg.names = vector(m_links_in_contact.begin(), m_links_in_contact.end());
+    msg.link_names = vector(begin(m_links_in_contact), end(m_links_in_contact));
     m_pub_contacts.publish(msg);
   }
 
