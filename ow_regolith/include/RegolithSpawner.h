@@ -43,6 +43,9 @@ public:
   // NOTE: this must be called before any other functions
   bool initialize();
 
+  // clear all forces acting on particles and reset tracked volume
+  void reset();
+
   // service callback for spawnRegolithInScoop
   bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
                         ow_regolith::SpawnRegolithResponse &response);
@@ -66,11 +69,6 @@ public:
   void onDigCircularResultMsg(const ow_lander::DigCircularActionResult::ConstPtr &msg);
 
 private:
-
-  bool isRegolith(const std::string &name);
-
-  void resetTrackedVolume();
-
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
@@ -80,9 +78,9 @@ private:
   ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
 
-  ros::Subscriber m_mod_diff_visual;
-  ros::Subscriber m_dig_linear_result;
-  ros::Subscriber m_dig_circular_result;
+  ros::Subscriber m_sub_mod_diff_visual;
+  ros::Subscriber m_sub_dig_linear_result;
+  ros::Subscriber m_sub_dig_circular_result;
 
   // model pool
   std::unique_ptr<ModelPool> m_pool;
@@ -92,6 +90,9 @@ private:
   tf::Point m_volume_center;
   // orientation of scoop in Gazebo
   tf::Quaternion m_scoop_orientation;
+
+  // magnitude of force that keeps regolith in the scoop while digging
+  float m_psuedo_force_mag;
 
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;

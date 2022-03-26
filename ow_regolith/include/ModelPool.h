@@ -28,26 +28,39 @@ public:
 
   ~ModelPool() = default;
 
+  bool connectServices();
+
   bool setModel(std::string const &model_uri, std::string const &model_prefix);
 
-  // spawn the regolith model just above the tip of the scoop and apply a force
-  // that keeps it in the scoop during the remainder of scooping operation
-  bool spawn(tf::Point position, std::string reference_frame);
+  inline float getModelMass() {
+    return m_model_mass;
+  }
 
+  // spawn a model
+  std::string spawn(tf::Point position, std::string reference_frame);
+
+  // remove a model within the pool by link name
   std::vector<std::string> remove(const std::vector<std::string> &link_names = {});
+
+  bool applyForce(std::string link_name, tf::Vector3 force,
+                  ros::Duration apply_for);
+
+  bool clearAllForces();
 
 private:
   bool removeModel(gazebo_msgs::DeleteModel &msg);
 
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
-  ServiceClientFacade m_gz_spawn_model, m_gz_delete_model;
+  ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
+                      m_gz_apply_wrench, m_gz_clear_wrench;
 
   // regolith model that spawns in the scoop when digging occurs
   std::string m_model_uri;
   std::string m_model_sdf;
   std::string m_model_body_name;
   std::string m_model_tag;
+  float m_model_mass;
 
   // keeps track of all regolith models and links present in the simulation
   struct Model {
