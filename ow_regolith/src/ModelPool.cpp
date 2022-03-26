@@ -6,6 +6,8 @@
 #include <ServiceClientFacade.h>
 
 #include <gazebo_msgs/SpawnModel.h>
+#include <gazebo_msgs/ApplyBodyWrench.h>
+#include <gazebo_msgs/BodyRequest.h>
 
 #include <ModelPool.h>
 
@@ -19,70 +21,65 @@ using namespace std;
 using tf::pointMsgToTF;
 using tf::pointTFToMsg;
 using tf::Point;
+using tf::Vector3;
 
 // service paths used in class
-const static string SRV_SPAWN_MODEL     = "/gazebo/spawn_sdf_model";
-const static string SRV_DELETE_MODEL    = "/gazebo/delete_model";
+const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
+const static string SRV_DELETE_MODEL      = "/gazebo/delete_model";
+const static string SRV_APPLY_BODY_WRENCH = "/gazebo/apply_body_wrench";
+const static string SRV_CLEAR_BODY_WRENCH = "/gazebo/clear_body_wrenches";
+const static string SRV_GET_PHYS_PROPS    = "/gazebo/get_physics_properties";
 
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
+
+bool ModelPool::connectServices()
+{
+  // connect to all ROS services
+  return
+    m_gz_spawn_model.connect<SpawnModel>(
+      m_node_handle, SRV_SPAWN_MODEL, SERVICE_CONNECT_TIMEOUT, true) &&
+    m_gz_delete_model.connect<DeleteModel>(
+      m_node_handle, SRV_DELETE_MODEL, SERVICE_CONNECT_TIMEOUT, true) &&
+    m_gz_apply_wrench.connect<ApplyBodyWrench>(
+      m_node_handle, SRV_APPLY_BODY_WRENCH, SERVICE_CONNECT_TIMEOUT, true) &&
+    m_gz_clear_wrench.connect<BodyRequest>(
+      m_node_handle, SRV_CLEAR_BODY_WRENCH, SERVICE_CONNECT_TIMEOUT, true);
+}
 
 bool ModelPool::setModel(string const &model_uri, string const &model_tag)
 {
   // use local variables for data and only set members if all calls succeed
   string model_sdf;
   string model_body_name;
+  float model_mass;
 
   // load SDF model
   if (!getSdfFromUri(model_uri, model_sdf)) {
-    ROS_ERROR("Failed to load SDF for regolith model");
+    ROS_ERROR("Failed to load model SDF");
     return false;
   }
 
   // parse as SDF object to query properties about the model
   auto sdf = parseSdf(model_sdf);
   if (!getModelLinkName(sdf, model_body_name)) {
-    ROS_ERROR("Failed to acquire regolith model SDF parameters");
+    ROS_ERROR("Failed to acquire model name");
     return false;
   }
-
-  // connect to all ROS services
-  // check if already connected in-case this is a re-call of setModel
-  if (m_gz_spawn_model.isConnected() || !m_gz_spawn_model.connect<SpawnModel>(
-        m_node_handle, SRV_SPAWN_MODEL, SERVICE_CONNECT_TIMEOUT, true))
+  if (!getModelLinkMass(sdf, model_mass)) {
+    ROS_ERROR("Failed to acquire model mass");
     return false;
-
-  if (m_gz_delete_model.isConnected() || !m_gz_delete_model.connect<DeleteModel>(
-        m_node_handle, SRV_DELETE_MODEL, SERVICE_CONNECT_TIMEOUT, true))
-    return false;
-
-  // set the maximum scoop inclination that the psuedo force can counteract
-  // NOTE: do not use a value that makes cosine zero!
-  // constexpr auto MAX_SCOOP_INCLINATION_DEG = 70.0f; // degrees
-  // constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
-  // constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
-  // query gazebo for the gravity vector
-  // ServiceClientFacade gz_get_phys_props;
-  // GetPhysicsProperties phys_prop_msg;
-  // if (!gz_get_phys_props.connect<GetPhysicsProperties>(
-  //       m_node_handle, SRV_GET_PHYS_PROPS, SERVICE_CONNECT_TIMEOUT, false) ||
-  //     !gz_get_phys_props.call(phys_prop_msg)) {
-  //   ROS_ERROR("Failed to connect Gazebo for gravity vector");
-  //   return false;
-  // }
-  // Vector3 gravity;
-  // vector3MsgToTF(phys_prop_msg.response.gravity, gravity);
-  // // psuedo force magnitude = model's weight X weight factor
-  // m_psuedo_force_mag = mass * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
+  }
 
   m_model_uri = model_uri;
   m_model_sdf = model_sdf;
   m_model_body_name = model_body_name;
   m_model_tag = model_tag;
+  m_model_mass = model_mass;
 
   return true;
 }
 
-bool ModelPool::spawn(Point position, string reference_frame)
+string ModelPool::spawn(Point position, string reference_frame)
 {
   ROS_INFO("Spawning regolith");
 
@@ -100,13 +97,13 @@ bool ModelPool::spawn(Point position, string reference_frame)
   pointTFToMsg(position, spawn_msg.request.initial_pose.position);
 
   if (!m_gz_spawn_model.call(spawn_msg))
-    return false;
+    return "";
 
   m_active_models.emplace(link_name.str(),
     Model{model_name.str(), m_model_body_name, false}
   );
 
-  return true;
+  return link_name.str();
 }
 
 vector<string> ModelPool::remove(const vector<string> &link_names)
@@ -142,6 +139,30 @@ vector<string> ModelPool::remove(const vector<string> &link_names)
     }
   }
   return not_removed;
+}
+
+bool ModelPool::applyForce(string link_name, Vector3 force,
+                           ros::Duration apply_for) {
+  ApplyBodyWrench wrench_msg;
+  wrench_msg.request.body_name = link_name;
+  vector3TFToMsg(force, wrench_msg.request.wrench.force);
+  wrench_msg.request.duration = apply_for;
+
+  return m_gz_apply_wrench.call(wrench_msg);
+}
+
+bool ModelPool::clearAllForces()
+{
+  bool service_call_error_occurred = false;
+  BodyRequest msg;
+  for (const auto &m : m_active_models) {
+    msg.request.body_name = m.first;
+    if (!m_gz_clear_wrench.call(msg)) {
+      ROS_WARN("Failed to clear force on %s", m.first.c_str());
+      service_call_error_occurred = true;
+    }
+  }
+  return !service_call_error_occurred;
 }
 
 bool ModelPool::removeModel(DeleteModel &msg)

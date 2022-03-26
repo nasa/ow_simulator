@@ -103,7 +103,7 @@ bool ServiceClientFacade::call(T &message)
     ROS_ERROR("Failed to call service %s", m_client.getService().c_str());
     return false;
   }
-  return message.response.success;
+  return true;
 };
 
 template <typename T>
