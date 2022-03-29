@@ -85,7 +85,8 @@ class UnstowActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -164,7 +165,7 @@ class StowActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -317,7 +318,7 @@ class GrindActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -444,7 +445,7 @@ class GuardedMoveActionServer(object):
                 start_time)/self._timeout
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self.ground_detector.ground_position.x
@@ -542,7 +543,10 @@ class DigCircularActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        
+        if trajectory_async_executer.get_state() == 2:
+            success = False
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -623,7 +627,7 @@ class DigLinearActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -700,7 +704,7 @@ class DiscardActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -778,7 +782,7 @@ class DeliverActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait()
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
 
         if success:
             self._result.final.x = self._fdbk.current.x
