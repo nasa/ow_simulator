@@ -72,6 +72,7 @@ class UnstowActionServer(object):
                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
+            rospy.loginfo('Unstow was stopped.')
             return
 
         # Record start time
@@ -210,6 +211,7 @@ class StopActionServer(object):
         trajectory_async_executer.stop()
 
         rospy.loginfo('%s: Succeeded' % self._action_name)
+        rospy.loginfo('Current Arm Action was stopped.')
         self._server.set_succeeded(self._result)
 
 
