@@ -38,9 +38,6 @@ public:
 
   void faultsConfigCb(ow_faults_injection::FaultsConfig& faults, uint32_t level);
 
-  //arm
-  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
-
 private:
   
   ////////// functions
