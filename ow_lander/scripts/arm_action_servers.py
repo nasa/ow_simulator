@@ -6,6 +6,7 @@
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
@@ -85,7 +86,7 @@ class UnstowActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
         
 
         if success:
@@ -165,7 +166,7 @@ class StowActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -318,7 +319,7 @@ class GrindActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -445,7 +446,7 @@ class GuardedMoveActionServer(object):
                 start_time)/self._timeout
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self.ground_detector.ground_position.x
@@ -543,10 +544,7 @@ class DigCircularActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
-        
-        if trajectory_async_executer.get_state() == 2:
-            success = False
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -627,7 +625,7 @@ class DigLinearActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -704,7 +702,7 @@ class DiscardActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -782,7 +780,7 @@ class DeliverActionServer(object):
             self._update_feedback()
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != 2
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
             self._result.final.x = self._fdbk.current.x

@@ -6,6 +6,7 @@
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from ow_faults_detection.msg import SystemFaults
 
@@ -91,7 +92,7 @@ class TrajectoryAsyncExecuter:
         Stops the execution of the last trajectory submitted for executoin
         """
         action_state = self.get_state()
-        if self._connected and action_state == 1:
+        if self._connected and action_state == GoalStatus.ACTIVE:
             self._client.cancel_goal()
 
     def wait(self, timeout=0):
