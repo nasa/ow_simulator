@@ -16,6 +16,7 @@
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 import ow_lander.msg
 import argparse
 from guarded_move_action_client import print_arguments
@@ -52,7 +53,10 @@ def deliver_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()
+    if client.get_state() == GoalStatus.ABORTED:
+        return ('failed')
+    else: 
+        return client.get_result()
 
 
 if __name__ == '__main__':

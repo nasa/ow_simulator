@@ -6,11 +6,12 @@
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 import ow_lander.msg
 import argparse
 from guarded_move_action_client import print_arguments
 
-def unstow_client():
+def stow_client():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
@@ -30,14 +31,18 @@ def unstow_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()
+    
+    if client.get_state() == GoalStatus.ABORTED:
+        return ('failed')
+    else: 
+        return client.get_result()
 
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the StowActionClient can
         # publish and subscribe over ROS.
         rospy.init_node('stow_client_py')
-        result = unstow_client()
+        result = stow_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
         rospy.logerror("program interrupted before completion")
