@@ -44,7 +44,7 @@ def discard_client():
 
     # Prints out the result of executing the action
     if client.get_state() == GoalStatus.ABORTED:
-        return ('failed')
+        return ('aborted')
     else: 
         return client.get_result()
 

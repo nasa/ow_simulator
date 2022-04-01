@@ -32,7 +32,7 @@ def unstow_client():
 
     # Prints out the result of executing the action
     if client.get_state() == GoalStatus.ABORTED:
-        return ('failed')
+        return ('aborted')
     else: 
         return client.get_result()
 
@@ -44,4 +44,4 @@ if __name__ == '__main__':
         result = unstow_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        rospy.logerror("program interrupted before completion")
+        rospy.logerror("Program interrupted before completion.")
