@@ -11,12 +11,9 @@
         <mass>0.3769911184307752</mass>
         <!-- Set high moments to "disable" rotation -->
         <inertia>
-          <ixx>1e3</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1e3</iyy>
-          <iyz>0</iyz>
-          <izz>1e3</izz>
+          <ixx>1.5e-02</ixx>
+          <iyy>1.5e-02</iyy>
+          <izz>1.5e-02</izz>
         </inertia>
       </inertial>
 
@@ -27,9 +24,6 @@
           </sphere>
         </geometry>
         <surface>
-          <bounce>
-            <restitution_coefficient>0.0</restitution_coefficient>
-          </bounce>
           <contact>
             <poissons_ratio>0.36</poissons_ratio>
           </contact>

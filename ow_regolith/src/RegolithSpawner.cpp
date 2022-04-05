@@ -111,7 +111,7 @@ bool RegolithSpawner::initialize()
 
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
-  constexpr auto MAX_SCOOP_INCLINATION_DEG = 70.0f; // degrees
+  constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0f; // degrees
   constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
   constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
   // query gazebo for the gravity vector
