@@ -2,6 +2,9 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// ModelPool enables rapid spawning and deletion of multiple instances of a
+// model in gazebo. It can also apply forces to the models it has spawned.
+
 #include <string>
 #include <vector>
 #include <unordered_map>
