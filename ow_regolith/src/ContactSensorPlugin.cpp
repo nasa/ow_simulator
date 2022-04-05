@@ -14,7 +14,8 @@ using namespace ow_regolith;
 using namespace ros;
 using namespace gazebo;
 
-using namespace std;
+using std::string, std::set, std::vector, std::bind, std::dynamic_pointer_cast,
+      std::endl, std::regex_match, std::begin, std::end, std::regex;
 
 const static string NODE_PREFIX = "contact_sensor_";
 
@@ -29,11 +30,11 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 {
   // connnect parent sensor update signal to update handler
   m_parent_sensor =
-    std::dynamic_pointer_cast<sensors::ContactSensor>(sensor);
+    dynamic_pointer_cast<sensors::ContactSensor>(sensor);
   if (!m_parent_sensor)
     gzthrow(PLUGIN_NAME << ": requires a sensor of type conatact as a parent");
   m_update_connection = m_parent_sensor->ConnectUpdated(
-    std::bind(&ContactSensorPlugin::onUpdate, this)
+    bind(&ContactSensorPlugin::onUpdate, this)
   );
   m_parent_sensor->SetActive(true);
 

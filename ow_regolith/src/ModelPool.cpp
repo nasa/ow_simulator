@@ -16,12 +16,10 @@ using namespace ow_regolith;
 using namespace gazebo_msgs;
 using namespace sdf_utility;
 
-using namespace std;
+using std::string, std::vector, std::begin, std::end, std::stringstream,
+      std::out_of_range;
 
-using tf::pointMsgToTF;
-using tf::pointTFToMsg;
-using tf::Point;
-using tf::Vector3;
+using tf::pointMsgToTF, tf::pointTFToMsg, tf::Point, tf::Vector3;
 
 // service paths used in class
 const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
