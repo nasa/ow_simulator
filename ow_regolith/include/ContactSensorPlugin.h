@@ -2,6 +2,10 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// ContactSensorPlugin is a Gazebo sensor plugin that publishes the names of any
+// links actively in contact with the collision object the sensor plugin has
+// been attached to.
+
 #ifndef TERRAIN_CONTACT_PLUGIN_H
 #define TERRAIN_CONTACT_PLUGIN_H
 
