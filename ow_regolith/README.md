@@ -61,10 +61,6 @@ forces on the arm.
 - ROS services arm activities are not supported by this node, and it will not 
 work properly if the user calls either the dig linear, dig circular, or delivery
 ROS service.
-- While sample is in the scoop you may see the following error flood the console
-```ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)```
-We're still looking into how to avoid or suppress this message. For now it just
-has to be ignored.
 
 ## Usage
 
@@ -91,7 +87,12 @@ consecutively spawned models colliding with each other.
 should be spawned each time the `spawn_volume_threshold` is reached.
 
 ### ContactSensorPlugin
-TODO: fill this out
+The ContactSensorPlugin reports links that come into contact with whatever
+collision model is assigned to it in the collision parameter of `<contact>`.
+This plugin is used to enable the regolith node to remove regolith particles
+that come into contact with the terrain. It can be implemented inside of a
+`<link>` of a model.sdf. Here's an example of how it is implemented in the
+Europa worlds.
 ```xml
 <sensor name="contact_sensor" type="contact">
   <contact>
@@ -99,9 +100,17 @@ TODO: fill this out
   </contact>
   <plugin name='terrain' filename='libContactSensorPlugin.so'>
     <topic>/ow_regolith/contacts_terrain</topic>
+    <report_only>regolith_\d*.*</report_only>
   </plugin>
 </sensor>
 ```
+#### Parameters
+##### topic
+This will be the topic on which the list of link names currently in contact with
+the collision object are published.
+##### report_only
+This is a regex pattern. Any link name that does not match this pattern will
+not be reported.
 
 ### ROS Services
 
