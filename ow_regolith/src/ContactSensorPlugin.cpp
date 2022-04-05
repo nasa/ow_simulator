@@ -25,8 +25,7 @@ const static string PARAMETER_REPORT_ONLY = "report_only";
 
 GZ_REGISTER_SENSOR_PLUGIN(ContactSensorPlugin)
 
-void ContactSensorPlugin::Load(sensors::SensorPtr sensor,
-                                 sdf::ElementPtr sdf)
+void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 {
   // connnect parent sensor update signal to update handler
   m_parent_sensor =

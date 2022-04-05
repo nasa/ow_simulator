@@ -321,8 +321,6 @@ class TerrainInteraction(unittest.TestCase):
                                    -0.21354780470240303,
                                    -6.351096861727068)
 
-    REGOLITH_CLEANUP_WAIT = 5.0 # seconds
-
     deliver_result = self._test_action(
       'Deliver',
       ow_lander.msg.DeliverAction,
@@ -335,12 +333,7 @@ class TerrainInteraction(unittest.TestCase):
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
 
-    # verify regolith is removed from the scene following deliver
-    rospy.sleep(REGOLITH_CLEANUP_WAIT)
-    self._assert_regolith_not_present(
-      "Regolith models were not cleaned up %0.1fs after deliver"
-        % REGOLITH_CLEANUP_WAIT
-    )
+  # TODO: add test_04_ingest_smaple
 
 if __name__ == '__main__':
   import rostest
