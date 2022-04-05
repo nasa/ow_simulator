@@ -11,12 +11,9 @@
 #include <sdf_utility.h>
 
 using namespace sdf;
+using namespace sdf_utility;
 
-using std::string;
-using std::ifstream;
-using std::stringstream;
-
-using sdf_utility::getModelLink;
+using std::string, std::ifstream, std::stringstream;
 
 bool sdf_utility::getSdfFromUri(const string &uri, string &out_sdf_text) 
 {

@@ -21,14 +21,18 @@ using namespace ow_lander;
 
 using namespace sensor_msgs;
 using namespace cv_bridge;
-using namespace std;
 
-using namespace tf;
+using namespace std::literals::chrono_literals;
 
-using gazebo_msgs::LinkStates;
-using gazebo_msgs::GetPhysicsProperties;
-using std::chrono::duration_cast;
-using std::chrono::seconds;
+using std::string, std::begin, std::end, std::distance, std::find,
+      std::stringstream, std::make_unique;
+
+using std::chrono::duration_cast, std::chrono::seconds;
+
+using tf::Vector3, tf::Point, tf::vector3MsgToTF, tf::pointMsgToTF,
+      tf::quatRotate, tf::quaternionMsgToTF, tf::tfDot;
+
+using gazebo_msgs::LinkStates, gazebo_msgs::GetPhysicsProperties;
 
 // service paths served by this class
 const static string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
@@ -90,17 +94,17 @@ bool RegolithSpawner::initialize()
   // advertise services served by this class
   m_srv_spawn_regolith = m_node_handle->advertiseService(
     SRV_SPAWN_REGOLITH, &RegolithSpawner::spawnRegolithSrv, this);
-  m_srv_remove_all_regolith     = m_node_handle->advertiseService(
+  m_srv_remove_all_regolith = m_node_handle->advertiseService(
     SRV_REMOVE_ALL_REGOLITH, &RegolithSpawner::removeRegolithSrv, this);
 
   // subscribe to all ROS topics
-  m_sub_link_states     = m_node_handle->subscribe(
+  m_sub_link_states = m_node_handle->subscribe(
     TOPIC_LINK_STATES, 1, &RegolithSpawner::onLinkStatesMsg, this);
   m_sub_terrain_contact = m_node_handle->subscribe(
     TOPIC_TERRAIN_CONTACT, 1, &RegolithSpawner::onTerrainContact, this);
-  m_sub_mod_diff_visual     = m_node_handle->subscribe(
+  m_sub_mod_diff_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::onModDiffVisualMsg, this);
-  m_sub_dig_linear_result   = m_node_handle->subscribe(
+  m_sub_dig_linear_result = m_node_handle->subscribe(
     TOPIC_DIG_LINEAR_RESULT, 1, &RegolithSpawner::onDigLinearResultMsg, this);
   m_sub_dig_circular_result = m_node_handle->subscribe(
     TOPIC_DIG_CIRCULAR_RESULT, 1, &RegolithSpawner::onDigCircularResultMsg, this);
