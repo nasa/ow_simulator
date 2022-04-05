@@ -115,30 +115,9 @@ regolith model at a `position` relative to `reference_frame`.
 - `ow_regolith/remove_all_regolith` will delete all regolith particles from the
 Gazebo world.
 
-## Generating Custom Regolith Particles
-
-This package contains the directory `rsdf` which has three files that assist
-in the creation of custom regolith particles. The files contain syntax used by
-Ruby Templating, which allows for the easy generation an SDF file similar to the
-default regolith model, `ball_icefrag_2cm`, that this package comes with.
-
-The following three files--`ball_icefrag.rsdf`, `ball_sand.rsdf`, and
-`ball_snow.rsdf`--correspond to granular material properties of ice fragments, 
-sand, and snow, respectively. The files can also be copied, and their 
-parameters modified by the user to create a new custom material.
-
-In order to use an existing RSDF file to create an SDF file the describes a 
-sphere of a custom diameter, call the command
-```erb diameter=0.001 ball_icefrag.rsdf > model.sdf```
-where 0.001 represents a diameter of 1 cm, and `ball_icefrag.rsdf` can be 
-swapped out for whichever RSDF file you wish you use. This command will create 
-the file `model.sdf` in your working directory. See the next section on how to 
-include it in the Gazebo model database, so it can be used by the 
-`regolith_node`.
-
 ### Adding Models to Gazebo Model Database
-Any new models generated have to be added to the Gazebo model database by 
-following these steps:
+New regolith models have to be added to the Gazebo model database before the
+regolith node can spawn them. Do so by following these steps:
 1. Make a new folder with a unique name in the `models` directory of this 
 package.
 2. Save the SDF file as `model.sdf` in the newly created folder
