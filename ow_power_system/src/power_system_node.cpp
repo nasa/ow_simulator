@@ -15,9 +15,9 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
-const string LOW_SOC_FAULT_NAME = "low_state_of_charge_power_failure";
-const string ICL_FAULT_NAME = "instantaneous_capacity_loss_power_failure";
-const string THERMAL_FAULT_NAME = "thermal_power_failure";
+const string FAULT_NAME_LOW_SOC = "low_state_of_charge_power_failure";
+const string FAULT_NAME_ICL     = "instantaneous_capacity_loss_power_failure";
+const string FAULT_NAME_THERMAL = "thermal_power_failure";
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile
@@ -30,15 +30,19 @@ const float GSAP_RATE_HZ = 0.5;
 // future, so hardcoding this for now.
 const int PROFILE_INCREMENT = 2;
 
+// Stand-in for power drawn by continuously-running systems.
 const double BASELINE_WATTAGE = 1.0;
+
+// The prognoser doesn't handle wattage much higher than this: it
+// produces erratic output.
 const double MAX_GSAP_INPUT_WATTS = 30.0;
 
 PowerSystemNode::PowerSystemNode() :
   m_power_values(m_moving_average_window, 0)
 {
-  m_fault_profile_exhausted[LOW_SOC_FAULT_NAME] = false;
-  m_fault_profile_exhausted[ICL_FAULT_NAME] = false;
-  m_fault_profile_exhausted[THERMAL_FAULT_NAME] = false;
+  m_fault_profile_exhausted[FAULT_NAME_LOW_SOC] = false;
+  m_fault_profile_exhausted[FAULT_NAME_ICL] = false;
+  m_fault_profile_exhausted[FAULT_NAME_THERMAL] = false;
 }
 
 bool PowerSystemNode::Initialize()
@@ -273,19 +277,19 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  injectFault(LOW_SOC_FAULT_NAME,
+  injectFault(FAULT_NAME_LOW_SOC,
 	      m_low_state_of_charge_power_failure_activated,
               m_low_state_of_charge_power_failure_sequence,
 	      m_low_state_of_charge_power_failure_sequence_index,
 	      power, voltage, temperature);
 
-  injectFault(ICL_FAULT_NAME,
+  injectFault(FAULT_NAME_ICL,
 	      m_instantaneous_capacity_loss_power_failure_activated,
               m_instantaneous_capacity_loss_power_failure_sequence,
               m_instantaneous_capacity_loss_power_failure_sequence_index,
 	      power, voltage, temperature);
 
-  injectFault(THERMAL_FAULT_NAME,
+  injectFault(FAULT_NAME_THERMAL,
 	      m_thermal_power_failure_activated,
 	      m_thermal_power_failure_sequence,
               m_thermal_power_failure_sequence_index,
@@ -349,12 +353,12 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
   battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
 }
 
-void PowerSystemNode::powerCb(double electrical_power)
+void PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate = generateTemperatureEstimate();
   double voltage_estimate = generateVoltageEstimate();
-  double adjusted_wattage = std::max(electrical_power, BASELINE_WATTAGE);
+  double adjusted_wattage = electrical_power + BASELINE_WATTAGE;
   injectFaults(adjusted_wattage, voltage_estimate, temperature_estimate);
   auto current_data = composePrognoserData(adjusted_wattage,
                                            voltage_estimate,
@@ -394,7 +398,7 @@ void PowerSystemNode::Run()
     {
       m_trigger_processing_new_power_batch = false;
       m_processing_power_batch = true;
-      powerCb(m_mechanical_power_to_be_processed / m_efficiency);
+      runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
       m_processing_power_batch = false;
     }
 

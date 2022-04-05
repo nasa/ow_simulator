@@ -43,7 +43,7 @@ private:
                       std_msgs::Float64& soc_msg,
                       std_msgs::Int16& rul_msg,
                       std_msgs::Float64& battery_temperature_msg);
-  void powerCb(double electrical_power);
+  void runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
@@ -53,7 +53,9 @@ private:
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  static constexpr int m_moving_average_window = 10;
+  // GSAP rate of .5 Hz times /joint_states publish rate of 50 Hz.
+  static constexpr int m_moving_average_window = 25;
+  
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
@@ -76,7 +78,7 @@ private:
   double m_voltage_range = 0.1;         // [V]
   double m_efficiency = 0.9;            // default 90% efficiency
 
-  // Utilize a Mersenne Twister pesduo random generation
+  // Utilize a Mersenne Twister pseudo-random generation.
   std::mt19937 m_random_generator;
 
   std::uniform_real_distribution<double> m_temperature_dist;
