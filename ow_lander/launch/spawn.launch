@@ -78,7 +78,7 @@
 
   <include file="$(find ow_lander)/launch/move_group.launch">
     <arg name="load_robot_description" value="false"/>
-    <arg name="allow_trajectory_execution" value="true"/>
+    <arg name="allow_trajectory_execution" value="false"/>
     <arg name="fake_execution" value="false"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
@@ -96,6 +96,6 @@
   
   <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />  
-  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " output="screen"/>
   <node pkg="ow_lander" name="AntennaPanTiltAction" type="antenna_pan_tilt_action_server.py" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>

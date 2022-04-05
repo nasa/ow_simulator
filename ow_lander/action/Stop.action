@@ -1,0 +1,8 @@
+#goal definition
+std_msgs/Empty goal
+---
+# result
+geometry_msgs/Point final     # arm final position
+---
+# feedback
+geometry_msgs/Point current   # arm current position
