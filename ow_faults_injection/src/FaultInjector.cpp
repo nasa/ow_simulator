@@ -72,39 +72,6 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   // checking rqt
   checkCamFaults();
 
-  //ant faults
-  if (m_faults.ant_pan_joint_locked_failure && findJointIndex(J_ANT_PAN, index)){
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-  if ( m_faults.ant_tilt_joint_locked_failure && findJointIndex(J_ANT_TILT, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
-  //arm faults
-  if (m_faults.shou_yaw_joint_locked_failure && findJointIndex(J_SHOU_YAW, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
-  if (m_faults.shou_pitch_joint_locked_failure && findJointIndex(J_SHOU_PITCH, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
-  if (m_faults.prox_pitch_joint_locked_failure && findJointIndex(J_PROX_PITCH, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
-  if (m_faults.dist_pitch_joint_locked_failure && findJointIndex(J_DIST_PITCH, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
-  if (m_faults.hand_yaw_joint_locked_failure && findJointIndex(J_HAND_YAW, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-  
-  if (m_faults.scoop_yaw_joint_locked_failure && findJointIndex(J_SCOOP_YAW, index)) {
-    output.position[index]  = FAULT_ZERO_TELEMETRY;
-  }
-
   m_joint_state_remapped_pub.publish(output);
 }
 
