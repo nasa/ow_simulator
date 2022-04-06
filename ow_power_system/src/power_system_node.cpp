@@ -267,7 +267,14 @@ void PowerSystemNode::injectFault (const string& fault_name,
     else index += PROFILE_INCREMENT;
 
     auto data = sequence[index];
-    wattage = std::min (wattage + data[MessageId::Watts], MAX_GSAP_INPUT_WATTS);
+    double new_wattage = wattage + data[MessageId::Watts];
+    if (new_wattage > MAX_GSAP_INPUT_WATTS) {
+      ROS_WARN_STREAM(fault_name
+                      << ": profile gives excessive wattage input for GSAP, "
+                      << new_wattage << "W. Capping GSAP input at "
+                      << MAX_GSAP_INPUT_WATTS << "W.");
+    }
+    wattage = std::min (new_wattage, MAX_GSAP_INPUT_WATTS);
     voltage += data[MessageId::Volts];
     temperature += data[MessageId::Centigrade];
   }
