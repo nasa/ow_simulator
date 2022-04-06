@@ -273,8 +273,9 @@ void PowerSystemNode::injectFault (const string& fault_name,
                       << ": profile gives excessive wattage input for GSAP, "
                       << new_wattage << "W. Capping GSAP input at "
                       << MAX_GSAP_INPUT_WATTS << "W.");
+      wattage = MAX_GSAP_INPUT_WATTS;
     }
-    wattage = std::min (new_wattage, MAX_GSAP_INPUT_WATTS);
+    else wattage = new_wattage;
     voltage += data[MessageId::Volts];
     temperature += data[MessageId::Centigrade];
   }
