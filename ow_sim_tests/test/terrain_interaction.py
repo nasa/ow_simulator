@@ -20,6 +20,7 @@ PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
 
 GROUND_POSITION = -0.155
+DISCARD_POSITION = Point(1.5, 0.8, 0.65) # default for discard action
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
 SAMPLE_DOCK_LINK_NAME = 'lander::lander_sample_dock_link'
@@ -102,7 +103,7 @@ class TerrainInteraction(unittest.TestCase):
   @param msg: Assert message
   """
   def _assert_regolith_not_present(self, msg="Regolith models spawned at wrong time!"):
-    # Verify no regolith models spawn during grind action
+    # Verify no regolith models are present
     self.assertFalse(
       any([self._is_regolith(name) for name in self._gz_link_names]),
       msg
@@ -170,14 +171,25 @@ class TerrainInteraction(unittest.TestCase):
   """
   Asserts regolith remains in scoop until it arrives at the sample dock
   """
-  def _assert_regolith_transports_and_delivers(self):
-    # while scoop is transitioning to sample dock ensure reoglith remains in
+  def _assert_regolith_transports_and_delivers_to_dock(self):
+    # while scoop is transitioning to sample dock ensure reoglith remains inside
     scoop_position = self._get_link_position(SCOOP_LINK_NAME)
     dock_position = self._get_link_position(SAMPLE_DOCK_LINK_NAME)
     if scoop_position is None or dock_position is None:
       return
     # check if scoop is still transitioning to sample dock
     if distance_flat_xy(scoop_position, dock_position) > 0.2:
+      self._assert_scoop_regolith_containment(True)
+
+  """
+  Asserts regolith remains in scoop until it arrives at the discard position
+  """
+  def _assert_regolith_transports_and_discards(self):
+    scoop_position = self._get_link_position(SCOOP_LINK_NAME)
+    if scoop_position is None:
+      return
+    # check if scoop is still transitioning to discard position
+    if distance_flat_xy(scoop_position, DISCARD_POSITION) > 0.4:
       self._assert_scoop_regolith_containment(True)
 
   """
@@ -310,11 +322,63 @@ class TerrainInteraction(unittest.TestCase):
     self._assert_regolith_present()
 
   """
+  Discards material over the default discard position and asserts it leaves
+  scoop and is cleaned up shortly after hitting the terrain.
+  """
+  def test_03_discard(self):
+
+    DISCARD_MAX_DURATION = 50.0
+    DISCARD_EXPECTED_FINAL = Point(1.502458, 0.864295, -6.640796)
+    REGOLITH_CLEANUP_DELAY = 5.0 # seconds
+
+    discard_result = self._test_action(
+      'Discard',
+      ow_lander.msg.DiscardAction,
+      ow_lander.msg.DiscardGoal(),
+      DISCARD_MAX_DURATION,
+      DISCARD_EXPECTED_FINAL,
+      self._assert_regolith_transports_and_discards,
+      discard = DISCARD_POSITION
+    )
+
+    # assert regolith fell out of scoop following the discard action
+    self._assert_scoop_regolith_containment(False)
+
+    # assert regolith was cleaned up after contacting with the terrain
+    rospy.sleep(REGOLITH_CLEANUP_DELAY)
+    self._assert_regolith_not_present()
+
+  """
+  Dig for more material so we can then test delivery into the sample dock. This
+  digs non-parallel so that material is produced.
+  """
+  def test_04_dig_circular(self):
+
+    DIG_CIRCULAR_MAX_DURATION = 60.0
+    DIG_CIRCULAR_EXPECTED_FINAL = Point(1.649902, -0.121887, -7.322043)
+
+    dig_circular_result = self._test_action(
+      'DigCircular',
+      ow_lander.msg.DigCircularAction,
+      ow_lander.msg.DigCircularGoal(),
+      DIG_CIRCULAR_MAX_DURATION,
+      DIG_CIRCULAR_EXPECTED_FINAL,
+      self._assert_scoop_regolith_containment,
+      x_start         = 1.65,
+      y_start         = 0.0,
+      depth           = 0.01,
+      parallel        = False,
+      ground_position = GROUND_POSITION
+    )
+
+    self._assert_regolith_present()
+
+  """
   Tests a deliver action and asserts that regolith remains in the scoop until
   the final portion when it is dumped into the sample dock. Upon completion of
   the operation it also asserts that regolith models are deleted.
   """
-  def test_03_deliver(self):
+  def test_05_deliver(self):
 
     DELIVER_MAX_DURATION = 60.0
     DELIVER_EXPECTED_FINAL = Point(0.5562290134759807,
@@ -327,13 +391,13 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.DeliverGoal(),
       DELIVER_MAX_DURATION,
       DELIVER_EXPECTED_FINAL,
-      self._assert_regolith_transports_and_delivers
+      self._assert_regolith_transports_and_delivers_to_dock
     )
 
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
 
-  # TODO: add test_04_ingest_smaple
+# TODO: add test_06_ingest_smaple
 
 if __name__ == '__main__':
   import rostest
