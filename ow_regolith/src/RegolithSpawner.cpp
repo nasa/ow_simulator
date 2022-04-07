@@ -53,16 +53,16 @@ const static string REGOLITH_TAG = "regolith";
 const static string SCOOP_LINK_NAME       = "lander::l_scoop_tip";
 const static Vector3 SCOOP_FORWARD        = Vector3(1.0, 0.0, 0.0);
 const static Vector3 SCOOP_DOWNWARD       = Vector3(0.0, 0.0, 1.0);
+const static Vector3 SCOOP_SPAWN_OFFSET   = Vector3(0.0, 0.0, -0.05);
+const static double SCOOP_WIDTH           = 0.08; // meters
 
 const static Vector3 WORLD_DOWNWARD = Vector3(0.0, 0.0, -1.0);
-
-const static Vector3 AUTO_SPAWN_OFFSET = Point(0.0, 0.0, 0.03);
 
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
 RegolithSpawner::RegolithSpawner(const string &node_name)
-  : m_node_handle(new ros::NodeHandle(node_name)),
-    m_volume_displaced(0.0), m_volume_center(0.0, 0.0, 0.0)
+  : m_node_handle(new ros::NodeHandle(node_name)), m_volume_displaced(0.0),
+    m_spawn_offsets(1, SCOOP_SPAWN_OFFSET)
 {
   // do nothing
 }
@@ -74,11 +74,24 @@ bool RegolithSpawner::initialize()
     ROS_ERROR("Regolith node requires the spawn_volume_threshold parameter.");
     return false;
   }
-  string model_uri = "";
+  string model_uri;
   if (!m_node_handle->getParam("regolith_model_uri", model_uri)) {
     ROS_ERROR("Regolith node requires the regolith_model_uri parameter.");
     return false;
   }
+  double spawn_spacing;
+  if (m_node_handle->getParam("spawn_spacing", spawn_spacing)) {
+    for (int i = 1;
+         i < static_cast<int>(floor(SCOOP_WIDTH / (2 * spawn_spacing)));
+         ++i) {
+      // alternately populate both sides of the spawn offset
+      Vector3 adjustment(0, i * static_cast<float>(spawn_spacing), 0);
+      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET + adjustment);
+      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - adjustment);
+    }
+  }
+  // initialize offset selector
+  m_offset_selector = m_spawn_offsets.begin();
 
   m_pool = make_unique<ModelPool>(m_node_handle);
   if (!m_pool->connectServices()) {
@@ -204,8 +217,6 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
       const auto volume = -image_handle->image.at<float>(y, x) * pixel_area;
       const auto image_position = Point(pixel_width * x, pixel_height * y, 0) - image_corner_to_midpoint;
       m_volume_displaced += volume;
-      // position of the changed volume relative modification center
-      m_volume_center += volume * image_position;
     }
   }
 
@@ -213,22 +224,23 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
   pointMsgToTF(msg->position, world_position);
 
   if (m_volume_displaced >= m_spawn_threshold) {
-    // calculate weighted center of volume displacement in world coordinates
-    m_volume_center = m_volume_center / m_volume_displaced + world_position;
+    // select spawn offset
+    auto offset = *(m_offset_selector++);
+    if (m_offset_selector ==  m_spawn_offsets.end()) // wrap selector
+      m_offset_selector = m_spawn_offsets.begin();
     // spawn a regolith model
-    auto link_name = m_pool->spawn(m_volume_center + AUTO_SPAWN_OFFSET, "world");
+    auto link_name = m_pool->spawn(offset, SCOOP_LINK_NAME);
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
       return;
     }
-    // deduct threshold from tracked volume and recent volume center to zero
+    // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
-    m_volume_center = Point(0, 0, 0);
     // compute psuedo force direction from scoop orientation
     Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
     scooping_vec.setZ(0.0); // flatten against X-Y plane
     Vector3 pushback_force = -m_psuedo_force_mag * scooping_vec.normalize();
-    // Choose a long ros duration (1 year), to delay the disabling of wrench force
+    // choose a long ros duration (1 yr) to delay the disabling of wrench force
     constexpr auto one_year_in_seconds = duration_cast<seconds>(1h*24*365).count();
     if (!m_pool->applyForce(link_name, pushback_force,
                             ros::Duration(one_year_in_seconds))) {
@@ -244,7 +256,6 @@ void RegolithSpawner::reset()
     ROS_WARN("Failed to clear force on one or more regolith particles");
   // reset to avoid carrying over volume from one digging event to the next
   m_volume_displaced = 0.0;
-  m_volume_center = Vector3(0.0, 0.0, 0.0);
 }
 
 void RegolithSpawner::onDigLinearResultMsg(const DigLinearActionResult::ConstPtr &msg)

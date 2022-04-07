@@ -13,6 +13,8 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 
+#include <vector>
+
 #include <ServiceClientFacade.h>
 #include <ModelPool.h>
 
@@ -87,7 +89,8 @@ private:
 
   // sum of volume displaced since previous reoglith spawning
   double m_volume_displaced;
-  tf::Point m_volume_center;
+  std::vector<tf::Vector3> m_spawn_offsets;
+  std::vector<tf::Vector3>::const_iterator m_offset_selector;
   // orientation of scoop in Gazebo
   tf::Quaternion m_scoop_orientation;
 
