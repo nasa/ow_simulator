@@ -23,7 +23,7 @@ const string FAULT_NAME_THERMAL = "thermal_power_failure";
 // This might change to median SOC or RUL index or fixed percentile
 static constexpr int TEMPERATURE_INDEX = 1;
 
-const float GSAP_RATE_HZ = 0.5;
+const double GSAP_RATE_HZ = 0.5;
 
 // Equal to the current profile "rate" of 1Hz divided by the GSAP
 // rate.  These rates are not expected to change in the forseeable
@@ -33,17 +33,17 @@ const int PROFILE_INCREMENT = 2;
 // Stand-in for power drawn by continuously-running systems.
 const double BASELINE_WATTAGE = 1.0;
 
-// The prognoser doesn't handle wattage much higher than this: it
-// produces erratic output.
+// HACK ALERT.  The prognoser produced erratic/erroneous output when
+// given too high a power input.  This made-up value protects against
+// this, but is a temporary hack until a circuit breaker model is
+// added to the power system, and/or the multi-pack battery model is
+// implemented and can handle any envisioned power draw.
+//
 const double MAX_GSAP_INPUT_WATTS = 30.0;
 
 PowerSystemNode::PowerSystemNode() :
   m_power_values(m_moving_average_window, 0)
-{
-  m_fault_profile_exhausted[FAULT_NAME_LOW_SOC] = false;
-  m_fault_profile_exhausted[FAULT_NAME_ICL] = false;
-  m_fault_profile_exhausted[FAULT_NAME_THERMAL] = false;
-}
+{ }
 
 bool PowerSystemNode::Initialize()
 {
@@ -257,11 +257,9 @@ void PowerSystemNode::injectFault (const string& fault_name,
     // TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
     if (index + PROFILE_INCREMENT >= sequence.size()) {
-      if (! m_fault_profile_exhausted[fault_name]) {
-        ROS_WARN_STREAM(fault_name
-                        << ": reached end of fault profile, reusing last entry.");
-        m_fault_profile_exhausted[fault_name] = true;
-      }
+      ROS_WARN_STREAM_ONCE
+        (fault_name << ": reached end of fault profile, reusing last entry.");
+      // Probably unneeded, but makes index explicit.
       index = sequence.size() - 1;
     }
     else index += PROFILE_INCREMENT;

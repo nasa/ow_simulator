@@ -63,10 +63,6 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
-  // Did we reach the end of the given profile?
-  std::map<std::string, bool> m_fault_profile_exhausted;
-
-
   // main system configuration
   double m_initial_power = 0.0;         // This is probably always zero
   double m_initial_temperature = 20.0;  // 20.0 deg. C
