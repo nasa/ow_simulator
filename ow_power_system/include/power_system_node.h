@@ -55,7 +55,7 @@ private:
 
   // GSAP rate of .5 Hz times /joint_states publish rate of 50 Hz.
   static constexpr int m_moving_average_window = 25;
-  
+
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
@@ -63,7 +63,9 @@ private:
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
-  // main system configuration
+  // Main system configuration: these values are overriden by values
+  // in ../config/system.cfg.
+  
   double m_initial_power = 0.0;         // This is probably always zero
   double m_initial_temperature = 20.0;  // 20.0 deg. C
   double m_initial_voltage = 4.1;       // Volts
@@ -73,7 +75,20 @@ private:
   double m_base_voltage = 3.2;          // [V] estimate
   double m_voltage_range = 0.1;         // [V]
   double m_efficiency = 0.9;            // default 90% efficiency
+  double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
+  // Baseline value for power drawn by continuously-running systems.
+  double m_baseline_wattage = 1.0;
+
+  // Number of lines in power fault profiles to skip, in order to
+  // synchonize the consumption of the profile with GSAP's cycle rate
+  // (above).  This computation is left to the user for now, though
+  // note that the default values are not expected to change as of
+  // Release 9.
+  int m_profile_increment = 2;
+
+  // End main system configuration.
+  
   // Utilize a Mersenne Twister pseudo-random generation.
   std::mt19937 m_random_generator;
 

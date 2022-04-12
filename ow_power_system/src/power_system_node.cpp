@@ -20,18 +20,9 @@ const string FAULT_NAME_ICL     = "instantaneous_capacity_loss_power_failure";
 const string FAULT_NAME_THERMAL = "thermal_power_failure";
 
 // The index use to access temperature information.
-// This might change to median SOC or RUL index or fixed percentile
+// This might change to median SOC or RUL index or fixed percentile.
+//
 static constexpr int TEMPERATURE_INDEX = 1;
-
-const double GSAP_RATE_HZ = 0.5;
-
-// Equal to the current profile "rate" of 1Hz divided by the GSAP
-// rate.  These rates are not expected to change in the forseeable
-// future, so hardcoding this for now.
-const int PROFILE_INCREMENT = 2;
-
-// Stand-in for power drawn by continuously-running systems.
-const double BASELINE_WATTAGE = 1.0;
 
 // HACK ALERT.  The prognoser produced erratic/erroneous output when
 // given too high a power input.  This made-up value protects against
@@ -48,9 +39,11 @@ PowerSystemNode::PowerSystemNode() :
 bool PowerSystemNode::Initialize()
 {
   if (!loadSystemConfig())
+    ROS_ERROR("Failed to load ow_power_system system config.");
     return false;
 
   if (!loadFaultPowerProfiles())
+    ROS_ERROR("Failed to load power fault profiles.");
     return false;
 
   if (!initPrognoser())
@@ -64,7 +57,8 @@ bool PowerSystemNode::Initialize()
 
 bool PowerSystemNode::loadSystemConfig()
 {
-  auto system_config_path = ros::package::getPath("ow_power_system") + "/config/system.cfg";
+  auto system_config_path = ros::package::getPath("ow_power_system")
+    + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
   m_initial_power = system_config.getDouble("initial_power");
   m_initial_voltage = system_config.getDouble("initial_voltage");
@@ -75,7 +69,11 @@ bool PowerSystemNode::loadSystemConfig()
   m_max_temperature = system_config.getDouble("max_temperature");
   m_battery_lifetime = system_config.getDouble("battery_lifetime");
   m_efficiency = system_config.getDouble("efficiency");
-  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
+                                                         m_max_temperature);
+  m_baseline_wattage = system_config.getDouble("baseline_power");
+  m_gsap_rate_hz = system_config.getDouble("gsap_rate");
+  m_profile_increment = system_config.getInt32("profile_increment");
   return true;
 }
 
@@ -256,13 +254,13 @@ void PowerSystemNode::injectFault (const string& fault_name,
   {
     // TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
-    if (index + PROFILE_INCREMENT >= sequence.size()) {
+    if (index + m_profile_increment >= sequence.size()) {
       ROS_WARN_STREAM_ONCE
         (fault_name << ": reached end of fault profile, reusing last entry.");
       // Probably unneeded, but makes index explicit.
       index = sequence.size() - 1;
     }
-    else index += PROFILE_INCREMENT;
+    else index += m_profile_increment;
 
     auto data = sequence[index];
     double new_wattage = wattage + data[MessageId::Watts];
@@ -364,7 +362,7 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   // Temperature estimate based on pseudorandom noise and fixed range
   double temperature_estimate = generateTemperatureEstimate();
   double voltage_estimate = generateVoltageEstimate();
-  double adjusted_wattage = electrical_power + BASELINE_WATTAGE;
+  double adjusted_wattage = electrical_power + m_baseline_wattage;
   injectFaults(adjusted_wattage, voltage_estimate, temperature_estimate);
   auto current_data = composePrognoserData(adjusted_wattage,
                                            voltage_estimate,
@@ -394,7 +392,7 @@ void PowerSystemNode::Run()
   ROS_INFO("Power system node running.");
 
   // For simplicity, we run the power node at the same rate as GSAP.
-  ros::Rate rate(GSAP_RATE_HZ);
+  ros::Rate rate(m_gsap_rate_hz);
 
   while (ros::ok())
   {
