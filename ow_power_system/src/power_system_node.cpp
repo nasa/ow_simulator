@@ -24,13 +24,7 @@ const string FAULT_NAME_THERMAL = "thermal_power_failure";
 //
 static constexpr int TEMPERATURE_INDEX = 1;
 
-// HACK ALERT.  The prognoser produced erratic/erroneous output when
-// given too high a power input.  This made-up value protects against
-// this, but is a temporary hack until a circuit breaker model is
-// added to the power system, and/or the multi-pack battery model is
-// implemented and can handle any envisioned power draw.
-//
-const double MAX_GSAP_INPUT_WATTS = 30.0;
+const double m_max_gsap_input_watts = 30.0;
 
 PowerSystemNode::PowerSystemNode() :
   m_power_values(m_moving_average_window, 0)
@@ -38,20 +32,26 @@ PowerSystemNode::PowerSystemNode() :
 
 bool PowerSystemNode::Initialize()
 {
-  if (!loadSystemConfig())
+  if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load ow_power_system system config.");
     return false;
+  }
 
-  if (!loadFaultPowerProfiles())
+  if (!loadFaultPowerProfiles()) {
     ROS_ERROR("Failed to load power fault profiles.");
     return false;
+  }
 
-  if (!initPrognoser())
+  if (!initPrognoser()) {
+    ROS_ERROR("Failed to initialize power system prognoser.");
     return false;
+  }
 
-  if (!initTopics())
+  if (!initTopics()) {
+    ROS_ERROR("Failed to initialize power system topics.");
     return false;
-
+  }
+  
   return true;
 }
 
@@ -72,6 +72,7 @@ bool PowerSystemNode::loadSystemConfig()
   m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
                                                          m_max_temperature);
   m_baseline_wattage = system_config.getDouble("baseline_power");
+  m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
   m_gsap_rate_hz = system_config.getDouble("gsap_rate");
   m_profile_increment = system_config.getInt32("profile_increment");
   return true;
@@ -264,12 +265,12 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
     auto data = sequence[index];
     double new_wattage = wattage + data[MessageId::Watts];
-    if (new_wattage > MAX_GSAP_INPUT_WATTS) {
+    if (new_wattage > m_max_gsap_input_watts) {
       ROS_WARN_STREAM(fault_name
                       << ": profile gives excessive wattage input for GSAP, "
                       << new_wattage << "W. Capping GSAP input at "
-                      << MAX_GSAP_INPUT_WATTS << "W.");
-      wattage = MAX_GSAP_INPUT_WATTS;
+                      << m_max_gsap_input_watts << "W.");
+      wattage = m_max_gsap_input_watts;
     }
     else wattage = new_wattage;
     voltage += data[MessageId::Volts];
