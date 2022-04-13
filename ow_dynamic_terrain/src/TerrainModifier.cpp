@@ -20,7 +20,7 @@ using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
-static void formatDiffMsg(const CvImage& diff_image, const Point& position,
+static void formatDiffMsg(const CvImage& diff_image, const Point32& position,
                           float scale_factor, int rows, int cols, string op_name,
                           ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
 {
@@ -200,7 +200,7 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   return changed;
 }
 
-cv::Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point& position)
+cv::Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point32& position)
 {
   auto _terrain_position = Vector3(position.x, position.y, 0);
   auto heightmap_position = Vector3();
