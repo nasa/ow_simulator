@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
-  ow_lander
   message_generation
 )
 
@@ -93,7 +92,6 @@ generate_messages(
 catkin_package(
    CATKIN_DEPENDS
    ow_dynamic_terrain
-   ow_lander 
    message_runtime
 )
 
@@ -127,6 +125,7 @@ add_executable(regolith_node
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
   src/ModelPool.cpp
+  src/DigStateMachine.cpp
   src/sdf_utility.cpp
 )
 add_dependencies(regolith_node 

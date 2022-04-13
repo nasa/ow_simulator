@@ -4,8 +4,8 @@
 
 // RegolithSpawner is a ROS node that detects when digging by the scoop
 // end-effector occurs and spawns a model in the scoop to represent collected
-// material. The node will also clean-up models it has spawned when a
-// deliver/discard action occurs.
+// material. The node will also remove models it has spawned as they collide
+// with the terrain or in response to a service call.
 
 #ifndef REGOLITH_SPAWNER_H
 #define REGOLITH_SPAWNER_H
@@ -17,13 +17,11 @@
 
 #include <ServiceClientFacade.h>
 #include <ModelPool.h>
+#include <DigStateMachine.h>
 
 #include <gazebo_msgs/LinkStates.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
-
-#include <ow_lander/DigLinearActionResult.h>
-#include <ow_lander/DigCircularActionResult.h>
 
 #include <ow_regolith/SpawnRegolith.h>
 #include <ow_regolith/RemoveRegolith.h>
@@ -34,19 +32,22 @@ namespace ow_regolith {
 class RegolithSpawner
 {
 public:
-  RegolithSpawner()  = delete;
+  RegolithSpawner(const std::string &node_name);
   ~RegolithSpawner() = default;
+
+  RegolithSpawner()  = delete;
   RegolithSpawner(const RegolithSpawner&) = delete;
   RegolithSpawner& operator=(const RegolithSpawner&) = delete;
-
-  RegolithSpawner(const std::string &node_name);
 
   // loads regolith SDF and computes its mass
   // NOTE: this must be called before any other functions
   bool initialize();
 
-  // clear all forces acting on particles and reset tracked volume
-  void reset();
+  // reset tracked volume to 0
+  void resetTrackedVolume();
+
+  // clear any psuedo forces acting on regolith
+  void clearAllPsuedoForces();
 
   // service callback for spawnRegolithInScoop
   bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
@@ -65,40 +66,31 @@ public:
   // and spawns reoglith if it surpasses the spawn threshold
   void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
-  // both call clearAllPsuedoForces at the end of a dig and reset the tracked
-  // volume to zero
-  void onDigLinearResultMsg(const ow_lander::DigLinearActionResult::ConstPtr &msg);
-  void onDigCircularResultMsg(const ow_lander::DigCircularActionResult::ConstPtr &msg);
-
 private:
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
-
   ros::ServiceServer m_srv_spawn_regolith;
   ros::ServiceServer m_srv_remove_all_regolith;
-
   ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
-
   ros::Subscriber m_sub_mod_diff_visual;
-  ros::Subscriber m_sub_dig_linear_result;
-  ros::Subscriber m_sub_dig_circular_result;
 
-  // model pool
+  // spawns, removes, and applies forces to spawned models
   std::unique_ptr<ModelPool> m_pool;
-
-  // sum of volume displaced since previous reoglith spawning
-  double m_volume_displaced;
-  std::vector<tf::Vector3> m_spawn_offsets;
-  std::vector<tf::Vector3>::const_iterator m_offset_selector;
-  // orientation of scoop in Gazebo
-  tf::Quaternion m_scoop_orientation;
+  // estimates the state of a dig from scoop orientation and terrain mods
+  std::unique_ptr<DigStateMachine> m_dig_state;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;
-
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
+  // sum of volume displaced since previous reoglith spawning
+  double m_volume_displaced;
+  // list of spawn positions relative to scoop link
+  std::vector<tf::Vector3> m_spawn_offsets;
+  std::vector<tf::Vector3>::const_iterator m_spawn_offset_selector;
+  // orientation of scoop in Gazebo world
+  tf::Quaternion m_scoop_orientation;
 };
 
 } // namespace ow_regolith

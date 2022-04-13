@@ -4,7 +4,6 @@
 
 // TODO:
 //  1. Support sloped scooping.
-//  2. Work around reliance on action callbacks from ow_lander.
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -17,7 +16,6 @@
 
 using namespace ow_regolith;
 using namespace ow_dynamic_terrain;
-using namespace ow_lander;
 
 using namespace sensor_msgs;
 using namespace cv_bridge;
@@ -42,21 +40,15 @@ const static string SRV_GET_PHYS_PROPS      = "/gazebo/get_physics_properties";
 // topic paths used in class
 const static string TOPIC_LINK_STATES           = "/gazebo/link_states";
 const static string TOPIC_TERRAIN_CONTACT       = "/ow_regolith/contacts/terrain";
-
 const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
-const static string TOPIC_DIG_LINEAR_RESULT     = "/DigLinear/result";
-const static string TOPIC_DIG_CIRCULAR_RESULT   = "/DigCircular/result";
 
 const static string REGOLITH_TAG = "regolith";
 
 // constants specific to the scoop end-effector
 const static string SCOOP_LINK_NAME       = "lander::l_scoop_tip";
 const static Vector3 SCOOP_FORWARD        = Vector3(1.0, 0.0, 0.0);
-const static Vector3 SCOOP_DOWNWARD       = Vector3(0.0, 0.0, 1.0);
 const static Vector3 SCOOP_SPAWN_OFFSET   = Vector3(0.0, 0.0, -0.05);
 const static double SCOOP_WIDTH           = 0.08; // meters
-
-const static Vector3 WORLD_DOWNWARD = Vector3(0.0, 0.0, -1.0);
 
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
@@ -91,7 +83,7 @@ bool RegolithSpawner::initialize()
     }
   }
   // initialize offset selector
-  m_offset_selector = m_spawn_offsets.begin();
+  m_spawn_offset_selector = m_spawn_offsets.begin();
 
   m_pool = make_unique<ModelPool>(m_node_handle);
   if (!m_pool->connectServices()) {
@@ -103,6 +95,8 @@ bool RegolithSpawner::initialize()
     ROS_ERROR("Failed to set model.");
     return false;
   }
+
+  m_dig_state = make_unique<DigStateMachine>(m_node_handle.get(), this);
 
   // advertise services served by this class
   m_srv_spawn_regolith = m_node_handle->advertiseService(
@@ -117,10 +111,6 @@ bool RegolithSpawner::initialize()
     TOPIC_TERRAIN_CONTACT, 1, &RegolithSpawner::onTerrainContact, this);
   m_sub_mod_diff_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::onModDiffVisualMsg, this);
-  m_sub_dig_linear_result = m_node_handle->subscribe(
-    TOPIC_DIG_LINEAR_RESULT, 1, &RegolithSpawner::onDigLinearResultMsg, this);
-  m_sub_dig_circular_result = m_node_handle->subscribe(
-    TOPIC_DIG_CIRCULAR_RESULT, 1, &RegolithSpawner::onDigCircularResultMsg, this);
 
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
@@ -143,6 +133,17 @@ bool RegolithSpawner::initialize()
     = m_pool->getModelMass() * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
 
   return true;
+}
+
+void RegolithSpawner::resetTrackedVolume()
+{
+  m_volume_displaced = 0.0;
+}
+
+void RegolithSpawner::clearAllPsuedoForces()
+{
+  if (!m_pool->clearAllForces())
+    ROS_WARN("Failed to clear force on one or more regolith particles");
 }
 
 bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
@@ -172,6 +173,9 @@ void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg)
   }
   auto pose_it = begin(msg->pose) + distance(begin(msg->name), name_it);
   quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
+
+  // inform dig state machine scoop orientation has been updated
+  m_dig_state->handleScoopPoseUpdate(m_scoop_orientation);
 }
 
 void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
@@ -181,12 +185,11 @@ void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
 
 void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
 {
-  // check if visual terrain modification was caused by the scoop
-  Vector3 scoop_bottom(quatRotate(m_scoop_orientation, SCOOP_DOWNWARD));
-  if (tfDot(scoop_bottom, WORLD_DOWNWARD) < 0.0)
-    // Scoop bottom is pointing up, which is not a proper scooping orientation.
-    // This can be the result of a deep grind, and should not result in 
-    // particles being spawned.
+  // inform dig state machine terrain has been modified
+  m_dig_state->handleTerrainModified();
+
+  // if not digging, ignore this modification as it could be caused by a grind
+  if (!m_dig_state->isDigging())
     return;
 
   // import image to so we can traverse it
@@ -201,7 +204,7 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
   auto rows = image_handle->image.rows;
   auto cols = image_handle->image.cols;
   if (rows <= 0 || cols <= 0) {
-    ROS_DEBUG("Differential image dimensions are zero or negative");
+    ROS_WARN("Differential image dimensions are zero or negative");
     return;
   }
 
@@ -209,13 +212,10 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
   const auto pixel_width = msg->width / cols;
   const auto pixel_area = pixel_height * pixel_height;
 
-  const Point image_corner_to_midpoint(msg->height / 2, msg->width / 2, 0);
-
   // estimate the total volume displaced using a Riemann sum over the image
   for (auto y = 0; y < rows; ++y) {
     for (auto x = 0; x < cols; ++x) {
       const auto volume = -image_handle->image.at<float>(y, x) * pixel_area;
-      const auto image_position = Point(pixel_width * x, pixel_height * y, 0) - image_corner_to_midpoint;
       m_volume_displaced += volume;
     }
   }
@@ -225,9 +225,10 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
 
   if (m_volume_displaced >= m_spawn_threshold) {
     // select spawn offset
-    auto offset = *(m_offset_selector++);
-    if (m_offset_selector ==  m_spawn_offsets.end()) // wrap selector
-      m_offset_selector = m_spawn_offsets.begin();
+    auto offset = *(m_spawn_offset_selector++);
+    // wrap selector
+    if (m_spawn_offset_selector ==  m_spawn_offsets.end())
+      m_spawn_offset_selector = m_spawn_offsets.begin();
     // spawn a regolith model
     auto link_name = m_pool->spawn(offset, SCOOP_LINK_NAME);
     if (link_name.empty()) {
@@ -236,6 +237,9 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
     }
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
+    // if scoop is exiting terrain, adding psuedo forces is unnecesssary
+    if (m_dig_state->isRetracting())
+      return;
     // compute psuedo force direction from scoop orientation
     Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
     scooping_vec.setZ(0.0); // flatten against X-Y plane
@@ -248,22 +252,4 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
       return;
     }
   }
-}
-
-void RegolithSpawner::reset()
-{
-  if (!m_pool->clearAllForces())
-    ROS_WARN("Failed to clear force on one or more regolith particles");
-  // reset to avoid carrying over volume from one digging event to the next
-  m_volume_displaced = 0.0;
-}
-
-void RegolithSpawner::onDigLinearResultMsg(const DigLinearActionResult::ConstPtr &msg)
-{
-  reset();
-}
-
-void RegolithSpawner::onDigCircularResultMsg(const DigCircularActionResult::ConstPtr &msg)
-{
-  reset();
 }
