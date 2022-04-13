@@ -49,7 +49,8 @@ class RegolithSpawner;
 class DigStateMachine
 {
 public:
-  DigStateMachine(ros::NodeHandle *node_handle, RegolithSpawner *spawner);
+  DigStateMachine(std::shared_ptr<ros::NodeHandle> node_handle,
+                  RegolithSpawner *spawner);
   ~DigStateMachine() = default;
 
   DigStateMachine() = delete;
@@ -75,7 +76,7 @@ private:
   DigState *m_current;
 
   // external interface pointers
-  ros::NodeHandle *m_node_handle;
+  std::shared_ptr<ros::NodeHandle> m_node_handle;
   RegolithSpawner *m_spawner;
 
   // stores the dot product between the world's downward unit vector and the

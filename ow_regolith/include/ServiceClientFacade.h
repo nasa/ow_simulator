@@ -18,8 +18,9 @@ class ServiceClientFacade
 {
 public:
   ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false) { }
-  ServiceClientFacade(const ServiceClientFacade&) = delete;
   ~ServiceClientFacade() = default;
+
+  ServiceClientFacade(const ServiceClientFacade&) = delete;
   ServiceClientFacade& operator=(const ServiceClientFacade&) = delete;
 
   // Connect this instance to a certain ROS service and block for the given
@@ -37,7 +38,7 @@ public:
   //       For best performance, a ServiceClientFacade should be connected
   //       persistently if it is expected to be called frequently.
   template <typename T>
-  bool connect(std::shared_ptr<ros::NodeHandle> &nh,
+  bool connect(std::shared_ptr<ros::NodeHandle> nh,
                const std::string &service_path,
                ros::Duration timeout, bool persistent);
 
@@ -66,7 +67,7 @@ private:
 };
 
 template <typename T>
-bool ServiceClientFacade::connect(std::shared_ptr<ros::NodeHandle> &nh,
+bool ServiceClientFacade::connect(std::shared_ptr<ros::NodeHandle> nh,
                                   const std::string &service_path,
                                   ros::Duration timeout, bool persistent)
 {

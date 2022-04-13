@@ -23,7 +23,7 @@ using namespace cv_bridge;
 using namespace std::literals::chrono_literals;
 
 using std::string, std::begin, std::end, std::distance, std::find,
-      std::stringstream, std::make_unique;
+      std::stringstream, std::make_unique, std::make_shared;
 
 using std::chrono::duration_cast, std::chrono::seconds;
 
@@ -53,7 +53,8 @@ const static double SCOOP_WIDTH           = 0.08; // meters
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
 RegolithSpawner::RegolithSpawner(const string &node_name)
-  : m_node_handle(new ros::NodeHandle(node_name)), m_volume_displaced(0.0),
+  : m_node_handle(make_shared<ros::NodeHandle>(node_name)),
+    m_volume_displaced(0.0),
     m_spawn_offsets(1, SCOOP_SPAWN_OFFSET)
 {
   // do nothing
@@ -96,7 +97,7 @@ bool RegolithSpawner::initialize()
     return false;
   }
 
-  m_dig_state = make_unique<DigStateMachine>(m_node_handle.get(), this);
+  m_dig_state = make_unique<DigStateMachine>(m_node_handle, this);
 
   // advertise services served by this class
   m_srv_spawn_regolith = m_node_handle->advertiseService(
