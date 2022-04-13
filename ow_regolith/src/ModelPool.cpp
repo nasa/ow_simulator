@@ -26,7 +26,6 @@ const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
 const static string SRV_DELETE_MODEL      = "/gazebo/delete_model";
 const static string SRV_APPLY_BODY_WRENCH = "/gazebo/apply_body_wrench";
 const static string SRV_CLEAR_BODY_WRENCH = "/gazebo/clear_body_wrenches";
-const static string SRV_GET_PHYS_PROPS    = "/gazebo/get_physics_properties";
 
 const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
@@ -97,8 +96,9 @@ string ModelPool::spawn(Point position, string reference_frame)
   if (!m_gz_spawn_model.call(spawn_msg))
     return "";
 
-  m_active_models.emplace(link_name.str(),
-    Model{model_name.str(), m_model_body_name, false}
+  m_active_models.emplace(
+    link_name.str(),
+    Model{model_name.str(), m_model_body_name}
   );
 
   return link_name.str();
@@ -121,12 +121,11 @@ vector<string> ModelPool::remove(const vector<string> &link_names)
       }
     }
   } else {
-    // delete one or multiple models provided in link_names
+    // delete one or multiple models as provided in link_names
     for (auto const &n : link_names) {
       try {
         msg.request.model_name = m_active_models.at(n).model_name;
       } catch(out_of_range &_err) {
-        ROS_WARN("Model %s is not in this pool", n.c_str());
         not_removed.push_back(n);
         continue;
       }
