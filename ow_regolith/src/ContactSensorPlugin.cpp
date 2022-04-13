@@ -15,7 +15,8 @@ using namespace ros;
 using namespace gazebo;
 
 using std::string, std::set, std::vector, std::bind, std::dynamic_pointer_cast,
-      std::endl, std::regex_match, std::begin, std::end, std::regex;
+      std::endl, std::regex_match, std::begin, std::end, std::regex,
+      std::make_unique;
 
 const static string NODE_PREFIX = "contact_sensor_";
 
@@ -51,7 +52,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
   }
 
   // setup ROS interface
-  m_node_handle = std::make_unique<NodeHandle>(NODE_PREFIX + sdf->GetName());
+  m_node_handle = make_unique<NodeHandle>(NODE_PREFIX + sdf->GetName());
   m_pub_contacts = m_node_handle->advertise<Contacts>(topic, 1, true);
   gzlog << PLUGIN_NAME << ": reporting contacts on ROS topic " << topic << endl;
 

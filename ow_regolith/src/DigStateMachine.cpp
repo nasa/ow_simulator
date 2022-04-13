@@ -4,19 +4,21 @@
 
 using namespace ow_regolith;
 
+using std::shared_ptr, std::make_unique;
+
 using tf::Quaternion, tf::Vector3, tf::tfDot, tf::quatRotate;
 
 const Vector3 DigStateMachine::SCOOP_DOWNWARD = Vector3(0.0, 0.0, 1.0);
 const Vector3 DigStateMachine::WORLD_DOWNWARD = Vector3(0.0, 0.0, -1.0);
 
-DigStateMachine::DigStateMachine(ros::NodeHandle *node_handle,
+DigStateMachine::DigStateMachine(shared_ptr<ros::NodeHandle> node_handle,
                                  RegolithSpawner *spawner)
   : m_node_handle(node_handle),
     m_spawner(spawner),
-    m_not_digging(new NotDiggingState(this)),
-    m_sinking(new SinkingState(this)),
-    m_plowing(new PlowingState(this)),
-    m_retracting(new RetractingState(this))
+    m_not_digging(make_unique<NotDiggingState>(this)),
+    m_sinking(make_unique<SinkingState>(this)),
+    m_plowing(make_unique<PlowingState>(this)),
+    m_retracting(make_unique<RetractingState>(this))
 {
   setState(m_not_digging.get());
 }
