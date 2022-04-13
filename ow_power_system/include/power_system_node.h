@@ -53,9 +53,7 @@ private:
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  // GSAP rate of .5 Hz times /joint_states publish rate of 50 Hz.
-  static constexpr int m_moving_average_window = 25;
-
+  int m_moving_average_window = 25;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
