@@ -24,12 +24,11 @@ class ModelPool
 {
 public:
   ModelPool(std::shared_ptr<ros::NodeHandle> &nh) : m_node_handle(nh) {};
+  ~ModelPool() = default;
 
   ModelPool() = delete;
   ModelPool(const ModelPool&) = delete;
   ModelPool& operator=(const ModelPool&) = delete;
-
-  ~ModelPool() = default;
 
   bool connectServices();
 
@@ -67,9 +66,8 @@ private:
 
   // keeps track of all regolith models and links present in the simulation
   struct Model {
-    std::string model_name;
-    std::string body_name;
-    bool removal_requested;
+    const std::string model_name;
+    const std::string body_name;
   };
   // keys are of the form "model_name::body_name"
   std::unordered_map<std::string, Model> m_active_models;
