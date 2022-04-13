@@ -221,9 +221,6 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
     }
   }
 
-  Point world_position;
-  pointMsgToTF(msg->position, world_position);
-
   if (m_volume_displaced >= m_spawn_threshold) {
     // select spawn offset
     auto offset = *(m_spawn_offset_selector++);
