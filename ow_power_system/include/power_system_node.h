@@ -76,13 +76,15 @@ private:
   double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
   // Baseline value for power drawn by continuously-running systems.
+  // This initial value is overriden by the system config.
   double m_baseline_wattage = 1.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
-  // given too high a power input.  This made-up value protects against
-  // this, but is a temporary hack until a circuit breaker model is
-  // added to the power system, and/or the multi-pack battery model is
-  // implemented and can handle any envisioned power draw.
+  // given too high a power input.  This made-up value protects
+  // against this, but is a temporary hack until a circuit breaker
+  // model is added to the power system, and/or the multi-pack battery
+  // model is implemented and can handle any envisioned power draw.
+  // This initial value is overriden by the system config.
   //
   double m_max_gsap_input_watts = 30;
 
@@ -90,7 +92,7 @@ private:
   // synchonize the consumption of the profile with GSAP's cycle rate
   // (above).  This computation is left to the user for now, though
   // note that the default values are not expected to change as of
-  // Release 9.
+  // Release 9.  This initial value is overriden by the system config.
   int m_profile_increment = 2;
 
   // End main system configuration.
