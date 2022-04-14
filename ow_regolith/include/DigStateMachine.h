@@ -84,9 +84,9 @@ private:
   float m_downward_projection;
 
   // points along the downward projection curve where state changes occur
-  static constexpr auto THRESHOLD_ENTER = 0.0f;
-  static constexpr auto THRESHOLD_TROUGH = 0.8f;
-  static constexpr auto THRESHOLD_EXIT = 0.2f;
+  static constexpr auto THRESHOLD_SINK    = 0.0f;
+  static constexpr auto THRESHOLD_PLOW    = 0.9f;
+  static constexpr auto THRESHOLD_RETRACT = 0.2f;
 
   // unit vectors describing scoop and world orientation
   static const tf::Vector3 SCOOP_DOWNWARD;
