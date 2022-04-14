@@ -51,25 +51,25 @@ void DigStateMachine::handleScoopPoseUpdate(Quaternion new_orientation)
 
 void DigStateMachine::NotDiggingState::terrainModified()
 {
-  if (m_context->m_downward_projection > m_context->THRESHOLD_ENTER)
+  if (m_context->m_downward_projection > m_context->THRESHOLD_SINK)
     m_context->setState(m_context->m_sinking.get());
 }
 
 void DigStateMachine::SinkingState::scoopPoseUpdate()
 {
-  if (m_context->m_downward_projection > m_context->THRESHOLD_TROUGH)
+  if (m_context->m_downward_projection > m_context->THRESHOLD_PLOW)
     m_context->setState(m_context->m_plowing.get());
 }
 
 void DigStateMachine::PlowingState::scoopPoseUpdate()
 {
-  if (m_context->m_downward_projection < m_context->THRESHOLD_TROUGH)
+  if (m_context->m_downward_projection < m_context->THRESHOLD_PLOW)
     m_context->setState(m_context->m_retracting.get());
 }
 
 void DigStateMachine::RetractingState::scoopPoseUpdate()
 {
-  if (m_context->m_downward_projection < m_context->THRESHOLD_EXIT)
+  if (m_context->m_downward_projection < m_context->THRESHOLD_RETRACT)
     m_context->setState(m_context->m_not_digging.get());
 }
 
