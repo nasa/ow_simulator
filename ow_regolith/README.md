@@ -10,7 +10,7 @@ this repository.
 * [Usage](#usage)
   - [Regolith Node](#regolith-node)
   - [ContactSensorPlugin](#contactsensorplugin)
-  - [ROS Service](#ros-service)
+  - [ROS Services](#ros-services)
   - [Adding Models to the Gazebo Model Database](#adding-models-to-the-gazebo-model-database)
 * [Caveats](#caveats)
 
