@@ -78,7 +78,7 @@ bool RegolithSpawner::initialize()
          i < static_cast<int>(floor(SCOOP_WIDTH / (2 * spawn_spacing)));
          ++i) {
       // alternately populate both sides of the spawn offset
-      Vector3 adjustment(0, i * static_cast<float>(spawn_spacing), 0);
+      Vector3 adjustment(0.0f, i * static_cast<float>(spawn_spacing), 0.0f);
       m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET + adjustment);
       m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - adjustment);
     }

@@ -41,20 +41,22 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 
   // get plugin parameters
   if (!sdf->HasElement(PARAMETER_TOPIC)) // required
-    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defiend");
+    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defined");
   auto topic = sdf->Get<string>(PARAMETER_TOPIC);
   if (sdf->HasElement(PARAMETER_REPORT_ONLY)) { // optional
     m_report_only_set = true;
     const auto regex_str = sdf->Get<string>(PARAMETER_REPORT_ONLY);
     m_report_only = regex(regex_str);
-    gzlog << PLUGIN_NAME << ": reporting link names that match the regex \""
-          << regex_str << "\"" << endl;
+    gzlog << PLUGIN_NAME
+          << ": reporting only link names that match the regex pattern \""
+          << regex_str << "\"\n";
   }
 
   // setup ROS interface
   m_node_handle = make_unique<NodeHandle>(NODE_PREFIX + sdf->GetName());
   m_pub_contacts = m_node_handle->advertise<Contacts>(topic, 1, true);
-  gzlog << PLUGIN_NAME << ": reporting contacts on ROS topic " << topic << endl;
+  gzlog << PLUGIN_NAME << ": Contacts will be reported on ROS topic "
+                       << topic << '\n';
 
   gzlog << PLUGIN_NAME << ": successfully loaded!" << endl;
 }
@@ -85,5 +87,4 @@ void ContactSensorPlugin::onUpdate()
     msg.link_names = vector(begin(m_links_in_contact), end(m_links_in_contact));
     m_pub_contacts.publish(msg);
   }
-
 }
