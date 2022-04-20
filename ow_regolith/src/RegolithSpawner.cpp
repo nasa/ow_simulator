@@ -13,6 +13,7 @@
 #include <gazebo_msgs/GetPhysicsProperties.h>
 
 #include <RegolithSpawner.h>
+#include <ServiceClientFacade.h>
 
 using namespace ow_regolith;
 using namespace ow_dynamic_terrain;

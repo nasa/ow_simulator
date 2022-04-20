@@ -14,6 +14,8 @@
 
 #include <gazebo_msgs/DeleteModel.h>
 
+#include <ServiceClientFacade.h>
+
 #ifndef MODEL_POOL_H
 #define MODEL_POOL_H
 
