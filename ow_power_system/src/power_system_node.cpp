@@ -4,6 +4,7 @@
 
 #include <numeric>
 #include <fstream>
+#include <math.h>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -14,35 +15,50 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
+const string FAULT_NAME_LOW_SOC = "low_state_of_charge_power_failure";
+const string FAULT_NAME_ICL     = "instantaneous_capacity_loss_power_failure";
+const string FAULT_NAME_THERMAL = "thermal_power_failure";
+
 // The index use to access temperature information.
-// This might change to median SOC or RUL index or fixed percentile
+// This might change to median SOC or RUL index or fixed percentile.
+//
 static constexpr int TEMPERATURE_INDEX = 1;
 
-PowerSystemNode::PowerSystemNode() :
-m_power_values(m_moving_average_window, 0)
-{
-}
+PowerSystemNode::PowerSystemNode()
+{ }
 
 bool PowerSystemNode::Initialize()
 {
-  if (!loadSystemConfig())
+  if (!loadSystemConfig()) {
+    ROS_ERROR("Failed to load ow_power_system system config.");
     return false;
+  }
 
-  if (!loadFaultPowerProfiles())
-    return false;
+  m_power_values.resize(m_moving_average_window);
+  std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
 
-  if (!initPrognoser())
+  if (!loadFaultPowerProfiles()) {
+    ROS_ERROR("Failed to load power fault profiles.");
     return false;
+  }
 
-  if (!initTopics())
+  if (!initPrognoser()) {
+    ROS_ERROR("Failed to initialize power system prognoser.");
     return false;
+  }
+
+  if (!initTopics()) {
+    ROS_ERROR("Failed to initialize power system topics.");
+    return false;
+  }
 
   return true;
 }
 
 bool PowerSystemNode::loadSystemConfig()
 {
-  auto system_config_path = ros::package::getPath("ow_power_system") + "/config/system.cfg";
+  auto system_config_path = ros::package::getPath("ow_power_system")
+    + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
   m_initial_power = system_config.getDouble("initial_power");
   m_initial_voltage = system_config.getDouble("initial_voltage");
@@ -53,11 +69,17 @@ bool PowerSystemNode::loadSystemConfig()
   m_max_temperature = system_config.getDouble("max_temperature");
   m_battery_lifetime = system_config.getDouble("battery_lifetime");
   m_efficiency = system_config.getDouble("efficiency");
-  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature, m_max_temperature);
+  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
+                                                         m_max_temperature);
+  m_baseline_wattage = system_config.getDouble("baseline_power");
+  m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
+  m_gsap_rate_hz = system_config.getDouble("gsap_rate");
+  m_profile_increment = system_config.getInt32("profile_increment");
+  m_moving_average_window = system_config.getInt32("power_average_size");
   return true;
 }
 
-vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const string& filename)
+PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
 {
   ifstream file(filename);
   if (file.fail())
@@ -69,10 +91,10 @@ vector<map<MessageId, Datum<double>>> PowerSystemNode::loadPowerProfile(const st
 
   auto now = system_clock::now();
 
-  vector<map<MessageId, Datum<double>>> result;
+  PrognoserVector result;
   while (file.good())
   {
-    map<MessageId, Datum<double>> data;
+    PrognoserMap data;
     string line;
     getline(file, line);
     if (line.empty())
@@ -172,7 +194,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
-  m_unprocessed_mechanical_power += power_watts;
+  m_unprocessed_mechanical_power = mean_mechanical_power;
 
   if (!m_processing_power_batch)
   {
@@ -199,66 +221,95 @@ double PowerSystemNode::generateVoltageEstimate()
     min_V = m_base_voltage;
 
   // Voltage estimate based on pseudorandom noise and moving range
-  uniform_real_distribution<double> m_voltage_dist(min_V, max_V);
-  return m_voltage_dist(m_random_generator);
+  uniform_real_distribution<double> voltage_dist(min_V, max_V);
+  return voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFault(const string& power_fault_name, bool& fault_activated,
-                                  const vector<map<MessageId, Datum<double>>>& sequence, size_t& sequence_index,
-                                  double& power, double& voltage, double& temperature)
+void PowerSystemNode::injectFault (const string& fault_name,
+                                   bool& fault_activated,
+                                   const PrognoserVector& sequence,
+                                   size_t& index,
+                                   double& wattage,
+                                   double& voltage,
+                                   double& temperature)
 {
   bool fault_enabled = false;
-  bool success = ros::param::getCached("/faults/" + power_fault_name, fault_enabled);
-  if (!success)
+
+  // Do nothing unless the specified fault has been injected.
+  if (! ros::param::getCached("/faults/" + fault_name, fault_enabled)) {
     return;
+  }
 
   if (!fault_activated && fault_enabled)
   {
-    ROS_INFO_STREAM(power_fault_name << " activated!");
-    sequence_index = 0;
+    ROS_INFO_STREAM(fault_name << " activated!");
+    index = 0;
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
-    ROS_INFO_STREAM(power_fault_name << " de-activated!");
+    ROS_INFO_STREAM(fault_name << " de-activated!");
     fault_activated = false;
   }
 
   if (fault_activated && fault_enabled)
   {
-    auto data = sequence[sequence_index++ % sequence.size()];  // TODO: for now we replay the sequence once it reaches
-                                                               // the This is unlikely the end case. Re-visit
+    // TODO: Unspecified how to handle end of fault profile, which is
+    // unlikely.  For now, reuse the last entry.
+    if (index + m_profile_increment >= sequence.size()) {
+      ROS_WARN_STREAM_ONCE
+        (fault_name << ": reached end of fault profile, reusing last entry.");
+      // Probably unneeded, but makes index explicit.
+      index = sequence.size() - 1;
+    }
+    else index += m_profile_increment;
 
-    auto m = 1.0 / m_power_node_processing_rate;  // multiplier that should be applied since this profile data are given in seconds
-                                                  // but the processing rate can be lesser or higher than that
-    power += m * data[MessageId::Watts];
-    voltage += m * data[MessageId::Volts];
-    temperature += m * data[MessageId::Centigrade];
+    auto data = sequence[index];
+    wattage += data[MessageId::Watts];
+    voltage += data[MessageId::Volts];
+    temperature += data[MessageId::Centigrade];
   }
 }
 
-void PowerSystemNode::injectFaults(double& power, double& voltage, double& temperature)
+void PowerSystemNode::injectFaults(double& power,
+				   double& voltage,
+				   double& temperature)
 {
-  injectFault("low_state_of_charge_power_failure", m_low_state_of_charge_power_failure_activated,
-              m_low_state_of_charge_power_failure_sequence, m_low_state_of_charge_power_failure_sequence_index, power,
-              voltage, temperature);
+  injectFault(FAULT_NAME_LOW_SOC,
+	      m_low_state_of_charge_power_failure_activated,
+              m_low_state_of_charge_power_failure_sequence,
+	      m_low_state_of_charge_power_failure_sequence_index,
+	      power, voltage, temperature);
 
-  injectFault("instantaneous_capacity_loss_power_failure", m_instantaneous_capacity_loss_power_failure_activated,
+  injectFault(FAULT_NAME_ICL,
+	      m_instantaneous_capacity_loss_power_failure_activated,
               m_instantaneous_capacity_loss_power_failure_sequence,
-              m_instantaneous_capacity_loss_power_failure_sequence_index, power, voltage, temperature);
+              m_instantaneous_capacity_loss_power_failure_sequence_index,
+	      power, voltage, temperature);
 
-  injectFault("thermal_power_failure", m_thermal_power_failure_activated, m_thermal_power_failure_sequence,
-              m_thermal_power_failure_sequence_index, power, voltage, temperature);
+  injectFault(FAULT_NAME_THERMAL,
+	      m_thermal_power_failure_activated,
+	      m_thermal_power_failure_sequence,
+              m_thermal_power_failure_sequence_index,
+	      power, voltage, temperature);
 }
 
-map<MessageId, Datum<double>> PowerSystemNode::composePrognoserData(double power, double voltage, double temperature)
+PrognoserMap
+PowerSystemNode::composePrognoserData(double power,
+				      double voltage,
+				      double temperature)
 {
-  return map<MessageId, Datum<double>>{ { MessageId::Watts, Datum<double>{ power } },
-                                        { MessageId::Volts, Datum<double>{ voltage } },
-                                        { MessageId::Centigrade, Datum<double>{ temperature } } };
+  return PrognoserMap {
+    { MessageId::Watts, Datum<double>{ power } },
+    { MessageId::Volts, Datum<double>{ voltage } },
+    { MessageId::Centigrade, Datum<double>{ temperature } }
+  };
 }
 
-void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event, Float64& soc_msg, Int16& rul_msg, Float64& battery_temperature_msg)
+void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
+				     Float64& soc_msg,
+				     Int16& rul_msg,
+				     Float64& battery_temperature_msg)
 {
   // The time of event is a `UData` structure, which represents a data
   // point while maintaining uncertainty. For the MonteCarlo predictor
@@ -300,13 +351,24 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event, Float64& soc_ms
   battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
 }
 
-void PowerSystemNode::powerCb(double electrical_power)
+void PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  double voltage_estimate = generateVoltageEstimate();
   double temperature_estimate = generateTemperatureEstimate();
-  injectFaults(electrical_power, voltage_estimate, temperature_estimate);
-  auto current_data = composePrognoserData(electrical_power, voltage_estimate, temperature_estimate);
+  double voltage_estimate = generateVoltageEstimate();
+  double adjusted_wattage = electrical_power + m_baseline_wattage;
+  injectFaults(adjusted_wattage, voltage_estimate, temperature_estimate);
+
+  if (adjusted_wattage > m_max_gsap_input_watts) {
+    ROS_WARN_STREAM("Power system node computed excessive power input for GSAP, "
+                    << adjusted_wattage << "W. Capping GSAP input at "
+                    << m_max_gsap_input_watts << "W.");
+      adjusted_wattage = m_max_gsap_input_watts;
+  }
+
+  auto current_data = composePrognoserData(adjusted_wattage,
+                                           voltage_estimate,
+                                           temperature_estimate);
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
@@ -329,9 +391,10 @@ void PowerSystemNode::powerCb(double electrical_power)
 
 void PowerSystemNode::Run()
 {
-  ROS_INFO("Power system node running");
+  ROS_INFO("Power system node running.");
 
-  ros::Rate rate(m_power_node_processing_rate);
+  // For simplicity, we run the power node at the same rate as GSAP.
+  ros::Rate rate(m_gsap_rate_hz);
 
   while (ros::ok())
   {
@@ -341,7 +404,7 @@ void PowerSystemNode::Run()
     {
       m_trigger_processing_new_power_batch = false;
       m_processing_power_batch = true;
-      powerCb(m_mechanical_power_to_be_processed / m_efficiency);
+      runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
       m_processing_power_batch = false;
     }
 
