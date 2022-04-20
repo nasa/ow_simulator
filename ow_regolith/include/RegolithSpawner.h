@@ -15,7 +15,6 @@
 
 #include <vector>
 
-#include <ServiceClientFacade.h>
 #include <ModelPool.h>
 #include <DigStateMachine.h>
 
