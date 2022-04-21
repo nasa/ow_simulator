@@ -99,6 +99,13 @@ class TerrainInteraction(unittest.TestCase):
       return copy(self._gz_link_poses[i].position)
 
   """
+  Asserts nothing. Pass this to _test_action a action_fail_condition is not
+  necessary.
+  """
+  def _assert_nothing(self):
+    pass
+
+  """
   Asserts that there are no regolith models present in the Gazebo world
   @param msg: Assert message
   """
@@ -204,12 +211,15 @@ class TerrainInteraction(unittest.TestCase):
   @param server_timeout: Time the action server is waited for (default: 10.0)
   @param condition_check_interval: The interval in seconds between calls to
          action_fail_condition (default: 0.2)
+  @param expected_final_tolerance: allowed distance between result.final and
+         expected_final (default: 0.02)
   @kwargs: Any properties of goal
   """
   def _test_action(self, action_name, action, goal,
                    max_duration, expected_final, action_fail_condition,
                    server_timeout=10.0,
                    condition_check_interval=0.2,
+                   expected_final_tolerance=0.02,
                    **kwargs):
 
     client = actionlib.SimpleActionClient(action_name, action)
@@ -257,7 +267,7 @@ class TerrainInteraction(unittest.TestCase):
 
     # verify action ended where we expected
     self._assert_point_is_near(
-      result.final, expected_final, 0.02,
+      result.final, expected_final, expected_final_tolerance,
       "Arm did not complete the %s action in the position expected!"
         % action_name
     )
@@ -265,15 +275,32 @@ class TerrainInteraction(unittest.TestCase):
     return result
 
   """
+  Test the unstow action. Calling this first is standard operating procedure.
+  """
+  def test_01_unstow(self):
+
+    UNSTOW_MAX_DURATION = 30.0
+    UNSTOW_EXPECTED_FINAL = Point(1.7419, 0.2396, -6.5904)
+
+    unstow_result = self._test_action(
+      'Unstow',
+      ow_lander.msg.UnstowAction,
+      ow_lander.msg.UnstowGoal(),
+      UNSTOW_MAX_DURATION,
+      UNSTOW_EXPECTED_FINAL,
+      self._assert_nothing, # no check is necessary
+      server_timeout = 25.0, # (seconds) first action call needs longer timeout
+      expected_final_tolerance = 0.5 # unstow requires a really high tolerance
+    )
+
+  """
   Tests an extra deep grind action and asserts no regolith is spawned during the
   operation.
   """
-  def test_01_grind(self):
+  def test_02_grind(self):
 
     GRIND_MAX_DURATION = 80.0 # seconds
-    GRIND_EXPECTED_FINAL = Point(1.4720579324199088,
-                                 -0.14069361533007319,
-                                 -6.739956216168468)
+    GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
 
     # call Grind action asynchronously
     grind_result = self._test_action(
@@ -283,7 +310,6 @@ class TerrainInteraction(unittest.TestCase):
       GRIND_MAX_DURATION,
       GRIND_EXPECTED_FINAL,
       self._assert_regolith_not_present,
-      server_timeout = 20.0, # (seconds) first action call needs longer timeout
       x_start         = 1.65,
       y_start         = 0.0,
       depth           = 0.15, # grind deep so terrain is modified
@@ -296,12 +322,10 @@ class TerrainInteraction(unittest.TestCase):
   Tests a default dig linear action and asserts regolith does spawn during the
   operation and remains in the scoop until the end of it.
   """
-  def test_02_dig_linear(self):
+  def test_03_dig_linear(self):
 
     DIG_LINEAR_MAX_DURATION = 110.0
-    DIG_LINEAR_EXPECTED_FINAL = Point(2.2404188541487606,
-                                      -0.012052180209644802,
-                                      -7.049335444887187)
+    DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
 
     # call Grind action asynchronously
     dig_linear_result = self._test_action(
@@ -325,10 +349,10 @@ class TerrainInteraction(unittest.TestCase):
   Discards material over the default discard position and asserts it leaves
   scoop and is cleaned up shortly after hitting the terrain.
   """
-  def test_03_discard(self):
+  def test_04_discard(self):
 
     DISCARD_MAX_DURATION = 50.0
-    DISCARD_EXPECTED_FINAL = Point(1.502458, 0.864295, -6.640796)
+    DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
     REGOLITH_CLEANUP_DELAY = 5.0 # seconds
 
     discard_result = self._test_action(
@@ -352,10 +376,10 @@ class TerrainInteraction(unittest.TestCase):
   Dig for more material so we can then test delivery into the sample dock. This
   digs non-parallel so that material is produced.
   """
-  def test_04_dig_circular(self):
+  def test_05_dig_circular(self):
 
     DIG_CIRCULAR_MAX_DURATION = 60.0
-    DIG_CIRCULAR_EXPECTED_FINAL = Point(1.649902, -0.121887, -7.322043)
+    DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
 
     dig_circular_result = self._test_action(
       'DigCircular',
@@ -378,12 +402,10 @@ class TerrainInteraction(unittest.TestCase):
   the final portion when it is dumped into the sample dock. Upon completion of
   the operation it also asserts that regolith models are deleted.
   """
-  def test_05_deliver(self):
+  def test_06_deliver(self):
 
     DELIVER_MAX_DURATION = 60.0
-    DELIVER_EXPECTED_FINAL = Point(0.5562290134759807,
-                                   -0.21354780470240303,
-                                   -6.351096861727068)
+    DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
 
     deliver_result = self._test_action(
       'Deliver',
@@ -397,7 +419,28 @@ class TerrainInteraction(unittest.TestCase):
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
 
-# TODO: add test_06_ingest_smaple
+  # TODO: add test_07_ingest_smaple
+
+  """
+  Test the unstow then stow action.
+  Calling this after an optertion is standard operating procedure.
+  """
+  def test_07_stow(self):
+
+    # unstow must come before stow
+    self.test_01_unstow()
+
+    STOW_MAX_DURATION = 30.0
+    STOW_EXPECTED_FINAL = Point(0.7071, -0.4770, -6.5930)
+
+    stow_result = self._test_action(
+      'Stow',
+      ow_lander.msg.StowAction,
+      ow_lander.msg.StowGoal(),
+      STOW_MAX_DURATION,
+      STOW_EXPECTED_FINAL,
+      self._assert_nothing, # no check is necessary
+    )
 
 if __name__ == '__main__':
   import rostest
