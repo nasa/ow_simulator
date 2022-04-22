@@ -29,7 +29,7 @@ public:
   DigState(const DigState&) = delete;
   DigState& operator=(const DigState&) = delete;
 
-  inline std::string getName() const {return m_name;}
+  const std::string& getName() const {return m_name;}
 
   // external events DigStates will handle or ignore
   virtual void terrainModified() { };
@@ -60,8 +60,8 @@ public:
 protected:
   virtual void onTimeout(const ros::TimerEvent&) = 0;
 
-  inline void startTimer() {m_timer.start();};
-  inline void stopTimer() {m_timer.stop();};
+  void startTimer() {m_timer.start();};
+  void stopTimer() {m_timer.stop();};
 private:
   ros::Timer m_timer;
 };
@@ -83,11 +83,11 @@ public:
   void handleTerrainModified();
   void handleScoopPoseUpdate(const tf::Quaternion &new_orientation);
 
-  inline bool isDigging() const {
+  bool isDigging() const {
     return m_current != m_not_digging.get();
   };
 
-  inline bool isRetracting() const {
+  bool isRetracting() const {
     return m_current == m_retracting.get();
   }
 

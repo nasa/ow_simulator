@@ -34,20 +34,19 @@ public:
 
   bool connectServices();
 
-  bool setModel(std::string const &model_uri, std::string const &model_prefix);
+  bool setModel(const std::string &model_uri, const std::string &model_prefix);
 
-  inline float getModelMass() {
-    return m_model_mass;
-  }
+  float getModelMass() const {return m_model_mass;}
 
   // spawn a model
-  std::string spawn(tf::Point position, std::string reference_frame);
+  std::string spawn(const tf::Point &position,
+                    const std::string &reference_frame);
 
   // remove a model within the pool by link name
   std::vector<std::string> remove(const std::vector<std::string> &link_names = {});
 
-  bool applyForce(std::string link_name, tf::Vector3 force,
-                  ros::Duration apply_for);
+  bool applyForce(const std::string &link_name, const tf::Vector3 &force,
+                  const ros::Duration& apply_for);
 
   bool clearAllForces();
 

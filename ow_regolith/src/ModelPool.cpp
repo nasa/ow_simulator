@@ -43,7 +43,7 @@ bool ModelPool::connectServices()
       m_node_handle, SRV_CLEAR_BODY_WRENCH, SERVICE_CONNECT_TIMEOUT, true);
 }
 
-bool ModelPool::setModel(string const &model_uri, string const &model_tag)
+bool ModelPool::setModel(const string &model_uri, const string &model_tag)
 {
   // use local variables for data and only set members if all calls succeed
   string model_sdf;
@@ -76,7 +76,7 @@ bool ModelPool::setModel(string const &model_uri, string const &model_tag)
   return true;
 }
 
-string ModelPool::spawn(Point position, string reference_frame)
+string ModelPool::spawn(const Point &position, const string &reference_frame)
 {
   ROS_INFO("Spawning regolith");
 
@@ -87,9 +87,9 @@ string ModelPool::spawn(Point position, string reference_frame)
 
   SpawnModel spawn_msg;
 
-  spawn_msg.request.model_name                  = model_name.str();
-  spawn_msg.request.model_xml                   = m_model_sdf;
-  spawn_msg.request.reference_frame             = reference_frame;
+  spawn_msg.request.model_name      = model_name.str();
+  spawn_msg.request.model_xml       = m_model_sdf;
+  spawn_msg.request.reference_frame = reference_frame;
 
   pointTFToMsg(position, spawn_msg.request.initial_pose.position);
 
@@ -138,8 +138,8 @@ vector<string> ModelPool::remove(const vector<string> &link_names)
   return not_removed;
 }
 
-bool ModelPool::applyForce(string link_name, Vector3 force,
-                           ros::Duration apply_for) {
+bool ModelPool::applyForce(const string &link_name, const Vector3 &force,
+                           const ros::Duration &apply_for) {
   ApplyBodyWrench wrench_msg;
   wrench_msg.request.body_name = link_name;
   vector3TFToMsg(force, wrench_msg.request.wrench.force);
