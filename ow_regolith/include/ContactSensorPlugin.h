@@ -26,9 +26,11 @@ namespace ow_regolith {
   {
   public:
     ContactSensorPlugin()
-      : SensorPlugin(), m_links_in_contact(), m_report_only_set(false)
-    {
-    };
+      : SensorPlugin(), m_links_in_contact(), m_report_only_set(false) { };
+    ~ContactSensorPlugin() = default;
+
+    ContactSensorPlugin(const ContactSensorPlugin&) = delete;
+    ContactSensorPlugin& operator=(const ContactSensorPlugin&) = delete;
 
     void Load(gazebo::sensors::SensorPtr sensor, sdf::ElementPtr sdf) override;
 

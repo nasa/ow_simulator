@@ -48,7 +48,7 @@ public:
   template <typename T>
   bool call(T &message);
 
-  inline bool isConnected()
+  bool isConnected()
   {
     return m_client.exists() && m_client.isValid();
   };
