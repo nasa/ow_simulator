@@ -2,9 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// ModelPool enables rapid spawning and deletion of multiple instances of a
-// model in gazebo. It can also apply forces to the models it has spawned.
-
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -22,6 +19,8 @@
 namespace ow_regolith
 {
 
+// ModelPool enables rapid spawning and removal of multiple instances of a
+// model in gazebo. It can also apply forces to the models it has spawned.
 class ModelPool
 {
 public:
@@ -45,9 +44,11 @@ public:
   // remove a model within the pool by link name
   std::vector<std::string> remove(const std::vector<std::string> &link_names = {});
 
+  // applies of force to the specified link
   bool applyForce(const std::string &link_name, const tf::Vector3 &force,
                   const ros::Duration& apply_for);
 
+  // clears all forces acting on all active models
   bool clearAllForces();
 
 private:

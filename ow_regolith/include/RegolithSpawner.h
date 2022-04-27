@@ -2,11 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// RegolithSpawner is a ROS node that detects when digging by the scoop
-// end-effector occurs and spawns a model in the scoop to represent collected
-// material. The node will also remove models it has spawned as they collide
-// with the terrain or in response to a service call.
-
 #ifndef REGOLITH_SPAWNER_H
 #define REGOLITH_SPAWNER_H
 
@@ -28,6 +23,10 @@
 
 namespace ow_regolith {
 
+// RegolithSpawner is a ROS node that detects when digging by the scoop
+// end-effector occurs and spawns a model in the scoop to represent collected
+// material. The node will also remove models it has spawned as they collide
+// with the terrain or in response to a service call.
 class RegolithSpawner
 {
 public:
@@ -75,7 +74,7 @@ private:
   ros::Subscriber m_sub_mod_diff_visual;
 
   // spawns, removes, and applies forces to spawned models
-  std::unique_ptr<ModelPool> m_pool;
+  std::unique_ptr<ModelPool> m_model_pool;
   // estimates the state of a dig from scoop orientation and terrain mods
   std::unique_ptr<DigStateMachine> m_dig_state;
 

@@ -87,13 +87,13 @@ bool RegolithSpawner::initialize()
   // initialize offset selector
   m_spawn_offset_selector = m_spawn_offsets.begin();
 
-  m_pool = make_unique<ModelPool>(m_node_handle);
-  if (!m_pool->connectServices()) {
+  m_model_pool = make_unique<ModelPool>(m_node_handle);
+  if (!m_model_pool->connectServices()) {
     ROS_ERROR("ModelPool failed to connect to gazebo_ros services.");
     return false;
   }
 
-  if (!m_pool->setModel(model_uri, REGOLITH_TAG)) {
+  if (!m_model_pool->setModel(model_uri, REGOLITH_TAG)) {
     ROS_ERROR("Failed to set model.");
     return false;
   }
@@ -131,8 +131,9 @@ bool RegolithSpawner::initialize()
   Vector3 gravity;
   vector3MsgToTF(phys_prop_msg.response.gravity, gravity);
   // psuedo force magnitude = model's weight X weight factor
-  m_psuedo_force_mag
-    = m_pool->getModelMass() * gravity.length() * PSUEDO_FORCE_WEIGHT_FACTOR;
+  m_psuedo_force_mag = m_model_pool->getModelMass()
+                       * gravity.length()
+                       * PSUEDO_FORCE_WEIGHT_FACTOR;
 
   return true;
 }
@@ -144,7 +145,7 @@ void RegolithSpawner::resetTrackedVolume()
 
 void RegolithSpawner::clearAllPsuedoForces()
 {
-  if (!m_pool->clearAllForces())
+  if (!m_model_pool->clearAllForces())
     ROS_WARN("Failed to clear force on one or more regolith particles");
 }
 
@@ -153,7 +154,7 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
 {
   Point position;
   pointMsgToTF(request.position, position);
-  auto ret = m_pool->spawn(position, request.reference_frame);
+  auto ret = m_model_pool->spawn(position, request.reference_frame);
   response.success = !ret.empty();
   return true;
 }
@@ -161,7 +162,7 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
 bool RegolithSpawner::removeRegolithSrv(RemoveRegolithRequest &request,
                                         RemoveRegolithResponse &response)
 {
-  response.not_removed = m_pool->remove(request.link_names);
+  response.not_removed = m_model_pool->remove(request.link_names);
   response.success = response.not_removed.empty();
   return true;
 }
@@ -182,7 +183,7 @@ void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg)
 
 void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
 {
-  m_pool->remove(msg->link_names);
+  m_model_pool->remove(msg->link_names);
 }
 
 void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
@@ -229,7 +230,7 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
     if (m_spawn_offset_selector ==  m_spawn_offsets.end())
       m_spawn_offset_selector = m_spawn_offsets.begin();
     // spawn a regolith model
-    auto link_name = m_pool->spawn(offset, SCOOP_LINK_NAME);
+    auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME);
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
       return;
@@ -245,8 +246,8 @@ void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& 
     Vector3 pushback_force = -m_psuedo_force_mag * scooping_vec.normalize();
     // choose a long ros duration (1 yr) to delay the disabling of wrench force
     constexpr auto one_year_in_seconds = duration_cast<seconds>(1h*24*365).count();
-    if (!m_pool->applyForce(link_name, pushback_force,
-                            ros::Duration(one_year_in_seconds))) {
+    if (!m_model_pool->applyForce(link_name, pushback_force,
+                                  ros::Duration(one_year_in_seconds))) {
       ROS_ERROR("Failed to apply force to regolith %s", link_name.c_str());
       return;
     }

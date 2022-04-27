@@ -2,9 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// ServiceClientFacade wraps ros::ServiceClient and implements automatic
-// reconnection for when persistent clients drop their connection.
-
 #ifndef SERVICE_CLIENT_FACADE_H
 #define SERVICE_CLIENT_FACADE_H
 
@@ -14,6 +11,8 @@
 
 namespace ow_regolith {
 
+// ServiceClientFacade wraps ros::ServiceClient and implements automatic
+// reconnection for when persistent clients drop their connection.
 class ServiceClientFacade
 {
 public:
