@@ -2,9 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// Defines a finite state machine and associated states that estimate the phase
-// of a digging operation performed with the lander scoop.
-
 #ifndef DIG_FSM_H
 #define DIG_FSM_H
 
@@ -16,58 +13,10 @@
 
 namespace ow_regolith {
 
-class DigStateMachine;
-
-class DigState
-{
-public:
-  DigState(const std::string &name, DigStateMachine *const c)
-    : m_name(name), m_context(c) { };
-  virtual ~DigState() = default;
-
-  DigState() = delete;
-  DigState(const DigState&) = delete;
-  DigState& operator=(const DigState&) = delete;
-
-  const std::string& getName() const {return m_name;}
-
-  // external events DigStates will handle or ignore
-  virtual void terrainModified() { };
-  virtual void scoopPoseUpdate() { };
-
-  virtual void enter() { };
-  virtual void exit() { };
-
-protected:
-  DigStateMachine *const m_context;
-private:
-  const std::string m_name;
-};
-
-class Timeout
-{
-public:
-  Timeout(const ros::Duration &interval, ros::NodeHandle *const nh) {
-    // create a oneshot timer that does not autostart
-    m_timer = nh->createTimer(interval, &Timeout::onTimeout, this, true, false);
-  };
-  virtual ~Timeout() = default;
-
-  Timeout() = delete;
-  Timeout(const Timeout&) = delete;
-  Timeout& operator=(const Timeout&) = delete;
-
-protected:
-  virtual void onTimeout(const ros::TimerEvent&) = 0;
-
-  void startTimer() {m_timer.start();};
-  void stopTimer() {m_timer.stop();};
-private:
-  ros::Timer m_timer;
-};
-
 class RegolithSpawner;
 
+// Defines a finite state machine and associated states that estimate the phase
+// of a digging operation performed with the lander scoop.
 class DigStateMachine
 {
 public:
@@ -92,11 +41,6 @@ public:
   }
 
 private:
-  void setState(DigState *const s);
-
-  // currently active DigState
-  DigState *m_current;
-
   // external interface pointers
   std::shared_ptr<ros::NodeHandle> m_node_handle;
   RegolithSpawner *const m_spawner;
@@ -119,8 +63,62 @@ private:
   static const tf::Vector3 SCOOP_DOWNWARD;
   static const tf::Vector3 WORLD_DOWNWARD;
 
-  // each DigState subclass marks a unique phase in the digging process
-  // as nested classes each is given friend access to DigStateMachine
+  // Defines an abstract base class for DigStates. Supports (state) enter and exit
+  // methods and two events methods relevant to digging operations.
+  class DigState
+  {
+  public:
+    DigState(const std::string &name, DigStateMachine *const c)
+      : m_name(name), m_context(c) { };
+    virtual ~DigState() = default;
+
+    DigState() = delete;
+    DigState(const DigState&) = delete;
+    DigState& operator=(const DigState&) = delete;
+
+    const std::string& getName() const {return m_name;}
+
+    // external events DigStates will handle or ignore
+    virtual void terrainModified() { };
+    virtual void scoopPoseUpdate() { };
+
+    virtual void enter() { };
+    virtual void exit() { };
+
+  protected:
+    DigStateMachine *const m_context;
+  private:
+    const std::string m_name;
+  };
+
+  // Defines a supplemental class for anything that inherits from DigState.
+  // Inheriting Timeout will enable the DigState to define a timeout and what
+  // happens when the timeout triggers.
+  class Timeout
+  {
+  public:
+    Timeout(const ros::Duration &interval, ros::NodeHandle *const nh) {
+      // create a oneshot timer that does not autostart
+      m_timer = nh->createTimer(interval, &Timeout::onTimeout, this, true, false);
+    };
+    virtual ~Timeout() = default;
+
+    Timeout() = delete;
+    Timeout(const Timeout&) = delete;
+    Timeout& operator=(const Timeout&) = delete;
+
+  protected:
+    virtual void onTimeout(const ros::TimerEvent&) = 0;
+
+    void startTimer() {m_timer.start();};
+    void stopTimer() {m_timer.stop();};
+  private:
+    ros::Timer m_timer;
+  };
+
+  // The NotDigging state indicates digging is not happening. Transitions to the
+  // Sinking state when a terrain modification occurs and the scoop is in a
+  // proper orientation to initiate a dig.
   class NotDiggingState : public DigState
   {
   public:
@@ -129,6 +127,9 @@ private:
     void enter() override;
   };
 
+  // The Sinking state indicates the scoop is digging downward into terrain.
+  // Transitions to the Plowing state when the scoop pitches upward to be
+  // level with the terrain, or transitions to NotDigging when it times out.
   class SinkingState : public DigState, Timeout
   {
   public:
@@ -141,6 +142,9 @@ private:
     void onTimeout(const ros::TimerEvent&) override;
   };
 
+  // The Plowing state indicates the scoop is plowing the terrian along the
+  // the horizontal. Transitions to the Retracting state when the scoop tip
+  // pitches upward, or transitions into NotDigging when it times out.
   class PlowingState : public DigState, Timeout
   {
   public:
@@ -153,6 +157,9 @@ private:
     void onTimeout(const ros::TimerEvent&) override;
   };
 
+  // The Retracting state indicates the scoop is pitching upward and exitting
+  // the terrain. Transitions to the NotDigging state when the scoop rotates
+  // into a non-digging orientation, or when it times out.
   class RetractingState : public DigState, public Timeout
   {
   public:
@@ -165,12 +172,19 @@ private:
     void onTimeout(const ros::TimerEvent&) override;
   };
 
+  // instantiations of all states supported by the state machine
   const std::unique_ptr<NotDiggingState> m_not_digging;
   const std::unique_ptr<SinkingState> m_sinking;
   const std::unique_ptr<PlowingState> m_plowing;
   const std::unique_ptr<RetractingState> m_retracting;
-};
 
-} // namespaced ow_regolith
+  // currently active DigState
+  DigState *m_current;
+
+  void setState(DigState *const s);
+
+}; // class DigStateMachine
+
+} // namespace ow_regolith
 
 #endif // DIG_FMS_H

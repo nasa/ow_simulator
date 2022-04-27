@@ -2,10 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// ContactSensorPlugin is a Gazebo sensor plugin that publishes the names of any
-// links actively in contact with the collision object the sensor plugin has
-// been attached to.
-
 #ifndef TERRAIN_CONTACT_PLUGIN_H
 #define TERRAIN_CONTACT_PLUGIN_H
 
@@ -22,32 +18,35 @@
 
 namespace ow_regolith {
 
-  class ContactSensorPlugin : public gazebo::SensorPlugin
-  {
-  public:
-    ContactSensorPlugin()
-      : SensorPlugin(), m_links_in_contact(), m_report_only_set(false) { };
-    ~ContactSensorPlugin() = default;
+// ContactSensorPlugin is a Gazebo sensor plugin that publishes the names of any
+// links actively in contact with the collision object the sensor plugin has
+// been attached to.
+class ContactSensorPlugin : public gazebo::SensorPlugin
+{
+public:
+  ContactSensorPlugin()
+    : SensorPlugin(), m_links_in_contact(), m_report_only_set(false) { };
+  ~ContactSensorPlugin() = default;
 
-    ContactSensorPlugin(const ContactSensorPlugin&) = delete;
-    ContactSensorPlugin& operator=(const ContactSensorPlugin&) = delete;
+  ContactSensorPlugin(const ContactSensorPlugin&) = delete;
+  ContactSensorPlugin& operator=(const ContactSensorPlugin&) = delete;
 
-    void Load(gazebo::sensors::SensorPtr sensor, sdf::ElementPtr sdf) override;
+  void Load(gazebo::sensors::SensorPtr sensor, sdf::ElementPtr sdf) override;
 
-  private:
-    void onUpdate();
+private:
+  void onUpdate();
 
-    std::set<std::string> m_links_in_contact;
+  std::set<std::string> m_links_in_contact;
 
-    bool m_report_only_set;
-    std::regex m_report_only;
+  bool m_report_only_set;
+  std::regex m_report_only;
 
-    gazebo::sensors::ContactSensorPtr m_parent_sensor;
-    gazebo::event::ConnectionPtr m_update_connection;
+  gazebo::sensors::ContactSensorPtr m_parent_sensor;
+  gazebo::event::ConnectionPtr m_update_connection;
 
-    std::unique_ptr<ros::NodeHandle> m_node_handle;
-    ros::Publisher m_pub_contacts;
-  };
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  ros::Publisher m_pub_contacts;
+};
 
 } // namespace ow_regolith
 

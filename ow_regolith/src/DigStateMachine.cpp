@@ -73,9 +73,9 @@ void DigStateMachine::NotDiggingState::enter()
 {
   // dig activity is complete call
   m_context->m_spawner->resetTrackedVolume();
-  m_context->m_spawner->clearAllPsuedoForces();
   // for a nominal dig clearAllPsuedoForces will be redudant, but calling it
-  // here this ensures forces will not persist in the case of off-nominal digs
+  // here ensures forces will not persist in the case of off-nominal digs
+  m_context->m_spawner->clearAllPsuedoForces();
 }
 
 void DigStateMachine::SinkingState::scoopPoseUpdate()

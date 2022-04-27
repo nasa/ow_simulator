@@ -63,7 +63,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 
 void ContactSensorPlugin::onUpdate()
 {
-  if (m_parent_sensor->GetCollisionCount() < 0)
+  if (m_parent_sensor->GetCollisionCount() <= 0)
     return;
   const auto target_name = m_parent_sensor->GetCollisionName(0);
   set<string> current_contacts;
