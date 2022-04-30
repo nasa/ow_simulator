@@ -2,14 +2,15 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#ifndef DIG_FSM_H
-#define DIG_FSM_H
+#ifndef DIG_STATE_MACHINE_H
+#define DIG_STATE_MACHINE_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
 
 #include <string>
 #include <memory>
+#include <optional>
 
 namespace ow_regolith {
 
@@ -63,13 +64,24 @@ private:
   static const tf::Vector3 SCOOP_DOWNWARD;
   static const tf::Vector3 WORLD_DOWNWARD;
 
-  // Defines an abstract base class for DigStates. Supports (state) enter and exit
-  // methods and two events methods relevant to digging operations.
+  // Defines an abstract base class for DigStates. Supports (state) enter and
+  // exit methods and two events methods relevant to digging operations.
   class DigState
   {
   public:
     DigState(const std::string &name, DigStateMachine *const c)
-      : m_name(name), m_context(c) { };
+      : m_name(name), m_context(c),
+        m_timeout(std::nullopt) // timeout will not be used
+    { };
+    DigState(const std::string &name, DigStateMachine *const c,
+             const ros::Duration &interval)
+      : m_name(name), m_context(c),
+        m_timeout(
+          c->m_node_handle->createTimer(
+            interval, &DigState::onTimeout, this, true, false
+          )
+        )
+    { };
     virtual ~DigState() = default;
 
     DigState() = delete;
@@ -78,42 +90,26 @@ private:
 
     const std::string& getName() const {return m_name;}
 
-    // external events DigStates will handle or ignore
+    // external events derived DigStates will handle or ignore
     virtual void terrainModified() { };
     virtual void scoopPoseUpdate() { };
 
-    virtual void enter() { };
-    virtual void exit() { };
+    // called when a start becomes active
+    virtual void enter() {
+      if (m_timeout) m_timeout->start();
+    };
+    // called when a start become inactive
+    virtual void exit() {
+      if (m_timeout) m_timeout->stop();
+    };
+
+    virtual void onTimeout(const ros::TimerEvent&) { };
 
   protected:
     DigStateMachine *const m_context;
   private:
     const std::string m_name;
-  };
-
-  // Defines a supplemental class for anything that inherits from DigState.
-  // Inheriting Timeout will enable the DigState to define a timeout and what
-  // happens when the timeout triggers.
-  class Timeout
-  {
-  public:
-    Timeout(const ros::Duration &interval, ros::NodeHandle *const nh) {
-      // create a oneshot timer that does not autostart
-      m_timer = nh->createTimer(interval, &Timeout::onTimeout, this, true, false);
-    };
-    virtual ~Timeout() = default;
-
-    Timeout() = delete;
-    Timeout(const Timeout&) = delete;
-    Timeout& operator=(const Timeout&) = delete;
-
-  protected:
-    virtual void onTimeout(const ros::TimerEvent&) = 0;
-
-    void startTimer() {m_timer.start();};
-    void stopTimer() {m_timer.stop();};
-  private:
-    ros::Timer m_timer;
+    std::optional<ros::Timer> m_timeout;
   };
 
   // The NotDigging state indicates digging is not happening. Transitions to the
@@ -122,7 +118,8 @@ private:
   class NotDiggingState : public DigState
   {
   public:
-    NotDiggingState(DigStateMachine *c) : DigState("NotDigging", c) { };
+    NotDiggingState(DigStateMachine *c)
+      : DigState("NotDigging", c) { };
     void terrainModified() override;
     void enter() override;
   };
@@ -130,45 +127,37 @@ private:
   // The Sinking state indicates the scoop is digging downward into terrain.
   // Transitions to the Plowing state when the scoop pitches upward to be
   // level with the terrain, or transitions to NotDigging when it times out.
-  class SinkingState : public DigState, Timeout
+  class SinkingState : public DigState
   {
   public:
     SinkingState(DigStateMachine *c)
-      : DigState("Sinking", c),
-        Timeout(TIMEOUT_SINK, c->m_node_handle.get()) { };
+      : DigState("Sinking", c, TIMEOUT_SINK) { };
     void scoopPoseUpdate() override;
-    void enter() override;
-    void exit() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 
   // The Plowing state indicates the scoop is plowing the terrian along the
   // the horizontal. Transitions to the Retracting state when the scoop tip
   // pitches upward, or transitions into NotDigging when it times out.
-  class PlowingState : public DigState, Timeout
+  class PlowingState : public DigState
   {
   public:
     PlowingState(DigStateMachine *c)
-      : DigState("Plowing", c),
-        Timeout(TIMEOUT_PLOW, c->m_node_handle.get()) { };
+      : DigState("Plowing", c, TIMEOUT_PLOW) { };
     void scoopPoseUpdate() override;
-    void enter() override;
-    void exit() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 
   // The Retracting state indicates the scoop is pitching upward and exitting
   // the terrain. Transitions to the NotDigging state when the scoop rotates
   // into a non-digging orientation, or when it times out.
-  class RetractingState : public DigState, public Timeout
+  class RetractingState : public DigState
   {
   public:
     RetractingState(DigStateMachine *c)
-      : DigState("Retracting", c),
-        Timeout(TIMEOUT_RETRACT, c->m_node_handle.get()) { };
+      : DigState("Retracting", c, TIMEOUT_RETRACT) { };
     void scoopPoseUpdate() override;
     void enter() override;
-    void exit() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 
@@ -187,4 +176,4 @@ private:
 
 } // namespace ow_regolith
 
-#endif // DIG_FMS_H
+#endif // DIG_STATE_MACHINE_H
