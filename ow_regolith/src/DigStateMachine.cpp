@@ -84,16 +84,6 @@ void DigStateMachine::SinkingState::scoopPoseUpdate()
     m_context->setState(m_context->m_plowing.get());
 }
 
-void DigStateMachine::SinkingState::enter()
-{
-  startTimer();
-}
-
-void DigStateMachine::SinkingState::exit()
-{
-  stopTimer();
-}
-
 void DigStateMachine::SinkingState::onTimeout(const ros::TimerEvent&)
 {
   m_context->setState(m_context->m_not_digging.get());
@@ -103,17 +93,6 @@ void DigStateMachine::PlowingState::scoopPoseUpdate()
 {
   if (m_context->m_downward_projection < m_context->THRESHOLD_PLOW)
     m_context->setState(m_context->m_retracting.get());
-}
-
-void DigStateMachine::PlowingState::enter()
-{
-  startTimer();
-}
-
-void DigStateMachine::PlowingState::exit()
-{
-  stopTimer();
-
 }
 
 void DigStateMachine::PlowingState::onTimeout(const ros::TimerEvent&)
@@ -130,14 +109,9 @@ void DigStateMachine::RetractingState::scoopPoseUpdate()
 
 void DigStateMachine::RetractingState::enter()
 {
-  startTimer();
+  DigState::enter();
   // psuedo forces no longer needed to keep particles in scoop in this dig phase
   m_context->m_spawner->clearAllPsuedoForces();
-}
-
-void DigStateMachine::RetractingState::exit()
-{
-  stopTimer();
 }
 
 void DigStateMachine::RetractingState::onTimeout(const ros::TimerEvent&)
