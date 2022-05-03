@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
-  ow_lander
   message_generation
 )
 
@@ -36,6 +35,8 @@ link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -64,13 +65,19 @@ link_directories(
 # Generate messages in the 'msg' folder
 add_service_files(
   FILES
-  SpawnRegolithInScoop.srv
-  RemoveAllRegolith.srv
+  SpawnRegolith.srv
+  RemoveRegolith.srv
+)
+
+add_message_files(
+  FILES
+  Contacts.msg
 )
 
 generate_messages(
     DEPENDENCIES
     std_msgs
+    geometry_msgs
 )
 
 ###################################
@@ -85,7 +92,6 @@ generate_messages(
 catkin_package(
    CATKIN_DEPENDS
    ow_dynamic_terrain
-   ow_lander 
    message_runtime
 )
 
@@ -114,19 +120,29 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+# ROS node executable for automated regolith spawning and clean-up
 add_executable(regolith_node 
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
+  src/ModelPool.cpp
+  src/DigStateMachine.cpp
   src/sdf_utility.cpp
 )
-
 add_dependencies(regolith_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
 )
-
 target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
+)
+
+# Gazebo sensor plugin that tracks when regolith collides with the terrain
+add_library(ContactSensorPlugin
+  SHARED
+  src/ContactSensorPlugin.cpp
+)
+target_link_libraries(ContactSensorPlugin
   ${GAZEBO_LIBRARIES}
 )
 

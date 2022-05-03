@@ -2,9 +2,6 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// ServiceClientFacade wraps ros::ServiceClient and implements automatic
-// reconnection for when persistent clients drop their connection.
-
 #ifndef SERVICE_CLIENT_FACADE_H
 #define SERVICE_CLIENT_FACADE_H
 
@@ -14,15 +11,15 @@
 
 namespace ow_regolith {
 
+// ServiceClientFacade wraps ros::ServiceClient and implements automatic
+// reconnection for when persistent clients drop their connection.
 class ServiceClientFacade
 {
 public:
-  ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false)
-  {
-    // do nothing
-  }
-  ServiceClientFacade(const ServiceClientFacade&) = delete;
+  ServiceClientFacade() : m_node_handle(nullptr), m_persistent(false) { }
   ~ServiceClientFacade() = default;
+
+  ServiceClientFacade(const ServiceClientFacade&) = delete;
   ServiceClientFacade& operator=(const ServiceClientFacade&) = delete;
 
   // Connect this instance to a certain ROS service and block for the given
@@ -40,7 +37,7 @@ public:
   //       For best performance, a ServiceClientFacade should be connected
   //       persistently if it is expected to be called frequently.
   template <typename T>
-  bool connect(std::shared_ptr<ros::NodeHandle> &nh,
+  bool connect(std::shared_ptr<ros::NodeHandle> nh,
                const std::string &service_path,
                ros::Duration timeout, bool persistent);
 
@@ -49,6 +46,11 @@ public:
   // persistent and non-persistent clients.
   template <typename T>
   bool call(T &message);
+
+  bool isConnected()
+  {
+    return m_client.exists() && m_client.isValid();
+  };
 
 private:
 
@@ -64,7 +66,7 @@ private:
 };
 
 template <typename T>
-bool ServiceClientFacade::connect(std::shared_ptr<ros::NodeHandle> &nh,
+bool ServiceClientFacade::connect(std::shared_ptr<ros::NodeHandle> nh,
                                   const std::string &service_path,
                                   ros::Duration timeout, bool persistent)
 {
@@ -107,10 +109,10 @@ bool ServiceClientFacade::call(T &message)
 template <typename T>
 bool ServiceClientFacade::attemptReconnect()
 {
-  m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(),
-                                             m_persistent);
-  return m_client.exists();
+  m_client = m_node_handle->serviceClient<T>(m_client.getService().c_str(), m_persistent);
+  return isConnected();
 };
+
 
 } // namespace ow_regolith
 
