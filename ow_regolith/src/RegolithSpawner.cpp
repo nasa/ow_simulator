@@ -164,7 +164,12 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
 bool RegolithSpawner::removeRegolithSrv(RemoveRegolithRequest &request,
                                         RemoveRegolithResponse &response)
 {
-  response.not_removed = m_model_pool->remove(request.link_names);
+  if (request.link_names.empty())
+    // remove all regolith models
+    response.not_removed = m_model_pool->clear();
+  else
+    // remove specific regolith models
+    response.not_removed = m_model_pool->remove(request.link_names);
   response.success = response.not_removed.empty();
   return true;
 }

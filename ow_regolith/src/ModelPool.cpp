@@ -106,34 +106,38 @@ string ModelPool::spawn(const Point &position, const string &reference_frame)
 
 vector<string> ModelPool::remove(const vector<string> &link_names)
 {
+  if (link_names.empty())
+    return {};
   vector<string> not_removed;
   DeleteModel msg;
-  if (link_names.empty()) {
-    // delete all regolith models
-    auto it = begin(m_active_models);
-    while (it != end(m_active_models)) {
-      msg.request.model_name = it->second.model_name;
-      if (removeModel(msg)) {
-        it = m_active_models.erase(it);
-      } else {
-        // do not remove from active list if removal failed
-        not_removed.push_back((it++)->first);
-      }
+  // delete one or multiple models as provided in link_names
+  for (auto const &n : link_names) {
+    try {
+      msg.request.model_name = m_active_models.at(n).model_name;
+    } catch(out_of_range &_err) {
+      not_removed.push_back(n);
+      continue;
     }
-  } else {
-    // delete one or multiple models as provided in link_names
-    for (auto const &n : link_names) {
-      try {
-        msg.request.model_name = m_active_models.at(n).model_name;
-      } catch(out_of_range &_err) {
-        not_removed.push_back(n);
-        continue;
-      }
-      if (removeModel(msg))
-        m_active_models.erase(n);
-      else
-        not_removed.push_back(n);
-    }
+    if (removeModel(msg))
+      m_active_models.erase(n);
+    else
+      not_removed.push_back(n);
+  }
+  return not_removed;
+}
+
+vector<string> ModelPool::clear() {
+  vector<string> not_removed;
+  DeleteModel msg;
+  // delete all regolith models
+  auto it = begin(m_active_models);
+  while (it != end(m_active_models)) {
+    msg.request.model_name = it->second.model_name;
+    if (removeModel(msg))
+      it = m_active_models.erase(it);
+    else
+      // do not remove from active list if removal failed
+      not_removed.push_back((it++)->first);
   }
   return not_removed;
 }
