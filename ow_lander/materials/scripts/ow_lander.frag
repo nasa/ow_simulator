@@ -101,21 +101,22 @@ float calcPSSMDepthShadow(
   sampler2DShadow shadowMap0, sampler2DShadow shadowMap1, sampler2DShadow shadowMap2,
   vec4 lsPos0, vec4 lsPos1, vec4 lsPos2,
   float invShadowmapSize0, float invShadowmapSize1, float invShadowmapSize2,
-  vec4 pssmSplitPoints, float camDepth)
+  vec4 pssmSplitPoints, float camDepth, float depthBias)
 {
   float shadow = 1.0;
+  vec4 bias = vec4(0.0, 0.0, depthBias, 0.0);
   // calculate shadow
   if (camDepth <= pssmSplitPoints.x)
   {
-    shadow = calcDepthShadow(shadowMap0, lsPos0, invShadowmapSize0);
+    shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, invShadowmapSize0);
   }
   else if (camDepth <= pssmSplitPoints.y)
   {
-    shadow = calcDepthShadow(shadowMap1, lsPos1, invShadowmapSize1);
+    shadow = calcDepthShadow(shadowMap1, lsPos1 + bias, invShadowmapSize1);
   }
   else if (camDepth <= pssmSplitPoints.z)
   {
-    shadow = calcDepthShadow(shadowMap2, lsPos2, invShadowmapSize2);
+    shadow = calcDepthShadow(shadowMap2, lsPos2 + bias, invShadowmapSize2);
   }
   return shadow;
 }
@@ -124,11 +125,12 @@ float calcPSSMDepthShadowDebug(
   sampler2DShadow shadowMap0, sampler2DShadow shadowMap1, sampler2DShadow shadowMap2,
   vec4 lsPos0, vec4 lsPos1, vec4 lsPos2,
   float invShadowmapSize0, float invShadowmapSize1, float invShadowmapSize2,
-  vec4 pssmSplitPoints, float camDepth)
+  vec4 pssmSplitPoints, float camDepth, float depthBias)
 {
   float shadow = 1.0;
+  vec4 bias = vec4(0.0, 0.0, depthBias, 0.0);
   // calculate shadow
-  shadow = calcDepthShadow(shadowMap0, lsPos0, invShadowmapSize0);
+  shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, invShadowmapSize0);
   return shadow;
 }
 
@@ -184,10 +186,18 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   const float specular_power = 100.0;
 
   // shadows
+  // Compute shadow lookup bias using formula from
+  // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+  // Should be able to bake this bias into the shadow map using constant_bias
+  // and slope_scale_bias in IRGShadowParametersPlugins, but it doesn't work.
+  float constantBias = vsPos.z * 0.00001 - 0.00002; // Normally a constant, but this works better with PSSM
+  float cosTheta = clamp(dot(wsNormal, wsDirToSun), 0.0, 1.0);
+  float slopeScaleBias = clamp(0.000004 * tan(acos(cosTheta)), 0.0, 0.001);
+  float bias = constantBias - slopeScaleBias;
   float shadow = calcPSSMDepthShadow(shadowMap0, shadowMap1, shadowMap2,
                                      lsPos[0], lsPos[1], lsPos[2],
                                      inverseShadowmapSize[0], inverseShadowmapSize[1], inverseShadowmapSize[2],
-                                     pssmSplitPoints, -vsPos.z);
+                                     pssmSplitPoints, -vsPos.z, bias);
 
   // Only the highest parts of bumps should be lit when sun is at glancing angles
   // This removes a great deal of impossible light in shaded areas and hides shadow artifacts.
