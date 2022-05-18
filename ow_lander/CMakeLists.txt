@@ -39,6 +39,7 @@ add_action_files(
   FILES AntennaPanTilt.action
   FILES Discard.action
   FILES Stop.action
+  FILES ARM_MOVE_JOINT.action
 )
 
 

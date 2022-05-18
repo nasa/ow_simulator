@@ -1,0 +1,10 @@
+# goal definition
+bool relative
+int32 joint
+float32 angle
+---
+# result
+float32 final_angle    # joint final positions
+---
+# feedback
+float32 angle    # joint current position
