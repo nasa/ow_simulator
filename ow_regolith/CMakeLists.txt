@@ -142,6 +142,10 @@ add_library(ContactSensorPlugin
   SHARED
   src/ContactSensorPlugin.cpp
 )
+add_dependencies(ContactSensorPlugin 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS}
+)
 target_link_libraries(ContactSensorPlugin
   ${GAZEBO_LIBRARIES}
 )
