@@ -351,7 +351,10 @@ class TerrainInteraction(unittest.TestCase):
   """
   def test_04_discard(self):
 
-    DISCARD_MAX_DURATION = 50.0
+    # DISCARD_MAX_DURATION = 50.0
+    # NOTE: As long as discard and deliver use RRT*, the additional planning
+    #       time must be accounted for, so we use a large interval here
+    DISCARD_MAX_DURATION = 200.0
     DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
     REGOLITH_CLEANUP_DELAY = 5.0 # seconds
 
@@ -404,7 +407,10 @@ class TerrainInteraction(unittest.TestCase):
   """
   def test_06_deliver(self):
 
-    DELIVER_MAX_DURATION = 60.0
+    # DELIVER_MAX_DURATION = 60.0
+    # NOTE: As long as discard and deliver use RRT*, the additional planning
+    #       time must be accounted for, so we use a large interval here
+    DELIVER_MAX_DURATION = 200.0
     DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
 
     deliver_result = self._test_action(
