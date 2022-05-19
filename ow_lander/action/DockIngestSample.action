@@ -1,6 +1,6 @@
 #goal definition
 ---
 # result
-bool sample_present
+bool sample_ingested
 ---
 # feedback
