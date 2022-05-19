@@ -28,7 +28,7 @@ class DockIngestSampleActionServer(object):
     )
     self._dock_contacts = list()
     self._ingesting = False
-    self._timeout = None
+    self._timeout = 3.0 # seconds
     # Construct action server and start
     self._server = actionlib.SimpleActionServer(
       self._action_name,
@@ -37,6 +37,31 @@ class DockIngestSampleActionServer(object):
       auto_start=False
     )
     self._server.start()
+
+  def _on_dock_contacts(self, msg):
+    self._dock_contacts = msg.link_names
+    if self._ingesting:
+      # remove contacts if ingestion is active
+      self._remove_dock_contacts()
+      self._reset_time_since_contact()
+
+  def _on_ingest_sample(self, goal):
+    self._ingesting = True
+    self._result.sample_ingested = False
+    # remove sample already contacting the dock
+    self._remove_dock_contacts()
+    # action timeout that gets reset everytime a new dock contact is detected
+    self._reset_time_since_contact()
+    while rospy.get_time() - self._time_since_contact < self._timeout:
+      rospy.sleep(0.2)
+
+    # cease and clean-up ingest action
+    self._ingesting = False
+    self._server.set_succeeded(self._result)
+    rospy.loginfo('%s: Succeeded' % self._action_name)
+
+  def _reset_time_since_contact(self):
+    self._time_since_contact = rospy.get_time()
 
   def _remove_dock_contacts(self):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
@@ -66,46 +91,8 @@ class DockIngestSampleActionServer(object):
         % (self._action_name, REMOVE_REGOLITH_SERVICE, not_removed_str))
       return False
 
-  def _start_timeout(self):
-    # if no sample is ingested in this time, ingestion action will terminate
-    TIMEOUT_INTERVAL = rospy.Duration(3.0) # 3 seconds
-    self._timeout = rospy.Timer(
-      TIMEOUT_INTERVAL,
-      self._on_timeout,
-      oneshot = True
-    )
-
-  def _stop_timeout(self):
-    if self._timeout is not None:
-      self._timeout.shutdown()
-
-  def _reset_timeout(self):
-    self._stop_timeout()
-    self._start_timeout()
-
-  def _on_timeout(self, msg):
-    # cease and clean-up ingest action
-    self._ingesting = False
-    self._stop_timeout()
-    self._server.set_succeeded(self._result)
-    rospy.loginfo('%s: Succeeded' % self._action_name)
-
-  def _on_dock_contacts(self, msg):
-    self._dock_contacts = msg.link_names
-    if self._ingesting:
-      # remove contacts if ingestion is active
-      self._remove_dock_contacts()
-      self._reset_timeout()
-
-  def _on_ingest_sample(self, goal):
-    self._ingesting = True
-    self._result.sample_ingested = False
-    # remove sample already contacting the dock
-    self._remove_dock_contacts()
-    # action timeout that gets reset everytime a new dock contact is detected
-    self._start_timeout()
-
 if __name__ == '__main__':
-  rospy.init_node('DockIngestSampleAction')
-  server = DockIngestSampleActionServer(rospy.get_name())
+  SERVER_NAME = 'DockIngestSampleAction'
+  rospy.init_node(SERVER_NAME)
+  server = DockIngestSampleActionServer(SERVER_NAME)
   rospy.spin()
