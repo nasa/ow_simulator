@@ -215,7 +215,19 @@ wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get update
 sudo apt-get upgrade
 ```
-  * Run `gazebo --version` and verify that you have a version of 11.9 or higher
+  * Run `gazebo --version` and verify that you have a version of 11.9 or higher.
+
+  * If you may be using Gazebo/OceanWATERS with a VPN (Virtual Private
+    Network) running, it is highly recommended you add the following
+    line to your shell initialization file (e.g. .bashrc).  An
+    explanation of the issue can be found in the [troubleshooting
+    guide](https://github.com/nasa/ow_simulator/wiki/Troubleshooting#ignition-transport-failure-on-vpn).
+
+```
+export IGN_IP=127.0.0.1
+```
+
+
 
 ### Additional Packages
 

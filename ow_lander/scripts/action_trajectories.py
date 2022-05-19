@@ -930,7 +930,7 @@ class ActionTrajectories:
         goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
         move_arm.set_pose_target(goal_pose)
-
+        move_arm.set_planner_id("RRTstar")
         if self.check_for_stop("discard_sample", server_stop):
             return False
         _, plan_a, _, _ = move_arm.plan()
@@ -965,7 +965,6 @@ class ActionTrajectories:
         goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
         move_arm.set_pose_target(goal_pose)
-
         if self.check_for_stop("discard_sample", server_stop):
             return False
         _, plan_b, _, _ = move_arm.plan()
@@ -975,7 +974,7 @@ class ActionTrajectories:
             return plan_a
 
         discard_sample_traj = self.cascade_plans(plan_a, plan_b)
-
+        move_arm.set_planner_id("RRTconnect")
         return discard_sample_traj
 
     def deliver_sample(self, move_arm, robot, moveit_fk, server_stop):
@@ -994,6 +993,7 @@ class ActionTrajectories:
                 self.calculate_joint_state_end_pose_from_plan_arm(
                     robot, total_plan, move_arm, moveit_fk)[0]
             move_arm.set_start_state(cs)
+            move_arm.set_planner_id("RRTstar")
             goal = move_arm.get_named_target_values(t)
             move_arm.set_joint_value_target(goal)
             
@@ -1005,5 +1005,5 @@ class ActionTrajectories:
                 return False
             total_plan = plan if total_plan is None else \
                 self.cascade_plans(total_plan, plan)
-
+        move_arm.set_planner_id("RRTconnect")
         return total_plan
