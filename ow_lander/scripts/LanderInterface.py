@@ -84,4 +84,26 @@ class LinkStateSubscriber:
       #return None
     ##return t.transform.translation
     #self._link_value = t.transform.translation
-  
+
+
+class JointStateSubscriber:
+    
+  def __init__(self):
+    self._joint_value = None
+    self.subscriber = rospy.Subscriber("/joint_states", JointState, self._handle_joint_states)
+    
+    
+  def _handle_joint_states(self, data):
+    # position of joints are computed using Joint State method 
+      
+    """
+    :type data: sensor_msgs.msg.JointState
+    """
+    try:
+     idx = data.name.index("lander::l_scoop")
+    except ValueError:
+      rospy.logerr_throttle(
+          1, "LanderInterface: lander::l_scoop_tip not found in link_states")
+      return
+    self._link_value = (data.pose[idx].position)
+      
