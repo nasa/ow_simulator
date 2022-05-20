@@ -26,6 +26,7 @@
   <depend>gazebo_ros</depend>
   <depend>ow_dynamic_terrain</depend>
   <depend>cv_bridge</depend>
+  <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
 
   <build_depend>message_generation</build_depend>

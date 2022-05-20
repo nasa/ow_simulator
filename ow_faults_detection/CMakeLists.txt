@@ -111,7 +111,9 @@ catkin_package(
 #  LIBRARIES ow_faults
 #  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
 #  DEPENDS system_lib
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS
+  message_runtime
+  std_msgs
 )
 
 ###########
@@ -141,10 +143,11 @@ include_directories(
 add_executable(${EXEC_NAME} src/main.cpp src/FaultDetector.cpp)
 
 # make sure configure headers are built before any node using them
-add_dependencies (
-  ${EXEC_NAME} ${PROJECT_NAME}_gencfg
+add_dependencies(${EXEC_NAME}
+  ${PROJECT_NAME}_gencfg
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  )
+  ${catkin_EXPORTED_TARGETS}
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -158,7 +161,7 @@ add_dependencies (
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${EXEC_NAME}
-   ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}
 )
 
 #############
