@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
+  std_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -93,6 +95,8 @@ catkin_package(
    CATKIN_DEPENDS
    ow_dynamic_terrain
    message_runtime
+   std_msgs
+   geometry_msgs
 )
 
 catkin_add_env_hooks(
@@ -141,6 +145,10 @@ target_link_libraries(regolith_node
 add_library(ContactSensorPlugin
   SHARED
   src/ContactSensorPlugin.cpp
+)
+add_dependencies(ContactSensorPlugin 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(ContactSensorPlugin
   ${GAZEBO_LIBRARIES}
