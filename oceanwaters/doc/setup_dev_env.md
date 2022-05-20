@@ -61,14 +61,14 @@ git clone --branch releases/plexil-4.6 https://git.code.sf.net/p/plexil/git plex
 ```
 
 NOTE: OceanWATERS has been tested with a version of this branch tagged
-`OceanWATERS-v9.1`.  Its git commit hash begins with `c54173c4`.  Newer
+`OceanWATERS-v10.0`.  Its git commit hash begins with `cde7d07`.  Newer
 versions of this branch should work with the newest version of the
 `master` branches of OceanWATERS, but you can revert your PLEXIL to
 this tag if there are problems:
 
 ```
 cd $PLEXIL_HOME
-git checkout OceanWATERS-v9.1
+git checkout OceanWATERS-v10.0
 make squeaky-clean
 make universalExec plexil-compiler checkpoint
 ```
