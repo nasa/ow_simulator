@@ -46,6 +46,7 @@ class DockIngestSampleActionServer(object):
       self._reset_time_since_contact()
 
   def _on_ingest_sample(self, goal):
+    rospy.loginfo("%s: Ingesting sample in dock..." % self._action_name)
     self._ingesting = True
     self._result.sample_ingested = False
     # remove sample already contacting the dock
@@ -58,7 +59,7 @@ class DockIngestSampleActionServer(object):
     # cease and clean-up ingest action
     self._ingesting = False
     self._server.set_succeeded(self._result)
-    rospy.loginfo('%s: Succeeded' % self._action_name)
+    rospy.loginfo("%s: Succeeded" % self._action_name)
 
   def _reset_time_since_contact(self):
     self._time_since_contact = rospy.get_time()
@@ -67,7 +68,9 @@ class DockIngestSampleActionServer(object):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
     # do nothing if there are no contacts to remove
     if not self._dock_contacts:
-      return False
+      return
+
+    remove_request_count = len(self._dock_contacts)
 
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE)
     result = None
@@ -76,20 +79,11 @@ class DockIngestSampleActionServer(object):
       result = service(self._dock_contacts)
     except rospy.ServiceException as e:
       rospy.logwarn("Service call failed: %s" % e)
-      return False
+      return
 
-    if result.success:
+    # mark sample as ingested so long as one dock contact was removed
+    if result.success or len(result.not_removed) < remove_request_count:
       self._result.sample_ingested = True
-      return True
-    else:
-      not_removed_str = result.not_removed[0]
-      for ln in result.not_removed[1:]:
-        not_removed_str += ', %s' % ln
-      rospy.logwarn(
-        '%s: %s service failed to remove some models in the sample dock.'
-        'The following models were not removed: %s'
-        % (self._action_name, REMOVE_REGOLITH_SERVICE, not_removed_str))
-      return False
 
 if __name__ == '__main__':
   SERVER_NAME = 'DockIngestSampleAction'
