@@ -449,8 +449,10 @@ class TerrainInteraction(unittest.TestCase):
       expected_final = STOW_EXPECTED_FINAL
     )
 
-  # NOTE: Deliver does not reliably place all sample in dock, so for now this
-  #       will fail
+  """
+  Test the ingest sample action. Upon completion, ensure no sample remains in
+  the simulation.
+  """
   @unittest.expectedFailure
   def test_08_ingest_sample(self):
 
@@ -466,7 +468,9 @@ class TerrainInteraction(unittest.TestCase):
 
     rospy.sleep(REGOLITH_CLEANUP_DELAY)
     self._assert_regolith_not_present(
-      "Regolith remains after sample dock ingest action!"
+      "Regolith remains after sample dock ingest action! It was either\n"
+      "not properly delivered into the sample dock or the ingest sample\n"
+      "action failed."
     )
 
 if __name__ == '__main__':
