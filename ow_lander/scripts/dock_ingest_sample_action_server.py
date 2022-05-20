@@ -17,6 +17,8 @@ class DockIngestSampleActionServer(object):
   def __init__(self, name):
     TOPIC_SAMPLE_DOCK_CONTACTS = "/ow_regolith/contacts/sample_dock"
 
+    self.NO_CONTACTS_TIMEOUT = 3.0 # seconds
+
     self._action_name = name
     # Action Feedback/Result
     self._fdbk = ow_lander.msg.DockIngestSampleFeedback() # not used
@@ -28,7 +30,7 @@ class DockIngestSampleActionServer(object):
     )
     self._dock_contacts = list()
     self._ingesting = False
-    self._timeout = 3.0 # seconds
+    self._last_contact_time = 0.0 # seconds
     # Construct action server and start
     self._server = actionlib.SimpleActionServer(
       self._action_name,
@@ -43,7 +45,7 @@ class DockIngestSampleActionServer(object):
     if self._ingesting:
       # remove contacts if ingestion is active
       self._remove_dock_contacts()
-      self._reset_time_since_contact()
+      self._update_last_contact_time()
 
   def _on_ingest_sample(self, goal):
     rospy.loginfo("%s: Ingesting sample in dock..." % self._action_name)
@@ -52,8 +54,8 @@ class DockIngestSampleActionServer(object):
     # remove sample already contacting the dock
     self._remove_dock_contacts()
     # action timeout that gets reset everytime a new dock contact is detected
-    self._reset_time_since_contact()
-    while rospy.get_time() - self._time_since_contact < self._timeout:
+    self._update_last_contact_time()
+    while rospy.get_time() - self._last_contact_time < self.NO_CONTACTS_TIMEOUT:
       rospy.sleep(0.2)
 
     # cease and clean-up ingest action
@@ -61,8 +63,8 @@ class DockIngestSampleActionServer(object):
     self._server.set_succeeded(self._result)
     rospy.loginfo("%s: Succeeded" % self._action_name)
 
-  def _reset_time_since_contact(self):
-    self._time_since_contact = rospy.get_time()
+  def _update_last_contact_time(self):
+    self._last_contact_time = rospy.get_time()
 
   def _remove_dock_contacts(self):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
@@ -70,6 +72,7 @@ class DockIngestSampleActionServer(object):
     if not self._dock_contacts:
       return
 
+    # grab this value now in case its update functions gets called
     remove_request_count = len(self._dock_contacts)
 
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE)
