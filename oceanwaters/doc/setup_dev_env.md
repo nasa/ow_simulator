@@ -55,16 +55,23 @@ used with OceanWATERS, because the binaries are out of date or might not be
 compatible.
 
 
-* Check out the `releases/plexil-4` branch of the source code:
+* Check out the `releases/plexil-4.6` branch of the source code:
 ```
-git clone --branch releases/plexil-4 https://git.code.sf.net/p/plexil/git plexil
+git clone --branch releases/plexil-4.6 https://git.code.sf.net/p/plexil/git plexil
 ```
 
-NOTE: the default git branch of PLEXIL is in fact `releases/plexil-4` at the
-time of this writing.  OceanWATERS has been tested with a version of this branch
-tagged `OceanWATERS-v9.0`.  Its git commit hash begins with `77bbf96`.  Newer
-versions of this branch should work with the newest version of the `master`
-branches of OceanWATERS.
+NOTE: OceanWATERS has been tested with a version of this branch tagged
+`OceanWATERS-v10.0`.  Its git commit hash begins with `cde7d07`.  Newer
+versions of this branch should work with the newest version of the
+`master` branches of OceanWATERS, but you can revert your PLEXIL to
+this tag if there are problems:
+
+```
+cd $PLEXIL_HOME
+git checkout OceanWATERS-v10.0
+make squeaky-clean
+make universalExec plexil-compiler checkpoint
+```
 
 * Install any of the following build prerequisites needed. If you're not sure
 which, if any, are missing on your system, try the build, and if there are
