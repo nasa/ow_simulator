@@ -87,7 +87,6 @@ class UnstowActionServer(object):
 
         success = trajectory_async_executer.success(
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
-        
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -365,7 +364,7 @@ class GuardedMoveActionServer(object):
         :type state: int
         :type result: FollowJointTrajectoryResult
         """
-        ground_detected = state == GoalStatus.PREEMPTED
+        ground_detected = state == GoalStatus.PREEMPTED and server_stop.stopped is False
         ground_position = self.ground_detector.ground_position if ground_detected else Point()
         rospy.loginfo("Ground Detected ? {}".format(ground_detected))
         self.guarded_move_pub.publish(
@@ -420,11 +419,6 @@ class GuardedMoveActionServer(object):
         # detection
         self.ground_detector.reset()
 
-        trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
-                                          done_cb=self.handle_guarded_move_done,
-                                          active_cb=None,
-                                          feedback_cb=self.handle_guarded_move_feedback)
-
         if server_stop.stopped is False:
             trajectory_async_executer.execute(self.guarded_move_traj.joint_trajectory,
                                               done_cb=self.handle_guarded_move_done,
@@ -446,7 +440,7 @@ class GuardedMoveActionServer(object):
                 start_time)/self._timeout
 
         success = trajectory_async_executer.success(
-        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() == GoalStatus.PREEMPTED and server_stop.stopped is False
 
         if success:
             self._result.final.x = self.ground_detector.ground_position.x
