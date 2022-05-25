@@ -32,6 +32,7 @@ add_action_files(
   FILES Deliver.action
   FILES DigLinear.action
   FILES DigCircular.action
+  FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
   FILES AntennaPanTilt.action

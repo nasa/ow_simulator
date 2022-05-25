@@ -86,6 +86,7 @@ class AntennaPanTiltActionServer(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('AntennaPanTiltAction')
-    server = AntennaPanTiltActionServer(rospy.get_name())
+    SERVER_NAME = 'AntennaPanTiltAction'
+    rospy.init_node(SERVER_NAME)
+    server = AntennaPanTiltActionServer(SERVER_NAME)
     rospy.spin()

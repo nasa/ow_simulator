@@ -41,8 +41,11 @@ public:
   std::string spawn(const tf::Point &position,
                     const std::string &reference_frame);
 
-  // remove a model within the pool by link name
-  std::vector<std::string> remove(const std::vector<std::string> &link_names = {});
+  // remove models within the pool by link name
+  std::vector<std::string> remove(const std::vector<std::string> &link_names);
+
+  // remove all models in pool
+  std::vector<std::string> clear();
 
   // applies of force to the specified link
   bool applyForce(const std::string &link_name, const tf::Vector3 &force,
