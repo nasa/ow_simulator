@@ -4,7 +4,7 @@ int32 joint
 float32 angle
 ---
 # result
-float32 final_angle    # joint final positions
+float32[] final_angle    # joint final positions
 ---
 # feedback
-float32 angle    # joint current position
+float32[] angle    # joint current position

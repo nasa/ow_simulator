@@ -10,6 +10,8 @@ from actionlib_msgs.msg import GoalStatus
 from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
+from LanderInterface import JointStateSubscriber
+import numpy as np
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from action_trajectories import ActionTrajectories
 from moveit_msgs.msg import RobotTrajectory
@@ -800,7 +802,7 @@ class ARM_MOVE_JOINT(object):
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.ARM_MOVE_JOINTFeedback()
         self._result = ow_lander.msg.ARM_MOVE_JOINTResult()
-        self._current_link_state = LinkStateSubscriber()
+        self._current_joint_state = JointStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
         self._server = actionlib.SimpleActionServer(self._action_name,
@@ -810,11 +812,8 @@ class ARM_MOVE_JOINT(object):
         self._server.start()
 
     def _update_feedback(self):
-
-        self._ls = self._current_link_state._link_value
-        self._fdbk.current.x = self._ls.x
-        self._fdbk.current.y = self._ls.y
-        self._fdbk.current.z = self._ls.z
+        self._js = self._current_joint_state.get_joint_angles()
+        self._fdbk.angle = self._js
         self._server.publish_feedback(self._fdbk)
 
     def _update_motion(self, goal):
@@ -865,9 +864,7 @@ class ARM_MOVE_JOINT(object):
         
 
         if success:
-            self._result.final.x = self._fdbk.current.x
-            self._result.final.y = self._fdbk.current.y
-            self._result.final.z = self._fdbk.current.z
+            self._result.final_angle = self._fdbk.angle
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
         else:
