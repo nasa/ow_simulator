@@ -12,7 +12,7 @@ from ow_faults_detection.msg import SystemFaults
 
 ARM_EXECUTION_ERROR = 4
 
-
+# continue_in_fault = rospy.get_param('continue_arm_in_fault')
 class TrajectoryAsyncExecuter:
     """
     Interfaces with a Joint Trajectory Action Server of a given controller to execute
@@ -28,14 +28,14 @@ class TrajectoryAsyncExecuter:
         # subscribe to system_fault_status for any arm faults
         rospy.Subscriber("/faults/system_faults_status",
                          SystemFaults, self.faultCheckCallback)
-
+        self.continue_in_fault = rospy.get_param('continue_arm_in_fault')
         # rospy.spin()
 
     def stop_arm_if_fault(self, feedback):
         """
         stops arm if arm fault exists during feedback callback
         """
-        if self.arm_fault:
+        if self.arm_fault and self.continue_in_fault is False:
             self.stop()
 
     def faultCheckCallback(self, data):
