@@ -110,8 +110,10 @@ class JointStateSubscriber:
     def get_joint_angles(self):
         # returns current joint angles
         with self._joint_lock:
-            joints_ret = ['j_ant_pan', 'j_ant_tilt', 'j_dist_pitch', 'j_grinder',
-                          'j_hand_yaw', 'j_prox_pitch', 'j_scoop_yaw', 'j_shou_pitch', 'j_shou_yaw']
+            # all joints = ['j_ant_pan', 'j_ant_tilt', 'j_dist_pitch', 'j_grinder',
+            #               'j_hand_yaw', 'j_prox_pitch', 'j_scoop_yaw', 'j_shou_pitch', 'j_shou_yaw']
+            # subset used in arm controller in order
+            joints_ret = ['j_shou_yaw','j_shou_pitch','j_prox_pitch','j_dist_pitch','j_hand_yaw', 'j_scoop_yaw']              
             try:
                 return np.array([self._angles[k] for k in joints_ret])
             except KeyError:

@@ -90,7 +90,6 @@ class UnstowActionServer(object):
 
         success = trajectory_async_executer.success(
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
-        
 
         if success:
             self._result.final.x = self._fdbk.current.x
@@ -133,6 +132,7 @@ class StowActionServer(object):
         goal = self._interface.move_arm.get_current_pose().pose
         goal = self._interface.move_arm.get_named_target_values("arm_stowed")
         self._interface.move_arm.set_joint_value_target(goal)
+
         _, plan, _, _ = self._interface.move_arm.plan()
         if len(plan.joint_trajectory.points) < 1:
             return
@@ -795,6 +795,7 @@ class DeliverActionServer(object):
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
 
+
 class ARM_MOVE_JOINT(object):
 
     def __init__(self, name):
@@ -820,9 +821,13 @@ class ARM_MOVE_JOINT(object):
 
         rospy.loginfo("Arm move joint started")
         joint_goal = self._interface.move_arm.get_current_joint_values()
-        joint_goal[goal.joint] = goal.angle
 
+        if goal.relative == False:
+            joint_goal[goal.joint] = goal.angle
+        else:
+            joint_goal[goal.joint] = joint_goal[goal.joint] + goal.angle
         self._interface.move_arm.set_joint_value_target(joint_goal)
+
         _, plan, _, _ = self._interface.move_arm.plan()
         if len(plan.joint_trajectory.points) < 1:
             return
@@ -847,7 +852,7 @@ class ARM_MOVE_JOINT(object):
                                               feedback_cb=trajectory_async_executer.stop_arm_if_fault)
         else:
             self._server.set_aborted(self._result)
-            rospy.loginfo('Unstow was stopped.')
+            rospy.loginfo('Arm_move Joint  was stopped.')
             return
 
         # Record start time
@@ -861,7 +866,6 @@ class ARM_MOVE_JOINT(object):
 
         success = trajectory_async_executer.success(
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
-        
 
         if success:
             self._result.final_angle = self._fdbk.angle
@@ -869,7 +873,7 @@ class ARM_MOVE_JOINT(object):
             self._server.set_succeeded(self._result)
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
-            self._server.set_aborted(self._result)            
+            self._server.set_aborted(self._result)
 
 
 if __name__ == '__main__':
