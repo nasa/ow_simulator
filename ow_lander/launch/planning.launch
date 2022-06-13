@@ -23,7 +23,7 @@
     </include>
 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-      <param name="use_gui" value="$(arg use_gui)"/>
+      <param name="use_gui" value="$(arg use_gui)"/> <!-- deprecated param -->
       <param name="zeros/j_shou_yaw" value="$(arg stowed_shou_yaw)"/>
       <param name="zeros/j_shou_pitch" value="$(arg stowed_shou_pitch)"/>
       <param name="zeros/j_prox_pitch" value="$(arg stowed_prox_pitch)"/>

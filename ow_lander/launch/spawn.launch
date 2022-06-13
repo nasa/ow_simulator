@@ -2,7 +2,6 @@
 <launch>
 
   <arg name="debug" default="false" />
-  <arg name="use_gui" default="false" />
   <arg name="use_rviz" default="true" />
 
   <!-- Initial lander pose arguments -->
