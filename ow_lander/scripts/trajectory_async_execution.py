@@ -28,14 +28,16 @@ class TrajectoryAsyncExecuter:
         # subscribe to system_fault_status for any arm faults
         rospy.Subscriber("/faults/system_faults_status",
                          SystemFaults, self.faultCheckCallback)
-        self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')
+        #self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')
+        self.continue_in_fault = False
         # rospy.spin()
 
     def stop_arm_if_fault(self, feedback):
         """
         stops arm if arm fault exists during feedback callback
         """
-        if self.arm_fault and self.continue_in_fault is False:
+        #if self.arm_fault and self.continue_in_fault is False:
+        if self.arm_fault and self.continue_if() is False:    
             self.stop()
 
     def faultCheckCallback(self, data):
@@ -44,7 +46,10 @@ class TrajectoryAsyncExecuter:
         """
         self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
                           ARM_EXECUTION_ERROR)
-        self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')           
+        self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')        
+
+    def continue_if(self):
+        return self.continue_in_fault    
 
     def success(self):
         return not self.arm_fault
