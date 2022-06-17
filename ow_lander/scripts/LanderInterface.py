@@ -87,7 +87,7 @@ class LinkStateSubscriber:
         #self._link_value = t.transform.translation
 
 
-class JointStateSubscriber:
+class ArmJointStateSubscriber:
 
     def __init__(self):
         self._joint_value = None

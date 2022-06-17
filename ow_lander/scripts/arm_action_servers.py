@@ -10,7 +10,7 @@ from actionlib_msgs.msg import GoalStatus
 from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
-from LanderInterface import JointStateSubscriber
+from LanderInterface import ArmJointStateSubscriber
 import numpy as np
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from action_trajectories import ActionTrajectories
@@ -796,19 +796,19 @@ class DeliverActionServer(object):
             self._server.set_aborted(self._result)
 
 
-class ARM_MOVE_JOINT(object):
+class ArmMoveJoint(object):
 
     def __init__(self, name):
         self._action_name = name
         # Action Feedback/Result
-        self._fdbk = ow_lander.msg.ARM_MOVE_JOINTFeedback()
-        self._result = ow_lander.msg.ARM_MOVE_JOINTResult()
-        self._current_joint_state = JointStateSubscriber()
+        self._fdbk = ow_lander.msg.ArmMoveJointFeedback()
+        self._result = ow_lander.msg.ArmMoveJointResult()
+        self._current_joint_state = ArmJointStateSubscriber()
         self._interface = MoveItInterface()
         self._timeout = 0.0
         self._server = actionlib.SimpleActionServer(self._action_name,
-                                                    ow_lander.msg.ARM_MOVE_JOINTAction,
-                                                    execute_cb=self.on_arm_move_joint_action,
+                                                    ow_lander.msg.ArmMoveJointAction,
+                                                    execute_cb=self.on_ArmMoveJoint_action,
                                                     auto_start=False)
         self._server.start()
 
@@ -838,7 +838,7 @@ class ARM_MOVE_JOINT(object):
             self._timeout = end_time - start_time
             return plan
 
-    def on_arm_move_joint_action(self, goal):
+    def on_ArmMoveJoint_action(self, goal):
         server_stop.reset()
         plan = self._update_motion(goal)
         if plan is None:
@@ -892,5 +892,5 @@ if __name__ == '__main__':
     server_dig_linear = DigLinearActionServer("DigLinear")
     server_deliver = DeliverActionServer("Deliver")
     server_discard = DiscardActionServer("Discard")
-    server_arm_move_joint = ARM_MOVE_JOINT("ArmMoveJoint")
+    server_ArmMoveJoint = ArmMoveJoint("ArmMoveJoint")
     rospy.spin()
