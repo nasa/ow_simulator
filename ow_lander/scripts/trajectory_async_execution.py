@@ -30,50 +30,33 @@ class TrajectoryAsyncExecuter:
         # subscribe to system_fault_status for any arm faults
         rospy.Subscriber("/faults/system_faults_status",
                          SystemFaults, self.faultCheckCallback)
-        #self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')
         self.continue_in_fault = False
+        # intialize client to get status of faults
         self.faults_client()
 
-        #topic = rospy.get_param('~topic', 'chatter')
-        # Create a subscriber with appropriate topic, custom message and name of callback function.
-        #rospy.Subscriber("faults/continue_arm_in_fault", SystemFaults, self.paramCheckCallBack)
-        # rospy.spin()
 
     def stop_arm_if_fault(self, feedback):
         """
         stops arm if arm fault exists during feedback callback
         """
         if self.arm_fault and self.continue_in_fault is False:
-        #if self.arm_fault and self.continue_if() is False:    
-            #rospy.loginfo(self.continue_if())
             self.stop()
 
-    def fault_client_callback(self, config):
-        #rospy.loginfo("Config set to {continue_arm_in_fault}".format(**config))        
+    def fault_client_callback(self, config):       
         self.continue_in_fault = config['continue_arm_in_fault']
 
-
     def faults_client(self):
-        #rospy.init_node("dynamic_client_faults")
-        client = dynamic_reconfigure.client.Client("faults", timeout=30, config_callback=self.fault_client_callback)
-        #r = rospy.Rate(0.5)
-        #while not rospy.is_shutdown():
-        #    r.sleep()        
-
-    def paramCheckCallBack(self, data):
-        #self.continue_in_fault =  data.value        
-        self.continue_in_fault =  True
+        '''
+        dynamic reconfigure clinet that conncencts to faults server to get the latest state
+        '''
+        client = dynamic_reconfigure.client.Client("faults", timeout=30, config_callback=self.fault_client_callback)     
 
     def faultCheckCallback(self, data):
         """
         If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
         """
         self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
-                          ARM_EXECUTION_ERROR)
-        #self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')        
-
-    def continue_if(self):
-        return self.continue_in_fault    
+                          ARM_EXECUTION_ERROR)     
 
     def success(self):
         return not self.arm_fault

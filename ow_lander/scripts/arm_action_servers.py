@@ -84,7 +84,6 @@ class UnstowActionServer(object):
 
         while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
-            #print (trajectory_async_executer.continue_if())
 
         success = trajectory_async_executer.success(
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
@@ -164,7 +163,6 @@ class StowActionServer(object):
 
         while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
             self._update_feedback()
-            #print (trajectory_async_executer.continue_if())
 
         success = trajectory_async_executer.success(
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
