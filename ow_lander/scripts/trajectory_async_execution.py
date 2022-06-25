@@ -4,11 +4,13 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+from operator import truediv
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from ow_faults_detection.msg import SystemFaults
+import dynamic_reconfigure.client
 
 ARM_EXECUTION_ERROR = 4
 
@@ -30,15 +32,37 @@ class TrajectoryAsyncExecuter:
                          SystemFaults, self.faultCheckCallback)
         #self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')
         self.continue_in_fault = False
+        self.faults_client()
+
+        #topic = rospy.get_param('~topic', 'chatter')
+        # Create a subscriber with appropriate topic, custom message and name of callback function.
+        #rospy.Subscriber("faults/continue_arm_in_fault", SystemFaults, self.paramCheckCallBack)
         # rospy.spin()
 
     def stop_arm_if_fault(self, feedback):
         """
         stops arm if arm fault exists during feedback callback
         """
-        #if self.arm_fault and self.continue_in_fault is False:
-        if self.arm_fault and self.continue_if() is False:    
+        if self.arm_fault and self.continue_in_fault is False:
+        #if self.arm_fault and self.continue_if() is False:    
+            #rospy.loginfo(self.continue_if())
             self.stop()
+
+    def fault_client_callback(self, config):
+        #rospy.loginfo("Config set to {continue_arm_in_fault}".format(**config))        
+        self.continue_in_fault = config['continue_arm_in_fault']
+
+
+    def faults_client(self):
+        #rospy.init_node("dynamic_client_faults")
+        client = dynamic_reconfigure.client.Client("faults", timeout=30, config_callback=self.fault_client_callback)
+        #r = rospy.Rate(0.5)
+        #while not rospy.is_shutdown():
+        #    r.sleep()        
+
+    def paramCheckCallBack(self, data):
+        #self.continue_in_fault =  data.value        
+        self.continue_in_fault =  True
 
     def faultCheckCallback(self, data):
         """
@@ -46,7 +70,7 @@ class TrajectoryAsyncExecuter:
         """
         self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
                           ARM_EXECUTION_ERROR)
-        self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')        
+        #self.continue_in_fault = rospy.get_param('faults/continue_arm_in_fault')        
 
     def continue_if(self):
         return self.continue_in_fault    
