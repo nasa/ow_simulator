@@ -1,10 +1,10 @@
 # goal definition
 bool relative
-int32 joint
-float32 angle
+int64 joint
+float64 angle
 ---
 # result
-float32[] final_angle    # joint final positions
+float64[] final_angle    # joint final positions
 ---
 # feedback
-float32[] angle    # joint current position
+float64[] angle    # joint current position

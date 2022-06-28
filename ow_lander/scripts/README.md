@@ -52,3 +52,28 @@ will use the default arguments.
 ```bash
 ./stow_action_client.py
 ```
+
+
+### ROS Action for ARM Joint Movements
+
+In accordance to Command Unification document specifications with JPL testbed a new ROS action interface has been added. This is called ArmMoveJoint which allows an user to move any particular joint. The ROS action client accepts three arguments, Relative, Joint Index and Joint Angle. Relative is a bool argument which when set true move a particular joint from the current position to a relative position specified in Joint index and joint angle. Joint index is from 0 to 5 wiht tht the follwing Joints indices. 0:j_shou_yaw, 1:j_shou_pitch, 2:j_prox_pitch, 3:j_dist_pitch, 4:j_hand_yaw, 5:j_scoop_yaw. Joint angle is specified in Radians
+
+```bash
+./arm_move_joint_client.py -h or help
+```
+
+The ArmMoveJoint client can be called by the following command for default (pre-defined in the client). 
+```bash
+./arm_move_joint_client.py
+```
+To move a specific joint to a  particular angle (in radians) use  : 
+```bash
+python3 arm_move_joint_client.py False 0 0.5
+```
+
+To move a joint to a relative position from the current position use: 
+```bash
+python3 arm_move_joint_clienet.py True 0 0.5
+```
+
+Note: Commanding the arm using this command can cause collision with the lander body and/or terrain. Some motions will be denied by the motion planner (like self collision of the arm) but not all. Use this command with extreme caution as this may break the simulation. 
