@@ -38,6 +38,7 @@ add_action_files(
   FILES AntennaPanTilt.action
   FILES Discard.action
   FILES Stop.action
+  FILES ArmMoveJoint.action
 )
 
 add_message_files(
