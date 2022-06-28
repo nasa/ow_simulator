@@ -4,7 +4,6 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from operator import truediv
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
@@ -14,7 +13,6 @@ import dynamic_reconfigure.client
 
 ARM_EXECUTION_ERROR = 4
 
-# continue_in_fault = rospy.get_param('continue_arm_in_fault')
 class TrajectoryAsyncExecuter:
     """
     Interfaces with a Joint Trajectory Action Server of a given controller to execute
@@ -43,11 +41,11 @@ class TrajectoryAsyncExecuter:
             self.stop()
 
     def fault_client_callback(self, config):       
-        self.continue_in_fault = config['continue_arm_in_fault']
+        self.continue_in_fault = config['arm_motion_continues_in_fault']
 
     def faults_client(self):
         '''
-        dynamic reconfigure clinet that conncencts to faults server to get the latest state
+        dynamic reconfigure client that connects to faults server to get the latest state
         '''
         client = dynamic_reconfigure.client.Client("faults", timeout=30, config_callback=self.fault_client_callback)     
 
