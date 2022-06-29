@@ -9,6 +9,10 @@ using namespace ow_lander;
 
 using std::string;
 
+// GLOBAL VAR (should implementation be changed to avoid this?)
+bool fault_activated = false;
+
+
 FaultInjector::FaultInjector(ros::NodeHandle& nh)
 { 
   string original_str = "/_original";
@@ -43,8 +47,78 @@ void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, ui
   // This is where we would check to see if faults is different from m_faults
   // if we wanted to change some state based on that.
 
-  // Store current set of faults for later use
+  // Check if any of the power faults have been injected.
+  bool low_state_of_charge_needs_deactivating = false;
+  bool instantaneous_capacity_loss_needs_deactivating = false;
+  bool thermal_needs_deactivating = false;
+  if (faults.groups.power_faults.low_state_of_charge_power_failure
+      && (faults.groups.power_faults.low_state_of_charge_power_failure 
+      != m_faults.groups.power_faults.low_state_of_charge_power_failure))
+  {
+    // low_state_of_charge_power_failure was turned on
+    if (fault_activated)
+    {
+      ROS_WARN_STREAM("Cannot activate further power faults for the remainder of simulation. Restart required to "
+                      "activate a new fault. Attempted activation will be ignored in simulation.");
+      low_state_of_charge_needs_deactivating = true;
+    }
+    else
+    {
+      fault_activated = true;
+    }
+  }
+
+  if (faults.groups.power_faults.instantaneous_capacity_loss_power_failure
+      && (faults.groups.power_faults.instantaneous_capacity_loss_power_failure
+      != m_faults.groups.power_faults.instantaneous_capacity_loss_power_failure))
+  {
+    // instantaneous_capacity_loss_power_failure was turned on
+    if (fault_activated)
+    {
+      ROS_WARN_STREAM("Cannot activate further power faults for the remainder of simulation. Restart required to "
+                      "activate a new fault. Attempted activation will be ignored in simulation.");
+      instantaneous_capacity_loss_needs_deactivating = true;
+    }
+    else
+    {
+      fault_activated = true;
+    }
+  }
+
+  if (faults.groups.power_faults.thermal_power_failure
+      && (faults.groups.power_faults.thermal_power_failure
+      != m_faults.groups.power_faults.thermal_power_failure))
+  {
+    // thermal_power_failure was turned on
+    if (fault_activated)
+    {
+      ROS_WARN_STREAM("Cannot activate further power faults for the remainder of simulation. Restart required to "
+                      "activate a new fault. Attempted activation will be ignored in simulation.");
+      thermal_needs_deactivating = true;
+    }
+    else
+    {
+      fault_activated = true;
+    }  
+  }
+
+  // Store current set of faults for later use, but modify power faults to prevent exceeding one-fault-per-simulation.
+  // NOTE: If power faults are consolidated into one type of fault (high power draw), this can be simplified to check
+  //       only one fault instead of the three.
   m_faults = faults;
+
+  if (low_state_of_charge_needs_deactivating)
+  {
+    m_faults.groups.power_faults.low_state_of_charge_power_failure = false;
+  }
+  if (instantaneous_capacity_loss_needs_deactivating)
+  {
+    m_faults.groups.power_faults.instantaneous_capacity_loss_power_failure = false;
+  }
+  if (thermal_needs_deactivating)
+  {
+    m_faults.groups.power_faults.thermal_power_failure = false;
+  }
 }
 
 void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
