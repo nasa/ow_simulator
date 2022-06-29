@@ -24,6 +24,10 @@ const string FAULT_NAME_THERMAL = "thermal_power_failure";
 //
 static constexpr int TEMPERATURE_INDEX = 1;
 
+// GLOBAL VARS (should implementation be changed to avoid this?)
+bool one_fault_injected = false;
+string one_fault_name = "";
+
 PowerSystemNode::PowerSystemNode()
 { }
 
@@ -242,9 +246,22 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (!fault_activated && fault_enabled)
   {
-    ROS_INFO_STREAM(fault_name << " activated!");
-    index = 0;
-    fault_activated = true;
+    // Only activate the fault if no other fault has been activated in the simulation thus far.
+    if (one_fault_injected)
+    {
+      ROS_WARN_STREAM
+        (fault_name << ": cannot activate; only one fault activation per simulation is supported.");
+    }
+    else 
+    {
+      ROS_INFO_STREAM(fault_name << " activated!");
+      index = 0;
+      fault_activated = true;
+
+      // TEST
+      one_fault_injected = true;
+      one_fault_name = fault_name;
+    }
   }
   else if (fault_activated && !fault_enabled)
   {
@@ -254,6 +271,13 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (fault_activated && fault_enabled)
   {
+    // Check and ensure the fault is the original one injected.
+    // Any additional faults are to be ignored due to one-fault-per-simulation.
+    if (fault_name != one_fault_name) 
+    {
+      return;
+    }
+
     // TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
     if (index + m_profile_increment >= sequence.size()) {
