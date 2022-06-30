@@ -250,7 +250,9 @@ void PowerSystemNode::injectFault (const string& fault_name,
     if (one_fault_injected)
     {
       ROS_WARN_STREAM_ONCE
-        (fault_name << ": cannot activate; only one fault activation per simulation is supported.");
+        (fault_name << ": cannot activate; only one fault activation per simulation is supported."
+         << " Any additional faults for the remainder of this simulation will not be injected,"
+         << " even if they are shown as being activated.");
     }
     else 
     {
