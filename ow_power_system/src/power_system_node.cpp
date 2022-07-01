@@ -233,6 +233,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
                                    double& voltage,
                                    double& temperature)
 {
+  // Vars used to handle preventing more than one fault activation.
+  static bool one_fault_injected = false;
+  static string selected_fault_name = "";
+
   bool fault_enabled = false;
 
   // Do nothing unless the specified fault has been injected.
@@ -242,9 +246,22 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (!fault_activated && fault_enabled)
   {
-    ROS_INFO_STREAM(fault_name << " activated!");
-    index = 0;
-    fault_activated = true;
+    // Only activate the fault if no other fault has been activated in the simulation thus far.
+    if (one_fault_injected)
+    {
+      ROS_WARN_STREAM_ONCE
+        ("'" << fault_name << "' and future faults are being ignored. Only one power fault activation allowed"
+         << " per simulation; '" << selected_fault_name << "' has already been activated.");
+    }
+    else 
+    {
+      ROS_INFO_STREAM(fault_name << " activated!");
+      index = 0;
+      fault_activated = true;
+
+      one_fault_injected = true;
+      selected_fault_name = fault_name;
+    }
   }
   else if (fault_activated && !fault_enabled)
   {
@@ -254,6 +271,13 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (fault_activated && fault_enabled)
   {
+    // Check and ensure the fault is the original one injected.
+    // Any additional faults are to be ignored due to one-fault-per-simulation.
+    if (fault_name != selected_fault_name) 
+    {
+      return;
+    }
+
     // TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
     if (index + m_profile_increment >= sequence.size()) {
