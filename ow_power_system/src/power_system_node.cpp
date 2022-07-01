@@ -15,9 +15,10 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
-const string FAULT_NAME_LOW_SOC = "low_state_of_charge_power_failure";
+/*const string FAULT_NAME_LOW_SOC = "low_state_of_charge_power_failure";
 const string FAULT_NAME_ICL     = "instantaneous_capacity_loss_power_failure";
-const string FAULT_NAME_THERMAL = "thermal_power_failure";
+const string FAULT_NAME_THERMAL = "thermal_power_failure";*/
+const string FAULT_NAME_HPD     = "high_power_draw_power_failure";
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
@@ -130,14 +131,17 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
 bool PowerSystemNode::loadFaultPowerProfiles()
 {
   string path;
-  path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_power_failure.csv";
+  /*path = ros::package::getPath("ow_power_system") + "/data/low_state_of_charge_power_failure.csv";
   m_low_state_of_charge_power_failure_sequence = loadPowerProfile(path);
 
   path = ros::package::getPath("ow_power_system") + "/data/instantaneous_capacity_loss_power_failure.csv";
   m_instantaneous_capacity_loss_power_failure_sequence = loadPowerProfile(path);
 
   path = ros::package::getPath("ow_power_system") + "/data/thermal_power_failure.csv";
-  m_thermal_power_failure_sequence = loadPowerProfile(path);
+  m_thermal_power_failure_sequence = loadPowerProfile(path);*/
+
+  path = ros::package::getPath("ow_power_system") + "/data/high_power_draw_power_failure.csv";
+  m_high_power_draw_power_failure_sequence = loadPowerProfile(path);
 
   return true;
 }
@@ -275,7 +279,7 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  injectFault(FAULT_NAME_LOW_SOC,
+  /*injectFault(FAULT_NAME_LOW_SOC,
 	      m_low_state_of_charge_power_failure_activated,
               m_low_state_of_charge_power_failure_sequence,
 	      m_low_state_of_charge_power_failure_sequence_index,
@@ -291,7 +295,13 @@ void PowerSystemNode::injectFaults(double& power,
 	      m_thermal_power_failure_activated,
 	      m_thermal_power_failure_sequence,
               m_thermal_power_failure_sequence_index,
-	      power, voltage, temperature);
+	      power, voltage, temperature);*/
+
+  injectFault(FAULT_NAME_HPD,
+        m_high_power_draw_power_failure_activated,
+        m_high_power_draw_power_failure_sequence,
+        m_high_power_draw_power_failure_sequence_index,
+        power, voltage, temperature);
 }
 
 PrognoserMap

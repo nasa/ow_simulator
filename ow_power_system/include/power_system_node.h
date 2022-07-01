@@ -102,7 +102,7 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  bool m_low_state_of_charge_power_failure_activated = false;
+  /*bool m_low_state_of_charge_power_failure_activated = false;
   PrognoserVector m_low_state_of_charge_power_failure_sequence;
   size_t m_low_state_of_charge_power_failure_sequence_index = 0;
 
@@ -112,7 +112,11 @@ private:
 
   bool m_thermal_power_failure_activated = false;
   PrognoserVector m_thermal_power_failure_sequence;
-  size_t m_thermal_power_failure_sequence_index = 0;
+  size_t m_thermal_power_failure_sequence_index = 0;*/
+  
+  bool m_high_power_draw_power_failure_activated = false;
+  ProsnoserVector m_high_power_draw_power_failure_sequence;
+  size_t m_high_power_draw_power_failure_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
   bool m_processing_power_batch = false;
