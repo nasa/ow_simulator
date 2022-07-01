@@ -115,7 +115,7 @@ private:
   size_t m_thermal_power_failure_sequence_index = 0;*/
   
   bool m_high_power_draw_power_failure_activated = false;
-  ProsnoserVector m_high_power_draw_power_failure_sequence;
+  PrognoserVector m_high_power_draw_power_failure_sequence;
   size_t m_high_power_draw_power_failure_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
