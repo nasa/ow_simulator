@@ -101,18 +101,6 @@ private:
   std::mt19937 m_random_generator;
 
   std::uniform_real_distribution<double> m_temperature_dist;
-
-  /*bool m_low_state_of_charge_power_failure_activated = false;
-  PrognoserVector m_low_state_of_charge_power_failure_sequence;
-  size_t m_low_state_of_charge_power_failure_sequence_index = 0;
-
-  bool m_instantaneous_capacity_loss_power_failure_activated = false;
-  PrognoserVector m_instantaneous_capacity_loss_power_failure_sequence;
-  size_t m_instantaneous_capacity_loss_power_failure_sequence_index = 0;
-
-  bool m_thermal_power_failure_activated = false;
-  PrognoserVector m_thermal_power_failure_sequence;
-  size_t m_thermal_power_failure_sequence_index = 0;*/
   
   bool m_high_power_draw_power_failure_activated = false;
   PrognoserVector m_high_power_draw_power_failure_sequence;
