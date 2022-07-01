@@ -24,9 +24,9 @@ const string FAULT_NAME_THERMAL = "thermal_power_failure";
 //
 static constexpr int TEMPERATURE_INDEX = 1;
 
-// GLOBAL VARS (should implementation be changed to avoid this?)
-bool one_fault_injected = false;
-string one_fault_name = "";
+// Vars used to handle preventing more than one fault activation.
+static bool OneFaultInjected = false;
+static string SelectedFaultName = "";
 
 PowerSystemNode::PowerSystemNode()
 { }
@@ -247,12 +247,11 @@ void PowerSystemNode::injectFault (const string& fault_name,
   if (!fault_activated && fault_enabled)
   {
     // Only activate the fault if no other fault has been activated in the simulation thus far.
-    if (one_fault_injected)
+    if (OneFaultInjected)
     {
       ROS_WARN_STREAM_ONCE
-        (fault_name << ": cannot activate; only one fault activation per simulation is supported."
-         << " Any additional faults for the remainder of this simulation will not be injected,"
-         << " even if they are shown as being activated.");
+        ("'" << fault_name << "' and future faults are being ignored. Only one power fault activation allowed"
+         << " per simulation; '" << SelectedFaultName << "' has already been activated.");
     }
     else 
     {
@@ -260,9 +259,8 @@ void PowerSystemNode::injectFault (const string& fault_name,
       index = 0;
       fault_activated = true;
 
-      // TEST
-      one_fault_injected = true;
-      one_fault_name = fault_name;
+      OneFaultInjected = true;
+      SelectedFaultName = fault_name;
     }
   }
   else if (fault_activated && !fault_enabled)
@@ -275,7 +273,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
   {
     // Check and ensure the fault is the original one injected.
     // Any additional faults are to be ignored due to one-fault-per-simulation.
-    if (fault_name != one_fault_name) 
+    if (fault_name != SelectedFaultName) 
     {
       return;
     }
