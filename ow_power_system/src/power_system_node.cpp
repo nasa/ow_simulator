@@ -24,10 +24,6 @@ const string FAULT_NAME_THERMAL = "thermal_power_failure";
 //
 static constexpr int TEMPERATURE_INDEX = 1;
 
-// Vars used to handle preventing more than one fault activation.
-static bool OneFaultInjected = false;
-static string SelectedFaultName = "";
-
 PowerSystemNode::PowerSystemNode()
 { }
 
@@ -237,6 +233,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
                                    double& voltage,
                                    double& temperature)
 {
+  // Vars used to handle preventing more than one fault activation.
+  static bool one_fault_injected = false;
+  static string selected_fault_name = "";
+
   bool fault_enabled = false;
 
   // Do nothing unless the specified fault has been injected.
@@ -247,11 +247,11 @@ void PowerSystemNode::injectFault (const string& fault_name,
   if (!fault_activated && fault_enabled)
   {
     // Only activate the fault if no other fault has been activated in the simulation thus far.
-    if (OneFaultInjected)
+    if (one_fault_injected)
     {
       ROS_WARN_STREAM_ONCE
         ("'" << fault_name << "' and future faults are being ignored. Only one power fault activation allowed"
-         << " per simulation; '" << SelectedFaultName << "' has already been activated.");
+         << " per simulation; '" << selected_fault_name << "' has already been activated.");
     }
     else 
     {
@@ -259,8 +259,8 @@ void PowerSystemNode::injectFault (const string& fault_name,
       index = 0;
       fault_activated = true;
 
-      OneFaultInjected = true;
-      SelectedFaultName = fault_name;
+      one_fault_injected = true;
+      selected_fault_name = fault_name;
     }
   }
   else if (fault_activated && !fault_enabled)
@@ -273,7 +273,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
   {
     // Check and ensure the fault is the original one injected.
     // Any additional faults are to be ignored due to one-fault-per-simulation.
-    if (fault_name != SelectedFaultName) 
+    if (fault_name != selected_fault_name) 
     {
       return;
     }
