@@ -273,27 +273,29 @@ void PowerSystemNode::injectFault (const string& fault_name,
       return;
     }
 
-    // Given the only power fault currently available is 'high power draw',
+    // If the current fault being utilized is high_power_draw,
     // simply update wattage based on the current value of the HPD slider.
+    if (fault_name == FAULT_NAME_HPD_ACTIVATE)
+    {
+      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_value);
+      wattage += hpd_value;
+    } else
+    {
+      // TODO: Unspecified how to handle end of fault profile, which is
+      // unlikely.  For now, reuse the last entry.
+      if (index + m_profile_increment >= sequence.size()) {
+        ROS_WARN_STREAM_ONCE
+          (fault_name << ": reached end of fault profile, reusing last entry.");
+        // Probably unneeded, but makes index explicit.
+        index = sequence.size() - 1;
+      }
+      else index += m_profile_increment;
 
-    ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_value);
-
-    wattage += hpd_value;
-    
-    /*// TODO: Unspecified how to handle end of fault profile, which is
-    // unlikely.  For now, reuse the last entry.
-    if (index + m_profile_increment >= sequence.size()) {
-      ROS_WARN_STREAM_ONCE
-        (fault_name << ": reached end of fault profile, reusing last entry.");
-      // Probably unneeded, but makes index explicit.
-      index = sequence.size() - 1;
+      auto data = sequence[index];
+      wattage += data[MessageId::Watts];
+      voltage += data[MessageId::Volts];
+      temperature += data[MessageId::Centigrade];
     }
-    else index += m_profile_increment;
-
-    auto data = sequence[index];
-    wattage += data[MessageId::Watts];
-    voltage += data[MessageId::Volts];
-    temperature += data[MessageId::Centigrade];*/
   }
 }
 
