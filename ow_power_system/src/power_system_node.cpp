@@ -15,7 +15,8 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
-const string FAULT_NAME_HPD     = "high_power_draw_power_failure";
+const string FAULT_NAME_HPD           = "high_power_draw_power_failure";
+const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
@@ -231,6 +232,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
   static string selected_fault_name = "";
 
   bool fault_enabled = false;
+  double hpd_value = 0.0;
 
   // Do nothing unless the specified fault has been injected.
   if (! ros::param::getCached("/faults/" + fault_name, fault_enabled)) {
@@ -271,7 +273,14 @@ void PowerSystemNode::injectFault (const string& fault_name,
       return;
     }
 
-    // TODO: Unspecified how to handle end of fault profile, which is
+    // Given the only power fault currently available is 'high power draw',
+    // simply update wattage based on the current value of the HPD slider.
+
+    ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_value);
+
+    wattage += hpd_value;
+    
+    /*// TODO: Unspecified how to handle end of fault profile, which is
     // unlikely.  For now, reuse the last entry.
     if (index + m_profile_increment >= sequence.size()) {
       ROS_WARN_STREAM_ONCE
@@ -284,7 +293,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
     auto data = sequence[index];
     wattage += data[MessageId::Watts];
     voltage += data[MessageId::Volts];
-    temperature += data[MessageId::Centigrade];
+    temperature += data[MessageId::Centigrade];*/
   }
 }
 
@@ -292,7 +301,13 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  injectFault(FAULT_NAME_HPD,
+  // NOTE: Potential concerns:
+  //       The failure_sequence, failure_sequence_index,
+  //       voltage, and temperature
+  //       are no longer used as of JIRA 994. Should they
+  //       be left in for future use in case someone wants
+  //       to create a fault profile with additional modifiers?
+  injectFault(FAULT_NAME_HPD_ACTIVATE,
         m_high_power_draw_power_failure_activated,
         m_high_power_draw_power_failure_sequence,
         m_high_power_draw_power_failure_sequence_index,
