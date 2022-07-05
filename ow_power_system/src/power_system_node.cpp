@@ -304,7 +304,7 @@ void PowerSystemNode::injectFaults(double& power,
   // NOTE: Potential concerns:
   //       The failure_sequence, failure_sequence_index,
   //       voltage, and temperature
-  //       are no longer used as of JIRA 994. Should they
+  //       are no longer used as of JIRA 993. Should they
   //       be left in for future use in case someone wants
   //       to create a fault profile with additional modifiers?
   injectFault(FAULT_NAME_HPD_ACTIVATE,
