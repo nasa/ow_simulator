@@ -6,10 +6,13 @@
 
 from math import sqrt
 from copy import copy
+from turtle import pos
 import unittest
+from unittest.result import failfast
 import rospy
 import roslib
 import actionlib
+import numpy as np
 
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
@@ -22,6 +25,9 @@ roslib.load_manifest(PKG)
 GROUND_POSITION = -0.155
 DISCARD_POSITION = Point(1.5, 0.8, 0.65) # default for discard action
 REGOLITH_CLEANUP_DELAY = 5.0 # seconds
+SAMPLE_DOCK_LENGTH = 0.27
+SAMPLE_DOCK_WIDTH  = 0.08
+SAMPLE_DOCK_HEIGHT = 0.04 
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
 SAMPLE_DOCK_LINK_NAME = 'lander::lander_sample_dock_link'
@@ -175,6 +181,40 @@ class TerrainInteraction(unittest.TestCase):
                 scoop_position.x, scoop_position.y, scoop_position.z
               )
         )
+
+  """
+  Check a point inside a volume (dot product method)
+  """
+  def check_point_in_volume_dot(self, dock, p):
+    # define point as vector
+    point = (p.x, p.y, p.z)
+    # define 4 vertices P1 P2 P4 P5
+    P1 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
+    P2 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y + SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
+    P4 = ( dock.x + SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
+    P5 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z + SAMPLE_DOCK_HEIGHT/2 )
+    # define three directions U V W
+    U = np.subtract(P2, P1)
+    V = np.subtract(P4, P1)
+    W = np.subtract(P5, P1)
+    # Check following dot product constraints
+    if (  U @ point > U @ P1 and U @ point < U @ P2 
+      and V @ point > V @ P1 and V @ point < V @ P4
+      and W @ point > W @ P1 and W @ point < U @ P5):
+      return True
+    else:
+      return False
+
+  """
+  Asserts all regolith contained in the sample dock
+  """
+  def _assert_dock_regolith_containment(self):
+    dock_position = self._get_link_position(SAMPLE_DOCK_LINK_NAME)
+      #Verify all regolith remain in the sample dock
+    for name, pose in zip(self._gz_link_names, self._gz_link_poses):
+      assert_fail_msg = "Regolith fell out of dock!\n"
+      if self._is_regolith(name):
+        self.assertTrue(self.check_point_in_volume_dot(dock_position, pose.position), assert_fail_msg)
 
   """
   Asserts regolith remains in scoop until it arrives at the sample dock
@@ -428,12 +468,14 @@ class TerrainInteraction(unittest.TestCase):
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
 
+    # verify regolith all contained in the sample dock
+    self._assert_dock_regolith_containment()
   """
   Test the unstow then stow action.
   Calling this after an optertion is standard operating procedure.
   """
   def test_07_stow(self):
-
+    
     # unstow must come before stow
     self.test_01_unstow()
 

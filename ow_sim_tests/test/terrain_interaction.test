@@ -10,6 +10,6 @@
     </include>
 
     <test test-name="terrain_interaction" pkg="ow_sim_tests"
-        type="terrain_interaction.py" time-limit="350.0"/>
+        type="terrain_interaction.py" time-limit="550.0"/>
 
 </launch>
