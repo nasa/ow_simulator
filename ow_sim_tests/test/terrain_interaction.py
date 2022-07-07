@@ -6,9 +6,7 @@
 
 from math import sqrt
 from copy import copy
-from turtle import pos
 import unittest
-from unittest.result import failfast
 import rospy
 import roslib
 import actionlib
@@ -198,9 +196,9 @@ class TerrainInteraction(unittest.TestCase):
     V = np.subtract(P4, P1)
     W = np.subtract(P5, P1)
     # Check following dot product constraints
-    if (  U @ point > U @ P1 and U @ point < U @ P2 
-      and V @ point > V @ P1 and V @ point < V @ P4
-      and W @ point > W @ P1 and W @ point < U @ P5):
+    if (  U @ point > P1 @ U and U @ point < P2 @ U 
+      and V @ point > P1 @ V and V @ point < P4 @ V
+      and W @ point > P1 @ W and W @ point < P5 @ W):
       return True
     else:
       return False
@@ -467,8 +465,6 @@ class TerrainInteraction(unittest.TestCase):
 
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
-
-    # verify regolith all contained in the sample dock
     self._assert_dock_regolith_containment()
   """
   Test the unstow then stow action.
