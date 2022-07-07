@@ -232,7 +232,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
   static string selected_fault_name = "";
 
   bool fault_enabled = false;
-  double hpd_value = 0.0;
+  double hpd_wattage = 0.0;
 
   // Do nothing unless the specified fault has been injected.
   if (! ros::param::getCached("/faults/" + fault_name, fault_enabled)) {
@@ -277,8 +277,8 @@ void PowerSystemNode::injectFault (const string& fault_name,
     // simply update wattage based on the current value of the HPD slider.
     if (fault_name == FAULT_NAME_HPD_ACTIVATE)
     {
-      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_value);
-      wattage += hpd_value;
+      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
+      wattage += hpd_wattage;
     } else
     {
       // TODO: Unspecified how to handle end of fault profile, which is
