@@ -870,6 +870,87 @@ class ArmMoveJoint(object):
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
 
+class ArmMoveJoints(object):
+
+    def __init__(self, name):
+        self._action_name = name
+        # Action Feedback/Result
+        self._fdbk = ow_lander.msg.ArmMoveJointsFeedback()
+        self._result = ow_lander.msg.ArmMoveJointsResult()
+        self._current_joint_state = ArmJointStateSubscriber()
+        self._interface = MoveItInterface()
+        self._timeout = 0.0
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.ArmMoveJointsAction,
+                                                    execute_cb=self.on_ArmMoveJoints_action,
+                                                    auto_start=False)
+        self._server.start()
+
+    def _update_feedback(self):
+        self._js = self._current_joint_state.get_joint_angles()
+        self._fdbk.angle = self._js
+        self._server.publish_feedback(self._fdbk)
+
+    def _update_motion(self, goal):
+
+        rospy.loginfo("Arm move joint started")
+        joint_goal = self._interface.move_arm.get_current_joint_values()
+
+        if goal.relative == False:
+            joint_goal[goal.joint] = goal.angle
+        else:
+            joint_goal[goal.joint] = joint_goal[goal.joint] + goal.angle
+        self._interface.move_arm.set_joint_value_target(joint_goal)
+
+        _, plan, _, _ = self._interface.move_arm.plan()
+        if len(plan.joint_trajectory.points) < 1:
+            return
+        else:
+            n_points = len(plan.joint_trajectory.points)
+            start_time = plan.joint_trajectory.points[0].time_from_start
+            end_time = plan.joint_trajectory.points[n_points-1].time_from_start
+            self._timeout = end_time - start_time
+            return plan
+
+    def on_ArmMoveJoint_action(self, goal):
+        server_stop.reset()
+        plan = self._update_motion(goal)
+        if plan is None:
+            self._server.set_aborted(self._result)
+            return
+        success = False
+        if server_stop.stopped is False:
+            trajectory_async_executer.execute(plan.joint_trajectory,
+                                              done_cb=None,
+                                              active_cb=None,
+                                              feedback_cb=trajectory_async_executer.stop_arm_if_fault)
+        else:
+            self._server.set_aborted(self._result)
+            rospy.loginfo('Arm_move Joint  was stopped.')
+            return
+
+        # Record start time
+        start_time = rospy.get_time()
+
+        def now_from_start(start):
+            return rospy.Duration(secs=rospy.get_time() - start)
+
+        while ((now_from_start(start_time) < self._timeout) and server_stop.stopped is False):
+            self._update_feedback()
+
+        success = trajectory_async_executer.success(
+        ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
+
+        if success:
+            self._result.final_angle = self._fdbk.angle
+            rospy.loginfo('%s: Succeeded' % self._action_name)
+            self._server.set_succeeded(self._result)
+        else:
+            rospy.loginfo('%s: Failed' % self._action_name)
+            self._server.set_aborted(self._result)
+
+
+
 
 if __name__ == '__main__':
     rospy.init_node('arm_action_servers')
