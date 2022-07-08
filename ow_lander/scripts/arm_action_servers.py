@@ -888,18 +888,20 @@ class ArmMoveJoints(object):
 
     def _update_feedback(self):
         self._js = self._current_joint_state.get_joint_angles()
-        self._fdbk.angle = self._js
+        self._fdbk.angles = self._js
         self._server.publish_feedback(self._fdbk)
 
     def _update_motion(self, goal):
 
-        rospy.loginfo("Arm move joint started")
+        rospy.loginfo("Arm move joints started")
         joint_goal = self._interface.move_arm.get_current_joint_values()
 
-        if goal.relative == False:
-            joint_goal[goal.joint] = goal.angle
-        else:
-            joint_goal[goal.joint] = joint_goal[goal.joint] + goal.angle
+        # if goal.relative == False:
+        #     joint_goal[goal.joint] = goal.angle
+        # else:
+        #     joint_goal[goal.joint] = joint_goal[goal.joint] + goal.angle
+
+        joint_goal = goal.angles
         self._interface.move_arm.set_joint_value_target(joint_goal)
 
         _, plan, _, _ = self._interface.move_arm.plan()
@@ -912,7 +914,7 @@ class ArmMoveJoints(object):
             self._timeout = end_time - start_time
             return plan
 
-    def on_ArmMoveJoint_action(self, goal):
+    def on_ArmMoveJoints_action(self, goal):
         server_stop.reset()
         plan = self._update_motion(goal)
         if plan is None:
@@ -942,7 +944,7 @@ class ArmMoveJoints(object):
         ) and trajectory_async_executer.wait() and trajectory_async_executer.get_state() != GoalStatus.PREEMPTED
 
         if success:
-            self._result.final_angle = self._fdbk.angle
+            self._result.final_angles = self._fdbk.angles
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._server.set_succeeded(self._result)
         else:
@@ -969,4 +971,5 @@ if __name__ == '__main__':
     server_deliver = DeliverActionServer("Deliver")
     server_discard = DiscardActionServer("Discard")
     server_ArmMoveJoint = ArmMoveJoint("ArmMoveJoint")
+    server_ArmMoveJoints = ArmMoveJoints("ArmMoveJoints")
     rospy.spin()
