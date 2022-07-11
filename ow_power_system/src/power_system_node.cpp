@@ -129,9 +129,12 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
 bool PowerSystemNode::loadFaultPowerProfiles()
 {
   string path;
-
-  path = ros::package::getPath("ow_power_system") + "/data/high_power_draw_power_failure.csv";
-  m_high_power_draw_power_failure_sequence = loadPowerProfile(path);
+  
+  // DEPRECATED
+  // This code is used to get the path to the CSV files containing data for
+  // predetermined power faults. The current high power draw fault does not use this.
+  //path = ros::package::getPath("ow_power_system") + "/data/YOUR_FAULT_HERE.csv";
+  //m_high_power_draw_power_failure_sequence = loadPowerProfile(path);
 
   return true;
 }
@@ -219,18 +222,18 @@ double PowerSystemNode::generateVoltageEstimate()
   return voltage_dist(m_random_generator);
 }
 
+// NOTE: To use the old CSV format for power faults,
+//       the two additional parameters here must be uncommented.
+//       If the old CSV format is completely removed, these parameters
+//       can also be deleted. Will also require updating header file.
 void PowerSystemNode::injectFault (const string& fault_name,
                                    bool& fault_activated,
-                                   const PrognoserVector& sequence,
-                                   size_t& index,
+                                   //const PrognoserVector& sequence,
+                                   //size_t& index,
                                    double& wattage,
                                    double& voltage,
                                    double& temperature)
 {
-  // Vars used to handle preventing more than one fault activation.
-  static bool one_fault_injected = false;
-  static string selected_fault_name = "";
-
   bool fault_enabled = false;
   double hpd_wattage = 0.0;
 
@@ -241,22 +244,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (!fault_activated && fault_enabled)
   {
-    // Only activate the fault if no other fault has been activated in the simulation thus far.
-    if (one_fault_injected)
-    {
-      ROS_WARN_STREAM_ONCE
-        ("'" << fault_name << "' and future faults are being ignored. Only one power fault activation allowed"
-         << " per simulation; '" << selected_fault_name << "' has already been activated.");
-    }
-    else 
-    {
-      ROS_INFO_STREAM(fault_name << " activated!");
-      index = 0;
-      fault_activated = true;
-
-      one_fault_injected = true;
-      selected_fault_name = fault_name;
-    }
+    ROS_INFO_STREAM(fault_name << " activated!");
+    // DEPRECATED
+    //index = 0;
+    fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
@@ -266,13 +257,6 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (fault_activated && fault_enabled)
   {
-    // Check and ensure the fault is the original one injected.
-    // Any additional faults are to be ignored due to one-fault-per-simulation.
-    if (fault_name != selected_fault_name) 
-    {
-      return;
-    }
-
     // If the current fault being utilized is high_power_draw,
     // simply update wattage based on the current value of the HPD slider.
     if (fault_name == FAULT_NAME_HPD_ACTIVATE)
@@ -281,6 +265,13 @@ void PowerSystemNode::injectFault (const string& fault_name,
       wattage += hpd_wattage;
     } else
     {
+      // DEPRECATED
+      // This code was used to inject the values from the CSV-defined power faults
+      // when they are activated. The CSV fault system is not currently used by
+      // the high power draw fault. If support is removed, this code can also be
+      // fully removed.
+
+      /*
       // TODO: Unspecified how to handle end of fault profile, which is
       // unlikely.  For now, reuse the last entry.
       if (index + m_profile_increment >= sequence.size()) {
@@ -295,6 +286,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
       wattage += data[MessageId::Watts];
       voltage += data[MessageId::Volts];
       temperature += data[MessageId::Centigrade];
+      */
     }
   }
 }
@@ -303,16 +295,13 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  // NOTE: Potential concerns:
-  //       The failure_sequence, failure_sequence_index,
-  //       voltage, and temperature
-  //       are no longer used as of JIRA 993. Should they
-  //       be left in for future use in case someone wants
-  //       to create a fault profile with additional modifiers?
+  // NOTE: To use the old CSV fault format,
+  // two additional parameters must be uncommented here
+  // and declared in the header file.
   injectFault(FAULT_NAME_HPD_ACTIVATE,
         m_high_power_draw_power_failure_activated,
-        m_high_power_draw_power_failure_sequence,
-        m_high_power_draw_power_failure_sequence_index,
+        //m_high_power_draw_power_failure_sequence,
+        //m_high_power_draw_power_failure_sequence_index,
         power, voltage, temperature);
 }
 

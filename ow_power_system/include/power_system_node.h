@@ -30,8 +30,8 @@ private:
   double generateVoltageEstimate();
   void injectFault(const std::string& power_fault_name,
                    bool& fault_activated,
-                   const PrognoserVector& sequence,
-                   size_t& sequence_index,
+                   //const PrognoserVector& sequence,
+                   //size_t& sequence_index,
                    double& power,
                    double& voltage,
                    double& temperature);
@@ -103,8 +103,8 @@ private:
   std::uniform_real_distribution<double> m_temperature_dist;
   
   bool m_high_power_draw_power_failure_activated = false;
-  PrognoserVector m_high_power_draw_power_failure_sequence;
-  size_t m_high_power_draw_power_failure_sequence_index = 0;
+  //PrognoserVector m_high_power_draw_power_failure_sequence;
+  //size_t m_high_power_draw_power_failure_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
   bool m_processing_power_batch = false;
