@@ -183,22 +183,22 @@ class TerrainInteraction(unittest.TestCase):
   """
   Check a point inside a volume (dot product method)
   """
-  def check_point_in_volume_dot(self, dock, p):
+  def check_point_in_volume_dot(self, p):
     # define point as vector
     point = (p.x, p.y, p.z)
-    # define 4 vertices P1 P2 P4 P5
-    P1 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
-    P2 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y + SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
-    P4 = ( dock.x + SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z - SAMPLE_DOCK_HEIGHT/2 )
-    P5 = ( dock.x - SAMPLE_DOCK_LENGTH/2, dock.y - SAMPLE_DOCK_WIDTH/2,  dock.z + SAMPLE_DOCK_HEIGHT/2 )
+    # define 4 vertices P1 P2 P3 P4
+    P1 = ( 0.6 ,   -0.425,  -6.53 )
+    P2 = ( 0.505 , -0.425,  -6.53 )
+    P3 = ( 0.6,    -0.13,   -6.61 )
+    P4 = ( 0.6,    -0.425,  -6.47 )
     # define three directions U V W
     U = np.subtract(P2, P1)
-    V = np.subtract(P4, P1)
-    W = np.subtract(P5, P1)
+    V = np.subtract(P3, P1)
+    W = np.subtract(P4, P1)
     # Check following dot product constraints
     if (  U @ point > P1 @ U and U @ point < P2 @ U 
-      and V @ point > P1 @ V and V @ point < P4 @ V
-      and W @ point > P1 @ W and W @ point < P5 @ W):
+      and V @ point > P1 @ V and V @ point < P3 @ V
+      and W @ point > P1 @ W and W @ point < P4 @ W):
       return True
     else:
       return False
@@ -207,12 +207,11 @@ class TerrainInteraction(unittest.TestCase):
   Asserts all regolith contained in the sample dock
   """
   def _assert_dock_regolith_containment(self):
-    dock_position = self._get_link_position(SAMPLE_DOCK_LINK_NAME)
       #Verify all regolith remain in the sample dock
     for name, pose in zip(self._gz_link_names, self._gz_link_poses):
       assert_fail_msg = "Regolith fell out of dock!\n"
       if self._is_regolith(name):
-        self.assertTrue(self.check_point_in_volume_dot(dock_position, pose.position), assert_fail_msg)
+        self.assertTrue(self.check_point_in_volume_dot(pose.position), assert_fail_msg)
 
   """
   Asserts regolith remains in scoop until it arrives at the sample dock
