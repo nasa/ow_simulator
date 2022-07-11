@@ -15,7 +15,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
-const string FAULT_NAME_HPD           = "high_power_draw_power_failure";
+const string FAULT_NAME_HPD           = "high_power_draw";
 const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 
 // The index use to access temperature information.
