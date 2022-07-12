@@ -870,6 +870,7 @@ class ArmMoveJoint(object):
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
 
+
 class ArmMoveJoints(object):
 
     def __init__(self, name):
@@ -896,12 +897,11 @@ class ArmMoveJoints(object):
         rospy.loginfo("Arm move joints started")
         joint_goal = self._interface.move_arm.get_current_joint_values()
 
-        # if goal.relative == False:
-        #     joint_goal[goal.joint] = goal.angle
-        # else:
-        #     joint_goal[goal.joint] = joint_goal[goal.joint] + goal.angle
+        if goal.relative == False:
+            joint_goal = goal.angles
+        else:
+            joint_goal = list(np.array(joint_goal) + np.array(goal.angles))
 
-        joint_goal = goal.angles
         self._interface.move_arm.set_joint_value_target(joint_goal)
 
         _, plan, _, _ = self._interface.move_arm.plan()
@@ -950,8 +950,6 @@ class ArmMoveJoints(object):
         else:
             rospy.loginfo('%s: Failed' % self._action_name)
             self._server.set_aborted(self._result)
-
-
 
 
 if __name__ == '__main__':

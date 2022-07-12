@@ -20,20 +20,11 @@ def ArmMoveJoints_client():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('relative', type=strtobool,
                         help='Move joint relative to the current position', nargs='?', default='False', const=0)
-    # parser.add_argument('joint', type=int,
-    #                     help='Joint index to be moved 0:j_shou_yaw, 1:j_shou_pitch, 2:j_prox_pitch, 3:j_dist_pitch, 4:j_hand_yaw, 5:j_scoop_yaw', nargs='?', 
-    #                     default=0, const=0, choices=range(6))
 
     parser.add_argument('angles', type=float,
-                        help='goal angle of the joints in radians', nargs='?', default=[0.1, 0.1, 0.1, 0.1 ,0.1, 0.1], const=0)
+                        help='goal angle of the joints in radians', nargs=6, default=[0.1, 0.1, 0.1, 0.1 ,0.1, 0.1])
     args = parser.parse_args()
     print_arguments(args)
-
-    joints_set = {0: 'j_shou_yaw', 1: 'j_shou_pitch', 2: 'j_prox_pitch',
-                  3: 'j_dist_pitch', 4: 'j_hand_yaw', 5: 'j_scoop_yaw'}
-    robot = URDF.from_parameter_server()
-    # print('Lower and upper limit of the joint is',
-    #       robot.joint_map[joints_set[args.joint]].limit.lower, robot.joint_map[joints_set[args.joint]].limit.upper)
 
     client = actionlib.SimpleActionClient(
         'ArmMoveJoints', ow_lander.msg.ArmMoveJointsAction)
