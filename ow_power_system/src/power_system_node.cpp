@@ -265,11 +265,11 @@ void PowerSystemNode::injectFault (const string& fault_name,
       wattage += hpd_wattage;
     } else
     {
-      // DEPRECATED
+      // DEPRECATED (7/12/22)
       // This code was used to inject the values from the CSV-defined power faults
       // when they are activated. The CSV fault system is not currently used by
-      // the high power draw fault. If support is removed, this code can also be
-      // fully removed.
+      // the high power draw fault, but it will be revisited in the coming days/weeks, so
+      // it has not been fully removed yet.
 
       /*
       // TODO: Unspecified how to handle end of fault profile, which is
@@ -295,6 +295,7 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
+  // DEPRECATED (7/12/22)
   // NOTE: To use the old CSV fault format,
   // two additional parameters must be uncommented here
   // and declared in the header file.

@@ -30,8 +30,8 @@ private:
   double generateVoltageEstimate();
   void injectFault(const std::string& power_fault_name,
                    bool& fault_activated,
-                   //const PrognoserVector& sequence,
-                   //size_t& sequence_index,
+                   //const PrognoserVector& sequence, // Will be revisited in coming days/weeks
+                   //size_t& sequence_index,          // (7/12/22)
                    double& power,
                    double& voltage,
                    double& temperature);
@@ -103,6 +103,9 @@ private:
   std::uniform_real_distribution<double> m_temperature_dist;
   
   bool m_high_power_draw_power_failure_activated = false;
+  // DEPRECATED (7/12/22)
+  // Part of the old .CSV system for power faults. It will be revisited
+  // in the coming days/weeks to either fully remove or reinstantiate.
   //PrognoserVector m_high_power_draw_power_failure_sequence;
   //size_t m_high_power_draw_power_failure_sequence_index = 0;
 
