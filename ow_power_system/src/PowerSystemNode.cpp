@@ -9,7 +9,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
 #include <ow_lander/lander_joints.h>
-#include "power_system_node.h"
+#include "PowerSystemNode.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -167,9 +167,9 @@ bool PowerSystemNode::initTopics()
   // Construct the PowerSystemNode publishers
   m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
   m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
+  m_state_of_charge_pub = m_nh.advertise<Float64>("PowerSystemNode/state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<Int16>("PowerSystemNode/remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<Float64>("PowerSystemNode/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
   return true;
@@ -331,7 +331,7 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
   if (eod_time.uncertainty() != UType::Samples)
   {
     // Log warning and don't update the last value
-    ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+    ROS_WARN_NAMED("PowerSystemNode", "Unexpected uncertainty type for EoD prediction");
     return;
   }
 
@@ -426,7 +426,7 @@ void PowerSystemNode::Run()
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "power_system_node");
+  ros::init(argc, argv, "PowerSystemNode");
   PowerSystemNode psn;
   if (!psn.Initialize())
   {

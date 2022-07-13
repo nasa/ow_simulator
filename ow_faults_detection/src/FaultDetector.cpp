@@ -43,11 +43,11 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
 
   //  power fault publishers and subs
-  m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
+  m_power_soc_sub = nh.subscribe( "/PowerSystemNode/state_of_charge",
                                   10,
                                   &FaultDetector::powerSOCListener,
                                   this);
-  m_power_temperature_sub = nh.subscribe( "/power_system_node/battery_temperature",
+  m_power_temperature_sub = nh.subscribe( "/PowerSystemNode/battery_temperature",
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);

@@ -104,7 +104,7 @@ link_directories(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES power_system_node 
+#  LIBRARIES PowerSystemNode 
   CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
 )
@@ -124,7 +124,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/power_system_node.cpp
+#   src/${PROJECT_NAME}/PowerSystemNode.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -135,8 +135,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(power_system_node
-  src/power_system_node.cpp)
+add_executable(PowerSystemNode
+  src/PowerSystemNode.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,7 +149,7 @@ add_executable(power_system_node
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(power_system_node
+target_link_libraries(PowerSystemNode
   ${catkin_LIBRARIES}
   gsap
 )
@@ -170,7 +170,7 @@ target_link_libraries(power_system_node
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS power_system_node
+install(TARGETS PowerSystemNode
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -201,7 +201,7 @@ install(TARGETS power_system_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_power_system_node.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_PowerSystemNode.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -4,16 +4,16 @@ this repository.
 
 # ow_power_system
 
-It creates a node called power_system_node, which monitors power consumption
+It creates a node called PowerSystemNode, which monitors power consumption
 (mainly based of mechanical power at the current time), publishes the estimated
 _state of charge (SOC)_, estimated _remaining useful life (RUL)_ in seconds and
 also publishes the estimated _battery temperature_ in degrees Celsius. To
 monitor any of these values simply subscribe to their respective topics:
 
 ```bash
-rostopic echo /power_system_node/state_of_charge
-rostopic echo /power_system_node/remaining_useful_life
-rostopic echo /power_system_node/battery_temperature
+rostopic echo /PowerSystemNode/state_of_charge
+rostopic echo /PowerSystemNode/remaining_useful_life
+rostopic echo /PowerSystemNode/battery_temperature
 ```
 
 state_of_charge (SOC): The SOC estimate provides the amount of energy present in
@@ -37,10 +37,10 @@ method, with the predicted value becoming more accurate closer to EOD (end of
 discharge). The battery temperature is expected to hover around a constant value
 of approximately 20 degrees C.
 
-You may initialize the power_system_node in ros launch file as follows:
+You may initialize the PowerSystemNode in ros launch file as follows:
 
 ```xml
-<node name="power_system_node" pkg="ow_power_system" type="power_system_node" />
+<node name="PowerSystemNode" pkg="ow_power_system" type="PowerSystemNode" />
 ```
 
 NOTE: Currently the frequency of the three topics is dependent on the update
