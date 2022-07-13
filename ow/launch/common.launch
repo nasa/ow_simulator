@@ -70,8 +70,8 @@
   <node name="world_to_base_link" pkg="tf" type="static_transform_publisher"
     args="0 0 0 0 0 0 world base_link 1000" unless="$(arg freeze_base_link)"/>
 
-  <!-- Start PowerSystemNode -->
-  <node name="PowerSystemNode" pkg="ow_power_system" type="PowerSystemNode" output="screen" />
+  <!-- Start power_system_node -->
+  <node name="power_system_node" pkg="ow_power_system" type="power_system_node" output="screen" />
 
   <!-- Start faults node -->
   <node name="faults" pkg="ow_faults_injection" type="faults" output="screen" />
