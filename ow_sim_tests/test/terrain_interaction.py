@@ -10,6 +10,7 @@ import unittest
 import rospy
 import roslib
 import actionlib
+import numpy as np
 
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
@@ -175,6 +176,39 @@ class TerrainInteraction(unittest.TestCase):
                 scoop_position.x, scoop_position.y, scoop_position.z
               )
         )
+
+  """
+  check regolith in sample dock
+  """
+  def check_regolith_in_sample_dock(self, p):
+    # define point as vector
+    point = (p.x, p.y, p.z)
+    # define 4 vertices P1 P2 P3 P4
+    P1 = ( 0.6 ,   -0.425,  -6.53 )
+    P2 = ( 0.505 , -0.425,  -6.53 )
+    P3 = ( 0.6,    -0.13,   -6.61 )
+    P4 = ( 0.6,    -0.425,  -6.47 )
+    # define three directions U V W
+    U = np.subtract(P2, P1)
+    V = np.subtract(P3, P1)
+    W = np.subtract(P4, P1)
+    # Check following dot product constraints
+    if (  U @ point > P1 @ U and U @ point < P2 @ U 
+      and V @ point > P1 @ V and V @ point < P3 @ V
+      and W @ point > P1 @ W and W @ point < P4 @ W):
+      return True
+    else:
+      return False
+
+  """
+  Asserts all regolith contained in the sample dock
+  """
+  def _assert_dock_regolith_containment(self):
+      #Verify all regolith remain in the sample dock
+    for name, pose in zip(self._gz_link_names, self._gz_link_poses):
+      assert_fail_msg = "Regolith fell out of dock!\n"
+      if self._is_regolith(name):
+        self.assertTrue(self.check_regolith_in_sample_dock(pose.position), assert_fail_msg)
 
   """
   Asserts regolith remains in scoop until it arrives at the sample dock
@@ -408,6 +442,7 @@ class TerrainInteraction(unittest.TestCase):
   the final portion when it is dumped into the sample dock. Upon completion of
   the operation it also asserts that regolith models are deleted.
   """
+  @unittest.expectedFailure
   def test_06_deliver(self):
 
     # DELIVER_MAX_DURATION = 60.0
@@ -427,13 +462,13 @@ class TerrainInteraction(unittest.TestCase):
 
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
-
+    self._assert_dock_regolith_containment()
   """
   Test the unstow then stow action.
   Calling this after an optertion is standard operating procedure.
   """
   def test_07_stow(self):
-
+    
     # unstow must come before stow
     self.test_01_unstow()
 
