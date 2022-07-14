@@ -9,7 +9,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
 #include <ow_lander/lander_joints.h>
-#include "power_system_node.h"
+#include "PowerSystemNode.h"
 
 using namespace std;
 using namespace std::chrono;
