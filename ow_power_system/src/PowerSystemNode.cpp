@@ -18,6 +18,10 @@ using namespace std_msgs;
 const string FAULT_NAME_HPD           = "high_power_draw";
 const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 
+// GLOBAL VARS?
+bool CUSTOM_FAULT_ACTIVATED           = false;
+bool HPD_FAULT_ACTIVATED              = false;
+
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
 //
@@ -35,11 +39,6 @@ bool PowerSystemNode::Initialize()
 
   m_power_values.resize(m_moving_average_window);
   std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
-
-  if (!loadFaultPowerProfiles()) {
-    ROS_ERROR("Failed to load power fault profiles.");
-    return false;
-  }
 
   if (!initPrognoser()) {
     ROS_ERROR("Failed to initialize power system prognoser.");
@@ -83,7 +82,7 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
   ifstream file(filename);
   if (file.fail())
   {
-    cerr << "Unable to open data file" << filename << endl;
+    cerr << "Unable to open data file " << filename << endl;
   }
   // Skip header line
   file.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -126,15 +125,9 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
   return result;
 }
 
-bool PowerSystemNode::loadFaultPowerProfiles()
+bool PowerSystemNode::loadCustomFaultPowerProfile(string path)
 {
-  string path;
-  
-  // DEPRECATED
-  // This code is used to get the path to the CSV files containing data for
-  // predetermined power faults. The current high power draw fault does not use this.
-  //path = ros::package::getPath("ow_power_system") + "/data/YOUR_FAULT_HERE.csv";
-  //m_high_power_draw_power_failure_sequence = loadPowerProfile(path);
+  m_custom_power_fault_sequence = loadPowerProfile(path);
 
   return true;
 }
@@ -222,18 +215,13 @@ double PowerSystemNode::generateVoltageEstimate()
   return voltage_dist(m_random_generator);
 }
 
-// NOTE: To use the old CSV format for power faults,
-//       the two additional parameters here must be uncommented.
-//       If the old CSV format is completely removed, these parameters
-//       can also be deleted. Will also require updating header file.
 void PowerSystemNode::injectFault (const string& fault_name,
                                    bool& fault_activated,
-                                   //const PrognoserVector& sequence,
-                                   //size_t& index,
                                    double& wattage,
                                    double& voltage,
                                    double& temperature)
 {
+  static bool warning_displayed = false;
   bool fault_enabled = false;
   double hpd_wattage = 0.0;
 
@@ -244,15 +232,29 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (!fault_activated && fault_enabled)
   {
-    ROS_INFO_STREAM(fault_name << " activated!");
-    // DEPRECATED
-    //index = 0;
+    // Only continue if no other faults have been injected.
+    ROS_INFO_STREAM("Attempting " << fault_name << " activation...");
+    if (CUSTOM_FAULT_ACTIVATED)
+    {
+      if (!warning_displayed)
+      {
+        ROS_WARN_STREAM("Cannot activate " << fault_name << ": custom fault already used this simulation.");
+        warning_displayed = true;
+      }
+    }
+    else
+    {
+      ROS_INFO_STREAM(fault_name << " activated!");
+      ROS_WARN_ONCE("Note that high power draw cannot be combined with custom faults.");
+      HPD_FAULT_ACTIVATED = true;
+    }
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
     ROS_INFO_STREAM(fault_name << " de-activated!");
     fault_activated = false;
+    warning_displayed = false;
   }
 
   if (fault_activated && fault_enabled)
@@ -263,31 +265,102 @@ void PowerSystemNode::injectFault (const string& fault_name,
     {
       ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
       wattage += hpd_wattage;
-    } else
-    {
-      // DEPRECATED (7/12/22)
-      // This code was used to inject the values from the CSV-defined power faults
-      // when they are activated. The CSV fault system is not currently used by
-      // the high power draw fault, but it will be revisited in the coming days/weeks, so
-      // it has not been fully removed yet.
-
-      /*
-      // TODO: Unspecified how to handle end of fault profile, which is
-      // unlikely.  For now, reuse the last entry.
-      if (index + m_profile_increment >= sequence.size()) {
-        ROS_WARN_STREAM_ONCE
-          (fault_name << ": reached end of fault profile, reusing last entry.");
-        // Probably unneeded, but makes index explicit.
-        index = sequence.size() - 1;
-      }
-      else index += m_profile_increment;
-
-      auto data = sequence[index];
-      wattage += data[MessageId::Watts];
-      voltage += data[MessageId::Volts];
-      temperature += data[MessageId::Centigrade];
-      */
     }
+  }
+}
+
+void PowerSystemNode::injectCustomFault(bool& fault_activated,
+                                        const PrognoserVector& sequence,
+                                        size_t& index,
+                                        double& wattage,
+                                        double& voltage,
+                                        double& temperature)
+{
+  static string saved_fault_directory = "N/A";
+  string current_fault_directory;
+  static bool custom_fault_ready = false;
+  static bool custom_warning_displayed = false;
+  bool fault_enabled = false;
+
+  // Do nothing unless the specified fault has been injected.
+  if (! ros::param::getCached("/faults/activate_custom_fault", fault_enabled)) {
+    return;
+  }
+
+  if (!fault_activated && fault_enabled)
+  {
+    // Only continue if no other faults have been injected.
+    ROS_INFO_STREAM("Attempting custom fault activation...");
+    if (HPD_FAULT_ACTIVATED)
+    {
+      if (!custom_warning_displayed)
+      {
+        ROS_WARN_STREAM("Cannot activate custom fault: high power draw already used this simulation.");
+        custom_warning_displayed = true;
+      }
+    }
+    else
+    {
+      // Get user-entered file directory
+      if (! ros::param::getCached("/faults/custom_fault_directory", current_fault_directory))
+      {
+        return;
+      }
+      
+      if (current_fault_directory != saved_fault_directory)
+      {
+        // It's a different fault profile from whatever the previous stored directory was, so reset index.      
+        // Load the new fault profile from the provided directory.
+        try
+        {
+          ifstream file(current_fault_directory);
+          if (file.fail() || current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
+          {
+            throw -1;
+          }
+          loadCustomFaultPowerProfile(current_fault_directory);
+          custom_fault_ready = true;
+          CUSTOM_FAULT_ACTIVATED = true;
+          saved_fault_directory = current_fault_directory;
+          index = 0;
+
+          ROS_WARN_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+          ROS_WARN_ONCE("Note that custom power faults cannot be combined with high power draw.");
+          ROS_INFO_STREAM("Custom power fault activated!");
+        }
+        catch (int err_val)
+        {
+          ROS_WARN_STREAM("Custom fault directory invalid; Deactivate fault and try again.");
+          custom_fault_ready = false;
+        }
+      }
+    }
+    fault_activated = true;
+  }
+  else if (fault_activated && !fault_enabled)
+  {
+    ROS_INFO_STREAM("Custom power fault de-activated!");
+    fault_activated = false;
+    custom_fault_ready = false;
+    custom_warning_displayed = false;
+  }
+
+  if (fault_activated && fault_enabled && custom_fault_ready)
+  {
+    // TODO: Unspecified how to handle end of fault profile, which is
+    // unlikely.  For now, reuse the last entry.
+    if (index + m_profile_increment >= sequence.size()) {
+      ROS_WARN_STREAM_ONCE
+        ("custom_fault: reached end of fault profile, reusing last entry.");
+      // Probably unneeded, but makes index explicit.
+      index = sequence.size() - 1;
+    }
+    else index += m_profile_increment;
+
+    auto data = sequence[index];
+    wattage += data[MessageId::Watts];
+    voltage += data[MessageId::Volts];
+    temperature += data[MessageId::Centigrade];
   }
 }
 
@@ -295,15 +368,13 @@ void PowerSystemNode::injectFaults(double& power,
 				   double& voltage,
 				   double& temperature)
 {
-  // DEPRECATED (7/12/22)
-  // NOTE: To use the old CSV fault format,
-  // two additional parameters must be uncommented here
-  // and declared in the header file.
   injectFault(FAULT_NAME_HPD_ACTIVATE,
-        m_high_power_draw_power_failure_activated,
-        //m_high_power_draw_power_failure_sequence,
-        //m_high_power_draw_power_failure_sequence_index,
-        power, voltage, temperature);
+              m_high_power_draw_activated,
+              power, voltage, temperature);
+  injectCustomFault(m_custom_power_fault_activated,
+                    m_custom_power_fault_sequence,
+                    m_custom_power_fault_sequence_index,
+                    power, voltage, temperature);
 }
 
 PrognoserMap
