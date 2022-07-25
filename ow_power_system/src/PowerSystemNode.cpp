@@ -246,7 +246,10 @@ void PowerSystemNode::injectFault (const string& fault_name,
     {
       ROS_INFO_STREAM(fault_name << " activated!");
       ROS_WARN_STREAM_ONCE("Note that high power draw cannot be combined with custom faults.");
-      HPD_FAULT_ACTIVATED = true;
+      // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
+      // When uncommented, the user will only be able to use either high power draw or the custom
+      // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
+      //HPD_FAULT_ACTIVATED = true;
     }
     fault_activated = true;
   }
@@ -304,7 +307,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     else
     {
       // Get user-entered file directory
-      if (! ros::param::getCached("/faults/custom_fault_name", designated_file))
+      if (! ros::param::getCached("/faults/custom_fault_profile", designated_file))
       {
         ROS_ERROR("Failed to fetch custom fault name.");
         return;
@@ -338,7 +341,10 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
           }
           loadCustomFaultPowerProfile(current_fault_directory);
           custom_fault_ready = true;
-          CUSTOM_FAULT_ACTIVATED = true;
+          // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
+          // When uncommented, the user will only be able to use either high power draw or the custom
+          // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
+          //CUSTOM_FAULT_ACTIVATED = true;
           saved_fault_directory = current_fault_directory;
           saved_file = designated_file;
           index = 0;
@@ -384,12 +390,13 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
   if (fault_activated && fault_enabled && custom_fault_ready)
   {
     // TODO: Unspecified how to handle end of fault profile, which is
-    // unlikely.  For now, reuse the last entry.
+    // unlikely. Previously the final entry was repeatedly reused, but
+    // for now just restart the index from the beginning of the CSV.
     if (index + m_profile_increment >= sequence.size()) {
-      ROS_WARN_STREAM_ONCE
-        ("custom_fault: reached end of fault profile, reusing last entry.");
+      ROS_WARN_STREAM
+        ("custom_fault: reached end of fault profile, restarting from first entry.");
       // Probably unneeded, but makes index explicit.
-      index = sequence.size() - 1;
+      index = 0;
     }
     else index += m_profile_increment;
 
