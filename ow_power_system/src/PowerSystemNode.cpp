@@ -245,7 +245,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
     else
     {
       ROS_INFO_STREAM(fault_name << " activated!");
-      ROS_WARN_ONCE("Note that high power draw cannot be combined with custom faults.");
+      ROS_WARN_STREAM_ONCE("Note that high power draw cannot be combined with custom faults.");
       HPD_FAULT_ACTIVATED = true;
     }
     fault_activated = true;
@@ -279,6 +279,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
   static string saved_fault_directory = "N/A";
   string current_fault_directory;
   string designated_file;
+  static string saved_file;
   static bool custom_fault_ready = false;
   static bool custom_warning_displayed = false;
   bool fault_enabled = false;
@@ -327,15 +328,24 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
           {
             throw -2;
           }
+          if (saved_fault_directory != "N/A")
+          {
+            ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+          }
+          else
+          {
+            ROS_INFO_STREAM("Loading " << designated_file << "...");
+          }
           loadCustomFaultPowerProfile(current_fault_directory);
           custom_fault_ready = true;
           CUSTOM_FAULT_ACTIVATED = true;
           saved_fault_directory = current_fault_directory;
+          saved_file = designated_file;
           index = 0;
 
-          ROS_WARN_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
-          ROS_WARN_ONCE("Note that custom power faults cannot be combined with high power draw.");
-          ROS_INFO_STREAM("Custom power fault activated!");
+          ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+          ROS_WARN_STREAM_ONCE("Note that custom power faults cannot be combined with high power draw.");
+          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
         }
         catch (int err_val)
         {
@@ -350,9 +360,15 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
             default:
               break;
           }
-          
           custom_fault_ready = false;
         }
+      }
+      else
+      {
+        // It's the same fault profile as previously stored, meaning the same fault was reactivated.
+        // Skip loading and continue from previous index.
+        ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " re-activated!");
+        custom_fault_ready = true;
       }
     }
     fault_activated = true;
