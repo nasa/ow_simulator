@@ -278,6 +278,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 {
   static string saved_fault_directory = "N/A";
   string current_fault_directory;
+  string designated_file;
   static bool custom_fault_ready = false;
   static bool custom_warning_displayed = false;
   bool fault_enabled = false;
@@ -302,10 +303,14 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     else
     {
       // Get user-entered file directory
-      if (! ros::param::getCached("/faults/custom_fault_directory", current_fault_directory))
+      if (! ros::param::getCached("/faults/custom_fault_name", designated_file))
       {
+        ROS_ERROR("Failed to fetch custom fault name.");
         return;
       }
+
+      // Append the current fault directory to the stored file path.
+      current_fault_directory = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
       
       if (current_fault_directory != saved_fault_directory)
       {
@@ -314,9 +319,13 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
         try
         {
           ifstream file(current_fault_directory);
-          if (file.fail() || current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
+          if (current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
           {
             throw -1;
+          }
+          else if (file.fail())
+          {
+            throw -2;
           }
           loadCustomFaultPowerProfile(current_fault_directory);
           custom_fault_ready = true;
@@ -330,7 +339,18 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
         }
         catch (int err_val)
         {
-          ROS_WARN_STREAM("Custom fault directory invalid; Deactivate fault and try again.");
+          switch(err_val)
+          {
+            case -1:
+              ROS_WARN_STREAM("Invalid file name entered; Deactivate fault and try again.");
+              break;
+            case -2:
+              ROS_WARN_STREAM("Could not find CSV in the 'profiles' directory with the provided name. Deactivate fault and try again.");
+              break;
+            default:
+              break;
+          }
+          
           custom_fault_ready = false;
         }
       }
