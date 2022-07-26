@@ -1,4 +1,4 @@
-# Arm Fault Status 
-# Value is the fault classification. See enums class in FaultInjector.h
+# The 'value' field is either 0 (no fault) or 1 (hardware error).
+
 Header header
 uint32 value
