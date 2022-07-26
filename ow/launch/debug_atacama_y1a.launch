@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="gazebo_launch_file" default="$(find ow)/launch/empty_world.launch" />
+  <arg name="arm_sim_enable" default="false"/>
+  <arg name="gazebo" default="true"/>
+  <arg name="gzclient" default="true"/>
+  <arg name="record_bag" default="false"/>
+  <arg name="rqt_gui" default="true"/>
+  <arg name="use_rviz" default="true"/>
+  <arg name="sim_regolith" default="true" />
+
+  <include file="$(find ow)/launch/common.launch">
+    <arg name="gazebo_launch_file" default="$(arg gazebo_launch_file)" />
+    <arg name="world_name" value="$(find ow_europa)/worlds/atacama_y1a.world"/>
+    <arg name="init_x" value="-1"/>
+    <arg name="init_y" value="0"/>
+    <arg name="init_z" value="0.37"/>
+    <arg name="init_R" value="0"/>
+    <arg name="init_P" value="0"/>
+    <arg name="init_Y" value="0"/>
+    <arg name="freeze_base_link" value="true"/>
+    <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
+    <arg name="gazebo" value="$(arg gazebo)"/>
+    <arg name="gzclient" value="$(arg gzclient)"/>
+    <arg name="record_bag" value="$(arg record_bag)"/>
+    <arg name="rqt_gui" value="$(arg rqt_gui)"/>
+    <arg name="use_rviz" default="$(arg use_rviz)"/>
+    <arg name="sim_regolith" default="$(arg sim_regolith)"/>
+  </include>
+
+</launch>

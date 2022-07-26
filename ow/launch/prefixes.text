@@ -1,0 +1,5 @@
+        launch-prefix="stterm -g 200x60 -e gdb -ex run --args"
+
+        launch-prefix="gdb -ex run --args"
+
+        launch-prefix="xterm -e gdb --args"
