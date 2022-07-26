@@ -55,6 +55,8 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
+  m_antenna_pan_fault_msg_pub = nh.advertise<ow_faults_detection::PanFaults>("/faults/pan_faults_status", 10);
+  m_antenna_tilt_fault_msg_pub = nh.advertise<ow_faults_detection::TiltFaults>("/faults/tilt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
   m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
@@ -205,14 +207,24 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 void FaultDetector::antPublishFaultMessages()
 {
   ow_faults_detection::PTFaults ant_fault_msg;
+  ow_faults_detection::PanFaults ant_pan_fault_msg;
+  ow_faults_detection::TiltFaults ant_tilt_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
     setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
     m_system_faults_bitset |= isPanTiltExecutionError;
   }else {
     m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
+  if (m_pan_fault) {
+    setComponentFaultsMessage(ant_pan_fault_msg, ComponentFaults::Hardware);
+  }
+  if (m_tilt_fault) {
+    setComponentFaultsMessage(ant_tilt_fault_msg, ComponentFaults::Hardware);
+  }
   publishSystemFaultsMessage();
   m_antenna_fault_msg_pub.publish(ant_fault_msg);
+  m_antenna_pan_fault_msg_pub.publish(ant_pan_fault_msg);
+  m_antenna_tilt_fault_msg_pub.publish(ant_tilt_fault_msg);
 }
 
 //// Camera listeners

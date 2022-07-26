@@ -17,6 +17,8 @@
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
 #include "ow_faults_detection/PTFaults.h"
+#include "ow_faults_detection/PanFaults.h"
+#include "ow_faults_detection/TiltFaults.h"
 #include "ow_faults_detection/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -117,6 +119,8 @@ private:
   // faults topic publishers
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_antenna_pan_fault_msg_pub;
+  ros::Publisher m_antenna_tilt_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;

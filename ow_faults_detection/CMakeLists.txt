@@ -55,6 +55,8 @@ add_message_files(
   ArmFaults.msg
   PowerFaults.msg
   PTFaults.msg
+  PanFaults.msg
+  TiltFaults.msg
   CamFaults.msg
   JointStatesFlag.msg
 )
