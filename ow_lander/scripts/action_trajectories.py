@@ -882,6 +882,7 @@ class ActionTrajectories:
         goal_pose.position.z -= direction_z*search_distance
 
         move_arm.set_pose_target(goal_pose)
+        move_arm.set_goal_tolerance(0.05)
 
         if self.check_for_stop("guarded_move", server_stop):
             return False, False
