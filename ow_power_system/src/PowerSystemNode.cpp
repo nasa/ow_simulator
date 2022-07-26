@@ -245,7 +245,7 @@ void PowerSystemNode::injectFault (const string& fault_name,
     else
     {
       ROS_INFO_STREAM(fault_name << " activated!");
-      ROS_WARN_STREAM_ONCE("Note that high power draw cannot be combined with custom faults.");
+      //ROS_WARN_STREAM_ONCE("Note that high power draw cannot be combined with custom faults.");
       // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
       // When uncommented, the user will only be able to use either high power draw or the custom
       // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
@@ -285,6 +285,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
   static string saved_file;
   static bool custom_fault_ready = false;
   static bool custom_warning_displayed = false;
+  static bool end_fault_warning_displayed = false;
   bool fault_enabled = false;
 
   // Do nothing unless the specified fault has been injected.
@@ -316,10 +317,11 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
       // Append the current fault directory to the stored file path.
       current_fault_directory = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
       
-      if (current_fault_directory != saved_fault_directory)
+      if (current_fault_directory != saved_fault_directory || end_fault_warning_displayed)
       {
-        // It's a different fault profile from whatever the previous stored directory was, so reset index.      
-        // Load the new fault profile from the provided directory.
+        // It's a different fault profile from whatever the previous stored directory was, OR the
+        // previous fault ran its course, so reset index.      
+        // Load a new fault profile from the provided directory.
         try
         {
           ifstream file(current_fault_directory);
@@ -331,7 +333,11 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
           {
             throw -2;
           }
-          if (saved_fault_directory != "N/A")
+          if (end_fault_warning_displayed && designated_file == saved_file)
+          {
+            ROS_INFO_STREAM("Reloading " << designated_file << "...");
+          }
+          else if (saved_fault_directory != "N/A")
           {
             ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
           }
@@ -341,6 +347,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
           }
           loadCustomFaultPowerProfile(current_fault_directory);
           custom_fault_ready = true;
+          end_fault_warning_displayed = false;
           // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
           // When uncommented, the user will only be able to use either high power draw or the custom
           // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
@@ -350,7 +357,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
           index = 0;
 
           ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
-          ROS_WARN_STREAM_ONCE("Note that custom power faults cannot be combined with high power draw.");
+          //ROS_WARN_STREAM_ONCE("Note that custom power faults cannot be combined with high power draw.");
           ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
         }
         catch (int err_val)
@@ -389,21 +396,28 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 
   if (fault_activated && fault_enabled && custom_fault_ready)
   {
-    // TODO: Unspecified how to handle end of fault profile, which is
-    // unlikely. Previously the final entry was repeatedly reused, but
-    // for now just restart the index from the beginning of the CSV.
-    if (index + m_profile_increment >= sequence.size()) {
-      ROS_WARN_STREAM
-        ("custom_fault: reached end of fault profile, restarting from first entry.");
-      // Probably unneeded, but makes index explicit.
-      index = 0;
-    }
-    else index += m_profile_increment;
+    // TODO: Unspecified how to handle end of fault profile. For now, simply disable
+    // the fault from updating any parameters.
+    if (index >= sequence.size())
+    {
+      if (!end_fault_warning_displayed)
+      {
+        ROS_WARN_STREAM
+          ("custom_fault: reached end of fault profile. Fault disabled, but will restart if re-enabled.");
+        end_fault_warning_displayed = true;
+      }
 
-    auto data = sequence[index];
-    wattage += data[MessageId::Watts];
-    voltage += data[MessageId::Volts];
-    temperature += data[MessageId::Centigrade];
+      // Probably unneeded, but makes index explicit.
+      //index = sequence.size() - 1;
+    }
+    else
+    {
+      auto data = sequence[index];
+      wattage += data[MessageId::Watts];
+      voltage += data[MessageId::Volts];
+      temperature += data[MessageId::Centigrade];
+      index += m_profile_increment;
+    }
   }
 }
 
