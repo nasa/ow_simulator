@@ -35,10 +35,6 @@ def ArmMoveJoint_client():
     print('Lower and upper limit of the joint is',
           robot.joint_map[joints_set[args.joint]].limit.lower, robot.joint_map[joints_set[args.joint]].limit.upper)
 
-    for joint in joints_set:
-        #print (joints_set[joint])
-        print ('Lower and upper limit of the joint', (joints_set[joint]), 'is', robot.joint_map[joints_set[joint]].limit.lower, robot.joint_map[joints_set[joint]].limit.upper)      
-
     client = actionlib.SimpleActionClient(
         'ArmMoveJoint', ow_lander.msg.ArmMoveJointAction)
 
