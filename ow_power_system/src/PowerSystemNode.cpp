@@ -18,9 +18,9 @@ using namespace std_msgs;
 const string FAULT_NAME_HPD           = "high_power_draw";
 const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 
-// GLOBAL VARS?
-bool CUSTOM_FAULT_ACTIVATED           = false;
-bool HPD_FAULT_ACTIVATED              = false;
+// Error flags.
+const int ERR_INVALID_FILE_NAME           = -1;
+const int ERR_NO_CSV_FOUND               = -2;
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
@@ -232,30 +232,12 @@ void PowerSystemNode::injectFault (const string& fault_name,
 
   if (!fault_activated && fault_enabled)
   {
-    // Only continue if no other faults have been injected.
-    ROS_INFO_STREAM("Attempting " << fault_name << " activation...");
-    if (CUSTOM_FAULT_ACTIVATED)
-    {
-      if (!warning_displayed)
-      {
-        ROS_WARN_STREAM("Cannot activate " << fault_name << ": custom fault already used this simulation.");
-        warning_displayed = true;
-      }
-    }
-    else
-    {
-      ROS_INFO_STREAM(fault_name << " activated!");
-      //ROS_WARN_STREAM_ONCE("Note that high power draw cannot be combined with custom faults.");
-      // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
-      // When uncommented, the user will only be able to use either high power draw or the custom
-      // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
-      //HPD_FAULT_ACTIVATED = true;
-    }
+    ROS_INFO_STREAM(fault_name << " activated!");
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
-    ROS_INFO_STREAM(fault_name << " de-activated!");
+    ROS_INFO_STREAM(fault_name << " deactivated!");
     fault_activated = false;
     warning_displayed = false;
   }
@@ -295,100 +277,92 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 
   if (!fault_activated && fault_enabled)
   {
-    // Only continue if no other faults have been injected.
+    // Multiple potential points of failure, so alert user the process has started.
     ROS_INFO_STREAM("Attempting custom fault activation...");
-    if (HPD_FAULT_ACTIVATED)
+
+    // Get user-entered file directory.
+    if (! ros::param::getCached("/faults/custom_fault_profile", designated_file))
     {
-      if (!custom_warning_displayed)
+      ROS_ERROR("Failed to fetch custom fault profile name.");
+      return;
+    }
+
+    // Append the current fault directory to the stored file path.
+    current_fault_directory = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
+    
+    if (current_fault_directory != saved_fault_directory || end_fault_warning_displayed)
+    {
+      // It's a different fault profile from whatever the previous stored directory was, OR the
+      // previous fault ran its course, so reset index.      
+      // Load a new fault profile from the provided directory.
+      try
       {
-        ROS_WARN_STREAM("Cannot activate custom fault: high power draw already used this simulation.");
-        custom_warning_displayed = true;
+        ifstream file(current_fault_directory);
+        if (current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
+        {
+          throw ERR_INVALID_FILE_NAME;
+        }
+        else if (file.fail())
+        {
+          throw ERR_NO_CSV_FOUND;
+        }
+        if (end_fault_warning_displayed && designated_file == saved_file)
+        {
+          ROS_INFO_STREAM("Reloading " << designated_file << "...");
+        }
+        else if (saved_fault_directory != "N/A")
+        {
+          ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+        }
+        else
+        {
+          ROS_INFO_STREAM("Loading " << designated_file << "...");
+        }
+        loadCustomFaultPowerProfile(current_fault_directory);
+        custom_fault_ready = true;
+        end_fault_warning_displayed = false;
+        saved_fault_directory = current_fault_directory;
+        saved_file = designated_file;
+        index = 0;
+
+        ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+        ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
+      }
+      catch (int err_val)
+      {
+        switch(err_val)
+        {
+          case ERR_INVALID_FILE_NAME:
+            ROS_WARN_STREAM("Invalid file name '" << designated_file << "' entered; Deactivate fault and try again.");
+            break;
+          case ERR_NO_CSV_FOUND:
+            ROS_WARN_STREAM("Could not find a CSV in the 'profiles' directory with name '" << designated_file << "'. Deactivate fault and try again.");
+            break;
+          default:
+            break;
+        }
+        custom_fault_ready = false;
       }
     }
     else
     {
-      // Get user-entered file directory
-      if (! ros::param::getCached("/faults/custom_fault_profile", designated_file))
-      {
-        ROS_ERROR("Failed to fetch custom fault name.");
-        return;
-      }
-
-      // Append the current fault directory to the stored file path.
-      current_fault_directory = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
-      
-      if (current_fault_directory != saved_fault_directory || end_fault_warning_displayed)
-      {
-        // It's a different fault profile from whatever the previous stored directory was, OR the
-        // previous fault ran its course, so reset index.      
-        // Load a new fault profile from the provided directory.
-        try
-        {
-          ifstream file(current_fault_directory);
-          if (current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
-          {
-            throw -1;
-          }
-          else if (file.fail())
-          {
-            throw -2;
-          }
-          if (end_fault_warning_displayed && designated_file == saved_file)
-          {
-            ROS_INFO_STREAM("Reloading " << designated_file << "...");
-          }
-          else if (saved_fault_directory != "N/A")
-          {
-            ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
-          }
-          else
-          {
-            ROS_INFO_STREAM("Loading " << designated_file << "...");
-          }
-          loadCustomFaultPowerProfile(current_fault_directory);
-          custom_fault_ready = true;
-          end_fault_warning_displayed = false;
-          // TEMP: Uncomment this and the other 'TEMP' line code to re-enable restricting power faults:
-          // When uncommented, the user will only be able to use either high power draw or the custom
-          // fault feature, never both in a single simulation. Behavior of both at once is unpredictable.
-          //CUSTOM_FAULT_ACTIVATED = true;
-          saved_fault_directory = current_fault_directory;
-          saved_file = designated_file;
-          index = 0;
-
-          ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
-          //ROS_WARN_STREAM_ONCE("Note that custom power faults cannot be combined with high power draw.");
-          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
-        }
-        catch (int err_val)
-        {
-          switch(err_val)
-          {
-            case -1:
-              ROS_WARN_STREAM("Invalid file name entered; Deactivate fault and try again.");
-              break;
-            case -2:
-              ROS_WARN_STREAM("Could not find CSV in the 'profiles' directory with the provided name. Deactivate fault and try again.");
-              break;
-            default:
-              break;
-          }
-          custom_fault_ready = false;
-        }
-      }
-      else
-      {
-        // It's the same fault profile as previously stored, meaning the same fault was reactivated.
-        // Skip loading and continue from previous index.
-        ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " re-activated!");
-        custom_fault_ready = true;
-      }
+      // It's the same fault profile as previously stored, meaning the same fault was reactivated.
+      // Skip loading and continue from previous index.
+      ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " re-activated!");
+      custom_fault_ready = true;
     }
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
-    ROS_INFO_STREAM("Custom power fault de-activated!");
+    if (custom_fault_ready)
+    {
+      ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " deactivated!");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Custom fault deactivated!");
+    }
     fault_activated = false;
     custom_fault_ready = false;
     custom_warning_displayed = false;
@@ -403,12 +377,9 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
       if (!end_fault_warning_displayed)
       {
         ROS_WARN_STREAM
-          ("custom_fault: reached end of fault profile. Fault disabled, but will restart if re-enabled.");
+          (saved_file.substr(0, saved_file.size() - 4) << ": reached end of fault profile. Fault disabled, but will restart if re-enabled.");
         end_fault_warning_displayed = true;
       }
-
-      // Probably unneeded, but makes index explicit.
-      //index = sequence.size() - 1;
     }
     else
     {

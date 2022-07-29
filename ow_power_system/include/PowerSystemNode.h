@@ -107,9 +107,6 @@ private:
   std::uniform_real_distribution<double> m_temperature_dist;
   
   bool m_high_power_draw_activated = false;
-  // DEPRECATED (7/12/22)
-  // Part of the old .CSV system for power faults. It will be revisited
-  // in the coming days/weeks to either fully remove or reinstantiate.
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
