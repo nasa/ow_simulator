@@ -52,7 +52,8 @@ private:
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
     {
-      gzerr << m_plugin_name << ": onModifyTerrainMsg() could not acquire heightmap." << endl;
+      gzerr << m_plugin_name << ": DynamicTerrainVisual::onModifyTerrainMsg()"
+        " could not acquire heightmap." << endl;
       return;
     }
 
@@ -93,7 +94,8 @@ private:
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
     {
-      gzerr << m_plugin_name << ": applyNormalMap() could not acquire heightmap." << endl;
+      gzerr << m_plugin_name << ": DynamicTerrainVisual::applyNormalMap()"
+        " could not acquire heightmap." << endl;
       return;
     }
     auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
