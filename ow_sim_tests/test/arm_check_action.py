@@ -8,7 +8,6 @@ import sys
 import rospy
 import roslib
 import unittest
-from ow_lander.srv import *
 import moveit_commander
 import actionlib
 from geometry_msgs.msg import Point
@@ -18,7 +17,6 @@ from math import sqrt
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
 
-# a class that monitors minimum reported frame rate by a gazebo simulation
 """
 Computes the 3D distance between two geometry_msgs.msg Points
 """
@@ -28,12 +26,11 @@ def distance(p1, p2):
             p2.z - p1.z)
   return sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 
-
-class ArmCheck(unittest.TestCase):
+class ArmCheckAction(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
-    rospy.init_node("arm_check_test", anonymous=True)
+    rospy.init_node("arm_check_action_test", anonymous=True)
     moveit_commander.roscpp_initialize(sys.argv)
     self._robot = moveit_commander.RobotCommander()
     self._joint_names = self._robot.get_joint_names("arm")
@@ -44,14 +41,6 @@ class ArmCheck(unittest.TestCase):
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
-  """
-  Computes the 3D distance between two geometry_msgs.msg Points
-  """
-  def distance(p1, p2):
-    v = Point(p2.x - p1.x,
-            p2.y - p1.y,
-            p2.z - p1.z)
-    return sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 
   def _assert_nothing(self):
     pass
@@ -160,6 +149,7 @@ class ArmCheck(unittest.TestCase):
       UNSTOW_MAX_DURATION,
       self._assert_nothing,
       expected_final = Point(1.7419, 0.2396, -6.5904),
+      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
       server_timeout = 25.0
     )
 
@@ -186,6 +176,7 @@ class ArmCheck(unittest.TestCase):
       UNSTOW_MAX_DURATION,
       self._assert_nothing,
       expected_final = Point(1.7419, 0.2396, -6.5904),
+      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
       server_timeout = 25.0
     )
 
@@ -275,6 +266,8 @@ class ArmCheck(unittest.TestCase):
       UNSTOW_MAX_DURATION,
       self._assert_nothing,
       expected_final = Point(1.7419, 0.2396, -6.5904),
+      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
+      server_timeout = 25.0    
     )
 
   def test_10_stow(self):
@@ -291,4 +284,4 @@ class ArmCheck(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'arm_check_action', ArmCheck)
+  rostest.rosrun(PKG, 'arm_check_action', ArmCheckAction)
