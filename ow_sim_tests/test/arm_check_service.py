@@ -18,11 +18,11 @@ roslib.load_manifest(PKG)
 # a class that monitors minimum reported frame rate by a gazebo simulation
 
 
-class ArmCheck(unittest.TestCase):
+class ArmCheckService(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
-    rospy.init_node("arm_check_test", anonymous=True)
+    rospy.init_node("arm_check_service_test", anonymous=True)
     moveit_commander.roscpp_initialize(sys.argv)
     self._robot = moveit_commander.RobotCommander()
     self._joint_names = self._robot.get_joint_names("arm")
@@ -205,4 +205,4 @@ class ArmCheck(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'arm_check', ArmCheck)
+  rostest.rosrun(PKG, 'arm_check_service', ArmCheckService)
