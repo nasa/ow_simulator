@@ -39,6 +39,7 @@ add_action_files(
   FILES Discard.action
   FILES Stop.action
   FILES ArmMoveJoint.action
+  FILES ArmMoveJoints.action
 )
 
 add_message_files(

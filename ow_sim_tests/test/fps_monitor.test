@@ -7,6 +7,7 @@
         <arg name="gazebo_launch_file" default="$(find ow_sim_tests)/launch/empty_world_inject_fps_monitor_gui_plugin.launch"/>
         <arg name="rqt_gui" value="false"/>
         <arg name="use_rviz" value="false"/>
+        <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
     <test test-name="minimum_fps" pkg="ow_sim_tests" type="test_minimum_fps.py">
