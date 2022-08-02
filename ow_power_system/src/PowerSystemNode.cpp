@@ -17,10 +17,12 @@ using namespace std_msgs;
 
 const string FAULT_NAME_HPD           = "high_power_draw";
 const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
+const int CSV_EXPECTED_COLS           = 4;
 
 // Error flags.
-const int ERR_INVALID_FILE_NAME           = -1;
-const int ERR_NO_CSV_FOUND               = -2;
+const int ERR_CSV_FORMAT              = -1;
+const int ERR_INVALID_FILE_NAME       = -1;
+const int ERR_NO_CSV_FOUND            = -2;
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
@@ -77,7 +79,7 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
+PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string csv)
 {
   ifstream file(filename);
   if (file.fail())
@@ -90,46 +92,71 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename)
   auto now = system_clock::now();
 
   PrognoserVector result;
-  while (file.good())
+
+  try
   {
-    PrognoserMap data;
-    string line;
-    getline(file, line);
-    if (line.empty())
-      continue;
+    while (file.good())
+    {
+      PrognoserMap data;
+      string line;
+      getline(file, line);
+      if (line.empty())
+        continue;
 
-    stringstream line_stream(line);
-    string cell;
-    getline(line_stream, cell, ',');
-    double file_time = stod(cell);
-    auto timestamp = now + milliseconds(static_cast<unsigned>(file_time * 1000));
+      stringstream line_stream(line);
+      string cell;
 
-    getline(line_stream, cell, ',');
-    Datum<double> power(stod(cell));
-    power.setTime(timestamp);
+      // Confirm the line contains only 4 columns.
+      stringstream line_stream_check(line);
+      int cols = 0;
+      while (getline(line_stream_check, cell, ','))
+        cols++;
 
-    getline(line_stream, cell, ',');
-    Datum<double> temperature(stod(cell));
-    temperature.setTime(timestamp);
+      if (cols != CSV_EXPECTED_COLS)
+        throw ERR_CSV_FORMAT;
 
-    getline(line_stream, cell, ',');
-    Datum<double> voltage(stod(cell));
-    voltage.setTime(timestamp);
+      getline(line_stream, cell, ',');
+      double file_time = stod(cell);
+      auto timestamp = now + milliseconds(static_cast<unsigned>(file_time * 1000));
 
-    data.insert({ MessageId::Watts, power });
-    data.insert({ MessageId::Centigrade, temperature });
-    data.insert({ MessageId::Volts, voltage });
+      getline(line_stream, cell, ',');
+      Datum<double> power(stod(cell));
+      power.setTime(timestamp);
 
-    result.push_back(data);
+      getline(line_stream, cell, ',');
+      Datum<double> temperature(stod(cell));
+      temperature.setTime(timestamp);
+
+      getline(line_stream, cell, ',');
+      Datum<double> voltage(stod(cell));
+      voltage.setTime(timestamp);
+
+      data.insert({ MessageId::Watts, power });
+      data.insert({ MessageId::Centigrade, temperature });
+      data.insert({ MessageId::Volts, voltage });
+
+      result.push_back(data);
+    }
+  }
+  catch(...) // Many possible different errors could result from reading an improperly formatted CSV.
+  {
+    ROS_ERROR_STREAM("Failed to read " << csv << ": Improper formatting detected." << endl << 
+                     "Confirm " << csv << " follows the exact format of example_fault.csv before retrying.");
+    PrognoserVector emptyPrognoser;
+    return emptyPrognoser;
   }
   return result;
 }
 
-bool PowerSystemNode::loadCustomFaultPowerProfile(string path)
+bool PowerSystemNode::loadCustomFaultPowerProfile(string path, string csv)
 {
-  m_custom_power_fault_sequence = loadPowerProfile(path);
+  m_custom_power_fault_sequence = loadPowerProfile(path, csv);
 
-  return true;
+  // Return false if the sequence was not properly initialized.
+  if (m_custom_power_fault_sequence.size() > 0)
+    return true;
+  else
+    return false;
 }
 
 bool PowerSystemNode::initPrognoser()
@@ -318,15 +345,22 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
         {
           ROS_INFO_STREAM("Loading " << designated_file << "...");
         }
-        loadCustomFaultPowerProfile(current_fault_directory);
-        custom_fault_ready = true;
-        end_fault_warning_displayed = false;
-        saved_fault_directory = current_fault_directory;
-        saved_file = designated_file;
-        index = 0;
+        if (loadCustomFaultPowerProfile(current_fault_directory, designated_file))
+        {
+          custom_fault_ready = true;
+          end_fault_warning_displayed = false;
+          saved_fault_directory = current_fault_directory;
+          saved_file = designated_file;
+          index = 0;
 
-        ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
-        ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
+          ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
+        }
+        else
+        {
+          // Custom fault failed to load correctly, likely due to invalid CSV formatting.
+          custom_fault_ready = false;
+        }        
       }
       catch (int err_val)
       {
