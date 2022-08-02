@@ -6,7 +6,6 @@
 
 import rospy
 import actionlib
-from actionlib_msgs.msg import GoalStatus
 from ow_lander.msg import *
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
@@ -379,14 +378,8 @@ class GuardedMoveActionServer(object):
         :type feedback: FollowJointTrajectoryFeedback
         """
         trajectory_async_executer.stop_arm_if_fault(feedback)
-        # added to compensate for slower than arm movement tan planned
-        execution_time_tollerance = 0.1
-
+        # added to compensate for slower than arm movement than planned
         if self.ground_detector.detect():
-            if (self._estimated_plan_fraction_completed < self._guarded_move_plan_ratio
-                    + execution_time_tollerance):
-                self.ground_detector.reset()
-            else:
                 trajectory_async_executer.stop()
 
     def _update_feedback(self):
