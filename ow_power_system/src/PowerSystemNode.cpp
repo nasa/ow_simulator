@@ -5,6 +5,7 @@
 #include <numeric>
 #include <fstream>
 #include <math.h>
+#include <algorithm>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -82,16 +83,29 @@ bool PowerSystemNode::loadSystemConfig()
 PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string csv)
 {
   ifstream file(filename);
+
+  // Checking for .csv extension isn't strictly necessary as long as the
+  // formatting is correct, but for now, CSV files are expected.
+  if (filename.substr(filename.size() - 4) != ".csv")
+  {
+    throw ERR_INVALID_FILE_NAME;
+  }
+
   if (file.fail())
   {
-    cerr << "Unable to open data file " << filename << endl;
+    throw ERR_NO_CSV_FOUND;
+    return PrognoserVector();
   }
+
   // Skip header line
   file.ignore(numeric_limits<streamsize>::max(), '\n');
 
   auto now = system_clock::now();
 
   PrognoserVector result;
+
+  // Line number starts at 2 instead of 1 because the first line is the header.
+  int line_number = 2;
 
   try
   {
@@ -106,11 +120,10 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       stringstream line_stream(line);
       string cell;
 
-      // Confirm the line contains only 4 columns.
-      stringstream line_stream_check(line);
-      int cols = 0;
-      while (getline(line_stream_check, cell, ','))
-        cols++;
+      // Confirm the line contains the expected number of columns.
+      auto cols = std::count(line.begin(), line.end(), ',') + 1;
+
+      ROS_INFO_STREAM("COLS: " << cols);
 
       if (cols != CSV_EXPECTED_COLS)
         throw ERR_CSV_FORMAT;
@@ -136,14 +149,15 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       data.insert({ MessageId::Volts, voltage });
 
       result.push_back(data);
+
+      line_number++;
     }
   }
   catch(...) // Many possible different errors could result from reading an improperly formatted CSV.
   {
-    ROS_ERROR_STREAM("Failed to read " << csv << ": Improper formatting detected." << endl << 
+    ROS_ERROR_STREAM("Failed to read " << csv << ": Improper formatting detected on line " << line_number << "." << endl << 
                      "Confirm " << csv << " follows the exact format of example_fault.csv before retrying.");
-    PrognoserVector emptyPrognoser;
-    return emptyPrognoser;
+    return PrognoserVector();
   }
   return result;
 }
@@ -252,10 +266,8 @@ void PowerSystemNode::injectFault (const string& fault_name,
   bool fault_enabled = false;
   double hpd_wattage = 0.0;
 
-  // Do nothing unless the specified fault has been injected.
-  if (! ros::param::getCached("/faults/" + fault_name, fault_enabled)) {
-    return;
-  }
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/" + fault_name, fault_enabled);
 
   if (!fault_activated && fault_enabled)
   {
@@ -288,8 +300,8 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
                                         double& voltage,
                                         double& temperature)
 {
-  static string saved_fault_directory = "N/A";
-  string current_fault_directory;
+  static string saved_fault_path = "N/A";
+  string current_fault_path;
   string designated_file;
   static string saved_file;
   static bool custom_fault_ready = false;
@@ -297,10 +309,8 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
   static bool end_fault_warning_displayed = false;
   bool fault_enabled = false;
 
-  // Do nothing unless the specified fault has been injected.
-  if (! ros::param::getCached("/faults/activate_custom_fault", fault_enabled)) {
-    return;
-  }
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/activate_custom_fault", fault_enabled);
 
   if (!fault_activated && fault_enabled)
   {
@@ -308,82 +318,68 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     ROS_INFO_STREAM("Attempting custom fault activation...");
 
     // Get user-entered file directory.
-    if (! ros::param::getCached("/faults/custom_fault_profile", designated_file))
-    {
-      ROS_ERROR("Failed to fetch custom fault profile name.");
-      return;
-    }
+    ros::param::getCached("/faults/custom_fault_profile", designated_file);
 
     // Append the current fault directory to the stored file path.
-    current_fault_directory = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
+    current_fault_path = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
     
-    if (current_fault_directory != saved_fault_directory || end_fault_warning_displayed)
+    // It's a different fault profile from whatever the previous stored directory was, OR the
+    // previous fault ran its course, so reset index.      
+    // Load a new fault profile from the provided directory.
+    try
     {
-      // It's a different fault profile from whatever the previous stored directory was, OR the
-      // previous fault ran its course, so reset index.      
-      // Load a new fault profile from the provided directory.
-      try
+      ifstream file(current_fault_path);
+
+      if (designated_file == saved_file)
       {
-        ifstream file(current_fault_directory);
-        if (current_fault_directory.substr(current_fault_directory.size() - 4) != ".csv")
+        ROS_INFO_STREAM("Reloading " << designated_file << "...");
+      }
+      else if (saved_fault_path != "N/A")
+      {
+        ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+      }
+      else
+      {
+        ROS_INFO_STREAM("Loading " << designated_file << "...");
+      }
+      if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
+      {
+        custom_fault_ready = true;
+        end_fault_warning_displayed = false;
+        saved_fault_path = current_fault_path;
+        saved_file = designated_file;
+        index = 0;
+
+        ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+        if (designated_file == saved_file)
         {
-          throw ERR_INVALID_FILE_NAME;
-        }
-        else if (file.fail())
-        {
-          throw ERR_NO_CSV_FOUND;
-        }
-        if (end_fault_warning_displayed && designated_file == saved_file)
-        {
-          ROS_INFO_STREAM("Reloading " << designated_file << "...");
-        }
-        else if (saved_fault_directory != "N/A")
-        {
-          ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " reactivated!");
         }
         else
         {
-          ROS_INFO_STREAM("Loading " << designated_file << "...");
-        }
-        if (loadCustomFaultPowerProfile(current_fault_directory, designated_file))
-        {
-          custom_fault_ready = true;
-          end_fault_warning_displayed = false;
-          saved_fault_directory = current_fault_directory;
-          saved_file = designated_file;
-          index = 0;
-
-          ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
           ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
         }
-        else
-        {
-          // Custom fault failed to load correctly, likely due to invalid CSV formatting.
-          custom_fault_ready = false;
-        }        
       }
-      catch (int err_val)
+      else
       {
-        switch(err_val)
-        {
-          case ERR_INVALID_FILE_NAME:
-            ROS_WARN_STREAM("Invalid file name '" << designated_file << "' entered; Deactivate fault and try again.");
-            break;
-          case ERR_NO_CSV_FOUND:
-            ROS_WARN_STREAM("Could not find a CSV in the 'profiles' directory with name '" << designated_file << "'. Deactivate fault and try again.");
-            break;
-          default:
-            break;
-        }
+        // Custom fault failed to load correctly, likely due to invalid CSV formatting.
         custom_fault_ready = false;
-      }
+      }        
     }
-    else
+    catch (int err_val)
     {
-      // It's the same fault profile as previously stored, meaning the same fault was reactivated.
-      // Skip loading and continue from previous index.
-      ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " re-activated!");
-      custom_fault_ready = true;
+      switch(err_val)
+      {
+        case ERR_INVALID_FILE_NAME:
+          ROS_WARN_STREAM("Invalid file name '" << designated_file << "' entered; Deactivate fault and try again.");
+          break;
+        case ERR_NO_CSV_FOUND:
+          ROS_WARN_STREAM("Could not find a CSV in the 'profiles' directory with name '" << designated_file << "'. Deactivate fault and try again.");
+          break;
+        default:
+          break;
+      }
+      custom_fault_ready = false;
     }
     fault_activated = true;
   }
