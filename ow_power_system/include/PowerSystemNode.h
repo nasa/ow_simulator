@@ -21,8 +21,8 @@ public:
 
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& filename, std::string csv);
-  bool loadCustomFaultPowerProfile(std::string path, std::string csv);
+  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   bool initPrognoser();
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);

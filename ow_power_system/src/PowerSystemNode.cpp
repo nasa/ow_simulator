@@ -18,12 +18,10 @@ using namespace std_msgs;
 
 const string FAULT_NAME_HPD           = "high_power_draw";
 const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
-const int CSV_EXPECTED_COLS           = 4;
+const int CUSTOM_FILE_EXPECTED_COLS           = 4;
 
 // Error flags.
-const int ERR_CSV_FORMAT              = -1;
-const int ERR_INVALID_FILE_NAME       = -1;
-const int ERR_NO_CSV_FOUND            = -2;
+const int ERR_CUSTOM_FILE_FORMAT              = -1;
 
 // The index use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
@@ -80,20 +78,14 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string csv)
+PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string custom_file)
 {
   ifstream file(filename);
 
-  // Checking for .csv extension isn't strictly necessary as long as the
-  // formatting is correct, but for now, CSV files are expected.
-  if (filename.substr(filename.size() - 4) != ".csv")
-  {
-    throw ERR_INVALID_FILE_NAME;
-  }
-
   if (file.fail())
   {
-    throw ERR_NO_CSV_FOUND;
+    ROS_WARN_STREAM("Could not find a custom file in the 'profiles' directory with name '"
+                          << custom_file << "'. Deactivate fault and try again.");
     return PrognoserVector();
   }
 
@@ -123,10 +115,8 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       // Confirm the line contains the expected number of columns.
       auto cols = std::count(line.begin(), line.end(), ',') + 1;
 
-      ROS_INFO_STREAM("COLS: " << cols);
-
-      if (cols != CSV_EXPECTED_COLS)
-        throw ERR_CSV_FORMAT;
+      if (cols != CUSTOM_FILE_EXPECTED_COLS)
+        throw ERR_CUSTOM_FILE_FORMAT;
 
       getline(line_stream, cell, ',');
       double file_time = stod(cell);
@@ -153,24 +143,22 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       line_number++;
     }
   }
-  catch(...) // Many possible different errors could result from reading an improperly formatted CSV.
+  catch(...) // Many possible different errors could result from reading an improperly formatted file.
   {
-    ROS_ERROR_STREAM("Failed to read " << csv << ": Improper formatting detected on line " << line_number << "." << endl << 
-                     "Confirm " << csv << " follows the exact format of example_fault.csv before retrying.");
+    ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << endl <<
+                     "Improper formatting detected on line " << line_number << "." << endl << 
+                     "Confirm " << custom_file << " follows the exact format of example_fault.csv before retrying.");
     return PrognoserVector();
   }
   return result;
 }
 
-bool PowerSystemNode::loadCustomFaultPowerProfile(string path, string csv)
+bool PowerSystemNode::loadCustomFaultPowerProfile(string path, string custom_file)
 {
-  m_custom_power_fault_sequence = loadPowerProfile(path, csv);
+  m_custom_power_fault_sequence = loadPowerProfile(path, custom_file);
 
   // Return false if the sequence was not properly initialized.
-  if (m_custom_power_fault_sequence.size() > 0)
-    return true;
-  else
-    return false;
+  return (m_custom_power_fault_sequence.size() > 0);
 }
 
 bool PowerSystemNode::initPrognoser()
@@ -323,71 +311,48 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     // Append the current fault directory to the stored file path.
     current_fault_path = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
     
-    // It's a different fault profile from whatever the previous stored directory was, OR the
-    // previous fault ran its course, so reset index.      
-    // Load a new fault profile from the provided directory.
-    try
+    // Attempt to load/reload the designated file.
+    if (designated_file == saved_file)
     {
-      ifstream file(current_fault_path);
-
+      ROS_INFO_STREAM("Reloading " << designated_file << "...");
+    }
+    else if (saved_fault_path != "N/A")
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << "...");
+    }
+    if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
+    {
+      ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
       if (designated_file == saved_file)
       {
-        ROS_INFO_STREAM("Reloading " << designated_file << "...");
-      }
-      else if (saved_fault_path != "N/A")
-      {
-        ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+        ROS_INFO_STREAM(designated_file << " reactivated!");
       }
       else
       {
-        ROS_INFO_STREAM("Loading " << designated_file << "...");
+        ROS_INFO_STREAM(designated_file << " activated!");
       }
-      if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
-      {
-        custom_fault_ready = true;
-        end_fault_warning_displayed = false;
-        saved_fault_path = current_fault_path;
-        saved_file = designated_file;
-        index = 0;
-
-        ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
-        if (designated_file == saved_file)
-        {
-          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " reactivated!");
-        }
-        else
-        {
-          ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " activated!");
-        }
-      }
-      else
-      {
-        // Custom fault failed to load correctly, likely due to invalid CSV formatting.
-        custom_fault_ready = false;
-      }        
+      custom_fault_ready = true;
+      end_fault_warning_displayed = false;
+      saved_fault_path = current_fault_path;
+      saved_file = designated_file;
+      index = 0;
     }
-    catch (int err_val)
+    else
     {
-      switch(err_val)
-      {
-        case ERR_INVALID_FILE_NAME:
-          ROS_WARN_STREAM("Invalid file name '" << designated_file << "' entered; Deactivate fault and try again.");
-          break;
-        case ERR_NO_CSV_FOUND:
-          ROS_WARN_STREAM("Could not find a CSV in the 'profiles' directory with name '" << designated_file << "'. Deactivate fault and try again.");
-          break;
-        default:
-          break;
-      }
+      // Custom fault failed to load correctly.
       custom_fault_ready = false;
-    }
+    }        
     fault_activated = true;
   }
   else if (fault_activated && !fault_enabled)
   {
     if (custom_fault_ready)
     {
-      ROS_INFO_STREAM(saved_file.substr(0, saved_file.size() - 4) << " deactivated!");
+      ROS_INFO_STREAM(saved_file << " deactivated!");
     }
     else
     {
@@ -407,7 +372,8 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
       if (!end_fault_warning_displayed)
       {
         ROS_WARN_STREAM
-          (saved_file.substr(0, saved_file.size() - 4) << ": reached end of fault profile. Fault disabled, but will restart if re-enabled.");
+          (saved_file << ": reached end of fault profile. "
+           << "Fault disabled, but will restart if re-enabled.");
         end_fault_warning_displayed = true;
       }
     }
