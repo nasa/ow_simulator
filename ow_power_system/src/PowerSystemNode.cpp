@@ -107,7 +107,9 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       string line;
       getline(file, line);
       if (line.empty())
+      {
         continue;
+      }
 
       stringstream line_stream(line);
       string cell;
@@ -116,7 +118,9 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string
       auto cols = std::count(line.begin(), line.end(), ',') + 1;
 
       if (cols != CUSTOM_FILE_EXPECTED_COLS)
+      {
         throw ERR_CUSTOM_FILE_FORMAT;
+      }
 
       getline(line_stream, cell, ',');
       double file_time = stod(cell);
@@ -173,7 +177,9 @@ bool PowerSystemNode::initPrognoser()
   m_prognoser = PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
   if (m_prognoser == nullptr)
+  {
     return false;
+  }
 
   // Initialize the GSAP prognoser
   auto init_data = composePrognoserData(m_initial_power, m_initial_voltage, m_initial_temperature);
@@ -237,7 +243,9 @@ double PowerSystemNode::generateVoltageEstimate()
 
   // If voltage limits dip below baseline, set to baseline values
   if (min_V < m_base_voltage)
+  {
     min_V = m_base_voltage;
+  }
 
   // Voltage estimate based on pseudorandom noise and moving range
   uniform_real_distribution<double> voltage_dist(min_V, max_V);
