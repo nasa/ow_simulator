@@ -21,8 +21,8 @@ public:
 
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& filename);
-  bool loadFaultPowerProfiles();
+  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   bool initPrognoser();
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
@@ -30,11 +30,15 @@ private:
   double generateVoltageEstimate();
   void injectFault(const std::string& power_fault_name,
                    bool& fault_activated,
-                   const PrognoserVector& sequence,
-                   size_t& sequence_index,
                    double& power,
                    double& voltage,
                    double& temperature);
+  void injectCustomFault(bool& fault_activated,
+                         const PrognoserVector& sequence,
+                         size_t& index,
+                         double& wattage,
+                         double& voltage,
+                         double& temperature);
   void injectFaults(double& power, double& temperature, double& voltage);
   PrognoserMap composePrognoserData(double power,
                                     double voltage,
@@ -101,18 +105,11 @@ private:
   std::mt19937 m_random_generator;
 
   std::uniform_real_distribution<double> m_temperature_dist;
-
-  bool m_low_state_of_charge_power_failure_activated = false;
-  PrognoserVector m_low_state_of_charge_power_failure_sequence;
-  size_t m_low_state_of_charge_power_failure_sequence_index = 0;
-
-  bool m_instantaneous_capacity_loss_power_failure_activated = false;
-  PrognoserVector m_instantaneous_capacity_loss_power_failure_sequence;
-  size_t m_instantaneous_capacity_loss_power_failure_sequence_index = 0;
-
-  bool m_thermal_power_failure_activated = false;
-  PrognoserVector m_thermal_power_failure_sequence;
-  size_t m_thermal_power_failure_sequence_index = 0;
+  
+  bool m_high_power_draw_activated = false;
+  bool m_custom_power_fault_activated = false;
+  PrognoserVector m_custom_power_fault_sequence;
+  size_t m_custom_power_fault_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
   bool m_processing_power_batch = false;

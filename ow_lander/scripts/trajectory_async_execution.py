@@ -9,9 +9,9 @@ import actionlib
 from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from ow_faults_detection.msg import SystemFaults
+import dynamic_reconfigure.client
 
 ARM_EXECUTION_ERROR = 4
-
 
 class TrajectoryAsyncExecuter:
     """
@@ -28,22 +28,33 @@ class TrajectoryAsyncExecuter:
         # subscribe to system_fault_status for any arm faults
         rospy.Subscriber("/faults/system_faults_status",
                          SystemFaults, self.faultCheckCallback)
+        self.continue_in_fault = False
+        # intialize client to get status of faults
+        self.faults_client()
 
-        # rospy.spin()
 
     def stop_arm_if_fault(self, feedback):
         """
         stops arm if arm fault exists during feedback callback
         """
-        if self.arm_fault:
+        if self.arm_fault and self.continue_in_fault is False:
             self.stop()
+
+    def fault_client_callback(self, config):       
+        self.continue_in_fault = config['arm_motion_continues_in_fault']
+
+    def faults_client(self):
+        '''
+        dynamic reconfigure client that connects to faults server to get the latest state
+        '''
+        client = dynamic_reconfigure.client.Client("faults", timeout=30, config_callback=self.fault_client_callback)     
 
     def faultCheckCallback(self, data):
         """
         If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
         """
         self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
-                          ARM_EXECUTION_ERROR)
+                          ARM_EXECUTION_ERROR)     
 
     def success(self):
         return not self.arm_fault
