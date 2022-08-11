@@ -21,6 +21,9 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
+constexpr bitset<3> FaultDetector::isPanLockedError;
+constexpr bitset<3> FaultDetector::isTiltLockedError;
+
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
@@ -54,9 +57,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 
   // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
-  m_antenna_pan_fault_msg_pub = nh.advertise<ow_faults_detection::PanFaults>("/faults/pan_faults_status", 10);
-  m_antenna_tilt_fault_msg_pub = nh.advertise<ow_faults_detection::TiltFaults>("/faults/tilt_faults_status", 10);
+  m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PanTiltFaultsStatus>("/faults/pan_tilt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
   m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
@@ -183,8 +184,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   publishSystemFaultsMessage();
 }
 
-
-
 template<typename group_t, typename item_t>
 int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
 {
@@ -206,25 +205,26 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 //// Antenna Listeners
 void FaultDetector::antPublishFaultMessages()
 {
-  ow_faults_detection::PTFaults ant_fault_msg;
-  ow_faults_detection::PanFaults ant_pan_fault_msg;
-  ow_faults_detection::TiltFaults ant_tilt_fault_msg;
+  ow_faults_detection::PanTiltFaultsStatus pan_tilt_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
-    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
+    setComponentFaultsMessage(pan_tilt_fault_msg, );
     m_system_faults_bitset |= isPanTiltExecutionError;
+
+    // check if both are errors or one only and update setcomponentfaultsmessage
+    if (m_pan_fault && m_tilt_fault) {
+      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
+    } else if (m_pan_fault) {
+      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
+    } else if (m_tilt_fault) {
+      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
+    }
+
+
   }else {
     m_system_faults_bitset &= ~isPanTiltExecutionError;
   }
-  if (m_pan_fault) {
-    setComponentFaultsMessage(ant_pan_fault_msg, ComponentFaults::Hardware);
-  }
-  if (m_tilt_fault) {
-    setComponentFaultsMessage(ant_tilt_fault_msg, ComponentFaults::Hardware);
-  }
   publishSystemFaultsMessage();
-  m_antenna_fault_msg_pub.publish(ant_fault_msg);
-  m_antenna_pan_fault_msg_pub.publish(ant_pan_fault_msg);
-  m_antenna_tilt_fault_msg_pub.publish(ant_tilt_fault_msg);
+  m_antenna_fault_msg_pub.publish(pan_tilt_fault_msg);
 }
 
 //// Camera listeners

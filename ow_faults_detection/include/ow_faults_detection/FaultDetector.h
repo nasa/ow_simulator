@@ -16,9 +16,7 @@
 #include "ow_faults_detection/SystemFaults.h"
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
-#include "ow_faults_detection/PTFaults.h"
-#include "ow_faults_detection/PanFaults.h"
-#include "ow_faults_detection/TiltFaults.h"
+#include "ow_faults_detection/PanTiltFaultsStatus.h"
 #include "ow_faults_detection/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -67,6 +65,10 @@ public:
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
   static constexpr std::bitset<3> isCapLossError{    0b010 };
   static constexpr std::bitset<3> isThermalError{    0b100 };
+
+  //pan tilt
+  static constexpr std::bitset<3> isPanLockedError{  0b001 };
+  static constexpr std::bitset<3> isTiltLockedError{ 0b010 };
 
   static constexpr float THERMAL_MAX = 50;
   static constexpr float SOC_MIN = 0.1;
@@ -119,8 +121,6 @@ private:
   // faults topic publishers
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
-  ros::Publisher m_antenna_pan_fault_msg_pub;
-  ros::Publisher m_antenna_tilt_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
@@ -146,6 +146,7 @@ private:
   // Antenna
   bool m_pan_fault;
   bool m_tilt_fault;
+  std::bitset<10> m_pan_tilt_faults_bitset{};
   
   // Camera
   ros::Time m_cam_raw_time;
