@@ -21,8 +21,8 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
-constexpr bitset<3> FaultDetector::isPanLockedError;
-constexpr bitset<3> FaultDetector::isTiltLockedError;
+constexpr bitset<2> FaultDetector::isPanLockedError;
+constexpr bitset<2> FaultDetector::isTiltLockedError;
 
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
@@ -55,7 +55,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           &FaultDetector::powerTemperatureListener,
                                           this);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PanTiltFaults.msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PanTiltFaultsStatus>("/faults/pan_tilt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
@@ -207,22 +207,27 @@ void FaultDetector::antPublishFaultMessages()
 {
   ow_faults_detection::PanTiltFaultsStatus pan_tilt_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
-    setComponentFaultsMessage(pan_tilt_fault_msg, );
+
     m_system_faults_bitset |= isPanTiltExecutionError;
 
-    // check if both are errors or one only and update setcomponentfaultsmessage
     if (m_pan_fault && m_tilt_fault) {
-      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
-    } else if (m_pan_fault) {
-      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
-    } else if (m_tilt_fault) {
-      setComponentFaultsMessage(pan_tilt_fault_msg, ComponentFaults::Hardware);
+      m_pan_tilt_faults_bitset |= isPanLockedError;
+      m_pan_tilt_faults_bitset |= isTiltLockedError;
     }
-
-
-  }else {
+    else if (m_pan_fault) {
+      m_pan_tilt_faults_bitset |= isPanLockedError;
+      m_pan_tilt_faults_bitset &= ~isTiltLockedError;
+    }
+    else if (m_tilt_fault) {
+      m_pan_tilt_faults_bitset |= isTiltLockedError;
+      m_pan_tilt_faults_bitset &= ~isPanLockedError;
+    }
+  } else {
     m_system_faults_bitset &= ~isPanTiltExecutionError;
+    m_pan_tilt_faults_bitset &= ~isPanLockedError;
+    m_pan_tilt_faults_bitset &= ~isTiltLockedError;
   }
+  setBitsetFaultsMessage(pan_tilt_fault_msg, m_pan_tilt_faults_bitset);
   publishSystemFaultsMessage();
   m_antenna_fault_msg_pub.publish(pan_tilt_fault_msg);
 }

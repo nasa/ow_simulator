@@ -67,8 +67,8 @@ public:
   static constexpr std::bitset<3> isThermalError{    0b100 };
 
   //pan tilt
-  static constexpr std::bitset<3> isPanLockedError{  0b001 };
-  static constexpr std::bitset<3> isTiltLockedError{ 0b010 };
+  static constexpr std::bitset<2> isPanLockedError{  0b01 };
+  static constexpr std::bitset<2> isTiltLockedError{ 0b10 };
 
   static constexpr float THERMAL_MAX = 50;
   static constexpr float SOC_MIN = 0.1;
@@ -146,7 +146,7 @@ private:
   // Antenna
   bool m_pan_fault;
   bool m_tilt_fault;
-  std::bitset<10> m_pan_tilt_faults_bitset{};
+  std::bitset<2> m_pan_tilt_faults_bitset{};
   
   // Camera
   ros::Time m_cam_raw_time;
