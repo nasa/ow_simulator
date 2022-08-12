@@ -19,14 +19,19 @@ namespace gazebo
 class BalovnevModelPlugin : public gazebo::ModelPlugin
 {
 public:
-  
+
+  BalovnevModelPlugin() = default;
+  BalovnevModelPlugin (const BalovnevModelPlugin&) = default;
+  BalovnevModelPlugin& operator= (const BalovnevModelPlugin&) = default;
+  ~BalovnevModelPlugin() = default;
+
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
   
 private:
 
   ros::Subscriber m_sub_mod_diff_visual;
 
-  void OnUpdate();
+  void onUpdate();
 
   double getParameterA(double x, double ifa, double efa);
   

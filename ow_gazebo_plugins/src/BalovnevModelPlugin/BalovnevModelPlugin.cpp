@@ -40,7 +40,7 @@ const static double SOIL_PRISM_HEIGHT        = 0;               // m
 // real-time variables placeheld by constants
 const static double RAKE_ANGLE               = 10./180 * M_PI;  // rad
 const static double BUCKET_VELOCITY          = 0.1;             // m/s
-int BURIED = 0;  // define BURIED: BURIED = 1 if entire bucket is below the soil otherwise BURIED = 0 
+const int BURIED = 0;  // define BURIED: BURIED = 1 if entire bucket is below the soil otherwise BURIED = 0 
 
 // constants specific to the scoop end-effector
 const static string SCOOP_LINK_NAME       = "lander::l_scoop";
@@ -64,13 +64,14 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   m_sub_mod_diff_visual = m_node_handle->subscribe(
     TOPIC_MODIFY_TERRAIN_VISUAL, 1, &BalovnevModelPlugin::onModDiffVisualMsg, this);
 
-  m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&BalovnevModelPlugin::OnUpdate, this));
-  
+  m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(std::bind(&BalovnevModelPlugin::onUpdate, this));
+  m_vertical_force = 0.0;
+  m_horizontal_force = 0.0;
   gzlog << "BavlovnevModelPlugin - successfully loaded" <<endl;
 }
 
 
-void BalovnevModelPlugin::OnUpdate()
+void BalovnevModelPlugin::onUpdate()
 {
 
   if(!m_link) {
@@ -136,7 +137,7 @@ void BalovnevModelPlugin::getForces(double VERTICAL_CUT_DEPTH)
 
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
   // DEBUG CODE
-  gzlog << "horizontal_force" << m_horizontal_force <<"   vertical_force" << m_vertical_force << endl;
+  // gzlog << "horizontal_force" << m_horizontal_force <<"   vertical_force" << m_vertical_force << endl;
 }
 
 void BalovnevModelPlugin::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
