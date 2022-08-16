@@ -383,7 +383,7 @@ class GuardedMoveActionServer(object):
 
         '''
         If the force torque sensor detects a force greater than the threshold it reports as ground detected.
-        We actiavte the ground detection only during the last phase of the guarded move trajectory, 
+        We activate the ground detection only during the last phase of the guarded move trajectory, 
         reseting it otherwise
         '''
 
