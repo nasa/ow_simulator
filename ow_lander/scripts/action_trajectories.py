@@ -893,7 +893,7 @@ class ActionTrajectories:
 
         '''
         estimated time ratio is the ratio between the time to complete first two parts of the plan 
-        to the the entire plan. It is used for ground detetection only durint the last part of the plan.
+        to the the entire plan. It is used for ground detection only during the last part of the plan.
         It is set at 0.5 after several tests
         '''
 
