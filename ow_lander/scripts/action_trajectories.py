@@ -897,7 +897,7 @@ class ActionTrajectories:
             guarded_move_traj.joint_trajectory.points)-1].time_from_start
         estimated_time_ratio = pre_guarded_move_end_time/guarded_move_end_time
 
-        estimated_time_ratio =0.7
+        #estimated_time_ratio =0.7
         return guarded_move_traj, estimated_time_ratio
 
     def discard_sample(self, move_arm, robot, moveit_fk, args, server_stop):
