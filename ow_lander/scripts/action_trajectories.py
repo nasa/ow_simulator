@@ -891,11 +891,11 @@ class ActionTrajectories:
 
         guarded_move_traj = self.cascade_plans(pre_guarded_move_traj, plan_c)
 
-        pre_guarded_move_end_time = pre_guarded_move_traj.joint_trajectory.points[len(
-            pre_guarded_move_traj.joint_trajectory.points)-1].time_from_start
-        guarded_move_end_time = guarded_move_traj.joint_trajectory.points[len(
-            guarded_move_traj.joint_trajectory.points)-1].time_from_start
-        estimated_time_ratio = pre_guarded_move_end_time/guarded_move_end_time
+        '''
+        estimated time ratio is the ratio between the time to complete first two parts of the plan 
+        to the the entire plan. It is used for ground detetection only durint the last part of the plan.
+        It is set at 0.5 after several tests
+        '''
 
         estimated_time_ratio =0.5
         return guarded_move_traj, estimated_time_ratio

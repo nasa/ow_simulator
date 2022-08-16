@@ -379,8 +379,13 @@ class GuardedMoveActionServer(object):
         """
         trajectory_async_executer.stop_arm_if_fault(feedback)
         # added to compensate for slower than arm movement than planned
-            # added to compensate for slower than arm movement tan planned
         execution_time_tollerance = 0.1
+
+        '''
+        If the force torque sensor detects a force greater than the threshold it reports as ground detected.
+        We actiavte the ground detection only during the last phase of the guarded move trajectory, 
+        reseting it otherwise
+        '''
 
         if self.ground_detector.detect():
             if (self._estimated_plan_fraction_completed < self._guarded_move_plan_ratio
