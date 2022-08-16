@@ -5,6 +5,8 @@ project(ow_gazebo_plugins)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  ow_dynamic_terrain
+  cv_bridge
   roscpp
   std_msgs
   tf2
@@ -106,7 +108,7 @@ find_package(OGRE REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ow_gazebo_plugins
-  CATKIN_DEPENDS roscpp std_msgs tf2 tf2_ros
+  CATKIN_DEPENDS roscpp std_msgs tf2 tf2_ros ow_dynamic_terrain
 #  DEPENDS system_lib
 )
 

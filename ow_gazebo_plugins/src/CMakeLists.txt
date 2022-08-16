@@ -1,3 +1,4 @@
 #add_subdirectory(CosimulationPlugin)
 add_subdirectory(LinkForcePlugin)
 add_subdirectory(OWLensFlareSensorPlugin)
+add_subdirectory(BalovnevModelPlugin)
