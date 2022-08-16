@@ -6,6 +6,7 @@
 #include <fstream>
 #include <math.h>
 #include <algorithm>
+#include <vector> //TEST
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
@@ -41,10 +42,14 @@ bool PowerSystemNode::Initialize()
   m_power_values.resize(m_moving_average_window);
   std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
 
+  // TEST COMMENT
+  /*
   if (!initPrognoser()) {
     ROS_ERROR("Failed to initialize power system prognoser.");
     return false;
   }
+  */
+  m_init_time = system_clock::now(); // Taken from initPrognoser()
 
   if (!initTopics()) {
     ROS_ERROR("Failed to initialize power system topics.");
@@ -469,21 +474,27 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
 void PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  double temperature_estimate = generateTemperatureEstimate();
-  double voltage_estimate = generateVoltageEstimate();
-  double adjusted_wattage = electrical_power + m_baseline_wattage;
-  injectFaults(adjusted_wattage, voltage_estimate, temperature_estimate);
+  m_current_timestamp += m_profile_increment;
+  m_temperature_estimate = generateTemperatureEstimate();
+  m_voltage_estimate = generateVoltageEstimate();
+  m_wattage_estimate = electrical_power + m_baseline_wattage;
+  injectFaults(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
-  if (adjusted_wattage > m_max_gsap_input_watts) {
+  if (m_wattage_estimate > m_max_gsap_input_watts) {
     ROS_WARN_STREAM("Power system node computed excessive power input for GSAP, "
-                    << adjusted_wattage << "W. Capping GSAP input at "
+                    << m_wattage_estimate << "W. Capping GSAP input at "
                     << m_max_gsap_input_watts << "W.");
-      adjusted_wattage = m_max_gsap_input_watts;
+      m_wattage_estimate = m_max_gsap_input_watts;
   }
 
-  auto current_data = composePrognoserData(adjusted_wattage,
-                                           voltage_estimate,
-                                           temperature_estimate);
+  auto current_data = composePrognoserData(m_wattage_estimate,
+                                           m_voltage_estimate,
+                                           m_temperature_estimate);
+
+  //ROS_INFO_STREAM("Starting m_prognoser->step()" << endl << endl << endl); TEST
+
+  // TEMP COMMENT
+  /*
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
@@ -491,17 +502,25 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   Int16 rul_msg;
   Float64 battery_temperature_msg;
 
+  ROS_INFO_STREAM("Finished step()"); // TEST
+
   auto& eod_events = prediction.getEvents();
   if (!eod_events.empty())
   {
+    ROS_INFO_STREAM("eod_events size: " << eod_events.size()); //TEST
     auto eod_event = eod_events.front();
     parseEoD_Event(eod_event, soc_msg, rul_msg, battery_temperature_msg);
   }
 
   // publish current SOC, RUL, and battery temperature
+  ROS_INFO_STREAM("SoC: " << soc_msg.data);
+  ROS_INFO_STREAM("RUL: " << rul_msg.data);
+  ROS_INFO_STREAM("TMP: " << battery_temperature_msg.data);
+
+
   m_state_of_charge_pub.publish(soc_msg);
   m_remaining_useful_life_pub.publish(rul_msg);
-  m_battery_temperature_pub.publish(battery_temperature_msg);
+  m_battery_temperature_pub.publish(battery_temperature_msg);*/
 }
 
 void PowerSystemNode::Run()
@@ -527,15 +546,23 @@ void PowerSystemNode::Run()
   }
 }
 
-int main(int argc, char* argv[])
+// TEST
+void PowerSystemNode::RunOnce()
 {
-  ros::init(argc, argv, "power_system_node");
-  PowerSystemNode psn;
-  if (!psn.Initialize())
+  if (m_trigger_processing_new_power_batch)
   {
-    ROS_ERROR("Power system node failed to initialize");
-    return -1;
+    m_trigger_processing_new_power_batch = false;
+    m_processing_power_batch = true;
+    runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
+    m_processing_power_batch = false;
   }
-  psn.Run();
-  return 0;
+}
+
+// TEST
+void PowerSystemNode::GetPowerStats(double stored_values[])
+{
+  stored_values[0] = m_current_timestamp;
+  stored_values[1] = m_wattage_estimate;
+  stored_values[2] = m_voltage_estimate;
+  stored_values[3] = m_temperature_estimate;
 }

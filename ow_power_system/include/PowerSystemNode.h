@@ -18,7 +18,8 @@ public:
   PowerSystemNode();
   bool Initialize();
   void Run();
-
+  void RunOnce(); // TEST
+  void GetPowerStats(double stored_values[]); // TEST
 private:
   bool loadSystemConfig();
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
@@ -79,6 +80,9 @@ private:
   double m_efficiency = 0.9;            // default 90% efficiency
   double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
+  // TEST
+  double m_current_timestamp = 0.0;
+
   // Baseline value for power drawn by continuously-running systems.
   // This initial value is overriden by the system config.
   double m_baseline_wattage = 1.0;
@@ -98,6 +102,15 @@ private:
   // note that the default values are not expected to change as of
   // Release 9.  This initial value is overriden by the system config.
   int m_profile_increment = 2;
+
+  // TEST
+  // The three main statistics relating to battery model health:
+  // Power, Voltage, & Temperature.
+  // Used by the main function to get the health of all models.
+  // NOTE: Unsure if the m_ prefix applies to these here.
+  double m_wattage_estimate;
+  double m_voltage_estimate;
+  double m_temperature_estimate;
 
   // End main system configuration.
 
