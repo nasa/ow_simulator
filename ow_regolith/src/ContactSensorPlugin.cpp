@@ -33,7 +33,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
   m_parent_sensor =
     dynamic_pointer_cast<sensors::ContactSensor>(sensor);
   if (!m_parent_sensor)
-    gzthrow(PLUGIN_NAME << ": requires a sensor of type conatact as a parent");
+    gzthrow("A sensor of type contact is required as the parent.");
   m_update_connection = m_parent_sensor->ConnectUpdated(
     bind(&ContactSensorPlugin::onUpdate, this)
   );
@@ -41,7 +41,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 
   // get plugin parameters
   if (!sdf->HasElement(PARAMETER_TOPIC)) // required
-    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defined");
+    gzthrow("Contacts report topic is required.");
   auto topic = sdf->Get<string>(PARAMETER_TOPIC);
   if (sdf->HasElement(PARAMETER_REPORT_ONLY)) { // optional
     m_report_only_set = true;
