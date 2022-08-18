@@ -8,7 +8,7 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Point, WrenchStamped
 
-FORCE_X_THRESHOLD = -10.0 # TODO: Optimize for sensor noise as part of OCEANWATERS-617
+FORCE_X_THRESHOLD = -100.0 # TODO: Optimize for sensor noise as part of OCEANWATERS-617
 
 class GroundDetector:
   """
