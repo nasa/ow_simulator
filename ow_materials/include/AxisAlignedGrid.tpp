@@ -54,17 +54,27 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
 }
 
 template <typename T>
-T &AxisAlignedGrid<T>::getCellValue(size_t const i,
-                                 size_t const j,
-                                 size_t const k) {
-  return m_cells[index(i, j, k)];
+const ignition::math::Vector3d &AxisAlignedGrid<T>::getDiagonal() const {
+  static const ignition::math::Vector3 diagonal(
+    m_domain->XLength(), m_domain->YLength(), m_domain->ZLength()
+  );
+  return diagonal;
 };
 
 template <typename T>
-T const &AxisAlignedGrid<T>::getCellValue(size_t const i,
-                                       size_t const j,
-                                       size_t const k) const {
-  return m_cells[index(i, j, k)];
+const ignition::math::Vector3d &AxisAlignedGrid<T>::getMaxCorner() const {
+  return m_domain->Max();
+};
+
+template <typename T>
+const ignition::math::Vector3d &AxisAlignedGrid<T>::getMinCorner() const {
+  return m_domain->Min();
+};
+
+template <typename T>
+const ignition::math::Vector3d &AxisAlignedGrid<T>::getCenter() const {
+  static const ignition::math::Vector3d center = m_domain->Center();
+  return center;
 };
 
 }

@@ -10,7 +10,7 @@
 namespace ow_materials
 {
 
-using MaterialID = unsigned char;
+using MaterialID = uint8_t;
 
 struct Color
 {
@@ -31,12 +31,11 @@ struct Material
   Color color;
 
   // TODO:
-  
   //  1. add appearance parameters
+  // float abledo;
+  //  2. add terramechanics parameters
   // double cohesion;
   // double friction_angle;
-
-  //  2. add terramechanics parameters
 
 };
 

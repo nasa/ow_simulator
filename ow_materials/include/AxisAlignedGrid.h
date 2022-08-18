@@ -24,25 +24,18 @@ public:
   AxisAlignedGrid(const AxisAlignedGrid&) = delete;
   AxisAlignedGrid& operator=(const AxisAlignedGrid&) = delete;
 
-  T &getCellValue(size_t const i, size_t const j, size_t const k);
-  T const &getCellValue(size_t const i, size_t const j, size_t const k) const;
+  const ignition::math::Vector3d &getDiagonal() const;
+  const ignition::math::Vector3d &getMaxCorner() const;
+  const ignition::math::Vector3d &getMinCorner() const;
+  const ignition::math::Vector3d &getCenter() const;
 
-  inline ignition::math::Vector3d getDiagonal() const {
-    return ignition::math::Vector3(
-      m_domain->XLength(), m_domain->YLength(), m_domain->ZLength()
-    );
+  inline T &getCellValue(size_t const i, size_t const j, size_t const k) {
+    return m_cells[index(i, j, k)];
   };
 
-  inline const ignition::math::Vector3d &getMaxCorner() const {
-    return m_domain->Max();
-  };
-
-  inline const ignition::math::Vector3d &getMinCorner() const {
-    return m_domain->Min();
-  };
-
-  inline ignition::math::Vector3d getCenter() const {
-    return m_domain->Center();
+  inline T const &getCellValue(size_t const i, size_t const j,
+                               size_t const k) const {
+    return m_cells[index(i, j, k)];
   };
 
 private:

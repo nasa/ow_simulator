@@ -17,20 +17,19 @@ namespace ow_materials
 class MaterialDatabase
 {
 public:
-  MaterialDatabase(const std::string &yaml_path);
+  MaterialDatabase() = default;
   ~MaterialDatabase() = default;
 
-  MaterialDatabase() = default;
   MaterialDatabase(const MaterialDatabase&) = delete;
   MaterialDatabase& operator=(const MaterialDatabase&) = delete;
 
-  const Material &getMaterial(MaterialID id) const;
-
   void addMaterial(Material mat);
 
-  inline size_t count() {
-    return m_database.size();
-  }
+  size_t size();
+
+  inline const Material &getMaterial(MaterialID id) const {
+    return m_database.at(id);
+  };
 
 private:
 

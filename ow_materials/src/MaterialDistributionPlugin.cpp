@@ -19,7 +19,6 @@ const string PLUGIN_NAME = "MaterialDistributionPlugin";
 
 const string NAMESPACE_MATERIALS = "/ow_materials";
 
-const string PARAMETER_MATERIALS_URI    = "uri";
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
@@ -61,8 +60,8 @@ void MaterialDistributionPlugin::Load(rendering::VisualPtr parent,
   } catch (const std::runtime_error &e) {
     gzthrow(e.what());
   }
-  gzlog << PLUGIN_NAME << ": Materials database populated. "
-        << m_material_db->count() << " unique materials loaded." << endl;
+  gzlog << PLUGIN_NAME << ": Materials database populated with "
+        << m_material_db->size() << " materials." << endl;
 
   gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
 
