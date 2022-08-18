@@ -32,8 +32,10 @@ static constexpr int TEMPERATURE_INDEX = 1;
 PowerSystemNode::PowerSystemNode()
 { }
 
-bool PowerSystemNode::Initialize()
+bool PowerSystemNode::Initialize(int nodes)
 {
+  m_total_nodes = nodes;
+
   if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load ow_power_system system config.");
     return false;
