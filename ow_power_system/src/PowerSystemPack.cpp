@@ -332,6 +332,10 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   /* DEBUG
   ROS_INFO_STREAM("jointStatesCb called!!!");
   */
+  
+  // Publish the mechanical raw and average power values.
+  // The callback function is still present within the individual nodes, where
+  // it is used to calculate m_mechanical_power_to_be_processed.
 }
 
 void PowerSystemPack::publishPredictions()
@@ -340,6 +344,49 @@ void PowerSystemPack::publishPredictions()
   ROS_INFO_STREAM("publishPredictions called!");
   */
   // Using EoD_events, publish the relevant values.
+
+  int min_rul = -1;
+  double min_soc = -1;
+  double max_tmp = -1;
+  std_msgs::Int16 rul_msg;
+  std_msgs::Float64 soc_msg;
+  std_msgs::Float64 tmp_msg;
+
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
+    if (EoD_events[i][0] < min_rul || min_rul == -1)
+    {
+      min_rul = EoD_events[i][0];
+    }
+
+    // Published SoC (state of charge) is defined as the minimum SoC of all EoDs.
+    if (EoD_events[i][1] < min_soc || min_soc == -1)
+    {
+      min_soc = EoD_events[i][1];
+    }
+    
+    // Published battery temperature is defined as the highest temp of all EoDs.
+    if (EoD_events[i][2] > max_tmp || max_tmp == -1)
+    {
+      max_tmp = EoD_events[i][2];
+    }
+  }
+
+  // /* DEBUG PRINT
+  ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
+                  ", min_soc: " << std::to_string(min_soc) <<
+                  ", max_tmp: " << std::to_string(max_tmp));
+  // */
+
+  // Publish the values for other components.
+  rul_msg.data = min_rul;
+  soc_msg.data = min_soc;
+  tmp_msg.data = max_tmp;
+
+  m_state_of_charge_pub.publish(soc_msg);
+  m_remaining_useful_life_pub.publish(rul_msg);
+  m_battery_temperature_pub.publish(tmp_msg);
 }
 
 int main(int argc, char* argv[]) 
