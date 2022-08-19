@@ -220,11 +220,14 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   auto mean_mechanical_power =
       accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
 
-  Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+  /*Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
   mechanical_power_raw_msg.data = power_watts;
   mechanical_power_avg_msg.data = mean_mechanical_power;
-  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
-  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg); TEST
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);*/ 
+
+  m_mechanical_power_raw = power_watts;
+  m_mechanical_power_avg = mean_mechanical_power;
 
   m_unprocessed_mechanical_power = mean_mechanical_power;
 
@@ -234,6 +237,11 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
     m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
     m_trigger_processing_new_power_batch = true;
   }
+
+  /* DEBUG
+  ROS_INFO_STREAM("Node finished jointStatesCB. Raw: " << std::to_string(power_watts) <<
+                  " and Avg: " << std::to_string(mean_mechanical_power));
+  */
 }
 
 double PowerSystemNode::generateTemperatureEstimate()
@@ -525,30 +533,6 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   m_battery_temperature_pub.publish(battery_temperature_msg);*/
 }
 
-void PowerSystemNode::Run()
-{
-  ROS_INFO("Power system node running.");
-
-  // For simplicity, we run the power node at the same rate as GSAP.
-  ros::Rate rate(m_gsap_rate_hz);
-
-  while (ros::ok())
-  {
-    ros::spinOnce();
-
-    if (m_trigger_processing_new_power_batch)
-    {
-      m_trigger_processing_new_power_batch = false;
-      m_processing_power_batch = true;
-      runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
-      m_processing_power_batch = false;
-    }
-
-    rate.sleep();
-  }
-}
-
-// TEST
 void PowerSystemNode::RunOnce()
 {
   if (m_trigger_processing_new_power_batch)
@@ -560,11 +544,20 @@ void PowerSystemNode::RunOnce()
   }
 }
 
-// TEST
 void PowerSystemNode::GetPowerStats(double stored_values[])
 {
   stored_values[0] = m_current_timestamp;
   stored_values[1] = m_wattage_estimate;
   stored_values[2] = m_voltage_estimate;
   stored_values[3] = m_temperature_estimate;
+}
+
+double PowerSystemNode::GetRawMechanicalPower()
+{
+  return m_mechanical_power_raw;
+}
+
+double PowerSystemNode::GetAvgMechanicalPower()
+{
+  return m_mechanical_power_avg;
 }

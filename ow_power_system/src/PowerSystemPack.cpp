@@ -330,12 +330,67 @@ bool PowerSystemPack::initTopics()
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   /* DEBUG
-  ROS_INFO_STREAM("jointStatesCb called!!!");
+  ROS_INFO_STREAM("Pack jointStatesCb called!!!");
   */
+
+  // NOTE: This callback function appears to call after the nodes' callback
+  //       functions complete, every single time. This is quite convenient, but
+  //       I don't know why exactly this is the case, and if they should happen
+  //       to stop calling in this order, it could potentially cause problems.
+  //       ~Liam
   
+  // Get the mechanical power values from each node.
+  double raw_mechanical_values[NUM_NODES];
+  double avg_mechanical_values[NUM_NODES];
+  double avg_power = 0.0;
+
+  /* DEBUG
+  bool differing_avgs = false;
+  */
+
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    raw_mechanical_values[i] = nodes[i].GetRawMechanicalPower();
+    avg_mechanical_values[i] = nodes[i].GetAvgMechanicalPower();
+    avg_power += raw_mechanical_values[i];
+    /* DEBUG PRINT
+    if (i > 0)
+    {
+      if (avg_mechanical_values[i] != avg_mechanical_values[i - 1])
+      {
+        ROS_ERROR_STREAM("Average mechanical values differ: Node " <<
+                         std::to_string(i - 1) << " AMP is " << avg_mechanical_values[i - 1] <<
+                         " while Node " << std::to_string(i) << " AMP is " << avg_mechanical_values[i]);
+        // DEBUG
+        differing_avgs = true;
+        
+      }
+    }
+    */
+  }
+
   // Publish the mechanical raw and average power values.
-  // The callback function is still present within the individual nodes, where
-  // it is used to calculate m_mechanical_power_to_be_processed.
+  // Raw mechanical power should be averaged out, but the avg_power should
+  // already be the same value in every node.
+  avg_power = avg_power / NUM_NODES;
+
+  std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+  mechanical_power_raw_msg.data = avg_power;
+  /* DEBUG PRINT
+  if (!differing_avgs)
+  {
+    ROS_INFO_STREAM("All avg mechanical values were equal to " <<
+                    std::to_string(avg_mechanical_values[0]) << "!");
+  }
+  */
+  /* DEBUG PRINT
+  ROS_INFO_STREAM("Raw mechanical power (averaged) is " << std::to_string(avg_power) << "!");
+  */
+  // Since all average mechanical power values should be identical, it doesn't
+  // matter which node's value we take.
+  mechanical_power_avg_msg.data = avg_mechanical_values[0];
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 }
 
 void PowerSystemPack::publishPredictions()
@@ -374,9 +429,12 @@ void PowerSystemPack::publishPredictions()
   }
 
   // /* DEBUG PRINT
-  ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
-                  ", min_soc: " << std::to_string(min_soc) <<
-                  ", max_tmp: " << std::to_string(max_tmp));
+  if (!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
+  {
+    ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
+                    ", min_soc: " << std::to_string(min_soc) <<
+                    ", max_tmp: " << std::to_string(max_tmp));
+  }
   // */
 
   // Publish the values for other components.

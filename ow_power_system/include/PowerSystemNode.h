@@ -17,9 +17,10 @@ class PowerSystemNode
 public:
   PowerSystemNode();
   bool Initialize(int nodes);
-  void Run();
-  void RunOnce(); // TEST
-  void GetPowerStats(double stored_values[]); // TEST
+  void RunOnce();
+  void GetPowerStats(double stored_values[]);
+  double GetRawMechanicalPower();
+  double GetAvgMechanicalPower();
 private:
   bool loadSystemConfig();
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
@@ -131,6 +132,9 @@ private:
   bool m_trigger_processing_new_power_batch = false;
   double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;
+
+  double m_mechanical_power_raw = 0.0;
+  double m_mechanical_power_avg = 0.0;
 };
 
 #endif
