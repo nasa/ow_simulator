@@ -41,14 +41,16 @@ double EoD_events[NUM_NODES][3];
 
 // The PredictionHandler class subscribes to the battery EoD event message and
 // prints each event as it is received.
-class PredictionHandler : public IMessageProcessor {
+class PredictionHandler : public IMessageProcessor 
+{
 public:
   /**
    * Constructs a new prediction handler that subscribes to battery EoD
    * predictions for the specified source and on the specified message
    * bus.
    **/
-  PredictionHandler(MessageBus& bus, const std::string& src) : bus(bus) {
+  PredictionHandler(MessageBus& bus, const std::string& src) : bus(bus)
+  {
     bus.subscribe(this, src, MessageId::BatteryEod);
     identifier = src;
     node_number = src[5] - '0'; // converts node identifier value to int
@@ -57,7 +59,8 @@ public:
   /**
    * Unsubscribes the prediction handler from the message bus.
    **/
-  ~PredictionHandler() {
+  ~PredictionHandler()
+  {
     bus.unsubscribe(this);
   }
 
@@ -65,13 +68,15 @@ public:
    * The message bus will call this function each time the predictor publishes
    * a new battery EoD prediction.
    **/
-  void processMessage(const std::shared_ptr<Message>& message) override {
+  void processMessage(const std::shared_ptr<Message>& message) override
+  {
     using namespace std::chrono;
     // The prediction handler only ever subscribes to the BatteryEoD message
     // id, which should always be a ProgEventMessage, so this should always
     // succeed.
     auto prediction_msg = dynamic_cast<ProgEventMessage*>(message.get());
-    if (prediction_msg == nullptr) {
+    if (prediction_msg == nullptr)
+    {
       std::cerr << "Failed to cast prediction message to expected type" << std::endl;
       std::exit(1);
     }
@@ -84,7 +89,8 @@ public:
     // used by this example, the uncertainty is captured by storing the
     // result of each particle used in the prediction.
     UData eod_time = eod_event.getTOE();
-    if (eod_time.uncertainty() != UType::Samples) {
+    if (eod_time.uncertainty() != UType::Samples)
+    {
       std::cerr << "Unexpected uncertainty type for EoD prediction" << std::endl;
       return std::exit(1);
     }
@@ -110,7 +116,9 @@ public:
     auto stateSamples = eod_event.getSystemState()[0];
     std::vector<double> state;
     for (auto sample : stateSamples)
+    {
       state.push_back(sample[0]);
+    }
 
     // HACK ALERT:
     // The asynchronous prognoser does not have a function to get its model like
@@ -277,7 +285,10 @@ void PowerSystemPack::InitAndRun()
                         << EoD_events[i][2]);
       }
     }
-    std::cout << std::endl;
+    if (!(models[0][0] <= 0))
+    {
+      std::cout << std::endl;
+    }
     // */
     // Now that EoD_events is ready, manipulate and publish the relevant values.
     publishPredictions();
