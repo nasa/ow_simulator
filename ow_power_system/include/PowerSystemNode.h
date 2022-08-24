@@ -21,8 +21,8 @@ public:
 
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& filename);
-  bool loadFaultPowerProfiles();
+  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   bool initPrognoser();
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
@@ -30,11 +30,15 @@ private:
   double generateVoltageEstimate();
   void injectFault(const std::string& power_fault_name,
                    bool& fault_activated,
-                   //const PrognoserVector& sequence, // Will be revisited in coming days/weeks
-                   //size_t& sequence_index,          // (7/12/22)
                    double& power,
                    double& voltage,
                    double& temperature);
+  void injectCustomFault(bool& fault_activated,
+                         const PrognoserVector& sequence,
+                         size_t& index,
+                         double& wattage,
+                         double& voltage,
+                         double& temperature);
   void injectFaults(double& power, double& temperature, double& voltage);
   PrognoserMap composePrognoserData(double power,
                                     double voltage,
@@ -102,12 +106,10 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
   
-  bool m_high_power_draw_power_failure_activated = false;
-  // DEPRECATED (7/12/22)
-  // Part of the old .CSV system for power faults. It will be revisited
-  // in the coming days/weeks to either fully remove or reinstantiate.
-  //PrognoserVector m_high_power_draw_power_failure_sequence;
-  //size_t m_high_power_draw_power_failure_sequence_index = 0;
+  bool m_high_power_draw_activated = false;
+  bool m_custom_power_fault_activated = false;
+  PrognoserVector m_custom_power_fault_sequence;
+  size_t m_custom_power_fault_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
   bool m_processing_power_batch = false;
