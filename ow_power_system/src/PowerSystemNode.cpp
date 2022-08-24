@@ -525,30 +525,6 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   m_battery_temperature_pub.publish(battery_temperature_msg);*/
 }
 
-void PowerSystemNode::Run()
-{
-  ROS_INFO("Power system node running.");
-
-  // For simplicity, we run the power node at the same rate as GSAP.
-  ros::Rate rate(m_gsap_rate_hz);
-
-  while (ros::ok())
-  {
-    ros::spinOnce();
-
-    if (m_trigger_processing_new_power_batch)
-    {
-      m_trigger_processing_new_power_batch = false;
-      m_processing_power_batch = true;
-      runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
-      m_processing_power_batch = false;
-    }
-
-    rate.sleep();
-  }
-}
-
-// TEST
 void PowerSystemNode::RunOnce()
 {
   if (m_trigger_processing_new_power_batch)
@@ -560,7 +536,6 @@ void PowerSystemNode::RunOnce()
   }
 }
 
-// TEST
 void PowerSystemNode::GetPowerStats(double stored_values[])
 {
   stored_values[0] = m_current_timestamp;

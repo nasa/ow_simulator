@@ -1,3 +1,7 @@
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// Research and Simulation can be found in README.md in the root directory of
+// this repository.
+
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
@@ -17,9 +21,8 @@ class PowerSystemNode
 public:
   PowerSystemNode();
   bool Initialize(int nodes);
-  void Run();
-  void RunOnce(); // TEST
-  void GetPowerStats(double stored_values[]); // TEST
+  void RunOnce();
+  void GetPowerStats(double stored_values[]);
 private:
   bool loadSystemConfig();
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);

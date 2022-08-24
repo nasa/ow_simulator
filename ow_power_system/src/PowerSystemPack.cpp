@@ -1,5 +1,7 @@
-// TODO (JW): By its nature, this file is designed to be copied. It should
-// be explicitely (un)licensed as public domain or CC0.
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// Research and Simulation can be found in README.md in the root directory of
+// this repository.
+
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -32,10 +34,11 @@ using namespace PCOE;
 const auto START_TIME       = MessageClock::now();
 //const int NUM_NODES         = 8; // NOTE: Should equal m_num_nodes in PowerSystemPack.h
 
-// The index use to access temperature information.
+// The indices use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
 //
-static constexpr int TEMPERATURE_INDEX = 1;
+static constexpr int BATTERY_TEMPERATURE_INDEX = 0;
+static constexpr int MODEL_TEMPERATURE_INDEX = 1;
 
 double EoD_events[NUM_NODES][3];
 
@@ -49,11 +52,11 @@ public:
    * predictions for the specified source and on the specified message
    * bus.
    **/
-  PredictionHandler(MessageBus& bus, const std::string& src) : bus(bus)
+  PredictionHandler(MessageBus& bus, const std::string& src, int node_num) : bus(bus)
   {
     bus.subscribe(this, src, MessageId::BatteryEod);
     identifier = src;
-    node_number = src[5] - '0'; // converts node identifier value to int
+    node_number = node_num;
   }
 
   /**
@@ -77,8 +80,8 @@ public:
     auto prediction_msg = dynamic_cast<ProgEventMessage*>(message.get());
     if (prediction_msg == nullptr)
     {
-      std::cerr << "Failed to cast prediction message to expected type" << std::endl;
-      std::exit(1);
+      ROS_ERROR("Failed to cast prediction message to expected type");
+      return;
     }
 
     // Get the event for battery EoD
@@ -91,15 +94,16 @@ public:
     UData eod_time = eod_event.getTOE();
     if (eod_time.uncertainty() != UType::Samples)
     {
-      std::cerr << "Unexpected uncertainty type for EoD prediction" << std::endl;
-      return std::exit(1);
+      ROS_ERROR("Unexpected uncertainty type for EoD prediction");
+      return;
     }
 
     // valid prediction
     // Determine the median RUL.
-    auto samplesRUL = eod_time.getVec();
+    /*auto samplesRUL = eod_time.getVec();
     sort(samplesRUL.begin(), samplesRUL.end());
-    double eod_median = samplesRUL.at(samplesRUL.size() / 2);
+    double eod_median = samplesRUL.at(samplesRUL.size() / 2);*/
+    double eod_median = findMedian(eod_time.getVec());
     auto now = MessageClock::now();
     auto now_s = duration_cast<std::chrono::seconds>(now.time_since_epoch());
     double rul_median = eod_median - now_s.count();
@@ -107,17 +111,18 @@ public:
 
     // Determine the median SOC.
     UData currentSOC = eod_event.getState()[0];
-    auto samplesSOC = currentSOC.getVec();
+    /*auto samplesSOC = currentSOC.getVec();
     sort(samplesSOC.begin(), samplesSOC.end());
-    double soc_median = samplesSOC.at(samplesSOC.size() / 2);
+    double soc_median = samplesSOC.at(samplesSOC.size() / 2);*/
+    double soc_median = findMedian(currentSOC.getVec());
     //soc_msg.data = soc_median;
 
     // Determine the Battery Temperature
-    auto stateSamples = eod_event.getSystemState()[0];
-    std::vector<double> state;
+    auto stateSamples = eod_event.getSystemState()[BATTERY_TEMPERATURE_INDEX];
+    std::vector<double> temperature_state;
     for (auto sample : stateSamples)
     {
-      state.push_back(sample[0]);
+      temperature_state.push_back(sample[BATTERY_TEMPERATURE_INDEX]);
     }
 
     // HACK ALERT:
@@ -133,18 +138,43 @@ public:
 
     auto& model = dynamic_cast<ModelBasedPrognoser*>(temp_prog.get())->getModel();
 
-    auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
+    auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
 
     // Store the newly obtained data.
     EoD_events[node_number][0] = rul_median;
     EoD_events[node_number][1] = soc_median;
-    EoD_events[node_number][2] = model_output[TEMPERATURE_INDEX];
+    EoD_events[node_number][2] = model_output[MODEL_TEMPERATURE_INDEX];
   }
 
 private:
   MessageBus& bus;
-  std::string identifier = "Node X";
-  int node_number = -1;
+  std::string identifier;
+  int node_number;
+
+  double findMedian(std::vector<double> samples)
+  {
+    std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2)),
+                     samples.end());
+    return samples.at(samples.size() / 2);
+    /* TEST CODE
+    if (samples.size() % 2 == 0)
+    {
+      // Even size set, median is the average of the middle 2 values.
+      double first_val = samples.at(samples.size() / 2);
+      std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2) + 1),
+                       samples.end());
+      std::cout << "even findM eod_median: " << std::to_string((first_val + 
+                    samples.at((samples.size() / 2) + 1)) / 2) << std::endl;
+      return ((first_val + samples.at((samples.size() / 2) + 1)) / 2);
+    }
+    else
+    {
+      // Odd size set, median is the middle value.
+      std::cout << "odd findM eod_median:  " << std::to_string(samples.at(samples.size() / 2)) << std::endl;
+      return samples.at(samples.size() / 2);
+    }
+    */
+  }
 };
 
 PowerSystemPack::PowerSystemPack()
@@ -167,7 +197,7 @@ void PowerSystemPack::InitAndRun()
   // Initialize EoD_events and previous_times.
   for (int i = 0; i < NUM_NODES; i++)
   {
-    previous_times[i] = 0;
+    m_previous_times[i] = 0;
     for (int j = 0 ; j < 3; j++)
     {
       EoD_events[i][j] = -1;
@@ -175,14 +205,14 @@ void PowerSystemPack::InitAndRun()
   }
 
   // Construct the prediction handlers.
-  PredictionHandler handler_0(bus[0], node_names[0]);
-  PredictionHandler handler_1(bus[1], node_names[1]);
-  PredictionHandler handler_2(bus[2], node_names[2]);
-  PredictionHandler handler_3(bus[3], node_names[3]);
-  PredictionHandler handler_4(bus[4], node_names[4]);
-  PredictionHandler handler_5(bus[5], node_names[5]);
-  PredictionHandler handler_6(bus[6], node_names[6]);
-  PredictionHandler handler_7(bus[7], node_names[7]);
+  PredictionHandler handler_0(m_bus[0], m_node_names[0], 0);
+  PredictionHandler handler_1(m_bus[1], m_node_names[1], 1);
+  PredictionHandler handler_2(m_bus[2], m_node_names[2], 2);
+  PredictionHandler handler_3(m_bus[3], m_node_names[3], 3);
+  PredictionHandler handler_4(m_bus[4], m_node_names[4], 4);
+  PredictionHandler handler_5(m_bus[5], m_node_names[5], 5);
+  PredictionHandler handler_6(m_bus[6], m_node_names[6], 6);
+  PredictionHandler handler_7(m_bus[7], m_node_names[7], 7);
 
   // Get the asynchronous prognoser configuration and create a builder with it.
   auto config_path = ros::package::getPath("ow_power_system") + "/config/async_prognoser.cfg";
@@ -196,14 +226,14 @@ void PowerSystemPack::InitAndRun()
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
-  PCOE::AsyncPrognoser prognoser_0 = builder.build(bus[0], node_names[0], "trajectory");
-  PCOE::AsyncPrognoser prognoser_1 = builder.build(bus[1], node_names[1], "trajectory");
-  PCOE::AsyncPrognoser prognoser_2 = builder.build(bus[2], node_names[2], "trajectory");
-  PCOE::AsyncPrognoser prognoser_3 = builder.build(bus[3], node_names[3], "trajectory");
-  PCOE::AsyncPrognoser prognoser_4 = builder.build(bus[4], node_names[4], "trajectory");
-  PCOE::AsyncPrognoser prognoser_5 = builder.build(bus[5], node_names[5], "trajectory");
-  PCOE::AsyncPrognoser prognoser_6 = builder.build(bus[6], node_names[6], "trajectory");
-  PCOE::AsyncPrognoser prognoser_7 = builder.build(bus[7], node_names[7], "trajectory");
+  PCOE::AsyncPrognoser prognoser_0 = builder.build(m_bus[0], m_node_names[0], "trajectory");
+  PCOE::AsyncPrognoser prognoser_1 = builder.build(m_bus[1], m_node_names[1], "trajectory");
+  PCOE::AsyncPrognoser prognoser_2 = builder.build(m_bus[2], m_node_names[2], "trajectory");
+  PCOE::AsyncPrognoser prognoser_3 = builder.build(m_bus[3], m_node_names[3], "trajectory");
+  PCOE::AsyncPrognoser prognoser_4 = builder.build(m_bus[4], m_node_names[4], "trajectory");
+  PCOE::AsyncPrognoser prognoser_5 = builder.build(m_bus[5], m_node_names[5], "trajectory");
+  PCOE::AsyncPrognoser prognoser_6 = builder.build(m_bus[6], m_node_names[6], "trajectory");
+  PCOE::AsyncPrognoser prognoser_7 = builder.build(m_bus[7], m_node_names[7], "trajectory");
 
   ROS_INFO_STREAM("Power system pack running.");
 
@@ -217,41 +247,41 @@ void PowerSystemPack::InitAndRun()
     for (int i = 0; i < NUM_NODES; i++)
     {
       //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
-      nodes[i].RunOnce();
-      nodes[i].GetPowerStats(models[i]);
+      m_nodes[i].RunOnce();
+      m_nodes[i].GetPowerStats(m_models[i]);
 
       // /* DEBUG PRINT
-      if (!(models[i][0] <= 0))
+      if (!(m_models[i][0] <= 0))
       {
-        ROS_INFO_STREAM("Node " << i << "  time: " << models[i][0]
-                        << ". power: " << models[i][1] << ".  volts: "
-                        << models[i][2] << ".  temp: " << models[i][3]);
+        ROS_INFO_STREAM("Node " << i << "  time: " << m_models[i][0]
+                        << ". power: " << m_models[i][1] << ".  volts: "
+                        << m_models[i][2] << ".  temp: " << m_models[i][3]);
       }
       // */
 
-      auto timestamp = START_TIME + std::chrono::milliseconds(static_cast<unsigned>(models[i][0] * 1000));
+      auto timestamp = START_TIME + std::chrono::milliseconds(static_cast<unsigned>(m_models[i][0] * 1000));
 
       // Compile a vector<shared_ptr<DoubleMessage>> and then individually publish
       // each individual component.
       std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
 
       data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Watts, node_names[i], timestamp, models[i][1]));
+        std::make_shared<DoubleMessage>(MessageId::Watts, m_node_names[i], timestamp, m_models[i][1]));
       data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Centigrade, node_names[i], timestamp, models[i][3]));
+        std::make_shared<DoubleMessage>(MessageId::Centigrade, m_node_names[i], timestamp, m_models[i][3]));
       data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Volts, node_names[i], timestamp, models[i][2]));
+        std::make_shared<DoubleMessage>(MessageId::Volts, m_node_names[i], timestamp, m_models[i][2]));
 
-      std::this_thread::sleep_until(timestamp);
+      //std::this_thread::sleep_until(timestamp);
 
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent terminate crashes.
-      if (previous_times[i] != models[i][0])
+      if (m_previous_times[i] != m_models[i][0])
       {
-        previous_times[i] = models[i][0];
+        m_previous_times[i] = m_models[i][0];
         for (const auto& info : data_to_publish)
         {
-          bus[i].publish(info);
+          m_bus[i].publish(info);
           //ROS_INFO_STREAM("Published info: " << info); TEST
         }
 
@@ -259,17 +289,17 @@ void PowerSystemPack::InitAndRun()
     }
 
     // /* DEBUG PRINT
-    if (!(models[0][0] <= 0))
+    if (!(m_models[0][0] <= 0))
     {
       ROS_INFO_STREAM("Waiting for all...");
     }
     // */
     for (int i = 0; i < NUM_NODES; i++)
     {
-      bus[i].waitAll();
+      m_bus[i].waitAll();
     }
     // /* DEBUG PRINT
-    if (!(models[0][0] <= 0))
+    if (!(m_models[0][0] <= 0))
     {
       ROS_INFO_STREAM("Waited for all!");
     }
@@ -285,7 +315,7 @@ void PowerSystemPack::InitAndRun()
                         << EoD_events[i][2]);
       }
     }
-    if (!(models[0][0] <= 0))
+    if (!(m_models[0][0] <= 0))
     {
       std::cout << std::endl;
     }
@@ -305,8 +335,8 @@ bool PowerSystemPack::initNodes()
   // Initialize the nodes.
   for (int i = 0; i < NUM_NODES; i++)
   {
-    node_names[i] = "Node " + std::to_string(i);
-    if (!nodes[i].Initialize(NUM_NODES))
+    m_node_names[i] = "Node " + std::to_string(i);
+    if (!m_nodes[i].Initialize(NUM_NODES))
     {
         return false;
     }
