@@ -137,7 +137,8 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(power_system_node
   src/PowerSystemPack.cpp
-  src/PowerSystemNode.cpp)
+  src/PowerSystemNode.cpp
+  src/PredictionHandler.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

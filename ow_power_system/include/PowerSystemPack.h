@@ -22,7 +22,36 @@
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
 
+// Change this value to modify the number of parallel battery nodes in the pack.
+// NOTE: The expected number of nodes (24) appears to take much longer than 2
+//       seconds to process. Currently unknown what the cause of this is, though
+//       it is likely related to GSAP's time required to process predictions and
+//       so it may not be addressable here.
 const int NUM_NODES = 8;
+
+// Struct that contains the information used for EoD predictions.
+struct ModelInfo {
+  double timestamp;
+  double wattage;
+  double voltage;
+  double temperature;
+};
+
+// Struct that groups the variables/classes used to handle PowerSystemNodes.
+struct PowerNode {
+  std::string name;
+  PowerSystemNode node;
+  MessageBus bus;
+  ModelInfo model;
+  double previous_time;
+};
+
+// Struct that groups the end-of-discharge (EoD) prediction values.
+struct EoDValues {
+  double remaining_useful_life;
+  double state_of_charge;
+  double battery_temperature;
+};
 
 class PowerSystemPack
 {
@@ -34,6 +63,7 @@ private:
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void publishPredictions();
+  std::string setNodeName(int node_num);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
@@ -43,18 +73,12 @@ private:
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  // The number of PowerSystemNodes to initialize.
-  // WARNING: Code is currently hard-coded based on having 8 PowerSystemNodes.
-  // Changing this value will cause problems.
-  int m_num_nodes = NUM_NODES;
-  std::string m_node_names[NUM_NODES];
-  PowerSystemNode m_nodes[NUM_NODES];
+  // Create a PowerNode struct, containing all the necessary information for a
+  // node to operate, for each node.
+  PowerNode m_nodes[NUM_NODES];
 
-  MessageBus m_bus[NUM_NODES];
-
-  // Store the timestamp/wattage/voltage/temperature of each PowerSystemNode.
-  double m_models[NUM_NODES][4];
-  double m_previous_times[NUM_NODES];
+  // The matrix used to store EoD events.
+  EoDValues EoD_events[NUM_NODES];
 
   int m_moving_average_window = 25;
   std::vector<double> m_power_values;

@@ -22,7 +22,7 @@ public:
   PowerSystemNode();
   bool Initialize(int nodes);
   void RunOnce();
-  void GetPowerStats(double stored_values[]);
+  void GetPowerStats(double &time, double &power, double &volts, double &temp);
 private:
   bool loadSystemConfig();
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);

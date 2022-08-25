@@ -536,10 +536,10 @@ void PowerSystemNode::RunOnce()
   }
 }
 
-void PowerSystemNode::GetPowerStats(double stored_values[])
+void PowerSystemNode::GetPowerStats(double &time, double &power, double &volts, double &temp)
 {
-  stored_values[0] = m_current_timestamp;
-  stored_values[1] = m_wattage_estimate;
-  stored_values[2] = m_voltage_estimate;
-  stored_values[3] = m_temperature_estimate;
+  time = m_current_timestamp;
+  power = m_wattage_estimate;
+  volts = m_voltage_estimate;
+  temp = m_temperature_estimate;
 }
