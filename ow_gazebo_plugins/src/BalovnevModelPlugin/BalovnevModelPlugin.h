@@ -29,15 +29,20 @@ public:
   
 private:
 
-  ros::Subscriber m_sub_mod_diff_visual;
-
   void onUpdate();
 
   double getParameterA(double x, double ifa, double efa);
-  
-  void getForces(double vertical_cut_depth);
-  
+
+  void computeForces(double vertical_cut_depth);
+
+  void resetForces();
+
   void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr& msg);
+
+  ros::Subscriber m_sub_mod_diff_visual;
+
+  ros::Publisher m_pub_horizontal_force;
+  ros::Publisher m_pub_vertical_force;
   
   physics::LinkPtr m_link;
 
