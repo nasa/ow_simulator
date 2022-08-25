@@ -3,11 +3,15 @@
 // this repository.
 #ifndef BALOVNEV_MODEL_PLUGIN_H
 #define BALOVNEV_MODEL_PLUGIN_H 
+
 #include <ros/ros.h>
+
+#include <ignition/math/Quaternion.hh>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
+
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
 
@@ -37,7 +41,10 @@ private:
 
   void resetForces();
 
-  void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr& msg);
+  void onModDiffVisualMsg(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
+  bool isScoopDigging();
 
   ros::Subscriber m_sub_mod_diff_visual;
 
