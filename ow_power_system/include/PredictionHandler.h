@@ -7,11 +7,6 @@
 
 #include <vector>
 #include <map>
-#include <chrono>
-#include <random>
-#include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
-#include <PrognoserFactory.h>
 
 #include "Messages/MessageBus.h"
 #include "Messages/ProgEventMessage.h"

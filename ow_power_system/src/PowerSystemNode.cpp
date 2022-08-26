@@ -6,7 +6,6 @@
 #include <fstream>
 #include <math.h>
 #include <algorithm>
-#include <vector> //TEST
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int16.h>
