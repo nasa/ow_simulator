@@ -318,7 +318,9 @@ class TerrainInteraction(unittest.TestCase):
   def test_01_unstow(self):
 
     UNSTOW_MAX_DURATION = 30.0
-    UNSTOW_EXPECTED_FINAL = Point(1.7419, 0.2396, -6.5904)
+    # SAVED CODE: expected finals are no longer enforced by this ROS test, but
+    #             the expected_final values are left as comments
+    # UNSTOW_EXPECTED_FINAL = Point(1.7419, 0.2396, -6.5904)
 
     unstow_result = self._test_action(
       'Unstow',
@@ -326,7 +328,6 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.UnstowGoal(),
       UNSTOW_MAX_DURATION,
       self._assert_nothing,
-      expected_final = UNSTOW_EXPECTED_FINAL,
       server_timeout = 25.0, # (seconds) first action call needs longer timeout
       expected_final_tolerance = 0.5 # unstow requires a really high tolerance
     )
@@ -338,7 +339,7 @@ class TerrainInteraction(unittest.TestCase):
   def test_02_grind(self):
 
     GRIND_MAX_DURATION = 80.0 # seconds
-    GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
+    # GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
 
     # call Grind action asynchronously
     grind_result = self._test_action(
@@ -347,7 +348,6 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.GrindGoal(),
       GRIND_MAX_DURATION,
       self._assert_regolith_not_present,
-      expected_final = GRIND_EXPECTED_FINAL,
       x_start         = 1.65,
       y_start         = 0.0,
       depth           = 0.15, # grind deep so terrain is modified
@@ -363,7 +363,7 @@ class TerrainInteraction(unittest.TestCase):
   def test_03_dig_linear(self):
 
     DIG_LINEAR_MAX_DURATION = 110.0
-    DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
+    # DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
 
     # call Grind action asynchronously
     dig_linear_result = self._test_action(
@@ -372,7 +372,6 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.DigLinearGoal(),
       DIG_LINEAR_MAX_DURATION,
       self._assert_scoop_regolith_containment,
-      expected_final = DIG_LINEAR_EXPECTED_FINAL,
       x_start         = 1.46,
       y_start         = 0.0,
       depth           = 0.01,
@@ -393,7 +392,7 @@ class TerrainInteraction(unittest.TestCase):
     # NOTE: As long as discard and deliver use RRT*, the additional planning
     #       time must be accounted for, so we use a large interval here
     DISCARD_MAX_DURATION = 200.0
-    DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
+    # DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
 
     discard_result = self._test_action(
       'Discard',
@@ -401,7 +400,6 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.DiscardGoal(),
       DISCARD_MAX_DURATION,
       self._assert_regolith_transports_and_discards,
-      expected_final = DISCARD_EXPECTED_FINAL,
       discard = DISCARD_POSITION
     )
 
@@ -419,7 +417,7 @@ class TerrainInteraction(unittest.TestCase):
   def test_05_dig_circular(self):
 
     DIG_CIRCULAR_MAX_DURATION = 60.0
-    DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
+    # DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
 
     dig_circular_result = self._test_action(
       'DigCircular',
@@ -427,7 +425,6 @@ class TerrainInteraction(unittest.TestCase):
       ow_lander.msg.DigCircularGoal(),
       DIG_CIRCULAR_MAX_DURATION,
       self._assert_scoop_regolith_containment,
-      expected_final = DIG_CIRCULAR_EXPECTED_FINAL,
       x_start         = 1.65,
       y_start         = 0.0,
       depth           = 0.01,
@@ -449,15 +446,14 @@ class TerrainInteraction(unittest.TestCase):
     # NOTE: As long as discard and deliver use RRT*, the additional planning
     #       time must be accounted for, so we use a large interval here
     DELIVER_MAX_DURATION = 200.0
-    DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
+    # DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
 
     deliver_result = self._test_action(
       'Deliver',
       ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
       DELIVER_MAX_DURATION,
-      self._assert_regolith_transports_and_delivers_to_dock,
-      expected_final = DELIVER_EXPECTED_FINAL,
+      self._assert_regolith_transports_and_delivers_to_dock
     )
 
     # verify regolith has fallen out of the scoop
@@ -473,15 +469,14 @@ class TerrainInteraction(unittest.TestCase):
     self.test_01_unstow()
 
     STOW_MAX_DURATION = 30.0
-    STOW_EXPECTED_FINAL = Point(0.7071, -0.4770, -6.5930)
+    # STOW_EXPECTED_FINAL = Point(0.7071, -0.4770, -6.5930)
 
     stow_result = self._test_action(
       'Stow',
       ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
       STOW_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = STOW_EXPECTED_FINAL
+      self._assert_nothing
     )
 
   """
