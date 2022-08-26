@@ -2,13 +2,10 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
-#include <map>
 #include <sstream>
-#include <vector>
 #include <numeric>
 #include <math.h>
 #include <algorithm>
@@ -17,17 +14,7 @@
 #include <std_msgs/Int16.h>
 #include <ow_lander/lander_joints.h>
 
-#include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
-#include <PrognoserFactory.h>
-
-#include "Messages/MessageBus.h"
-#include "Messages/ProgEventMessage.h"
-#include "Messages/ScalarMessage.h"
-#include "ModelBasedAsyncPrognoserBuilder.h"
-
 #include "PowerSystemPack.h"
-#include "PowerSystemNode.h"
 #include "PredictionHandler.h"
 
 using namespace PCOE;
@@ -61,13 +48,15 @@ void PowerSystemPack::InitAndRun()
   }
 
   // Construct the prediction handlers.
-  PredictionHandler *handlers[NUM_NODES];
+  auto handlers = std::array<std::unique_ptr<PredictionHandler>, NUM_NODES>();
   for (int i = 0; i < NUM_NODES; i++)
   {
-    handlers[i] = new PredictionHandler(EoD_events[i].remaining_useful_life,
-                                        EoD_events[i].state_of_charge,
-                                        EoD_events[i].battery_temperature,
-                                        m_nodes[i].bus, m_nodes[i].name, i);
+    handlers[i] = std::make_unique<PredictionHandler>(
+                    EoD_events[i].remaining_useful_life,
+                    EoD_events[i].state_of_charge,
+                    EoD_events[i].battery_temperature,
+                    m_nodes[i].bus, m_nodes[i].name, i
+    );
   }
 
   // Get the asynchronous prognoser configuration and create a builder with it.

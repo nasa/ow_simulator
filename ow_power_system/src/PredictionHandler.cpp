@@ -3,28 +3,10 @@
 // this repository.
 
 #include <chrono>
-#include <ctime>
-#include <fstream>
-#include <iomanip>
-#include <map>
-#include <sstream>
-#include <vector>
-#include <numeric>
-#include <math.h>
-#include <algorithm>
 #include <ros/package.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/Int16.h>
-#include <ow_lander/lander_joints.h>
-
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 #include <PrognoserFactory.h>
-
-#include "Messages/MessageBus.h"
-#include "Messages/ProgEventMessage.h"
-#include "Messages/ScalarMessage.h"
-#include "ModelBasedAsyncPrognoserBuilder.h"
 
 #include "PredictionHandler.h"
 
