@@ -1,3 +1,7 @@
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// Research and Simulation can be found in README.md in the root directory of
+// this repository.
+
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
@@ -18,7 +22,7 @@ public:
   PowerSystemNode();
   bool Initialize(int nodes);
   void RunOnce();
-  void GetPowerStats(double stored_values[]);
+  void GetPowerStats(double &time, double &power, double &volts, double &temp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
 private:
