@@ -229,8 +229,8 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 
   for (int i = 0; i < NUM_NODES; i++)
   {
-    raw_mechanical_values[i] = nodes[i].GetRawMechanicalPower();
-    avg_mechanical_values[i] = nodes[i].GetAvgMechanicalPower();
+    raw_mechanical_values[i] = m_nodes[i].node.GetRawMechanicalPower();
+    avg_mechanical_values[i] = m_nodes[i].node.GetAvgMechanicalPower();
     avg_power += raw_mechanical_values[i];
     /* DEBUG PRINT
     if (i > 0)
@@ -289,21 +289,21 @@ void PowerSystemPack::publishPredictions()
   for (int i = 0; i < NUM_NODES; i++)
   {
     // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
-    if (EoD_events[i][0] < min_rul || min_rul == -1)
+    if (EoD_events[i].remaining_useful_life < min_rul || min_rul == -1)
     {
-      min_rul = EoD_events[i][0];
+      min_rul = EoD_events[i].remaining_useful_life;
     }
 
     // Published SoC (state of charge) is defined as the minimum SoC of all EoDs.
-    if (EoD_events[i][1] < min_soc || min_soc == -1)
+    if (EoD_events[i].state_of_charge < min_soc || min_soc == -1)
     {
-      min_soc = EoD_events[i][1];
+      min_soc = EoD_events[i].state_of_charge;
     }
     
     // Published battery temperature is defined as the highest temp of all EoDs.
-    if (EoD_events[i][2] > max_tmp || max_tmp == -1)
+    if (EoD_events[i].battery_temperature > max_tmp || max_tmp == -1)
     {
-      max_tmp = EoD_events[i][2];
+      max_tmp = EoD_events[i].battery_temperature;
     }
   }
 
