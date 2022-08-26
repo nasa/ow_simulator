@@ -39,18 +39,24 @@ private:
 
   void computeForces(double vertical_cut_depth);
 
+  void publishForces();
+
   void resetForces();
+
+  bool isScoopDigging();
 
   void onModDiffVisualMsg(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
-  bool isScoopDigging();
+  void onDigTimeout(const ros::TimerEvent &);
 
   ros::Subscriber m_sub_mod_diff_visual;
 
   ros::Publisher m_pub_horizontal_force;
   ros::Publisher m_pub_vertical_force;
   
+  ros::Timer m_dig_timeout;
+
   physics::LinkPtr m_link;
 
   double m_horizontal_force;
@@ -64,4 +70,4 @@ private:
   GZ_REGISTER_MODEL_PLUGIN(BalovnevModelPlugin)
 }
 
-#endif //BALOVNEV
+#endif // BALOVNEV_MODEL_PLUGIN_H
