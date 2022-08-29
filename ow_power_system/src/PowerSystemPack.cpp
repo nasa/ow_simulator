@@ -87,21 +87,14 @@ void PowerSystemPack::InitAndRun()
   {
     ros::spinOnce();
 
-    // Set the fault values for all nodes here.
-    // Update them all here before the loop, then have the functions within the Nodes
-    // reset the values to 0 upon use. Where to call the function to load faults?
-    // TODO
+    // Set up fault values in each node for injection later.
+    injectFaults();
 
     for (int i = 0; i < NUM_NODES; i++)
     {
       m_nodes[i].node.RunOnce();
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
-      /* 
-      TODO: Add functions to PowerSystemNode that allow for setting variables
-            that inject values for faults. Determine the values to be sent in to
-            the individual node here, and then call those functions here too.
-      */
       //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
 
       // /* DEBUG PRINT
@@ -207,23 +200,14 @@ bool PowerSystemPack::initTopics()
   return true;
 }
 
-void PowerSystemNode::injectCustomFault(bool& fault_activated,
+void PowerSystemPack::injectCustomFault(bool& fault_activated,
                                         const PrognoserVector& sequence,
-                                        size_t& index,
-                                        double& wattage,
-                                        double& voltage,
-                                        double& temperature)
+                                        size_t& index)
 {
-  // TODO: There shouldn't be a wattage/voltage/temperature for this Pack version of
-  // fault injection. It should be passing the wattage values to the Nodes (after 
-  // adjustment) MAYBE?, and then the nodes should add their values to their own wattage
-  // before sending off to GSAP. Or should the pack simply add them itself before sending
-  // the values off? No, the nodes should do it themselves in case it impacts the other
-  // values' generation.
-  static string saved_fault_path = "N/A";
-  string current_fault_path;
-  string designated_file;
-  static string saved_file;
+  static std::string saved_fault_path = "N/A";
+  std::string current_fault_path;
+  std::string designated_file;
+  static std::string saved_file;
   static bool custom_fault_ready = false;
   static bool custom_warning_displayed = false;
   static bool end_fault_warning_displayed = false;
@@ -312,24 +296,22 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     else
     {
       auto data = sequence[index];
-      wattage += data[MessageId::Watts];
-      // NOTE: The data from fault profiles here should always be 0, so these
-      //       shouldn't change anything. Could be removed or kept in case future
-      //       updates might want to use this functionality, though testing revealed
-      //       that adding values to voltage and temperature didn't actually affect
-      //       the simulation at all.
-      voltage += data[MessageId::Volts];
-      temperature += data[MessageId::Centigrade];
+
+      // Pass in an evenly distributed amount of high power draw to each node.
+      double wattage = data[MessageId::Watts] / NUM_NODES;
+
+      for (int i = 0; i < NUM_NODES; i++)
+      {
+        m_nodes[i].node.SetCustomPowerDraw(wattage);
+      }
+      
       index += m_profile_increment;
     }
   }
 }
 
-void PowerSystemPack::injectFault (const string& fault_name,
-                                   bool& fault_activated,
-                                   double& wattage,
-                                   double& voltage,
-                                   double& temperature)
+void PowerSystemPack::injectFault (const std::string& fault_name,
+                                   bool& fault_activated)
 {
   static bool warning_displayed = false;
   bool fault_enabled = false;
@@ -357,22 +339,23 @@ void PowerSystemPack::injectFault (const string& fault_name,
     if (fault_name == FAULT_NAME_HPD_ACTIVATE)
     {
       ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
-      wattage += hpd_wattage;
+      double split_wattage = hpd_wattage / NUM_NODES;
+
+      for (int i = 0; i < NUM_NODES; i++)
+      {
+        m_nodes[i].node.SetHighPowerDraw(split_wattage);
+      }
     }
   }
 }
 
-void PowerSystemNode::injectFaults(double& power,
-				   double& voltage,
-				   double& temperature)
+void PowerSystemPack::injectFaults()
 {
   injectFault(FAULT_NAME_HPD_ACTIVATE,
-              m_high_power_draw_activated,
-              power, voltage, temperature);
+              m_high_power_draw_activated);
   injectCustomFault(m_custom_power_fault_activated,
                     m_custom_power_fault_sequence,
-                    m_custom_power_fault_sequence_index,
-                    power, voltage, temperature);
+                    m_custom_power_fault_sequence_index);
 }
 
 // TODO: All the fault injection mechanisms need to be updated.
@@ -444,21 +427,21 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 }
 
-bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string custom_file)
+PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, std::string custom_file)
 {
-  ifstream file(filename);
+  std::ifstream file(filename);
 
   if (file.fail())
   {
     ROS_WARN_STREAM("Could not find a custom file in the 'profiles' directory with name '"
                           << custom_file << "'. Deactivate fault and try again.");
-    return false;
+    return PrognoserVector();
   }
 
   // Skip header line.
-  file.ignore(numeric_limits<streamsize>::max(), '\n');
+  file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  auto now = system_clock::now();
+  auto now = std::chrono::system_clock::now();
 
   PrognoserVector result;
 
@@ -470,15 +453,15 @@ bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string 
     while (file.good())
     {
       PrognoserMap data;
-      string line;
+      std::string line;
       getline(file, line);
       if (line.empty())
       {
         continue;
       }
 
-      stringstream line_stream(line);
-      string cell;
+      std::stringstream line_stream(line);
+      std::string cell;
 
       // Confirm the line contains the expected number of columns.
       auto cols = std::count(line.begin(), line.end(), ',') + 1;
@@ -495,11 +478,11 @@ bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string 
       //       voltage and temperature are initialized to 0 and the fault profile
       //       should not contain them.
       getline(line_stream, cell, ',');
-      double file_time = stod(cell);
+      double file_time = std::stod(cell);
       auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
 
       getline(line_stream, cell, ',');
-      Datum<double> power(stod(cell));
+      Datum<double> power(std::stod(cell));
       power.setTime(timestamp);
 
       Datum<double> temperature(0.0);
@@ -510,7 +493,7 @@ bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string 
 
       data.insert({ MessageId::Watts, power });
       data.insert({ MessageId::Centigrade, temperature});
-      data.insert({ MessageId:Volts, voltage });
+      data.insert({ MessageId::Volts, voltage });
 
       result.push_back(data);
 
@@ -519,8 +502,8 @@ bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string 
   }
   catch(...) // Many possible different errors could result from reading an improperly formatted file.
   {
-    ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << endl <<
-                     "Improper formatting detected on line " << line_number << "." << endl << 
+    ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << std::endl <<
+                     "Improper formatting detected on line " << line_number << "." << std::endl << 
                      "Confirm " << custom_file << " follows the exact format of example_fault.csv before retrying.");
     return PrognoserVector();
   }
