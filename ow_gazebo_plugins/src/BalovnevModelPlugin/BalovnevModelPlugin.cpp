@@ -215,13 +215,18 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
 
   // get average height
   float sum = 0.0;
+  int counted = 0;
   for (auto y = 0; y < rows; ++y) {
     for (auto x = 0; x < cols; ++x) {
       // NOTE: pixel values should always be negative
-      sum += -image_handle->image.at<float>(y, x);
+      const auto value = -image_handle->image.at<float>(y, x);
+      if (value > 0.0) {
+        sum += value;
+        ++counted;
+      }
     }
   }
-  float depth = sum / (rows * cols);
+  float depth = sum / counted;
 
   computeForces(depth);
 
