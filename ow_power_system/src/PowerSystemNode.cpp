@@ -228,6 +228,11 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw = power_watts;
   m_mechanical_power_avg = mean_mechanical_power;
 
+  /* DEBUG PRINT
+  ROS_INFO_STREAM("Node raw mechanical power: " << std::to_string(power_watts) << 
+                  " & avg power: " << std::to_string(mean_mechanical_power));
+  */
+
   m_unprocessed_mechanical_power = mean_mechanical_power;
 
   if (!m_processing_power_batch)
@@ -496,9 +501,11 @@ void PowerSystemNode::runPrognoser(double electrical_power)
       m_wattage_estimate = m_max_gsap_input_watts;
   }
 
+  /*
   auto current_data = composePrognoserData(m_wattage_estimate,
                                            m_voltage_estimate,
                                            m_temperature_estimate);
+  */
 
   //ROS_INFO_STREAM("Starting m_prognoser->step()" << endl << endl << endl); TEST
 
@@ -559,4 +566,14 @@ double PowerSystemNode::GetRawMechanicalPower()
 double PowerSystemNode::GetAvgMechanicalPower()
 {
   return m_mechanical_power_avg;
+}
+
+void PowerSystemNode::SetHighPowerDraw(double draw)
+{
+  m_added_hpd = draw;
+}
+
+void PowerSystemNode::SetCustomPowerDraw(double draw)
+{
+  m_added_cpd = draw;
 }

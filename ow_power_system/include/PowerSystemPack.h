@@ -28,6 +28,13 @@ using PrognoserVector = std::vector<PrognoserMap>;
 //       it is likely related to GSAP's time required to process predictions and
 //       so it may not be addressable here.
 const int NUM_NODES = 8;
+const string FAULT_NAME_HPD           = "high_power_draw";
+const string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
+const int CUSTOM_FILE_EXPECTED_COLS           = 2;
+
+// Error flags.
+const int ERR_CUSTOM_FILE_FORMAT              = -1;
+
 
 // Struct that contains the information used for EoD predictions.
 struct ModelInfo {
@@ -61,7 +68,21 @@ public:
 private:
   bool initNodes();
   bool initTopics();
+  void injectCustomFault(bool& fault_activated,
+                         const PrognoserVector& sequence,
+                         size_t& index,
+                         double& wattage,
+                         double& voltage,
+                         double& temperature);
+  void injectFault(const std::string& power_fault_name,
+                   bool& fault_activated,
+                   double& power,
+                   double& voltage,
+                   double& temperature);
+  void injectFaults(double& power, double& temperature, double& voltage);
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   void publishPredictions();
   std::string setNodeName(int node_num);
 
@@ -120,7 +141,7 @@ private:
   
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
-  PrognoserVector m_custom_power_fault_sequence;
+  std::vector<double> m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.

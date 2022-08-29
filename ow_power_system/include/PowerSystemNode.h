@@ -25,6 +25,8 @@ public:
   void GetPowerStats(double &time, double &power, double &volts, double &temp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
+  void SetHighPowerDraw(double draw);
+  void SetCustomPowerDraw(double draw);
 private:
   bool loadSystemConfig();
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
@@ -117,6 +119,10 @@ private:
   // The number of parallel PowerSystemNodes created. Used for
   // fault injection modification.
   int m_total_nodes;
+
+  // The power draw values used by fault injection.
+  double m_added_hpd = 0.0;
+  double m_added_cpd = 0.0;
 
   // End main system configuration.
 

@@ -86,11 +86,23 @@ void PowerSystemPack::InitAndRun()
   while(ros::ok())
   {
     ros::spinOnce();
+
+    // Set the fault values for all nodes here.
+    // Update them all here before the loop, then have the functions within the Nodes
+    // reset the values to 0 upon use. Where to call the function to load faults?
+    // TODO
+
     for (int i = 0; i < NUM_NODES; i++)
     {
       m_nodes[i].node.RunOnce();
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
+      /* 
+      TODO: Add functions to PowerSystemNode that allow for setting variables
+            that inject values for faults. Determine the values to be sent in to
+            the individual node here, and then call those functions here too.
+      */
+      //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
 
       // /* DEBUG PRINT
       if (!(m_nodes[i].model.timestamp <= 0))
@@ -195,6 +207,176 @@ bool PowerSystemPack::initTopics()
   return true;
 }
 
+void PowerSystemNode::injectCustomFault(bool& fault_activated,
+                                        const PrognoserVector& sequence,
+                                        size_t& index,
+                                        double& wattage,
+                                        double& voltage,
+                                        double& temperature)
+{
+  // TODO: There shouldn't be a wattage/voltage/temperature for this Pack version of
+  // fault injection. It should be passing the wattage values to the Nodes (after 
+  // adjustment) MAYBE?, and then the nodes should add their values to their own wattage
+  // before sending off to GSAP. Or should the pack simply add them itself before sending
+  // the values off? No, the nodes should do it themselves in case it impacts the other
+  // values' generation.
+  static string saved_fault_path = "N/A";
+  string current_fault_path;
+  string designated_file;
+  static string saved_file;
+  static bool custom_fault_ready = false;
+  static bool custom_warning_displayed = false;
+  static bool end_fault_warning_displayed = false;
+  bool fault_enabled = false;
+
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/activate_custom_fault", fault_enabled);
+
+  if (!fault_activated && fault_enabled)
+  {
+    // Multiple potential points of failure, so alert user the process has started.
+    ROS_INFO_STREAM("Attempting custom fault activation...");
+
+    // Get user-entered file directory.
+    ros::param::getCached("/faults/custom_fault_profile", designated_file);
+
+    // Append the current fault directory to the stored file path.
+    current_fault_path = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
+    
+    // Attempt to load/reload the designated file.
+    if (designated_file == saved_file)
+    {
+      ROS_INFO_STREAM("Reloading " << designated_file << "...");
+    }
+    else if (saved_fault_path != "N/A")
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << "...");
+    }
+    if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
+    {
+      ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+      if (designated_file == saved_file)
+      {
+        ROS_INFO_STREAM(designated_file << " reactivated!");
+      }
+      else
+      {
+        ROS_INFO_STREAM(designated_file << " activated!");
+      }
+      custom_fault_ready = true;
+      end_fault_warning_displayed = false;
+      saved_fault_path = current_fault_path;
+      saved_file = designated_file;
+      index = 0;
+    }
+    else
+    {
+      // Custom fault failed to load correctly.
+      custom_fault_ready = false;
+    }        
+    fault_activated = true;
+  }
+  else if (fault_activated && !fault_enabled)
+  {
+    if (custom_fault_ready)
+    {
+      ROS_INFO_STREAM(saved_file << " deactivated!");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Custom fault deactivated!");
+    }
+    fault_activated = false;
+    custom_fault_ready = false;
+    custom_warning_displayed = false;
+  }
+
+  if (fault_activated && fault_enabled && custom_fault_ready)
+  {
+    // TODO: Unspecified how to handle end of fault profile. For now, simply disable
+    // the fault from updating any parameters.
+    if (index >= sequence.size())
+    {
+      if (!end_fault_warning_displayed)
+      {
+        ROS_WARN_STREAM
+          (saved_file << ": reached end of fault profile. "
+           << "Fault disabled, but will restart if re-enabled.");
+        end_fault_warning_displayed = true;
+      }
+    }
+    else
+    {
+      auto data = sequence[index];
+      wattage += data[MessageId::Watts];
+      // NOTE: The data from fault profiles here should always be 0, so these
+      //       shouldn't change anything. Could be removed or kept in case future
+      //       updates might want to use this functionality, though testing revealed
+      //       that adding values to voltage and temperature didn't actually affect
+      //       the simulation at all.
+      voltage += data[MessageId::Volts];
+      temperature += data[MessageId::Centigrade];
+      index += m_profile_increment;
+    }
+  }
+}
+
+void PowerSystemPack::injectFault (const string& fault_name,
+                                   bool& fault_activated,
+                                   double& wattage,
+                                   double& voltage,
+                                   double& temperature)
+{
+  static bool warning_displayed = false;
+  bool fault_enabled = false;
+  double hpd_wattage = 0.0;
+
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/" + fault_name, fault_enabled);
+
+  if (!fault_activated && fault_enabled)
+  {
+    ROS_INFO_STREAM(fault_name << " activated!");
+    fault_activated = true;
+  }
+  else if (fault_activated && !fault_enabled)
+  {
+    ROS_INFO_STREAM(fault_name << " deactivated!");
+    fault_activated = false;
+    warning_displayed = false;
+  }
+
+  if (fault_activated && fault_enabled)
+  {
+    // If the current fault being utilized is high_power_draw,
+    // simply update wattage based on the current value of the HPD slider.
+    if (fault_name == FAULT_NAME_HPD_ACTIVATE)
+    {
+      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
+      wattage += hpd_wattage;
+    }
+  }
+}
+
+void PowerSystemNode::injectFaults(double& power,
+				   double& voltage,
+				   double& temperature)
+{
+  injectFault(FAULT_NAME_HPD_ACTIVATE,
+              m_high_power_draw_activated,
+              power, voltage, temperature);
+  injectCustomFault(m_custom_power_fault_activated,
+                    m_custom_power_fault_sequence,
+                    m_custom_power_fault_sequence_index,
+                    power, voltage, temperature);
+}
+
+// TODO: All the fault injection mechanisms need to be updated.
+
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   /* DEBUG
@@ -202,8 +384,9 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   */
 
   // NOTE: This callback function appears to call after the nodes' callback
-  //       functions complete, every single time. This is quite convenient, but
-  //       I don't know why exactly this is the case, and if they should happen
+  //       functions complete, every single time. This is quite convenient since
+  //       it depends on values determined from those callbacks, but
+  //       I don't know why exactly this is the case. If they should happen
   //       to stop calling in this order, it could potentially cause problems.
   //       ~Liam
   
@@ -259,6 +442,97 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   mechanical_power_avg_msg.data = avg_mechanical_values[0];
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+}
+
+bool PowerSystemPack::loadPowerProfile(const std::string& filename, std::string custom_file)
+{
+  ifstream file(filename);
+
+  if (file.fail())
+  {
+    ROS_WARN_STREAM("Could not find a custom file in the 'profiles' directory with name '"
+                          << custom_file << "'. Deactivate fault and try again.");
+    return false;
+  }
+
+  // Skip header line.
+  file.ignore(numeric_limits<streamsize>::max(), '\n');
+
+  auto now = system_clock::now();
+
+  PrognoserVector result;
+
+  // Line number starts at 2 instead of 1 since the first line is the header.
+  int line_number = 2;
+
+  try
+  {
+    while (file.good())
+    {
+      PrognoserMap data;
+      string line;
+      getline(file, line);
+      if (line.empty())
+      {
+        continue;
+      }
+
+      stringstream line_stream(line);
+      string cell;
+
+      // Confirm the line contains the expected number of columns.
+      auto cols = std::count(line.begin(), line.end(), ',') + 1;
+
+      if (cols != CUSTOM_FILE_EXPECTED_COLS)
+      {
+        throw ERR_CUSTOM_FILE_FORMAT;
+      }
+
+      // Get the time index and power values.
+
+      // NOTE: The voltage and temperature values of a PrognoserVector are non-functional
+      //       when it comes to fault injection. Only power values are used. As such,
+      //       voltage and temperature are initialized to 0 and the fault profile
+      //       should not contain them.
+      getline(line_stream, cell, ',');
+      double file_time = stod(cell);
+      auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
+
+      getline(line_stream, cell, ',');
+      Datum<double> power(stod(cell));
+      power.setTime(timestamp);
+
+      Datum<double> temperature(0.0);
+      temperature.setTime(timestamp);
+
+      Datum<double> voltage(0.0);
+      voltage.setTime(timestamp);
+
+      data.insert({ MessageId::Watts, power });
+      data.insert({ MessageId::Centigrade, temperature});
+      data.insert({ MessageId:Volts, voltage });
+
+      result.push_back(data);
+
+      line_number++;
+    }
+  }
+  catch(...) // Many possible different errors could result from reading an improperly formatted file.
+  {
+    ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << endl <<
+                     "Improper formatting detected on line " << line_number << "." << endl << 
+                     "Confirm " << custom_file << " follows the exact format of example_fault.csv before retrying.");
+    return PrognoserVector();
+  }
+  return result;
+}
+
+bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string custom_file)
+{
+  m_custom_power_fault_sequence = loadPowerProfile(path, custom_file);
+
+  // Return false if the sequence was not properly initialized.
+  return (m_custom_power_fault_sequence.size() > 0);
 }
 
 void PowerSystemPack::publishPredictions()
