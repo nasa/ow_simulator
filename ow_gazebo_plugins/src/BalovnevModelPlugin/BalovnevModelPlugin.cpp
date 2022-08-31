@@ -6,6 +6,7 @@
 #include <cmath>
 #include <gazebo/physics/Link.hh>
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/core.hpp>
 
 #include <std_msgs/Float64.h>
 
@@ -53,6 +54,8 @@ const string TOPIC_BALOVNEV_VERTICAL     = "/balovnev_model/vertical_force";
 
 const Duration DIG_TIMEOUT_INTERVAL = Duration(1.0); // seconds
 
+const size_t DEPTH_MAX_FILTER_WIDTH = 100;
+
 // define sin-squared function for use in getParameterA
 static double sin2(double x) {
   double y = sin(x);
@@ -63,6 +66,8 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 {
   m_node_handle = make_unique<ros::NodeHandle>(sdf->GetName());
   
+  m_moving_max_depth = make_unique<MovingMaxFilter>(DEPTH_MAX_FILTER_WIDTH);
+
   m_link = model->GetLink(SCOOP_LINK_NAME);
   if(!m_link) {
     gzerr << "Load - specified link is invalid." << endl;
@@ -179,6 +184,9 @@ void BalovnevModelPlugin::resetForces() {
   m_vertical_force = 0.0;
   m_horizontal_force = 0.0;
   publishForces();
+  // reset moving average
+  m_moving_max_depth->clear();
+
 }
 
 bool BalovnevModelPlugin::isScoopDigging() {
@@ -213,20 +221,13 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
     return;
   }
 
-  // get average height
-  float sum = 0.0;
-  int counted = 0;
-  for (auto y = 0; y < rows; ++y) {
-    for (auto x = 0; x < cols; ++x) {
-      // NOTE: pixel values should always be negative
-      const auto value = -image_handle->image.at<float>(y, x);
-      if (value > 0.0) {
-        sum += value;
-        ++counted;
-      }
-    }
-  }
-  float depth = sum / counted;
+  // get max pixel value
+  // NOTE: pixel values should always be negative, so grab the minimum
+  double min_pixel;
+  cv::minMaxLoc(image_handle->image, &min_pixel);
+  m_moving_max_depth->addDatum(static_cast<float>(-min_pixel));
+
+  float depth = m_moving_max_depth->evaluate();
 
   computeForces(depth);
 
