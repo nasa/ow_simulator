@@ -55,12 +55,14 @@ private:
 
   ros::Publisher m_pub_horizontal_force;
   ros::Publisher m_pub_vertical_force;
+  // DEBUG CODE
+  ros::Publisher m_pub_depth;
   
   ros::Timer m_dig_timeout;
 
   physics::LinkPtr m_link;
 
-  event::ConnectionPtr m_updateConnection;
+  event::ConnectionPtr m_updateConnection;  
 
   double m_horizontal_force, m_vertical_force;
 
