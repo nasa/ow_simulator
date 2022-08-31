@@ -101,7 +101,7 @@ void BalovnevModelPlugin::onUpdate()
     return;
   }
   m_link->AddRelativeForce(
-    ignition::math::Vector3d(m_horizontal_force, 0, -m_vertical_force)
+    ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
   );
 }
 
