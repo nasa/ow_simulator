@@ -393,7 +393,7 @@
     <axis
       xyz="0 0 1" />
     <dynamics damping="50.0" friction="0.3"/>
-    <limit effort="25.7" velocity="0.2" lower="-1.9" upper="3.5" />
+    <limit effort="25.7" velocity="0.2" lower="-2.2" upper="3.65" />
   </joint>
   <transmission name="dist_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
