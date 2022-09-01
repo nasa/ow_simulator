@@ -56,7 +56,10 @@ struct EoDValues {
 class PowerSystemPack
 {
 public:
-  PowerSystemPack();
+  PowerSystemPack() = default;
+  ~PowerSystemPack() = default;
+  PowerSystemPack(const PowerSystemPack&) = default;
+  PowerSystemPack& operator=(const PowerSystemPack&) = default;
   void InitAndRun();
 private:
   bool initNodes();

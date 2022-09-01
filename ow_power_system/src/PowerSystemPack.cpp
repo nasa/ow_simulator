@@ -21,9 +21,6 @@ using namespace PCOE;
 
 const auto START_TIME       = MessageClock::now();
 
-PowerSystemPack::PowerSystemPack()
-{ }
-
 void PowerSystemPack::InitAndRun()
 {
   if (!initNodes())

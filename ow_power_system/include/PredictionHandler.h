@@ -21,6 +21,10 @@ public:
   PredictionHandler(double& rul, double& soc, double& temp, MessageBus& bus,
                     const std::string& src, int node_num);
   ~PredictionHandler();
+  // Copy constructor & assignment operator. Neither should be allowed given
+  // how PredictionHandler uses references.
+  PredictionHandler(const PredictionHandler&) = delete;
+  PredictionHandler& operator=(const PredictionHandler&) = delete;
   void processMessage(const std::shared_ptr<Message>& message) override;
 private:
   double findMedian(std::vector<double> samples);
