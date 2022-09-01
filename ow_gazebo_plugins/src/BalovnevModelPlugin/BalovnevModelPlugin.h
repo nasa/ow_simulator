@@ -3,11 +3,15 @@
 // this repository.
 #ifndef BALOVNEV_MODEL_PLUGIN_H
 #define BALOVNEV_MODEL_PLUGIN_H 
+
 #include <ros/ros.h>
+
+#include <ignition/math/Quaternion.hh>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
+
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
 
@@ -29,16 +33,30 @@ public:
   
 private:
 
-  ros::Subscriber m_sub_mod_diff_visual;
-
   void onUpdate();
 
   double getParameterA(double x, double ifa, double efa);
+
+  void computeForces(double vertical_cut_depth);
+
+  void publishForces();
+
+  void resetForces();
+
+  bool isScoopDigging();
+
+  void onModDiffVisualMsg(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
+  void onDigTimeout(const ros::TimerEvent &);
+
+  ros::Subscriber m_sub_mod_diff_visual;
+
+  ros::Publisher m_pub_horizontal_force;
+  ros::Publisher m_pub_vertical_force;
   
-  void getForces(double vertical_cut_depth);
-  
-  void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr& msg);
-  
+  ros::Timer m_dig_timeout;
+
   physics::LinkPtr m_link;
 
   double m_horizontal_force;
@@ -52,4 +70,4 @@ private:
   GZ_REGISTER_MODEL_PLUGIN(BalovnevModelPlugin)
 }
 
-#endif //BALOVNEV
+#endif // BALOVNEV_MODEL_PLUGIN_H
