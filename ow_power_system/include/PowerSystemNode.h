@@ -19,7 +19,10 @@ using PrognoserVector = std::vector<PrognoserMap>;
 class PowerSystemNode
 {
 public:
-  PowerSystemNode();
+  PowerSystemNode() = default;
+  ~PowerSystemNode() = default;
+  PowerSystemNode(const PowerSystemNode&) = default;
+  PowerSystemNode& operator=(const PowerSystemNode&) = default;
   bool Initialize(int nodes);
   void RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &temp);

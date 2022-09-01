@@ -63,7 +63,10 @@ struct EoDValues {
 class PowerSystemPack
 {
 public:
-  PowerSystemPack();
+  PowerSystemPack() = default;
+  ~PowerSystemPack() = default;
+  PowerSystemPack(const PowerSystemPack&) = default;
+  PowerSystemPack& operator=(const PowerSystemPack&) = default;
   void InitAndRun();
 private:
   bool initNodes();
@@ -93,7 +96,7 @@ private:
   PowerNode m_nodes[NUM_NODES];
 
   // The matrix used to store EoD events.
-  EoDValues EoD_events[NUM_NODES];
+  EoDValues m_EoD_events[NUM_NODES];
 
   int m_moving_average_window = 25;
   std::vector<double> m_power_values;
