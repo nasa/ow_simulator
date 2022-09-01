@@ -21,9 +21,6 @@ using namespace PCOE;
 
 const auto START_TIME       = MessageClock::now();
 
-PowerSystemPack::PowerSystemPack()
-{ }
-
 void PowerSystemPack::InitAndRun()
 {
   if (!initNodes())
@@ -42,9 +39,9 @@ void PowerSystemPack::InitAndRun()
   for (int i = 0; i < NUM_NODES; i++)
   {
     m_nodes[i].previous_time = 0;
-    EoD_events[i].remaining_useful_life = -1;
-    EoD_events[i].state_of_charge = -1;
-    EoD_events[i].battery_temperature = -1;
+    m_EoD_events[i].remaining_useful_life = -1;
+    m_EoD_events[i].state_of_charge = -1;
+    m_EoD_events[i].battery_temperature = -1;
   }
 
   // Construct the prediction handlers.
@@ -52,9 +49,9 @@ void PowerSystemPack::InitAndRun()
   for (int i = 0; i < NUM_NODES; i++)
   {
     handlers[i] = std::make_unique<PredictionHandler>(
-                    EoD_events[i].remaining_useful_life,
-                    EoD_events[i].state_of_charge,
-                    EoD_events[i].battery_temperature,
+                    m_EoD_events[i].remaining_useful_life,
+                    m_EoD_events[i].state_of_charge,
+                    m_EoD_events[i].battery_temperature,
                     m_nodes[i].bus, m_nodes[i].name, i
     );
   }
@@ -150,11 +147,11 @@ void PowerSystemPack::InitAndRun()
     // /* DEBUG PRINT
     for (int i = 0; i < NUM_NODES; i++)
     {
-      if (!(EoD_events[i].remaining_useful_life <= 0))
+      if (!(m_EoD_events[i].remaining_useful_life <= 0))
       {
-        ROS_INFO_STREAM("Node " << i << " RUL: " << EoD_events[i].remaining_useful_life
-                        << ". SOC: " << EoD_events[i].state_of_charge << ". TMP: "
-                        << EoD_events[i].battery_temperature);
+        ROS_INFO_STREAM("Node " << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+                        << ". SOC: " << m_EoD_events[i].state_of_charge << ". TMP: "
+                        << m_EoD_events[i].battery_temperature);
       }
     }
     if (!(m_nodes[0].model.timestamp <= 0))

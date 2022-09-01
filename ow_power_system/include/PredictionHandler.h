@@ -21,18 +21,22 @@ public:
   PredictionHandler(double& rul, double& soc, double& temp, MessageBus& bus,
                     const std::string& src, int node_num);
   ~PredictionHandler();
+  // Copy constructor & assignment operator. Neither should be allowed given
+  // how PredictionHandler uses references.
+  PredictionHandler(const PredictionHandler&) = delete;
+  PredictionHandler& operator=(const PredictionHandler&) = delete;
   void processMessage(const std::shared_ptr<Message>& message) override;
 private:
   double findMedian(std::vector<double> samples);
 
   // References used by other classes to process EoD predictions.
-  double& rul_ref;
-  double& soc_ref;
-  double& temp_ref;
-  MessageBus& bus;
+  double& m_rul_ref;
+  double& m_soc_ref;
+  double& m_temp_ref;
+  MessageBus& m_bus;
 
-  std::string identifier;
-  int node_number;
+  std::string m_identifier;
+  int m_node_number;
 };
 
 #endif

@@ -28,9 +28,6 @@ const int ERR_CUSTOM_FILE_FORMAT              = -1;
 //
 static constexpr int TEMPERATURE_INDEX = 1;
 
-PowerSystemNode::PowerSystemNode()
-{ }
-
 bool PowerSystemNode::Initialize(int nodes)
 {
   m_total_nodes = nodes;

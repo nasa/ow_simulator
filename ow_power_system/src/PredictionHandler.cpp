@@ -23,13 +23,13 @@ static constexpr int MODEL_TEMPERATURE_INDEX = 1;
  * predictions for the specified source and on the specified message
  * bus.
  **/
-PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp, MessageBus& bus,
-                    const std::string& src, int node_num) : rul_ref(rul), soc_ref(soc),
-                    temp_ref(temp), bus(bus)
+PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp,
+                                     MessageBus& bus, const std::string& src, int node_num) :
+                                     m_rul_ref(rul), m_soc_ref(soc), m_temp_ref(temp), m_bus(bus)
 {
-  bus.subscribe(this, src, MessageId::BatteryEod);
-  identifier = src;
-  node_number = node_num;
+  m_bus.subscribe(this, src, MessageId::BatteryEod);
+  m_identifier = src;
+  m_node_number = node_num;
 }
 
 /**
@@ -37,7 +37,7 @@ PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp, Mes
  **/
 PredictionHandler::~PredictionHandler()
 {
-  bus.unsubscribe(this);
+  m_bus.unsubscribe(this);
 }
 
 /**
@@ -106,15 +106,15 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
 
   // Store the newly obtained data.
-  rul_ref = rul_median;
-  soc_ref = soc_median;
-  temp_ref = model_output[MODEL_TEMPERATURE_INDEX];
+  m_rul_ref = rul_median;
+  m_soc_ref = soc_median;
+  m_temp_ref = model_output[MODEL_TEMPERATURE_INDEX];
 }
 
 double PredictionHandler::findMedian(std::vector<double> samples)
 {
   std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2)),
-                    samples.end());
+                   samples.end());
   return samples.at(samples.size() / 2);
   /* TEST CODE (may replace the above 3 lines later)
   if (samples.size() % 2 == 0)
