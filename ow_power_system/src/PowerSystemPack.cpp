@@ -275,21 +275,21 @@ void PowerSystemPack::publishPredictions()
   for (int i = 0; i < NUM_NODES; i++)
   {
     // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
-    if (EoD_events[i].remaining_useful_life < min_rul || min_rul == -1)
+    if (m_EoD_events[i].remaining_useful_life < min_rul || min_rul == -1)
     {
-      min_rul = EoD_events[i].remaining_useful_life;
+      min_rul = m_EoD_events[i].remaining_useful_life;
     }
 
     // Published SoC (state of charge) is defined as the minimum SoC of all EoDs.
-    if (EoD_events[i].state_of_charge < min_soc || min_soc == -1)
+    if (m_EoD_events[i].state_of_charge < min_soc || min_soc == -1)
     {
-      min_soc = EoD_events[i].state_of_charge;
+      min_soc = m_EoD_events[i].state_of_charge;
     }
     
     // Published battery temperature is defined as the highest temp of all EoDs.
-    if (EoD_events[i].battery_temperature > max_tmp || max_tmp == -1)
+    if (m_EoD_events[i].battery_temperature > max_tmp || max_tmp == -1)
     {
-      max_tmp = EoD_events[i].battery_temperature;
+      max_tmp = m_EoD_events[i].battery_temperature;
     }
   }
 
