@@ -100,14 +100,16 @@ private:
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
     {
-      gzerr << m_plugin_name << ": Couldn't acquire heightmap!" << endl;
+      gzerr << m_plugin_name << ": DynamicTerrainModel::onModifyTerrainMsg()"
+        " could not acquire heightmap." << endl;
       return;
     }
 
     auto heightmap_shape = getHeightmapShape();
     if (heightmap_shape == nullptr)
     {
-      gzerr << m_plugin_name << ": Couldn't acquire heightmap shape!" << endl;
+      gzerr << m_plugin_name << ": DynamicTerrainModel::onModifyTerrainMsg()"
+        " could not acquire heightmap shape." << endl;
       return;
     }
 
