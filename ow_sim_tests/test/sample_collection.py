@@ -47,11 +47,11 @@ def distance_flat_xy(p1, p2):
             0)
   return sqrt(v.x*v.x + v.y*v.y)
 
-class TerrainInteraction(unittest.TestCase):
+class SampleCollection(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
-    rospy.init_node('terrain_interaction_test', anonymous=True)
+    rospy.init_node('sample_collection_test', anonymous=True)
 
     # subscribe to get all gazebo link positions
     self._gz_link_names = []
@@ -525,4 +525,4 @@ class TerrainInteraction(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'terrain_interaction', TerrainInteraction)
+  rostest.rosrun(PKG, 'sample_collection', SampleCollection)

@@ -9,7 +9,7 @@
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
-    <test test-name="terrain_interaction" pkg="ow_sim_tests"
-        type="terrain_interaction.py" time-limit="550.0"/>
+    <test test-name="sample_collection" pkg="ow_sim_tests"
+        type="sample_collection.py" time-limit="550.0"/>
 
 </launch>
