@@ -52,7 +52,6 @@ class MoveItInterface(object):
         except rospy.ServiceException as e:
             rospy.logerror("Service call failed: %s" % e)
 
-
 class LinkStateSubscriber:
 
     def __init__(self):
@@ -70,7 +69,7 @@ class LinkStateSubscriber:
         :type data: gazebo_msgs.msg._LinkStates.LinkStates
         """
         try:
-            idx = data.name.index("lander::l_scoop")
+            idx = data.name.index("lander::l_scoop_tip")
         except ValueError:
             rospy.logerr_throttle(
                 1, "LanderInterface: lander::l_scoop_tip not found in link_states")
