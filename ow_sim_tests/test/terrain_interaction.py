@@ -341,7 +341,6 @@ class TerrainInteraction(unittest.TestCase):
     GRIND_MAX_DURATION = 80.0 # seconds
     # GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
 
-    # call Grind action asynchronously
     grind_result = self._test_action(
       'Grind',
       ow_lander.msg.GrindAction,
@@ -365,7 +364,6 @@ class TerrainInteraction(unittest.TestCase):
     DIG_LINEAR_MAX_DURATION = 110.0
     # DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
 
-    # call Grind action asynchronously
     dig_linear_result = self._test_action(
       'DigLinear',
       ow_lander.msg.DigLinearAction,
@@ -411,10 +409,32 @@ class TerrainInteraction(unittest.TestCase):
     self._assert_regolith_not_present()
 
   """
-  Dig for more material so we can then test delivery into the sample dock. This
-  digs non-parallel so that material is produced.
+  Grind a new trench in a different location on the terrain.
   """
-  def test_05_dig_circular(self):
+  def test_05_grind(self):
+
+    GRIND_MAX_DURATION = 80.0 # seconds
+    # GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
+
+    grind_result = self._test_action(
+      'Grind',
+      ow_lander.msg.GrindAction,
+      ow_lander.msg.GrindGoal(),
+      GRIND_MAX_DURATION,
+      self._assert_regolith_not_present,
+      x_start         = 1.65,
+      y_start         = 0.5,
+      depth           = 0.05,
+      length          = 0.6,
+      parallel        = True,
+      ground_position = GROUND_POSITION
+    )
+
+  """
+  Dig for more material in the new trench, so we can then test delivery into
+  the sample dock.
+  """
+  def test_06_dig_circular(self):
 
     DIG_CIRCULAR_MAX_DURATION = 60.0
     # DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
@@ -426,9 +446,9 @@ class TerrainInteraction(unittest.TestCase):
       DIG_CIRCULAR_MAX_DURATION,
       self._assert_scoop_regolith_containment,
       x_start         = 1.65,
-      y_start         = 0.0,
+      y_start         = 0.5,
       depth           = 0.01,
-      parallel        = False,
+      parallel        = True,
       ground_position = GROUND_POSITION
     )
 
@@ -440,7 +460,7 @@ class TerrainInteraction(unittest.TestCase):
   the operation it also asserts that regolith models are deleted.
   """
   @unittest.expectedFailure
-  def test_06_deliver(self):
+  def test_07_deliver(self):
 
     # DELIVER_MAX_DURATION = 60.0
     # NOTE: As long as discard and deliver use RRT*, the additional planning
@@ -463,7 +483,7 @@ class TerrainInteraction(unittest.TestCase):
   Test the unstow then stow action.
   Calling this after an optertion is standard operating procedure.
   """
-  def test_07_stow(self):
+  def test_08_stow(self):
     
     # unstow must come before stow
     self.test_01_unstow()
@@ -484,7 +504,7 @@ class TerrainInteraction(unittest.TestCase):
   the simulation.
   """
   @unittest.expectedFailure
-  def test_08_ingest_sample(self):
+  def test_09_ingest_sample(self):
 
     INGEST_DURATION = 10
 
