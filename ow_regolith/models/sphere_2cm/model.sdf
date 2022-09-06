@@ -1,19 +1,19 @@
 <?xml version="1.0" ?>
 
 <sdf version="1.5">
-  <model name="icefrag">
+  <model name="sphere_2cm">
     <link name="link">
+
+      <must_be_base_link>true</must_be_base_link>
 
       <pose>0 0 0.01 0 0 0</pose>
       <inertial>
         <mass>0.3769911184307752</mass>
+        <!-- Set high moments to "disable" rotation -->
         <inertia>
-          <ixx>1.507964473723101e-05</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1.507964473723101e-05</iyy>
-          <iyz>0</iyz>
-          <izz>1.507964473723101e-05</izz>
+          <ixx>1.5e-02</ixx>
+          <iyy>1.5e-02</iyy>
+          <izz>1.5e-02</izz>
         </inertia>
       </inertial>
 
@@ -24,23 +24,13 @@
           </sphere>
         </geometry>
         <surface>
-          <bounce>
-            <restitution_coefficient>0.88</restitution_coefficient>
-          </bounce>
           <contact>
             <poissons_ratio>0.36</poissons_ratio>
-            <ode>
-              <max_vel>0.1</max_vel>
-              <min_depth>0.0001</min_depth>
-            </ode>
           </contact>
           <friction>
-            <torsional>
-              <!-- torsional (or spin) friction is approximated by rolling friction -->
-              <coefficient>0.05</coefficient>
-            </torsional>
             <ode>
               <mu>0.58</mu>
+              <mu2>0.58</mu2>
             </ode>
           </friction>
         </surface>

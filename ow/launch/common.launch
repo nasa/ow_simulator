@@ -87,10 +87,12 @@
 
   <!-- simulate material collecting in scoop and material delivery to sample dock -->
   <node if="$(arg sim_regolith)" name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
+    <!-- model that gets spawned into scoop -->
+    <param name="regolith_model_uri" type="string" value="model://sphere_2cm"/>
     <!-- cubed meters that must be removed from terrain before a regolith particle is spawned -->
     <param name="spawn_volume_threshold" type="double" value="1e-3"/>
-    <!-- model that gets spawned into scoop -->
-    <param name="regolith_model_uri" type="string" value="model://ball_icefrag_2cm"/>
+    <!-- horizontal spacing between each consecutive regolith spawned -->
+    <param name="spawn_spacing" type="double" value="0.02"/>
   </node>
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->

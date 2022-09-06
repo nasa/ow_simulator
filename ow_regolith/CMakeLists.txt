@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(ow_regolith)
 
 ## libiginition-math6-dev which is a dependency of this module seem to require
@@ -15,7 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
-  ow_lander
+  std_msgs
+  geometry_msgs
+  message_generation
 )
 
 include(FindPkgConfig)
@@ -35,6 +37,8 @@ link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -61,14 +65,22 @@ link_directories(
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 # Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#)
+add_service_files(
+  FILES
+  SpawnRegolith.srv
+  RemoveRegolith.srv
+)
 
-#generate_messages(
-#    DEPENDENCIES
-#    std_msgs
-#)
+add_message_files(
+  FILES
+  Contacts.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -80,7 +92,11 @@ link_directories(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-   CATKIN_DEPENDS message_runtime ow_dynamic_terrain ow_lander
+   CATKIN_DEPENDS
+   ow_dynamic_terrain
+   message_runtime
+   std_msgs
+   geometry_msgs
 )
 
 catkin_add_env_hooks(
@@ -108,19 +124,33 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+# ROS node executable for automated regolith spawning and clean-up
 add_executable(regolith_node 
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
+  src/ModelPool.cpp
+  src/DigStateMachine.cpp
   src/sdf_utility.cpp
 )
-
 add_dependencies(regolith_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
 )
-
 target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
+)
+
+# Gazebo sensor plugin that tracks when regolith collides with the terrain
+add_library(ContactSensorPlugin
+  SHARED
+  src/ContactSensorPlugin.cpp
+)
+add_dependencies(ContactSensorPlugin 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(ContactSensorPlugin
   ${GAZEBO_LIBRARIES}
 )
 

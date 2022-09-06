@@ -1,0 +1,10 @@
+# goal definition
+bool relative
+int64 joint
+float64 angle
+---
+# result
+float64[] final_angle    # joint final positions
+---
+# feedback
+float64[] angle    # joint current position

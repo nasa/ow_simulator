@@ -7,18 +7,18 @@ this repository.
 * [Introduction](#introduction)
 * [Dependencies](#dependencies)
 * [How it Works](#how-it-works)
-* [Caveats](#caveats)
 * [Usage](#usage)
-  - [Launch File](#launch-file)
-  - [ROS Service](#ros-service)
-* [Generating Custom Regolith Models](#generating-custom-regolith-models)
-  - [Adding Models to Gazebo Model Database](#adding-models-to-gazebo-model-database)
+  - [Regolith Node](#regolith-node)
+  - [ContactSensorPlugin](#contactsensorplugin)
+  - [ROS Services](#ros-services)
+  - [Adding Models to the Gazebo Model Database](#adding-models-to-the-gazebo-model-database)
+* [Caveats](#caveats)
 
 ## Introduction
 
-This package creates node called `regolith_node` that responds to modifications 
-made to the visual terrain model by spawning a model in the scoop to simulate 
-the collection of material from the terrain. 
+This package creates a node called `regolith_node` that responds to
+modifications made to the visual terrain model by spawning a model in the scoop
+to simulate the collection of material from the terrain.
 
 ## Dependencies
 
@@ -37,89 +37,106 @@ The `regolith_node` subscribes to
 differential image that represents changes in heights that occurred due to tool
 modification of the visual terrain model. The `regolith_node` computes the total
 volume displaced each time a differential image is published and adds it to a 
-tracked total. When that tracked total volume displaced reaches a threshold, a 
-regolith model is spawned in the scoop and the tracked total volume has the 
-threshold deducted from it.
+tracked total, if it was determined to have been caused by the scoop. When the
+tracked total volume displaced reaches a threshold, a regolith model is spawned
+in the scoop. The threshold is then deducted from the tracked volume.
 
 Spawning is done by calling the `/gazebo/spawn_sdf_model` ROS service, followed
 by a call to `/gazebo/apply_body_wrench`, so that the model is kept in the scoop
 with a *fake force* of a magnitude that's just enough to keep the particle from 
-rolling out. Upon completion of a dig action, the *fake force* is removed from
-all regolith models, so they may settle within the scoop and behave like normal
-regolith material during any following arm movements.
+rolling out. As the scoop tilts upward, the *fake force* is removed from all
+regolith particles, so they may settle within the scoop and behave like normal
+rigid-bodies during arm movement.
 
-All regolith models spawned by this node are removed from the Gazebo world upon
-completion of the delivery arm action. Future versions of this package will 
-incorporate smarter logic around when to clean-up regolith models.
-
-## Caveats
-
-- The fake force applied to particles during any dig operation will be 
-transferred to the joints of the arm, but the magnitude of the force itself is 
-not necessarily realistic to what a digging scoop may experience. Keep this in 
-mind when using this plug-in for any study that records forces on the arm.
-- ROS services arm activities are not supported by this node, and it will not 
-work properly if the user calls either the dig linear, dig circular, or delivery
-ROS service.
-- While sample is in the scoop you may see the following error flood the console
-```ODE Message 3: LCP internal error, s <= 0 (s=0.0000e+00)```
-We're still looking into how to avoid or suppress this message. For now it just
-has to be ignored.
+When a regolith particles is dropped and collides with the terrain, the node
+removes it from the Gazebo world.
 
 ## Usage
 
-### Launch File
+### Regolith Node
 
-The `regolith_node` may be added to a launch file as follows
+The `regolith_node` may be added to any launch file like so
 ```xml
 <node name="regolith_node" pkg="ow_regolith" type="regolith_node" output="screen">
-    <param name="spawn_volume_threshold" type="double" value="1e-3"/>
-    <param name="regolith_model_uri"     type="string" value="model://ball_icefrag_2cm"/>
+  <param name="regolith_model_uri" type="string" value="model://sphere_2cm"/>
+  <param name="spawn_volume_threshold" type="double" value="1e-3"/>
+  <param name="spawn_spacing" type="double" value="0.02"/>
 </node>
 ```
 The two parameters, `spawn_volume_threshold` and `regolith_model_uri`, are
 required by the node, and there will be an error printed if it is ran without
 these two being set. 
 
-`spawn_volume_threshold` is the cubic meters that must be removed from the
-terrain before a regolith model is spawned. It may have to be fine-tuned if a 
-regolith model of larger size is used in place of the default to avoid 
-consecutively spawned models colliding with each other.
+#### Parameters
 
-`regolith_model_uri` tells the node which model out of the Gazebo model database
-should be spawned each time the `spawn_volume_threshold` is reached.
+- `spawn_volume_threshold` is the cubic meters that must be removed from the
+  terrain before a regolith model is spawned. It may have to be fine-tuned if a
+  regolith model of larger size is used in place of the default to avoid
+  consecutively spawned models colliding with each other.
+- `regolith_model_uri` tells the node which model out of the Gazebo model
+  database should be spawned each time the `spawn_volume_threshold` is reached.
+- `spawn_spacing` (optional) tells the node how far apart successive scoop spawn
+  points should be placed horizontal along the scoop opening. If this parameter
+  is absent, only one spawn point in the center of the scoop opening will be
+  used.Generally it is a good idea to set this value to equal the largest
+  dimension of the scoop model you are using.
 
-### ROS Service
+### ContactSensorPlugin
 
-ROS services are not supported by this package at this time.
+The ContactSensorPlugin reports links that come into contact with whatever
+collision model is assigned to it in the collision parameter of `<contact>`.
+This plugin is used to enable the regolith node to remove regolith particles
+that come into contact with the terrain. It can be implemented inside of a
+`<link>` of an SDF document. Here is an example of how it is implemented in the
+Europa worlds.
+```xml
+<sensor name="contact_sensor_terrain" type="contact">
+  <contact>
+    <collision>collision</collision>
+  </contact>
+  <plugin name="contact_sensor_terrain_plugin"
+          filename="libContactSensorPlugin.so">
+    <topic>/ow_regolith/contacts/terrain</topic>
+    <report_only>regolith_\d*.*</report_only>
+  </plugin>
+</sensor>
+```
 
-## Generating Custom Regolith Models
+#### Parameters
 
-This package contains the directory `rsdf` which has three files that assist
-in the creation of custom regolith models. The files contain syntax used by Ruby
-Templating, which allows for the easy generation an SDF file similar to the 
-default regolith model, `ball_icefrag_2cm`, that this package comes with.
+- `<topic>` This will be the topic on which the list of link names currently in
+  contact with the collision object are published.
+- `<report_only>` (optional) A regex pattern. If this parameter is set, then
+  only contacts with link names that match the pattern will be reported.
 
-The following three files--`ball_icefrag.rsdf`, `ball_sand.rsdf`, and
-`ball_snow.rsdf`--correspond to granular material properties of ice fragments, 
-sand, and snow, respectively. The files can also be copied, and their 
-parameters modified by the user to create a new custom material.
+### ROS Services
 
-In order to use an existing RSDF file to create an SDF file the describes a 
-sphere of a custom diameter, call the command
-```erb diameter=0.001 ball_icefrag.rsdf > model.sdf```
-where 0.001 represents a diameter of 1 cm, and `ball_icefrag.rsdf` can be 
-swapped out for whichever RSDF file you wish you use. This command will create 
-the file `model.sdf` in your working directory. See the next section on how to 
-include it in the Gazebo model database, so it can be used by the 
-`regolith_node`.
+A minimal interface to `regolith_node` is supported via ROS Services that 
+enables debugging and manual handling of specific test cases.
 
-### Adding Models to Gazebo Model Database
-Any new models generated have to be added to the Gazebo model database by 
-following these steps:
-1. Make a new folder with a unique name in the `models` directory of this 
-package.
+#### Services
+
+- `ow_regolith/spawn_regolith position reference_frame` will spawn a single
+  regolith model at a `position` relative to `reference_frame`.
+- `ow_regolith/remove_regolith link_names` will either remove any regolith
+  particles listed in `link_names`, or if `link_names` is empty, will remove
+  all regolith particles present in the world. It's response parameter
+  `not_removed` will contain a list of any links that could not be removed.
+
+### Adding Models to the Gazebo Model Database
+
+New regolith models have to be added to the Gazebo model database before the
+regolith node can spawn them. Do so by following these steps:
+1. Make a new folder with a unique name in the `models` directory of a package.
 2. Save the SDF file as `model.sdf` in the newly created folder
 3. Create a `model.config` file in the same folder. Feel free to simply copy a
-`model.config` from one of the other directories in `models` and modify field
-entries as needed.
+`model.config` from a model folder from another package and modify field entries
+as needed.
+
+## Caveats
+
+- The *fake force* applied to particles during any dig operation will be
+transferred to the joints of the arm, but the magnitude and direction of the
+force itself is not necessarily realistic to what a digging scoop may
+experience. Keep this in mind when using this plug-in for any study that records
+forces on the arm.

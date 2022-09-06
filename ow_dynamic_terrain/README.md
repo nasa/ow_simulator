@@ -73,6 +73,19 @@ The following excerpt shows how to apply the two plugins towards a DEM object:
 </sdf>
 ```
 
+`libow_dynamic_terrain_visual.so` can apply an Ogre-generated normal map upon
+initialization and will update that normal map each time the terrain is
+modified. If you are using a custom Ogre material script, get this normal map
+by adding the line:
+
+```
+texture_unit ow_dynamic_terrain_normal_map {}
+```
+
+You can specify a texture map file in a texture unit, but there is no reason to
+do so when using the above texture unit name as it will be overridden by the
+plugin.
+
 Once these plugins have been configured for a heightmap object, the user can then modify the terrain by composing and
 submitting an appropriate ros message to the following three topics/methods:
 - */ow_dynamic_terrain/modify_terrain_circle*
