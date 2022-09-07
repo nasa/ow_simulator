@@ -243,7 +243,7 @@ class ActionTrajectories:
 
             plan_a = self.move_to_pre_trench_configuration_dig_circ(
                 move_arm, robot, x_start, y_start)
-            if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
             # Once aligned to move goal and offset, place scoop tip at surface target offset
 
@@ -308,7 +308,7 @@ class ActionTrajectories:
 
             plan_a = self.move_to_pre_trench_configuration(
                 move_arm, robot, x_start, y_start)
-            if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
             # Rotate hand so scoop is in middle point
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
@@ -512,7 +512,7 @@ class ActionTrajectories:
 
         plan_a = self.move_to_pre_trench_configuration(
             move_arm, robot, x_start, y_start)
-        if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+        if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
 
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(

@@ -14,8 +14,35 @@ from geometry_msgs.msg import Point
 import ow_lander.msg
 from math import sqrt
 
+from common_test_methods import test_action
+
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
+
+# expected durations and final positions of each arm action ran with defaults
+UNSTOW_MAX_DURATION = 30.0
+UNSTOW_EXPECTED_FINAL = Point(1.796, -0.03159, -6.759)
+
+GUARDED_MAX_DURATION = 60.0
+GUARDED_EXPECTED_FINAL = Point(2.058, -0.1167, -0.1585)
+
+GRIND_MAX_DURATION = 80.0
+GRIND_EXPECTED_FINAL = Point(1.529, -0.2553, -6.750)
+
+DIG_CIRCULAR_MAX_DURATION = 60.0
+DIG_CIRCULAR_EXPECTED_FINAL = Point(2.335, 0.008707, -6.934)
+
+DISCARD_MAX_DURATION = 200.0
+DISCARD_EXPECTED_FINAL = Point(1.509, 0.9325, -6.748)
+
+DIG_LINEAR_MAX_DURATION = 110.0
+DIG_LINEAR_EXPECTED_FINAL = Point(2.364, -0.01750, -7.059)
+
+DELIVER_MAX_DURATION = 200.0
+DELIVER_EXPECTED_FINAL = Point(0.5597, -0.1448, -6.459)
+
+STOW_MAX_DURATION = 30.0
+STOW_EXPECTED_FINAL = Point(0.6004, -0.5449, -6.559)
 
 """
 Computes the 3D distance between two geometry_msgs.msg Points
@@ -41,246 +68,90 @@ class ArmCheckAction(unittest.TestCase):
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
-
-  def _assert_nothing(self):
-    pass
-
-  """
-  Returns true if an action is done
-  @param action_client: ROS action client object
-  """
-  def _is_action_done(self, action_client):
-    return action_client.simple_state == actionlib.SimpleGoalState.DONE
-
-  """
-  Asserts two Points are near each
-  @param p1: First point
-  @param p2: Second point
-  @param delta: Distance under which points are considered "near"
-  @param msg: Assert message
-  """
-  def _assert_point_is_near(self, p1, p2, delta, msg):
-    self.assertLessEqual(distance(p1, p2), delta, msg)
-
-  """
-  Calls an action asynchronously allowing checks to occur during its execution.
-  @param action_name: Name of action to be called
-  @param action: ROS action object
-  @param goal: Goal object that kwargs populates
-  @param max_duration: Max time allotted to action in seconds
-  @param action_fail_condition: A function repeatedly called during action
-         execution that asserts requirements for a successful action operation
-  @param expected_final: Final arm position to be compared with action result
-         (default: None)
-  @param server_timeout: Time the action server is waited for (default: 10.0)
-  @param condition_check_interval: The interval in seconds between calls to
-         action_fail_condition (default: 0.2)
-  @param expected_final_tolerance: allowed distance between result.final and
-         expected_final (default: 0.02)
-  @kwargs: Any properties of goal
-  """
-  def _test_action(self, action_name, action, goal, max_duration,
-                   action_fail_condition,
-                   expected_final = None,
-                   server_timeout = 10.0,
-                   condition_check_interval=0.2,
-                   expected_final_tolerance = 0.02,
-                   **kwargs):
-
-    client = actionlib.SimpleActionClient(action_name, action)
-    connected = client.wait_for_server(timeout=rospy.Duration(server_timeout))
-    self.assertTrue(
-      connected,
-      "Timeout exceeded waiting for %s action server" % action_name
-    )
-
-  # populate goal parameters using kwargs
-    parameter_list = ""
-    for key, value in kwargs.items():
-      if hasattr(goal, key):
-        setattr(goal, key, value)
-        parameter_list += "\n%s : %s" % (key, str(value))
-      else:
-        self.fail(
-          "%s action does not contain parameter %s" % (action_name, key)
-        )
-
-    client.send_goal(goal)
-
-    rospy.loginfo(
-      "\n===%s action goal sent===%s" % (action_name, parameter_list)
-    )
-
-    # monitor for failed conditions during action execution
-    start = rospy.get_time()
-    elapsed = 0.0
-    while not self._is_action_done(client) and elapsed < max_duration:
-      action_fail_condition()
-      rospy.sleep(condition_check_interval)
-      elapsed = rospy.get_time() - start
-
-    self.assertLess(
-      elapsed, max_duration,
-      "Timeout reached waiting for %s action to finish!" % action_name
-    )
-
-    result = client.get_result()
-    rospy.loginfo(
-      "\n===%s action goal sent===%s" % (action_name, parameter_list)
-    )
-    # verify action ended where we expected
-    if expected_final is not None:
-
-      self._assert_point_is_near(
-        result.final, expected_final, expected_final_tolerance,
-        "Arm did not complete the %s action in the position expected! Fianl position is x =%s  y =%s  z =%s" 
-          % (action_name, result.final.x, result.final.y, result.final.z)
-      )
-      
-
-    return result
-
   def test_01_unstow(self):
-    UNSTOW_MAX_DURATION = 30.0
-    unstow_result = self._test_action(
+    unstow_result = test_action(self,
       'Unstow',
       ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
       UNSTOW_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.7419, 0.2396, -6.5904),
+      expected_final = UNSTOW_EXPECTED_FINAL,
       expected_final_tolerance = 0.5, # unstow requires a really high tolerance
       server_timeout = 25.0
     )
 
   def test_02_guarded_move(self):
-    GUARDED_MAX_DURATION = 60.0
-    guarded_move_result = self._test_action(
+    guarded_move_result = test_action(self,
       'GuardedMove',
       ow_lander.msg.GuardedMoveAction,
       ow_lander.msg.GuardedMoveGoal(),
       GUARDED_MAX_DURATION,
-      self._assert_nothing,
-      expected_final =  Point(2.0324, -0.1012, -0.1585),
-      start = Point(2.0, 0.0, 0.3),
-      normal = Point(0.0, 0.0, 1.0),
-      search_distance = 0.5
+      expected_final = GUARDED_EXPECTED_FINAL
     )
 
   def test_03_unstow(self):
-    UNSTOW_MAX_DURATION = 30.0
-    unstow_result = self._test_action(
+    unstow_result = test_action(self,
       'Unstow',
       ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
       UNSTOW_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.7419, 0.2396, -6.5904),
-      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
-      server_timeout = 25.0
+      expected_final = UNSTOW_EXPECTED_FINAL,
+      expected_final_tolerance = 0.5 # unstow requires a really high tolerance
     )
 
   def test_04_grind(self):
-    GRIND_MAX_DURATION = 80.0 
-    grind_result = self._test_action(
+    grind_result = test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
       ow_lander.msg.GrindGoal(),
       GRIND_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.4720, -0.1407, -6.7400),
-      x_start         = 1.65,
-      y_start         = 0.0,
-      depth           = 0.15,
-      length          = 0.7,
-      parallel        = True,
-      ground_position = -0.155
+      expected_final = GRIND_EXPECTED_FINAL
     )
 
   def test_05_dig_circular(self):
-    DIG_CIRCULAR_MAX_DURATION = 60.0
-    dig_circular_result = self._test_action(
+    dig_circular_result = test_action(self,
       'DigCircular',
       ow_lander.msg.DigCircularAction,
       ow_lander.msg.DigCircularGoal(),
       DIG_CIRCULAR_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.6499, -0.1219, -7.3220),
-      x_start         = 1.65,
-      y_start         = 0.0,
-      depth           = 0.01,
-      parallel        = False,
-      ground_position = -0.155
+      expected_final = DIG_CIRCULAR_EXPECTED_FINAL
     )
 
-  def test_06_grind(self):
-    GRIND_MAX_DURATION = 80.0 
-    grind_result = self._test_action(
-      'Grind',
-      ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(),
-      GRIND_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.4720, -0.1407, -6.7400),
-      x_start         = 1.65,
-      y_start         = 0.0,
-      depth           = 0.15,
-      length          = 0.7,
-      parallel        = True,
-      ground_position = -0.155
+  def test_06_discard(self):
+    discard_result = test_action(self,
+      'Discard',
+      ow_lander.msg.DiscardAction,
+      ow_lander.msg.DiscardGoal(),
+      DISCARD_MAX_DURATION,
+      expected_final = DISCARD_EXPECTED_FINAL,
+      discard = DISCARD_POSITION
     )
 
   def test_07_dig_linear(self):
-    DIG_LINEAR_MAX_DURATION = 110.0
-    dig_linear_result = self._test_action(
+    dig_linear_result = test_action(self,
       'DigLinear',
       ow_lander.msg.DigLinearAction,
       ow_lander.msg.DigLinearGoal(),
       DIG_LINEAR_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(2.2404, -0.0121, -7.0493),
-      x_start         = 1.46,
-      y_start         = 0.0,
-      depth           = 0.01,
-      length          = 0.1,
-      ground_position = -0.155
+      expected_final = DIG_LINEAR_EXPECTED_FINAL
     )
 
   def test_08_deliver_sample(self):
-    DELIVER_MAX_DURATION = 200.0
-    deliver_result = self._test_action(
+    deliver_result = test_action(self,
       'Deliver',
       ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
       DELIVER_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(0.5562, -0.2135, -6.3511),
-    )
-  
-  def test_09_unstow(self):
-    UNSTOW_MAX_DURATION = 30.0
-    unstow_result = self._test_action(
-      'Unstow',
-      ow_lander.msg.UnstowAction,
-      ow_lander.msg.UnstowGoal(),
-      UNSTOW_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(1.7419, 0.2396, -6.5904),
-      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
-      server_timeout = 25.0    
+      expected_final = DELIVER_EXPECTED_FINAL
     )
 
-  def test_10_stow(self):
-    STOW_MAX_DURATION = 30.0
-    stow_result = self._test_action(
+  def test_09_stow(self):
+    stow_result = test_action(self,
       'Stow',
       ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
       STOW_MAX_DURATION,
-      self._assert_nothing,
-      expected_final = Point(0.7071, -0.4770, -6.5930),
+      expected_final = STOW_EXPECTED_FINAL
     )
-
 
 if __name__ == '__main__':
   import rostest
