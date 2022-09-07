@@ -66,7 +66,7 @@ public:
   static constexpr std::bitset<3> isCapLossError{    0b010 };
   static constexpr std::bitset<3> isThermalError{    0b100 };
 
-  static constexpr float THERMAL_MAX = 50;
+  static constexpr float THERMAL_MAX = 70;
   static constexpr float SOC_MIN = 0.1;
   static constexpr float SOC_MAX_DIFF = 0.05;
   
