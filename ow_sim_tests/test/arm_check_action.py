@@ -44,15 +44,6 @@ DELIVER_EXPECTED_FINAL = Point(0.5597, -0.1448, -6.459)
 STOW_MAX_DURATION = 30.0
 STOW_EXPECTED_FINAL = Point(0.6004, -0.5449, -6.559)
 
-"""
-Computes the 3D distance between two geometry_msgs.msg Points
-"""
-def distance(p1, p2):
-  v = Point(p2.x - p1.x,
-            p2.y - p1.y,
-            p2.z - p1.z)
-  return sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
-
 class ArmCheckAction(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
@@ -85,17 +76,8 @@ class ArmCheckAction(unittest.TestCase):
       ow_lander.msg.GuardedMoveAction,
       ow_lander.msg.GuardedMoveGoal(),
       GUARDED_MAX_DURATION,
-      expected_final = GUARDED_EXPECTED_FINAL
-    )
-
-  def test_03_unstow(self):
-    unstow_result = test_action(self,
-      'Unstow',
-      ow_lander.msg.UnstowAction,
-      ow_lander.msg.UnstowGoal(),
-      UNSTOW_MAX_DURATION,
-      expected_final = UNSTOW_EXPECTED_FINAL,
-      expected_final_tolerance = 0.5 # unstow requires a really high tolerance
+      expected_final = GUARDED_EXPECTED_FINAL,
+      server_timeout = 15.0
     )
 
   def test_04_grind(self):
@@ -122,9 +104,8 @@ class ArmCheckAction(unittest.TestCase):
       ow_lander.msg.DiscardAction,
       ow_lander.msg.DiscardGoal(),
       DISCARD_MAX_DURATION,
-      expected_final = DISCARD_EXPECTED_FINAL,
-      discard = DISCARD_POSITION
-    )
+      expected_final = DISCARD_EXPECTED_FINAL
+  )
 
   def test_07_dig_linear(self):
     dig_linear_result = test_action(self,

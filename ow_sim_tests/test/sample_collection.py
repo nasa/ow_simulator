@@ -17,7 +17,7 @@ from geometry_msgs.msg import Point
 
 import ow_lander.msg
 
-from common_test_methods import test_action
+import common_test_methods as common
 
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
@@ -30,15 +30,6 @@ SCOOP_LINK_NAME = 'lander::l_scoop'
 SAMPLE_DOCK_LINK_NAME = 'lander::lander_sample_dock_link'
 
 REGOLITH_PREFIX = 'regolith_'
-
-"""
-Computes the 3D distance between two geometry_msgs.msg Points
-"""
-def distance(p1, p2):
-  v = Point(p2.x - p1.x,
-            p2.y - p1.y,
-            p2.z - p1.z)
-  return sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 
 """
 Computes the distance in only the X-Y plane between two geometry_msgs.msg Points
@@ -124,26 +115,6 @@ class SampleCollection(unittest.TestCase):
     )
 
   """
-  Asserts two Points are near each
-  @param p1: First point
-  @param p2: Second point
-  @param delta: Distance under which points are considered "near"
-  @param msg: Assert message
-  """
-  def _assert_point_is_near(self, p1, p2, delta, msg):
-    self.assertLessEqual(distance(p1, p2), delta, msg)
-
-  """
-  Asserts two Points are far enough from each
-  @param p1: First point
-  @param p2: Second point
-  @param delta: Distance above which points are considered "far"
-  @param msg: Assert message
-  """
-  def _assert_point_is_far(self, p1, p2, delta, msg):
-    self.assertGreater(distance(p1, p2), delta, msg)
-
-  """
   Assert that, if regolith exists, it is in the scoop
   """
   def _assert_scoop_regolith_containment(self, assert_regolith_in_scoop=True):
@@ -152,10 +123,10 @@ class SampleCollection(unittest.TestCase):
     if scoop_position is None:
       return
     # setup assertion and assertion message conditionally
-    assert_func = self._assert_point_is_far
+    assert_func = common.assert_point_is_far
     assert_msg = "Regolith remains in scoop!\n"
     if assert_regolith_in_scoop:
-      assert_func = self._assert_point_is_near
+      assert_func = common.assert_point_is_near
       assert_msg = "Regolith fell out of scoop!\n"
     assert_msg += ( "regolith name     : %s\n"
                     "regolith position : (%.2f, %.2f, %.2f)\n"
@@ -163,7 +134,7 @@ class SampleCollection(unittest.TestCase):
     # Verify regolith models remain in the scoop after spawning
     for name, pose in zip(self._gz_link_names, self._gz_link_poses):
       if self._is_regolith(name):
-        assert_func(
+        assert_func(self,
           pose.position, scoop_position, SCOOP_CONTAINMENT_RADIUS,
           assert_msg % (
                 name,
@@ -239,7 +210,7 @@ class SampleCollection(unittest.TestCase):
     #             the expected_final values are left as comments
     # UNSTOW_EXPECTED_FINAL = Point(1.7419, 0.2396, -6.5904)
 
-    unstow_result = test_action(self,
+    unstow_result = common.test_action(self,
       'Unstow',
       ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
@@ -257,7 +228,7 @@ class SampleCollection(unittest.TestCase):
     GRIND_MAX_DURATION = 80.0 # seconds
     # GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
 
-    grind_result = self._test_action(
+    grind_result = common.test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
       ow_lander.msg.GrindGoal(),
@@ -280,7 +251,7 @@ class SampleCollection(unittest.TestCase):
     DIG_LINEAR_MAX_DURATION = 110.0
     # DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
 
-    dig_linear_result = self._test_action(
+    dig_linear_result = common.test_action(self,
       'DigLinear',
       ow_lander.msg.DigLinearAction,
       ow_lander.msg.DigLinearGoal(),
@@ -308,7 +279,7 @@ class SampleCollection(unittest.TestCase):
     DISCARD_MAX_DURATION = 200.0
     # DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
 
-    discard_result = test_action(self,
+    discard_result = common.test_action(self,
       'Discard',
       ow_lander.msg.DiscardAction,
       ow_lander.msg.DiscardGoal(),
@@ -331,7 +302,7 @@ class SampleCollection(unittest.TestCase):
 
     GRIND_MAX_DURATION = 80.0 # seconds
 
-    grind_result = test_action(self,
+    grind_result = common.test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
       ow_lander.msg.GrindGoal(),
@@ -354,7 +325,7 @@ class SampleCollection(unittest.TestCase):
     DIG_CIRCULAR_MAX_DURATION = 60.0
     # DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
 
-    dig_circular_result = test_action(self,
+    dig_circular_result = common.test_action(self,
       'DigCircular',
       ow_lander.msg.DigCircularAction,
       ow_lander.msg.DigCircularGoal(),
@@ -383,7 +354,7 @@ class SampleCollection(unittest.TestCase):
     DELIVER_MAX_DURATION = 200.0
     # DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
 
-    deliver_result = test_action(self,
+    deliver_result = common.test_action(self,
       'Deliver',
       ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
@@ -406,7 +377,7 @@ class SampleCollection(unittest.TestCase):
     STOW_MAX_DURATION = 30.0
     # STOW_EXPECTED_FINAL = Point(0.7071, -0.4770, -6.5930)
 
-    stow_result = test_action(self,
+    stow_result = common.test_action(self,
       'Stow',
       ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
@@ -422,7 +393,7 @@ class SampleCollection(unittest.TestCase):
 
     INGEST_DURATION = 10
 
-    ingest_result = test_action(self,
+    ingest_result = common.test_action(self,
       'DockIngestSampleAction',
       ow_lander.msg.DockIngestSampleAction,
       ow_lander.msg.DockIngestSampleGoal(),

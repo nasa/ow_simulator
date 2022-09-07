@@ -1,10 +1,43 @@
+import math
+
 import rospy
 import actionlib
 
+from geometry_msgs.msg import Point
 import ow_lander.msg
 
-def assertNothing():
+"""
+Computes the 3D distance between two geometry_msgs.msg Points
+"""
+def distance(p1, p2):
+  v = Point(p2.x - p1.x,
+            p2.y - p1.y,
+            p2.z - p1.z)
+  return math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
+
+def assert_nothing():
   pass
+
+"""
+Asserts two Points are near each
+@param p1: First point
+@param p2: Second point
+@param delta: Distance under which points are considered "near"
+@param msg: Assert message
+"""
+def assert_point_is_near(test_object, p1, p2, delta, msg):
+  test_object.assertLessEqual(distance(p1, p2), delta, msg)
+
+"""
+Asserts two Points are far enough from each
+@param p1: First point
+@param p2: Second point
+@param delta: Distance above which points are considered "far"
+@param msg: Assert message
+"""
+def assert_point_is_far(test_object, p1, p2, delta, msg):
+  test_object.assertGreater(distance(p1, p2), delta, msg)
+
 
 """
 Returns true if an action is done
@@ -31,7 +64,7 @@ Calls an action asynchronously allowing checks to occur during its execution.
 @kwargs: Any properties of goal
 """
 def test_action(test_object, action_name, action, goal, max_duration,
-                condition_check = assertNothing,
+                condition_check = assert_nothing,
                 condition_check_interval = 0.2,
                 expected_final = None,
                 server_timeout = 10.0,
@@ -88,7 +121,7 @@ def test_action(test_object, action_name, action, goal, max_duration,
 
   # verify action ended where we expected
   if expected_final is not None:
-    test_object._assert_point_is_near(
+    assert_point_is_near(test_object,
       result.final, expected_final, expected_final_tolerance,
       "Arm did not complete the %s action in the position expected!"
         % action_name
