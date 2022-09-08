@@ -800,6 +800,7 @@ class ActionTrajectories:
 
         robot_state = robot.get_current_state()
         move_arm.set_start_state(robot_state)
+        move_arm.set_planner_id("RRTstar")
 
         ### pre-guarded move starts here ###
 
@@ -882,7 +883,7 @@ class ActionTrajectories:
         goal_pose.position.z -= direction_z*search_distance
 
         move_arm.set_pose_target(goal_pose)
-        move_arm.set_goal_tolerance(0.05)
+        #move_arm.set_goal_tolerance(0.05)
 
         if self.check_for_stop("guarded_move", server_stop):
             return False, False
@@ -890,7 +891,7 @@ class ActionTrajectories:
         _, plan_c, _, _ = move_arm.plan()
 
         guarded_move_traj = self.cascade_plans(pre_guarded_move_traj, plan_c)
-
+        move_arm.set_planner_id("RRTconnect")
         '''
         estimated time ratio is the ratio between the time to complete first two parts of the plan 
         to the the entire plan. It is used for ground detection only during the last part of the plan.
