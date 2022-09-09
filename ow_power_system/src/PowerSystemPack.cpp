@@ -65,6 +65,7 @@ void PowerSystemPack::InitAndRun()
   builder.setObserverName("UKF");
   builder.setPredictorName("MC");
   builder.setLoadEstimatorName("Const");
+  //builder.setLoadEstimatorName("MovingAverage");
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
@@ -77,6 +78,25 @@ void PowerSystemPack::InitAndRun()
   ROS_INFO_STREAM("Power system pack running.");
 
   ros::Rate rate(m_gsap_rate_hz);
+
+  // TEST: SIMPLE VS ASYNC PROG
+  double rul_median;
+  double soc_median;
+  double bat_temp;
+
+  auto simple_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
+  ConfigMap simple_config(simple_config_path);
+  std::unique_ptr<PCOE::Prognoser> simple_prog = PrognoserFactory::instance().Create("ModelBasedPrognoser", simple_config);
+
+  // Initialize the GSAP prognoser. These values are taken directly from system.cfg,
+  // just hard-coded since this is a test.
+  auto init_data = PrognoserMap {
+    { MessageId::Watts, Datum<double>{ 0.0 } },
+    { MessageId::Volts, Datum<double>{ 4.1 } },
+    { MessageId::Centigrade, Datum<double>{ 20.0 } }
+    };
+  simple_prog->step(init_data);
+  // \TEST
 
   // Loop through the PowerSystemNodes to update their values and send them to the bus
   // to get predictions.
@@ -93,6 +113,58 @@ void PowerSystemPack::InitAndRun()
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
       //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
+
+      // TEST: SIMPLE VS ASYNC PROG
+      if (i == 0)
+      {
+        auto current_data = PrognoserMap {
+          { MessageId::Watts, Datum<double>{ m_nodes[i].model.wattage } },
+          { MessageId::Volts, Datum<double>{ m_nodes[i].model.voltage } },
+          { MessageId::Centigrade, Datum<double>{ m_nodes[i].model.temperature } }
+          };
+        auto prediction = simple_prog->step(current_data);
+        auto& eod_events = prediction.getEvents();
+        if (!eod_events.empty())
+        {
+          auto eod_event = eod_events.front();
+
+          UData eod_time = eod_event.getTOE();
+          if (eod_time.uncertainty() != UType::Samples)
+          {
+            // Log warning and don't update the last value
+            ROS_WARN_NAMED("power_system_node", "Unexpected uncertainty type for EoD prediction");
+            //return;
+          }
+
+          // valid prediction
+          // Determine the median RUL.
+          auto samplesRUL = eod_time.getVec();
+          sort(samplesRUL.begin(), samplesRUL.end());
+          double eod_median = samplesRUL.at(samplesRUL.size() / 2);
+          auto now = MessageClock::now();
+          auto now_s = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+          rul_median = eod_median - now_s.count();
+
+          // Determine the median SOC.
+          UData currentSOC = eod_event.getState()[0];
+          auto samplesSOC = currentSOC.getVec();
+          sort(samplesSOC.begin(), samplesSOC.end());
+          soc_median = samplesSOC.at(samplesSOC.size() / 2);
+
+          // Determine the Battery Temperature
+          auto stateSamples = eod_event.getSystemState()[0];
+          std::vector<double> state;
+          for (auto sample : stateSamples)
+            state.push_back(sample[0]);
+
+          auto& model = dynamic_cast<ModelBasedPrognoser*>(simple_prog.get())->getModel();
+          auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
+          bat_temp = model_output[1];
+
+          // EoD values printed later in the loop.
+        }
+      }
+      // \TEST
 
       // /* DEBUG PRINT
       if (!(m_nodes[i].model.timestamp <= 0))
@@ -148,6 +220,11 @@ void PowerSystemPack::InitAndRun()
       ROS_INFO_STREAM("Waited for all!");
     }
     // */
+
+    // TEST: SIMPLE VS ASYNC PROG
+    ROS_INFO_STREAM("SIMPLE PROG RUL: " << std::to_string(rul_median) << ", SOC: "
+                    << std::to_string(soc_median) << ", TMP: " << std::to_string(bat_temp));
+    // \TEST
 
     // /* DEBUG PRINT
     for (int i = 0; i < NUM_NODES; i++)
