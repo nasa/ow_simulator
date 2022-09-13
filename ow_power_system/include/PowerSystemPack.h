@@ -129,6 +129,12 @@ private:
   // Release 9.  This initial value is overriden by the system config.
   int m_profile_increment = 2;
 
+  // The initial power/temperature/voltage readings used as the start values for
+  // the GSAP prognosers.
+  double m_initial_power = 0.0;
+  double m_initial_temperature = 20.0;
+  double m_initial_voltage = 4.1;
+
   // End main system configuration.
 
   // Utilize a Mersenne Twister pseudo-random generation.
