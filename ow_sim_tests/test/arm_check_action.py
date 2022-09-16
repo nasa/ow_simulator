@@ -8,11 +8,9 @@ import sys
 import rospy
 import roslib
 import unittest
-import moveit_commander
-import actionlib
 from geometry_msgs.msg import Point
 import ow_lander.msg
-from math import sqrt
+import argparse
 
 from common_test_methods import test_action
 
@@ -48,14 +46,11 @@ DEFAULT_GROUND_HEIGHT = -0.155
 
 class ArmCheckAction(unittest.TestCase):
 
-  def __init__(self, *args, **kwargs):
-    unittest.TestCase.__init__(self, *args, **kwargs)
-    rospy.init_node("arm_check_action_test", anonymous=True)
-    moveit_commander.roscpp_initialize(sys.argv)
-    self._robot = moveit_commander.RobotCommander()
-    self._joint_names = self._robot.get_joint_names("arm")
-    self._arm_move_group = moveit_commander.MoveGroupCommander(
-        "arm", wait_for_servers=20.0)
+  @classmethod
+  def setUpClass(cls):
+    rospy.init_node("arm_check_action_test")
+
+    cls.ignore_checks = '--ignore_checks' in sys.argv
 
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:

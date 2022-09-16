@@ -42,9 +42,11 @@ def distance_flat_xy(p1, p2):
 
 class SampleCollection(unittest.TestCase):
 
-  def __init__(self, *args, **kwargs):
-    unittest.TestCase.__init__(self, *args, **kwargs)
-    rospy.init_node('sample_collection_test', anonymous=True)
+  def __init__(self, *args):
+    super().__init__(self, *args, **kwargs)
+
+  def setUp(self):
+    rospy.init_node('sample_collection_test')
 
     # subscribe to get all gazebo link positions
     self._gz_link_names = []
