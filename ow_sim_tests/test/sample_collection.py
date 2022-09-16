@@ -215,7 +215,7 @@ class SampleCollection(unittest.TestCase):
       ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
       UNSTOW_MAX_DURATION,
-      server_timeout = 25.0, # (seconds) first action call needs longer timeout
+      server_timeout = 50.0, # (seconds) first action call needs longer timeout
       expected_final_tolerance = 0.5 # unstow requires a really high tolerance
     )
 
@@ -231,15 +231,16 @@ class SampleCollection(unittest.TestCase):
     grind_result = common.test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(),
+      ow_lander.msg.GrindGoal(
+        x_start         = 1.65,
+        y_start         = 0.0,
+        depth           = 0.15, # grind deep so terrain is modified
+        length          = 0.7,
+        parallel        = True,
+        ground_position = GROUND_POSITION
+      ),
       GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present,
-      x_start         = 1.65,
-      y_start         = 0.0,
-      depth           = 0.15, # grind deep so terrain is modified
-      length          = 0.7,
-      parallel        = True,
-      ground_position = GROUND_POSITION
+      condition_check = self._assert_regolith_not_present
     )
 
   """
@@ -254,14 +255,15 @@ class SampleCollection(unittest.TestCase):
     dig_linear_result = common.test_action(self,
       'DigLinear',
       ow_lander.msg.DigLinearAction,
-      ow_lander.msg.DigLinearGoal(),
+      ow_lander.msg.DigLinearGoal(
+        x_start         = 1.46,
+        y_start         = 0.0,
+        depth           = 0.01,
+        length          = 0.1,
+        ground_position = GROUND_POSITION
+      ),
       DIG_LINEAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment,
-      x_start         = 1.46,
-      y_start         = 0.0,
-      depth           = 0.01,
-      length          = 0.1,
-      ground_position = GROUND_POSITION
+      condition_check = self._assert_scoop_regolith_containment
     )
 
     # verify regolith models spawned
@@ -282,10 +284,11 @@ class SampleCollection(unittest.TestCase):
     discard_result = common.test_action(self,
       'Discard',
       ow_lander.msg.DiscardAction,
-      ow_lander.msg.DiscardGoal(),
+      ow_lander.msg.DiscardGoal(
+        discard = DISCARD_POSITION
+      ),
       DISCARD_MAX_DURATION,
-      condition_check = self._assert_regolith_transports_and_discards,
-      discard = DISCARD_POSITION
+      condition_check = self._assert_regolith_transports_and_discards
     )
 
     # assert regolith fell out of scoop following the discard action
@@ -305,15 +308,16 @@ class SampleCollection(unittest.TestCase):
     grind_result = common.test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(),
+      ow_lander.msg.GrindGoal(
+        x_start         = 1.65,
+        y_start         = 0.5,
+        depth           = 0.05,
+        length          = 0.6,
+        parallel        = True,
+        ground_position = GROUND_POSITION
+      ),
       GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present,
-      x_start         = 1.65,
-      y_start         = 0.5,
-      depth           = 0.05,
-      length          = 0.6,
-      parallel        = True,
-      ground_position = GROUND_POSITION
+      condition_check = self._assert_regolith_not_present
     )
 
   """
@@ -328,14 +332,15 @@ class SampleCollection(unittest.TestCase):
     dig_circular_result = common.test_action(self,
       'DigCircular',
       ow_lander.msg.DigCircularAction,
-      ow_lander.msg.DigCircularGoal(),
+      ow_lander.msg.DigCircularGoal(
+        x_start         = 1.65,
+        y_start         = 0.5,
+        depth           = 0.01,
+        parallel        = True,
+        ground_position = GROUND_POSITION
+      ),
       DIG_CIRCULAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment,
-      x_start         = 1.65,
-      y_start         = 0.5,
-      depth           = 0.01,
-      parallel        = True,
-      ground_position = GROUND_POSITION
+      condition_check = self._assert_scoop_regolith_containment
     )
 
     self._assert_regolith_present()
@@ -365,6 +370,7 @@ class SampleCollection(unittest.TestCase):
     # verify regolith has fallen out of the scoop
     self._assert_scoop_regolith_containment(False)
     self._assert_dock_regolith_containment()
+
   """
   Test the unstow then stow action.
   Calling this after an optertion is standard operating procedure.

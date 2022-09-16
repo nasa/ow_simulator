@@ -44,6 +44,8 @@ DELIVER_EXPECTED_FINAL = Point(0.5597, -0.1448, -6.459)
 STOW_MAX_DURATION = 30.0
 STOW_EXPECTED_FINAL = Point(0.6004, -0.5449, -6.559)
 
+DEFAULT_GROUND_HEIGHT = -0.155
+
 class ArmCheckAction(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
@@ -74,49 +76,74 @@ class ArmCheckAction(unittest.TestCase):
     guarded_move_result = test_action(self,
       'GuardedMove',
       ow_lander.msg.GuardedMoveAction,
-      ow_lander.msg.GuardedMoveGoal(),
+      ow_lander.msg.GuardedMoveGoal(
+        start = Point(2.0, 0.0, 0.3),
+        normal = Point(0.0, 0.0, 1.0),
+        search_distance = 0.5
+      ),
       GUARDED_MAX_DURATION,
       expected_final = GUARDED_EXPECTED_FINAL,
       server_timeout = 15.0
     )
 
-  def test_04_grind(self):
+  def test_03_grind(self):
     grind_result = test_action(self,
       'Grind',
       ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(),
+      ow_lander.msg.GrindGoal(
+        x_start = 1.65,
+        y_start = 0.0,
+        depth = 0.05,
+        length = 0.6,
+        parallel = True,
+        ground_position = DEFAULT_GROUND_HEIGHT
+      ),
       GRIND_MAX_DURATION,
       expected_final = GRIND_EXPECTED_FINAL
     )
 
-  def test_05_dig_circular(self):
+  def test_04_dig_circular(self):
     dig_circular_result = test_action(self,
       'DigCircular',
       ow_lander.msg.DigCircularAction,
-      ow_lander.msg.DigCircularGoal(),
+      ow_lander.msg.DigCircularGoal(
+        x_start = 1.65,
+        y_start = 0.0,
+        depth = 0.01,
+        parallel = True,
+        ground_position = DEFAULT_GROUND_HEIGHT
+      ),
       DIG_CIRCULAR_MAX_DURATION,
       expected_final = DIG_CIRCULAR_EXPECTED_FINAL
     )
 
-  def test_06_discard(self):
+  def test_05_discard(self):
     discard_result = test_action(self,
       'Discard',
       ow_lander.msg.DiscardAction,
-      ow_lander.msg.DiscardGoal(),
+      ow_lander.msg.DiscardGoal(
+        discard = Point(1.5, 0.8, 0.65)
+      ),
       DISCARD_MAX_DURATION,
       expected_final = DISCARD_EXPECTED_FINAL
   )
 
-  def test_07_dig_linear(self):
+  def test_06_dig_linear(self):
     dig_linear_result = test_action(self,
       'DigLinear',
       ow_lander.msg.DigLinearAction,
-      ow_lander.msg.DigLinearGoal(),
+      ow_lander.msg.DigLinearGoal(
+        x_start = 1.46,
+        y_start = 0.0,
+        depth = 0.01,
+        length = 0.1,
+        ground_position = DEFAULT_GROUND_HEIGHT
+      ),
       DIG_LINEAR_MAX_DURATION,
       expected_final = DIG_LINEAR_EXPECTED_FINAL
     )
 
-  def test_08_deliver_sample(self):
+  def test_07_deliver_sample(self):
     deliver_result = test_action(self,
       'Deliver',
       ow_lander.msg.DeliverAction,
@@ -125,7 +152,9 @@ class ArmCheckAction(unittest.TestCase):
       expected_final = DELIVER_EXPECTED_FINAL
     )
 
-  def test_09_stow(self):
+  # def test_09_
+
+  def test_08_stow(self):
     stow_result = test_action(self,
       'Stow',
       ow_lander.msg.StowAction,

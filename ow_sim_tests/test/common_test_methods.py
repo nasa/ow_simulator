@@ -68,8 +68,7 @@ def test_action(test_object, action_name, action, goal, max_duration,
                 condition_check_interval = 0.2,
                 expected_final = None,
                 server_timeout = 10.0,
-                expected_final_tolerance = 0.02,
-                **kwargs):
+                expected_final_tolerance = 0.02):
 
   client = actionlib.SimpleActionClient(action_name, action)
   connected = client.wait_for_server(timeout=rospy.Duration(server_timeout))
@@ -78,21 +77,10 @@ def test_action(test_object, action_name, action, goal, max_duration,
     "Timeout exceeded waiting for %s action server" % action_name
   )
 
-  # populate goal parameters using kwargs
-  parameter_list = ""
-  for key, value in kwargs.items():
-    if hasattr(goal, key):
-      setattr(goal, key, value)
-      parameter_list += "\n%s : %s" % (key, str(value))
-    else:
-      test_object.fail(
-        "%s action does not contain parameter %s" % (action_name, key)
-      )
-
   client.send_goal(goal)
 
   rospy.loginfo(
-    "\n===%s action goal sent===%s" % (action_name, parameter_list)
+    "\n===%s action goal sent===\n%s" % (action_name, goal)
   )
 
   # monitor for failed conditions during action execution
