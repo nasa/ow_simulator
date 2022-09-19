@@ -11,6 +11,7 @@ import rospy
 import roslib
 import actionlib
 import numpy as np
+import sys
 
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
@@ -42,18 +43,18 @@ def distance_flat_xy(p1, p2):
 
 class SampleCollection(unittest.TestCase):
 
-  def __init__(self, *args):
-    super().__init__(self, *args, **kwargs)
+  @classmethod
+  def setUpClass(cls):
+    rospy.init_node("arm_check_action_test")
 
-  def setUp(self):
-    rospy.init_node('sample_collection_test')
+    cls.ignore_checks = '--ignore_checks' in sys.argv
 
     # subscribe to get all gazebo link positions
-    self._gz_link_names = []
-    self._gz_link_poses = []
-    self._link_states_sub = rospy.Subscriber("/gazebo/link_states",
+    cls._gz_link_names = []
+    cls._gz_link_poses = []
+    cls._link_states_sub = rospy.Subscriber("/gazebo/link_states",
                                              LinkStates,
-                                             self._on_link_states)
+                                             cls._on_link_states)
 
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
@@ -62,6 +63,7 @@ class SampleCollection(unittest.TestCase):
   """
   Callback function for the link_states topic
   """
+  @classmethod
   def _on_link_states(self, message):
     self._gz_link_names = message.name
     self._gz_link_poses = message.pose
@@ -218,7 +220,8 @@ class SampleCollection(unittest.TestCase):
       ow_lander.msg.UnstowGoal(),
       UNSTOW_MAX_DURATION,
       server_timeout = 50.0, # (seconds) first action call needs longer timeout
-      expected_final_tolerance = 0.5 # unstow requires a really high tolerance
+      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
+      ignore_checks = self.ignore_checks
     )
 
   """
@@ -242,7 +245,8 @@ class SampleCollection(unittest.TestCase):
         ground_position = GROUND_POSITION
       ),
       GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present
+      condition_check = self._assert_regolith_not_present,
+      ignore_checks = self.ignore_checks
     )
 
   """
@@ -265,7 +269,8 @@ class SampleCollection(unittest.TestCase):
         ground_position = GROUND_POSITION
       ),
       DIG_LINEAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment
+      condition_check = self._assert_scoop_regolith_containment,
+      ignore_checks = self.ignore_checks
     )
 
     # verify regolith models spawned
@@ -290,7 +295,8 @@ class SampleCollection(unittest.TestCase):
         discard = DISCARD_POSITION
       ),
       DISCARD_MAX_DURATION,
-      condition_check = self._assert_regolith_transports_and_discards
+      condition_check = self._assert_regolith_transports_and_discards,
+      ignore_checks = self.ignore_checks
     )
 
     # assert regolith fell out of scoop following the discard action
@@ -319,7 +325,8 @@ class SampleCollection(unittest.TestCase):
         ground_position = GROUND_POSITION
       ),
       GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present
+      condition_check = self._assert_regolith_not_present,
+      ignore_checks = self.ignore_checks
     )
 
   """
@@ -342,7 +349,8 @@ class SampleCollection(unittest.TestCase):
         ground_position = GROUND_POSITION
       ),
       DIG_CIRCULAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment
+      condition_check = self._assert_scoop_regolith_containment,
+      ignore_checks = self.ignore_checks
     )
 
     self._assert_regolith_present()
@@ -366,7 +374,8 @@ class SampleCollection(unittest.TestCase):
       ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
       DELIVER_MAX_DURATION,
-      condition_check = self._assert_regolith_transports_and_delivers_to_dock
+      condition_check = self._assert_regolith_transports_and_delivers_to_dock,
+      ignore_checks = self.ignore_checks
     )
 
     # verify regolith has fallen out of the scoop
@@ -389,7 +398,8 @@ class SampleCollection(unittest.TestCase):
       'Stow',
       ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
-      STOW_MAX_DURATION
+      STOW_MAX_DURATION,
+      ignore_checks = self.ignore_checks
     )
 
   """
@@ -405,7 +415,8 @@ class SampleCollection(unittest.TestCase):
       'DockIngestSampleAction',
       ow_lander.msg.DockIngestSampleAction,
       ow_lander.msg.DockIngestSampleGoal(),
-      INGEST_DURATION
+      INGEST_DURATION,
+      ignore_checks = self.ignore_checks
     )
 
     rospy.sleep(REGOLITH_CLEANUP_DELAY)

@@ -14,35 +14,35 @@ import argparse
 
 from common_test_methods import test_action
 
+# expected durations and final positions of each arm action
+MAX_DURATION_UNSTOW          = 30.0
+EXPECTED_FINAL_UNSTOW        = Point(1.796, -0.03159, -6.759)
+
+MAX_DURATION_GUARDED         = 60.0
+EXPECTED_FINAL_GUARDED       = Point(2.058, -0.1167, -0.1585)
+
+MAX_DURATION_GRIND           = 80.0
+EXPECTED_FINAL_GRIND         = Point(1.529, -0.2553, -6.750)
+
+MAX_DURATION_DIG_CIRCULAR    = 60.0
+EXPECTED_FINAL_DIG_CIRCULAR  = Point(2.335, 0.008707, -6.934)
+
+MAX_DURATION_DISCARD         = 200.0
+EXPECTED_FINAL_DISCARD       = Point(1.509, 0.9325, -6.748)
+
+MAX_DURATION_DIG_LINEAR      = 110.0
+EXPECTED_FINAL_DIG_LINEAR    = Point(2.364, -0.01750, -7.059)
+
+MAX_DURATION_DELIVER         = 200.0
+EXPECTED_FINAL_DELIVER       = Point(0.5597, -0.1448, -6.459)
+
+MAX_DURATION_STOW            = 30.0
+EXPECTED_FINAL_STOW          = Point(0.6004, -0.5449, -6.559)
+
+DEFAULT_GROUND_HEIGHT  = -0.155
+
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
-
-# expected durations and final positions of each arm action ran with defaults
-UNSTOW_MAX_DURATION = 30.0
-UNSTOW_EXPECTED_FINAL = Point(1.796, -0.03159, -6.759)
-
-GUARDED_MAX_DURATION = 60.0
-GUARDED_EXPECTED_FINAL = Point(2.058, -0.1167, -0.1585)
-
-GRIND_MAX_DURATION = 80.0
-GRIND_EXPECTED_FINAL = Point(1.529, -0.2553, -6.750)
-
-DIG_CIRCULAR_MAX_DURATION = 60.0
-DIG_CIRCULAR_EXPECTED_FINAL = Point(2.335, 0.008707, -6.934)
-
-DISCARD_MAX_DURATION = 200.0
-DISCARD_EXPECTED_FINAL = Point(1.509, 0.9325, -6.748)
-
-DIG_LINEAR_MAX_DURATION = 110.0
-DIG_LINEAR_EXPECTED_FINAL = Point(2.364, -0.01750, -7.059)
-
-DELIVER_MAX_DURATION = 200.0
-DELIVER_EXPECTED_FINAL = Point(0.5597, -0.1448, -6.459)
-
-STOW_MAX_DURATION = 30.0
-STOW_EXPECTED_FINAL = Point(0.6004, -0.5449, -6.559)
-
-DEFAULT_GROUND_HEIGHT = -0.155
 
 class ArmCheckAction(unittest.TestCase):
 
@@ -61,10 +61,11 @@ class ArmCheckAction(unittest.TestCase):
       'Unstow',
       ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
-      UNSTOW_MAX_DURATION,
-      expected_final = UNSTOW_EXPECTED_FINAL,
+      MAX_DURATION_UNSTOW,
+      expected_final = EXPECTED_FINAL_UNSTOW,
       expected_final_tolerance = 0.5, # unstow requires a really high tolerance
-      server_timeout = 25.0
+      server_timeout = 60.0,
+      ignore_checks = self.ignore_checks
     )
 
   def test_02_guarded_move(self):
@@ -76,9 +77,10 @@ class ArmCheckAction(unittest.TestCase):
         normal = Point(0.0, 0.0, 1.0),
         search_distance = 0.5
       ),
-      GUARDED_MAX_DURATION,
-      expected_final = GUARDED_EXPECTED_FINAL,
-      server_timeout = 15.0
+      MAX_DURATION_GUARDED,
+      expected_final = EXPECTED_FINAL_GUARDED,
+      server_timeout = 15.0,
+      ignore_checks = self.ignore_checks
     )
 
   def test_03_grind(self):
@@ -93,8 +95,9 @@ class ArmCheckAction(unittest.TestCase):
         parallel = True,
         ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      GRIND_MAX_DURATION,
-      expected_final = GRIND_EXPECTED_FINAL
+      MAX_DURATION_GRIND,
+      expected_final = EXPECTED_FINAL_GRIND,
+      ignore_checks = self.ignore_checks
     )
 
   def test_04_dig_circular(self):
@@ -108,8 +111,9 @@ class ArmCheckAction(unittest.TestCase):
         parallel = True,
         ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      DIG_CIRCULAR_MAX_DURATION,
-      expected_final = DIG_CIRCULAR_EXPECTED_FINAL
+      MAX_DURATION_DIG_CIRCULAR,
+      expected_final = EXPECTED_FINAL_DIG_CIRCULAR,
+      ignore_checks = self.ignore_checks
     )
 
   def test_05_discard(self):
@@ -119,8 +123,9 @@ class ArmCheckAction(unittest.TestCase):
       ow_lander.msg.DiscardGoal(
         discard = Point(1.5, 0.8, 0.65)
       ),
-      DISCARD_MAX_DURATION,
-      expected_final = DISCARD_EXPECTED_FINAL
+      MAX_DURATION_DISCARD,
+      expected_final = EXPECTED_FINAL_DISCARD,
+      ignore_checks = self.ignore_checks
   )
 
   def test_06_dig_linear(self):
@@ -134,8 +139,9 @@ class ArmCheckAction(unittest.TestCase):
         length = 0.1,
         ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      DIG_LINEAR_MAX_DURATION,
-      expected_final = DIG_LINEAR_EXPECTED_FINAL
+      MAX_DURATION_DIG_LINEAR,
+      expected_final = EXPECTED_FINAL_DIG_LINEAR,
+      ignore_checks = self.ignore_checks
     )
 
   def test_07_deliver_sample(self):
@@ -143,8 +149,9 @@ class ArmCheckAction(unittest.TestCase):
       'Deliver',
       ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
-      DELIVER_MAX_DURATION,
-      expected_final = DELIVER_EXPECTED_FINAL
+      MAX_DURATION_DELIVER,
+      expected_final = EXPECTED_FINAL_DELIVER,
+      ignore_checks = self.ignore_checks
     )
 
   # def test_09_
@@ -154,8 +161,9 @@ class ArmCheckAction(unittest.TestCase):
       'Stow',
       ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
-      STOW_MAX_DURATION,
-      expected_final = STOW_EXPECTED_FINAL
+      MAX_DURATION_STOW,
+      expected_final = EXPECTED_FINAL_STOW,
+      ignore_checks = self.ignore_checks
     )
 
 if __name__ == '__main__':

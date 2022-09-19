@@ -61,6 +61,8 @@ Calls an action asynchronously allowing checks to occur during its execution.
 @param server_timeout: Time the action server is waited for (default: 10.0)
 @param expected_final_tolerance: allowed distance between result.final and
        expected_final (default: 0.02)
+@param ignore_checks: If true, neither max_duration nor the expected_final will
+       cause a failure.
 @kwargs: Any properties of goal
 """
 def test_action(test_object, action_name, action, goal, max_duration,
@@ -68,7 +70,8 @@ def test_action(test_object, action_name, action, goal, max_duration,
                 condition_check_interval = 0.2,
                 expected_final = None,
                 server_timeout = 10.0,
-                expected_final_tolerance = 0.02):
+                expected_final_tolerance = 0.02,
+                ignore_checks = False):
 
   client = actionlib.SimpleActionClient(action_name, action)
   connected = client.wait_for_server(timeout=rospy.Duration(server_timeout))
@@ -83,18 +86,27 @@ def test_action(test_object, action_name, action, goal, max_duration,
     "\n===%s action goal sent===\n%s" % (action_name, goal)
   )
 
+  if ignore_checks:
+    rospy.loginfo(
+      "Failures due to duration and final position will be ignored."
+    )
+
   # monitor for failed conditions during action execution
   start = rospy.get_time()
   elapsed = 0.0
-  while not is_action_done(client) and elapsed < max_duration:
+  while not is_action_done(client):
+  # while not is_action_done(client):
     condition_check()
     rospy.sleep(condition_check_interval)
     elapsed = rospy.get_time() - start
+    if not ignore_checks and elapsed > max_duration:
+        break
 
-  test_object.assertLess(
-    elapsed, max_duration,
-    "Timeout reached waiting for %s action to finish!" % action_name
-  )
+  if not ignore_checks:
+    test_object.assertLess(
+      elapsed, max_duration,
+      "Timeout reached waiting for %s action to finish!" % action_name
+    )
 
   result = client.get_result()
 
@@ -108,7 +120,7 @@ def test_action(test_object, action_name, action, goal, max_duration,
   )
 
   # verify action ended where we expected
-  if expected_final is not None:
+  if expected_final is not None and not ignore_checks:
     assert_point_is_near(test_object,
       result.final, expected_final, expected_final_tolerance,
       "Arm did not complete the %s action in the position expected!"
