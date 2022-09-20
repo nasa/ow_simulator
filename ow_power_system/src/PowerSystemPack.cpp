@@ -64,7 +64,10 @@ void PowerSystemPack::InitAndRun()
   builder.setModelName("Battery");
   builder.setObserverName("UKF");
   builder.setPredictorName("MC");
-  builder.setLoadEstimatorName("Const");
+  builder.setLoadEstimatorName("MovingAverage");
+  // To modify the number of samples (and thus change performance), see the
+  // constant declared in PowerSystemPack.h.
+  builder.setConfigParam("Predictor.SampleCount", std::to_string(NUM_SAMPLES));
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
@@ -77,6 +80,12 @@ void PowerSystemPack::InitAndRun()
   ROS_INFO_STREAM("Power system pack running.");
 
   ros::Rate rate(m_gsap_rate_hz);
+
+  bool firstLoop[NUM_NODES];
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    firstLoop[i] = true;
+  }
 
   // Loop through the PowerSystemNodes to update their values and send them to the bus
   // to get predictions.
@@ -103,30 +112,48 @@ void PowerSystemPack::InitAndRun()
       }
       // */
 
-      auto timestamp = START_TIME + std::chrono::milliseconds(
-        static_cast<unsigned>(m_nodes[i].model.timestamp * 1000));
-
-      // Compile a vector<shared_ptr<DoubleMessage>> and then individually publish
-      // each individual component.
-      std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
-
-      data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Watts, m_nodes[i].name, timestamp, m_nodes[i].model.wattage));
-      data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Centigrade, m_nodes[i].name, timestamp, m_nodes[i].model.temperature));
-      data_to_publish.push_back(
-        std::make_shared<DoubleMessage>(MessageId::Volts, m_nodes[i].name, timestamp, m_nodes[i].model.voltage));
-
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent terminate crashes.
       if (m_nodes[i].previous_time != m_nodes[i].model.timestamp)
       {
+        auto timestamp = START_TIME + std::chrono::milliseconds(
+          static_cast<unsigned>(m_nodes[i].model.timestamp * 1000));
+
+        // Compile a vector<shared_ptr<DoubleMessage>> and then individually publish
+        // each individual component.
+        std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
+        double input_power;
+        double input_temp;
+        double input_voltage;
+
+        if (firstLoop[i])
+        {
+          // The very first values sent in should be the init values.
+          input_power = m_initial_power;
+          input_temp = m_initial_temperature;
+          input_voltage = m_initial_voltage;
+          firstLoop[i] = false;
+        }
+        else
+        {
+          input_power = m_nodes[i].model.wattage;
+          input_temp = m_nodes[i].model.temperature;
+          input_voltage = m_nodes[i].model.voltage;
+        }
+
+        data_to_publish.push_back(
+          std::make_shared<DoubleMessage>(MessageId::Watts, m_nodes[i].name, timestamp, input_power));
+        data_to_publish.push_back(
+          std::make_shared<DoubleMessage>(MessageId::Centigrade, m_nodes[i].name, timestamp, input_temp));
+        data_to_publish.push_back(
+          std::make_shared<DoubleMessage>(MessageId::Volts, m_nodes[i].name, timestamp, input_voltage));
+
+      
         m_nodes[i].previous_time = m_nodes[i].model.timestamp;
         for (const auto& info : data_to_publish)
         {
           m_nodes[i].bus.publish(info);
         }
-
       }
     }
 
@@ -152,7 +179,9 @@ void PowerSystemPack::InitAndRun()
     // /* DEBUG PRINT
     for (int i = 0; i < NUM_NODES; i++)
     {
-      if (!(m_EoD_events[i].remaining_useful_life <= 0))
+      // Display output if the time is past the initial startup phase, no matter what
+      // (for debugging purposes).
+      if ((!(m_EoD_events[i].remaining_useful_life <= 0)) || (m_nodes[i].model.timestamp >= 50))
       {
         ROS_INFO_STREAM("Node " << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                         << ". SOC: " << m_EoD_events[i].state_of_charge << ". TMP: "
@@ -167,6 +196,10 @@ void PowerSystemPack::InitAndRun()
 
     // Now that EoD_events is ready, manipulate and publish the relevant values.
     publishPredictions();
+
+    // NOTE: Unsure if this sleep call is necessary or otherwise, but it appears
+    // strange behavior occurs without it.
+    rate.sleep();
   }
 }
 
@@ -551,7 +584,7 @@ void PowerSystemPack::publishPredictions()
   }
 
   // /* DEBUG PRINT
-  if (!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
+  if ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50))
   {
     ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
                     ", min_soc: " << std::to_string(min_soc) <<

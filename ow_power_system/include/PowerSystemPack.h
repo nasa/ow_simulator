@@ -27,7 +27,16 @@ using PrognoserVector = std::vector<PrognoserMap>;
 //       seconds to process. Currently unknown what the cause of this is, though
 //       it is likely related to GSAP's time required to process predictions and
 //       so it may not be addressable here.
-const int NUM_NODES = 8;
+const int NUM_NODES = 24;
+
+// Change this value to modify the number of samples each node creates during the
+// Monte Carlo prediction process. Lower values mean faster performance, but lower
+// accuracy (needs testing for confirmation).
+// The default value is 100, but this is very slow and infeasible for the simulation.
+// My computer reached similar speeds to the original simple prognoser at a sample
+// value of 25, but this may vary from computer to computer. ~Liam
+const int NUM_SAMPLES = 25;
+
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 const int CUSTOM_FILE_EXPECTED_COLS           = 2;
@@ -128,6 +137,12 @@ private:
   // note that the default values are not expected to change as of
   // Release 9.  This initial value is overriden by the system config.
   int m_profile_increment = 2;
+
+  // The initial power/temperature/voltage readings used as the start values for
+  // the GSAP prognosers.
+  double m_initial_power = 0.0;
+  double m_initial_temperature = 20.0;
+  double m_initial_voltage = 4.1;
 
   // End main system configuration.
 
