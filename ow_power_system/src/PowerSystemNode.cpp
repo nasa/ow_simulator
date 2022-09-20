@@ -81,14 +81,14 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-PrognoserVector PowerSystemNode::loadPowerProfile(const string& filename, string custom_file)
+PrognoserVector PowerSystemNode::loadPowerProfile(const string& path_name, string custom_file)
 {
-  ifstream file(filename);
+  ifstream file(path_name);
 
   if (file.fail())
   {
-    ROS_WARN_STREAM("Could not find a custom file in the 'profiles' directory with name '"
-                          << custom_file << "'. Deactivate fault and try again.");
+    ROS_WARN_STREAM("Could not find a custom file using the path '"
+                          << path_name << "'. Deactivate fault and try again.");
     return PrognoserVector();
   }
 

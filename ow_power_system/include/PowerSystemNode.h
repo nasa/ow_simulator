@@ -28,7 +28,7 @@ public:
   void GetPowerStats(double &time, double &power, double &volts, double &temp);
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  PrognoserVector loadPowerProfile(const std::string& path_name, std::string custom_file);
   bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   bool initPrognoser();
   bool initTopics();
