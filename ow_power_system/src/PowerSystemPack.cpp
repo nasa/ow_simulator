@@ -83,11 +83,16 @@ void PowerSystemPack::InitAndRun()
   while(ros::ok())
   {
     ros::spinOnce();
+
+    // Set up fault values in each node for injection later.
+    injectFaults();
+
     for (int i = 0; i < NUM_NODES; i++)
     {
       m_nodes[i].node.RunOnce();
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
+      //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
 
       // /* DEBUG PRINT
       if (!(m_nodes[i].model.timestamp <= 0))
@@ -192,11 +197,322 @@ bool PowerSystemPack::initTopics()
   return true;
 }
 
+void PowerSystemPack::injectCustomFault(bool& fault_activated,
+                                        const PrognoserVector& sequence,
+                                        size_t& index)
+{
+  static std::string saved_fault_path = "N/A";
+  std::string current_fault_path;
+  std::string designated_file;
+  static std::string saved_file;
+  static bool custom_fault_ready = false;
+  static bool custom_warning_displayed = false;
+  static bool end_fault_warning_displayed = false;
+  bool fault_enabled = false;
+
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/activate_custom_fault", fault_enabled);
+
+  if (!fault_activated && fault_enabled)
+  {
+    // Multiple potential points of failure, so alert user the process has started.
+    ROS_INFO_STREAM("Attempting custom fault activation...");
+
+    // Get user-entered file directory.
+    ros::param::getCached("/faults/custom_fault_profile", designated_file);
+
+    // Append the current fault directory to the stored file path.
+    current_fault_path = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
+    
+    // Attempt to load/reload the designated file.
+    if (designated_file == saved_file)
+    {
+      ROS_INFO_STREAM("Reloading " << designated_file << "...");
+    }
+    else if (saved_fault_path != "N/A")
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Loading " << designated_file << "...");
+    }
+    if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
+    {
+      ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+      if (designated_file == saved_file)
+      {
+        ROS_INFO_STREAM(designated_file << " reactivated!");
+      }
+      else
+      {
+        ROS_INFO_STREAM(designated_file << " activated!");
+      }
+      custom_fault_ready = true;
+      end_fault_warning_displayed = false;
+      saved_fault_path = current_fault_path;
+      saved_file = designated_file;
+      index = 0;
+    }
+    else
+    {
+      // Custom fault failed to load correctly.
+      custom_fault_ready = false;
+    }        
+    fault_activated = true;
+  }
+  else if (fault_activated && !fault_enabled)
+  {
+    if (custom_fault_ready)
+    {
+      ROS_INFO_STREAM(saved_file << " deactivated!");
+    }
+    else
+    {
+      ROS_INFO_STREAM("Custom fault deactivated!");
+    }
+    fault_activated = false;
+    custom_fault_ready = false;
+    custom_warning_displayed = false;
+  }
+
+  if (fault_activated && fault_enabled && custom_fault_ready)
+  {
+    // TODO: Unspecified how to handle end of fault profile. For now, simply disable
+    // the fault from updating any parameters.
+    if (index >= sequence.size())
+    {
+      if (!end_fault_warning_displayed)
+      {
+        ROS_WARN_STREAM
+          (saved_file << ": reached end of fault profile. "
+           << "Fault disabled, but will restart if re-enabled.");
+        end_fault_warning_displayed = true;
+      }
+    }
+    else
+    {
+      auto data = sequence[index];
+
+      // Pass in an evenly distributed amount of high power draw to each node.
+      double wattage = data[MessageId::Watts] / NUM_NODES;
+
+      for (int i = 0; i < NUM_NODES; i++)
+      {
+        m_nodes[i].node.SetCustomPowerDraw(wattage);
+      }
+      
+      index += m_profile_increment;
+    }
+  }
+}
+
+void PowerSystemPack::injectFault (const std::string& fault_name,
+                                   bool& fault_activated)
+{
+  static bool warning_displayed = false;
+  bool fault_enabled = false;
+  double hpd_wattage = 0.0;
+
+  // Get the value of fault_enabled.
+  ros::param::getCached("/faults/" + fault_name, fault_enabled);
+
+  if (!fault_activated && fault_enabled)
+  {
+    ROS_INFO_STREAM(fault_name << " activated!");
+    fault_activated = true;
+  }
+  else if (fault_activated && !fault_enabled)
+  {
+    ROS_INFO_STREAM(fault_name << " deactivated!");
+    fault_activated = false;
+    warning_displayed = false;
+  }
+
+  if (fault_activated && fault_enabled)
+  {
+    // If the current fault being utilized is high_power_draw,
+    // simply update wattage based on the current value of the HPD slider.
+    if (fault_name == FAULT_NAME_HPD_ACTIVATE)
+    {
+      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
+      double split_wattage = hpd_wattage / NUM_NODES;
+
+      for (int i = 0; i < NUM_NODES; i++)
+      {
+        m_nodes[i].node.SetHighPowerDraw(split_wattage);
+      }
+    }
+  }
+}
+
+void PowerSystemPack::injectFaults()
+{
+  injectFault(FAULT_NAME_HPD_ACTIVATE,
+              m_high_power_draw_activated);
+  injectCustomFault(m_custom_power_fault_activated,
+                    m_custom_power_fault_sequence,
+                    m_custom_power_fault_sequence_index);
+}
+
+// TODO: All the fault injection mechanisms need to be updated.
+
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   /* DEBUG
-  ROS_INFO_STREAM("jointStatesCb called!!!");
+  ROS_INFO_STREAM("Pack jointStatesCb called!!!");
   */
+
+  // NOTE: This callback function appears to call after the nodes' callback
+  //       functions complete, every single time. This is quite convenient since
+  //       it depends on values determined from those callbacks, but
+  //       I don't know why exactly this is the case. If they should happen
+  //       to stop calling in this order, it could potentially cause problems.
+  //       ~Liam
+  
+  // Get the mechanical power values from each node.
+  double raw_mechanical_values[NUM_NODES];
+  double avg_mechanical_values[NUM_NODES];
+  double avg_power = 0.0;
+
+  /* DEBUG
+  bool differing_avgs = false;
+  */
+
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    raw_mechanical_values[i] = m_nodes[i].node.GetRawMechanicalPower();
+    avg_mechanical_values[i] = m_nodes[i].node.GetAvgMechanicalPower();
+    avg_power += raw_mechanical_values[i];
+    /* DEBUG PRINT
+    if (i > 0)
+    {
+      if (avg_mechanical_values[i] != avg_mechanical_values[i - 1])
+      {
+        ROS_ERROR_STREAM("Average mechanical values differ: Node " <<
+                         std::to_string(i - 1) << " AMP is " << avg_mechanical_values[i - 1] <<
+                         " while Node " << std::to_string(i) << " AMP is " << avg_mechanical_values[i]);
+        // DEBUG
+        differing_avgs = true;
+        
+      }
+    }
+    */
+  }
+
+  // Publish the mechanical raw and average power values.
+  // Raw mechanical power should be averaged out, but the avg_power should
+  // already be the same value in every node.
+  avg_power = avg_power / NUM_NODES;
+
+  std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+  mechanical_power_raw_msg.data = avg_power;
+  /* DEBUG PRINT
+  if (!differing_avgs)
+  {
+    ROS_INFO_STREAM("All avg mechanical values were equal to " <<
+                    std::to_string(avg_mechanical_values[0]) << "!");
+  }
+  */
+  /* DEBUG PRINT
+  ROS_INFO_STREAM("Raw mechanical power (averaged) is " << std::to_string(avg_power) << "!");
+  */
+  // Since all average mechanical power values should be identical, it doesn't
+  // matter which node's value we take.
+  mechanical_power_avg_msg.data = avg_mechanical_values[0];
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+}
+
+PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, std::string custom_file)
+{
+  std::ifstream file(filename);
+
+  if (file.fail())
+  {
+    ROS_WARN_STREAM("Could not find a custom file in the 'profiles' directory with name '"
+                          << custom_file << "'. Deactivate fault and try again.");
+    return PrognoserVector();
+  }
+
+  // Skip header line.
+  file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  auto now = std::chrono::system_clock::now();
+
+  PrognoserVector result;
+
+  // Line number starts at 2 instead of 1 since the first line is the header.
+  int line_number = 2;
+
+  try
+  {
+    while (file.good())
+    {
+      PrognoserMap data;
+      std::string line;
+      getline(file, line);
+      if (line.empty())
+      {
+        continue;
+      }
+
+      std::stringstream line_stream(line);
+      std::string cell;
+
+      // Confirm the line contains the expected number of columns.
+      auto cols = std::count(line.begin(), line.end(), ',') + 1;
+
+      if (cols != CUSTOM_FILE_EXPECTED_COLS)
+      {
+        throw ERR_CUSTOM_FILE_FORMAT;
+      }
+
+      // Get the time index and power values.
+
+      // NOTE: The voltage and temperature values of a PrognoserVector are non-functional
+      //       when it comes to fault injection. Only power values are used. As such,
+      //       voltage and temperature are initialized to 0 and the fault profile
+      //       should not contain them.
+      getline(line_stream, cell, ',');
+      double file_time = std::stod(cell);
+      auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
+
+      getline(line_stream, cell, ',');
+      Datum<double> power(std::stod(cell));
+      power.setTime(timestamp);
+
+      Datum<double> temperature(0.0);
+      temperature.setTime(timestamp);
+
+      Datum<double> voltage(0.0);
+      voltage.setTime(timestamp);
+
+      data.insert({ MessageId::Watts, power });
+      data.insert({ MessageId::Centigrade, temperature});
+      data.insert({ MessageId::Volts, voltage });
+
+      result.push_back(data);
+
+      line_number++;
+    }
+  }
+  catch(...) // Many possible different errors could result from reading an improperly formatted file.
+  {
+    ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << std::endl <<
+                     "Improper formatting detected on line " << line_number << "." << std::endl << 
+                     "Confirm " << custom_file << " follows the exact format of example_fault.csv before retrying.");
+    return PrognoserVector();
+  }
+  return result;
+}
+
+bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string custom_file)
+{
+  m_custom_power_fault_sequence = loadPowerProfile(path, custom_file);
+
+  // Return false if the sequence was not properly initialized.
+  return (m_custom_power_fault_sequence.size() > 0);
 }
 
 void PowerSystemPack::publishPredictions()
@@ -205,6 +521,52 @@ void PowerSystemPack::publishPredictions()
   ROS_INFO_STREAM("publishPredictions called!");
   */
   // Using EoD_events, publish the relevant values.
+
+  int min_rul = -1;
+  double min_soc = -1;
+  double max_tmp = -1;
+  std_msgs::Int16 rul_msg;
+  std_msgs::Float64 soc_msg;
+  std_msgs::Float64 tmp_msg;
+
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
+    if (m_EoD_events[i].remaining_useful_life < min_rul || min_rul == -1)
+    {
+      min_rul = m_EoD_events[i].remaining_useful_life;
+    }
+
+    // Published SoC (state of charge) is defined as the minimum SoC of all EoDs.
+    if (m_EoD_events[i].state_of_charge < min_soc || min_soc == -1)
+    {
+      min_soc = m_EoD_events[i].state_of_charge;
+    }
+    
+    // Published battery temperature is defined as the highest temp of all EoDs.
+    if (m_EoD_events[i].battery_temperature > max_tmp || max_tmp == -1)
+    {
+      max_tmp = m_EoD_events[i].battery_temperature;
+    }
+  }
+
+  // /* DEBUG PRINT
+  if (!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
+  {
+    ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
+                    ", min_soc: " << std::to_string(min_soc) <<
+                    ", max_tmp: " << std::to_string(max_tmp));
+  }
+  // */
+
+  // Publish the values for other components.
+  rul_msg.data = min_rul;
+  soc_msg.data = min_soc;
+  tmp_msg.data = max_tmp;
+
+  m_state_of_charge_pub.publish(soc_msg);
+  m_remaining_useful_life_pub.publish(rul_msg);
+  m_battery_temperature_pub.publish(tmp_msg);
 }
 
 std::string PowerSystemPack::setNodeName(int node_num)

@@ -26,34 +26,28 @@ public:
   bool Initialize(int nodes);
   void RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &temp);
+  double GetRawMechanicalPower();
+  double GetAvgMechanicalPower();
+  void SetHighPowerDraw(double draw);
+  void SetCustomPowerDraw(double draw);
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& path_name, std::string custom_file);
-  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  bool initPrognoser();
+  //PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file); NOTED FOR DELETION
+  //bool loadCustomFaultPowerProfile(std::string path, std::string custom_file); NOTED FOR DELETION
+  //bool initPrognoser(); NOTED FOR DELETION
   bool initTopics();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
-  void injectFault(const std::string& power_fault_name,
-                   bool& fault_activated,
-                   double& power,
-                   double& voltage,
-                   double& temperature);
-  void injectCustomFault(bool& fault_activated,
-                         const PrognoserVector& sequence,
-                         size_t& index,
-                         double& wattage,
-                         double& voltage,
-                         double& temperature);
-  void injectFaults(double& power, double& temperature, double& voltage);
-  PrognoserMap composePrognoserData(double power,
+  void injectFaults(double& power);
+  /*PrognoserMap composePrognoserData(double power, NOTED FOR DELETION
                                     double voltage,
-                                    double temperature);
-  void parseEoD_Event(const ProgEvent& eod_event,
+                                    double temperature);*/
+  // NOTED FOR DELETION
+  /*void parseEoD_Event(const ProgEvent& eod_event,
                       std_msgs::Float64& soc_msg,
                       std_msgs::Int16& rul_msg,
-                      std_msgs::Float64& battery_temperature_msg);
+                      std_msgs::Float64& battery_temperature_msg);*/
   void runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -119,6 +113,10 @@ private:
   // fault injection modification.
   int m_total_nodes;
 
+  // The power draw values used by fault injection.
+  double m_added_hpd = 0.0;
+  double m_added_cpd = 0.0;
+
   // End main system configuration.
 
   // Utilize a Mersenne Twister pseudo-random generation.
@@ -137,6 +135,9 @@ private:
   bool m_trigger_processing_new_power_batch = false;
   double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;
+
+  double m_mechanical_power_raw = 0.0;
+  double m_mechanical_power_avg = 0.0;
 };
 
 #endif
