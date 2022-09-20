@@ -27,7 +27,7 @@ using PrognoserVector = std::vector<PrognoserMap>;
 //       seconds to process. Currently unknown what the cause of this is, though
 //       it is likely related to GSAP's time required to process predictions and
 //       so it may not be addressable here.
-const int NUM_NODES = 24;
+const int NUM_NODES = 8;
 
 // Change this value to modify the number of samples each node creates during the
 // Monte Carlo prediction process. Lower values mean faster performance, but lower
@@ -35,7 +35,7 @@ const int NUM_NODES = 24;
 // The default value is 100, but this is very slow and infeasible for the simulation.
 // My computer reached similar speeds to the original simple prognoser at a sample
 // value of 25, but this may vary from computer to computer. ~Liam
-const int NUM_SAMPLES = 25;
+const int NUM_SAMPLES = 100;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
