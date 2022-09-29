@@ -40,6 +40,7 @@ add_action_files(
   FILES Stop.action
   FILES ArmMoveJoint.action
   FILES ArmMoveJoints.action
+  FILES LightSetIntensity.action
 )
 
 add_message_files(
