@@ -46,7 +46,8 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>tf2</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
-
+  <depend>ow_dynamic_terrain</depend>
+  <depend>cv_bridge</depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

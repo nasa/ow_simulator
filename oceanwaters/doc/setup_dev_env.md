@@ -43,34 +43,29 @@ In the following instructions, we assume the default command shell is Bash.
 
 ### PLEXIL
 
-The OceanWATERS distribution includes an autonomy module (`ow_autonomy`) that at
-present uses PLEXIL, an open-source plan authoring language and autonomy
-executive (see [*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).
+The OceanWATERS distribution includes an autonomy module
+(`ow_autonomy`) that at present uses PLEXIL, an open-source plan
+authoring language and autonomy executive (see
+[*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).
 PLEXIL must be installed and built *prior* to building the `ow_plexil`
 package.
 
-Note that both source code and binary distributions of PLEXIL are available at
-the Sourceforge link above. However, only the source code distribution should be
-used with OceanWATERS, because the binaries are out of date or might not be
-compatible.
+Note that both source code and binary distributions of PLEXIL are
+available at the Sourceforge link above. However, only the source code
+distribution should be used, because the binaries are out of date and
+will not be compatible with OceanWATERS.
 
-
-* Check out the `releases/plexil-4` branch of the source code:
+* Check out the `releases/plexil-4.6` branch of the source code:
 ```
-git clone --branch releases/plexil-4 https://git.code.sf.net/p/plexil/git plexil
+git clone --branch releases/plexil-4.6 https://git.code.sf.net/p/plexil/git plexil
 ```
 
-NOTE: the default git branch of PLEXIL is in fact `releases/plexil-4` at the
-time of this writing.  OceanWATERS has been tested with a version of this branch
-tagged `OceanWATERS-v9.0`.  Its git commit hash begins with `77bbf96`.  Newer
-versions of this branch should work with the newest version of the `master`
-branches of OceanWATERS.
-
-* Install any of the following build prerequisites needed. If you're not sure
-which, if any, are missing on your system, try the build, and if there are
-errors that indicate missing software packages, install them and try again.  All
-packages needed can be installed with: `sudo apt install <package-name>`.
-Here's one command to get them all.
+* Install any of the following build prerequisites needed. If you're
+not sure which, if any, are missing on your system, try the build as
+instructed below, and if there are errors that indicate missing
+software packages, install them and try again.  All packages needed
+can be installed with: `sudo apt install <package-name>`.  Here is one
+command to get them all:
 
 ```
 sudo apt install make \
@@ -86,25 +81,36 @@ sudo apt install make \
 Note that PLEXIL (specifically the plan compiler) requires the Java compiler and
 runtime environment, version 8 or newer.
 
-* Define the `PLEXIL_HOME` environment variable as the location of your PLEXIL
-  installation, e.g.
+* Define the `PLEXIL_HOME` environment variable as the location of
+  your PLEXIL installation.  This is needed _prior_ to building
+  PLEXIL, and will be needed each time you run PLEXIL, with
+  OceanWATERS or otherwise.  Therefore we recommend placing the
+  following command (substituting the correct pathname) in your shell
+  initialization file, e.g. `~/.bashrc`.
 
 ```
 export PLEXIL_HOME=/home/<username>/plexil
 ```
 
-* Source the PLEXIL initialization file:
+* Source the PLEXIL initialization file.  This will also be needed
+  every time you run PLEXIL, so we recommend placing this in your
+  shell initialization file as well, below the previous command.
+
 ```
 source $PLEXIL_HOME/scripts/plexil-setup.sh
 ```
 
-NOTE: for convenience, you may wish to add the previous two commands to your
-shell initialization file (e.g. `.profile`), since they are needed every time
-you use PLEXIL or the `ow_plexil` package.
+* Configure PLEXIL for the build.
 
-* Configure PLEXIL for the build:
+NOTE: OceanWATERS must be with a version of this branch tagged
+`OceanWATERS-v10.0`.  (Its git commit hash begins with `cde7d07`).
+Newer versions of this branch do not build at the time of this
+writing.  Soon, a new distribution of PLEXIL on GitHub will be made
+official.
+
 ```
 cd $PLEXIL_HOME
+git checkout OceanWATERS-v10.0
 make src/configure
 cd src
 ./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc
@@ -120,15 +126,6 @@ make universalExec plexil-compiler checkpoint
 OceanWATERS.  Additional build information is available
 [here](http://plexil.sourceforge.net/wiki/index.php/Installation).
 
-* Rebuiding PLEXIL.
-
-At a later date, if you update (e.g. `git pull`) your PLEXIL installation, it is
-safest to rebuild it from scratch:
-```
-cd $PLEXIL_HOME
-make squeaky-clean
-make universalExec plexil-compiler checkpoint
-```
 
 ### GSAP
 

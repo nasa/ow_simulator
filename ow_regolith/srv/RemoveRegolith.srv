@@ -1,0 +1,8 @@
+# Removes all regolith bodies from the world or only the specified one
+string[] link_names  # list of regolith link names in gazebo scoped name form
+                     # notation is "model_name::body_name"
+                     # If empty, all regolith models in a world are removed.
+---
+bool success         # false if not_removed is not empty, true otherwise
+string[] not_removed # list of regolith link names that were in the request, but
+                     # could not be removed for whatever reason

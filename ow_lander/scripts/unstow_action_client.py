@@ -6,6 +6,7 @@
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 import ow_lander.msg
 import argparse
 from guarded_move_action_client import print_arguments
@@ -30,7 +31,10 @@ def unstow_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()
+    if client.get_state() == GoalStatus.ABORTED:
+        return ('aborted')
+    else: 
+        return client.get_result()
 
 if __name__ == '__main__':
     try:
@@ -40,4 +44,4 @@ if __name__ == '__main__':
         result = unstow_client()
         rospy.loginfo("Result: %s", result)
     except rospy.ROSInterruptException:
-        rospy.logerror("program interrupted before completion")
+        rospy.logerror("Program interrupted before completion.")

@@ -1,17 +1,15 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(ow_lander)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  std_msgs
+  roslaunch
   message_generation
+  std_msgs
   geometry_msgs
+  actionlib_msgs
 )
-
-find_package(roslaunch)
-
-find_package(catkin REQUIRED COMPONENTS actionlib_msgs)
 
 add_service_files(
   FILES
@@ -34,35 +32,31 @@ add_action_files(
   FILES Deliver.action
   FILES DigLinear.action
   FILES DigCircular.action
+  FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
   FILES AntennaPanTilt.action
+  FILES Discard.action
+  FILES Stop.action
+  FILES ArmMoveJoint.action
+  FILES ArmMoveJoints.action
 )
-
 
 add_message_files(
   FILES
   GuardedMoveFinalResult.msg
 )
 
-
-
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
   actionlib_msgs
-  
-)
-
-
-catkin_package(
-  CATKIN_DEPENDS actionlib_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs actionlib_msgs
 )
 
 catkin_add_env_hooks(
@@ -83,4 +77,5 @@ endforeach(dir)
 install(
   DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  PATTERN "setup_assistant.launch" EXCLUDE)
+  PATTERN "setup_assistant.launch" EXCLUDE
+)

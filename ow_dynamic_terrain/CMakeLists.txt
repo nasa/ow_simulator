@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(ow_dynamic_terrain)
 
 ## libiginition-math6-dev which is a dependency of this module seem to require
@@ -93,10 +93,10 @@ add_message_files(
 )
 
 generate_messages(
-    DEPENDENCIES
-    std_msgs
-    geometry_msgs
-    sensor_msgs
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -131,8 +131,12 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ow_dynamic_terrain
-  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
+  CATKIN_DEPENDS
+  message_runtime
+  std_msgs
+  geometry_msgs
+  sensor_msgs
 )
 
 catkin_add_env_hooks(
@@ -188,7 +192,8 @@ add_library(${PROJECT_NAME}_model
 
 add_dependencies(${PROJECT_NAME}_model
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
+  ${catkin_EXPORTED_TARGETS}
+)
 
 target_link_libraries(${PROJECT_NAME}_model
   ${PROJECT_NAME}_shared
@@ -202,7 +207,8 @@ add_library(${PROJECT_NAME}_visual
 
 add_dependencies(${PROJECT_NAME}_visual
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
+  ${catkin_EXPORTED_TARGETS}
+)
 
 target_link_libraries(${PROJECT_NAME}_visual
   ${PROJECT_NAME}_shared

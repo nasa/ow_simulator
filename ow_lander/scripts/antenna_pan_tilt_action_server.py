@@ -19,9 +19,6 @@ class AntennaPanTiltActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
-        self._server = actionlib.SimpleActionServer(
-            self._action_name, ow_lander.msg.AntennaPanTiltAction, execute_cb=self.on_antenna_action, auto_start=False)
-        self._server.start()
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.AntennaPanTiltFeedback()
         self._result = ow_lander.msg.AntennaPanTiltResult()
@@ -33,6 +30,11 @@ class AntennaPanTiltActionServer(object):
             "/joint_states", JointState, self._handle_joint_states)
         self._pan_value = None
         self._tilt_value = None
+        self._server = actionlib.SimpleActionServer(self._action_name,
+                                                    ow_lander.msg.AntennaPanTiltAction,
+                                                    execute_cb=self.on_antenna_action,
+                                                    auto_start=False)
+        self._server.start()
 
     def _handle_joint_states(self, data):
         # position of pan and tlt of the lander is obtained from JointStates
@@ -84,6 +86,7 @@ class AntennaPanTiltActionServer(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('AntennaPanTiltAction')
-    server = AntennaPanTiltActionServer(rospy.get_name())
+    SERVER_NAME = 'AntennaPanTiltAction'
+    rospy.init_node(SERVER_NAME)
+    server = AntennaPanTiltActionServer(SERVER_NAME)
     rospy.spin()

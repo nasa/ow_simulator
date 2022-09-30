@@ -1,28 +1,31 @@
-The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
-Research and Simulation can be found in README.md in the root directory of
-this repository.
+The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for
+Exploration Research and Simulation can be found in README.md in the
+root directory of this repository.
 
 ow_faults_detection
-=========
-This package contains infrastructure for fault detection. Users can use this package to detect different lander faults, The detection is relayed through a series of /fault rostopics. 
+===================
 
-## `faults detection` node
-This node is the source of fault detection in OCEANWATERS. It compares nomimal state and commands to telemetry data to determine whether or not a fault has occured. This package is also what other nodes use to create more informative detections, such as Autonomy. 
+This package contains infrastructure for fault detection. The
+detection is relayed through a series of /fault rostopics.
+
+## `faults_detection` node
+
+This node is the source of fault detection in OCEANWATERS. It checks
+telemetry from different systems for off-nominal values to determine
+whether or not a fault has occured. This package is also what other
+systems, such as autonomy, use to create more informative detection.
 
 ## Detecting Faults
-Currently we detect five faults: system, antenna, arm, power, and camera. To select an array of faults to inject, refer to Faults Injection. These topics are high level and mirror the fault descriptions from JPL's lander system. To see the details of each fualt message, see the /msg folder and each respective msg type. 
 
-`System Faults:`
-observe the topic /faults/system_faults_status
+Faults are detected in five lander systems: antenna, arm, the
+force/torque sensor, power, and camera.  The fault state of these
+systems is reflected in the telemetry messages listed below, which
+include a system fault message that aggregates the states.
 
-`Antenna Faults:`
-observe the topic /faults/pt_faults_status
+Antenna Faults: `/faults/pt_faults_status`
+Arm Faults: `/faults/arm_faults_status`
+Force-Torque Sensor Faults: `/faults/pt_faults_status`
+Power Faults: `/faults/power_faults_status`
+Camera Faults: `/faults/camera_faults_status`
+System Faults: `/faults/system_faults_status`
 
-`Arm Faults:`
-observe the topic /faults/arm_faults_status
-
-`Power Faults:`
-observe the topic /faults/power_faults_status
-
-`Camera Faults:`
-observe the topic /faults/camera_faults_status

@@ -21,20 +21,18 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   
-  <build_depend>roscpp</build_depend>
-  <build_depend>gazebo</build_depend>
-  <build_depend>gazebo_ros</build_depend>
-  <build_depend>ow_dynamic_terrain</build_depend>
-  <build_depend>ow_lander</build_depend>
+  <depend>roscpp</depend>
+  <depend>gazebo</depend>
+  <depend>gazebo_ros</depend>
+  <depend>ow_dynamic_terrain</depend>
+  <depend>cv_bridge</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
 
-  <build_export_depend>roscpp</build_export_depend>
+  <build_depend>message_generation</build_depend>
 
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>gazebo</exec_depend>
-  <exec_depend>gazebo_ros</exec_depend>
-  <exec_depend>ow_dynamic_terrain</exec_depend>
-  <exec_depend>ow_lander</exec_depend>
   <exec_depend>message_runtime</exec_depend>
+  <exec_depend>ow_lander</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

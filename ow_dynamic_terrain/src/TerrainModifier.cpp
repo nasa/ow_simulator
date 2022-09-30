@@ -17,7 +17,6 @@ using namespace gazebo;
 using namespace rendering;
 using namespace geometry_msgs;
 using namespace sensor_msgs;
-using namespace cv;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
@@ -132,7 +131,7 @@ bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
-  cv_bridge::CvImage differential_image;
+  CvImage differential_image;
   auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
                                        get_height_value, set_height_value, *merge_method,
                                        differential_image);
@@ -189,7 +188,7 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
-  cv_bridge::CvImage differential_image;
+  CvImage differential_image;
   auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
                                        get_height_value, set_height_value, *merge_method,
                                        differential_image);
@@ -201,14 +200,14 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   return changed;
 }
 
-Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point32& position)
+cv::Point2i TerrainModifier::getHeightmapPosition(Heightmap* heightmap, const geometry_msgs::Point32& position)
 {
   auto _terrain_position = Vector3(position.x, position.y, 0);
   auto heightmap_position = Vector3();
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
   terrain->getTerrainPosition(_terrain_position, &heightmap_position);
   auto heightmap_size = terrain->getSize();
-  return Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
+  return cv::Point2i(lroundf(heightmap_size * heightmap_position.x), lroundf(heightmap_size * heightmap_position.y));
 }
 
 CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch::ConstPtr& msg)
@@ -229,12 +228,12 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   return image_handle;
 }
 
-bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const Point2i& center, float z_bias,
-                                            const Mat& image, bool skip_zeros,
+bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Point2i& center, float z_bias,
+                                            const cv::Mat& image, bool skip_zeros,
                                             const function<float(int, int)>& get_height_value,
                                             const function<void(int, int, float)>& set_height_value,
                                             const function<float(float, float)>& merge_method, 
-                                            cv_bridge::CvImage& out_diff_image)
+                                            CvImage& out_diff_image)
 {
   auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
 

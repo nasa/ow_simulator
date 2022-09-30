@@ -21,7 +21,6 @@
 #include <unordered_map>
 #include <random>
 
-
 // This class injects simple message faults that don't need to be simulated
 // at their source. Modified topics are prefixed with "/faults". This could be
 // accomplished on the original topics, but, for example, in the case of
@@ -29,6 +28,7 @@
 // Creating a modified version of the original message is simpler, and it
 // leaves the original message intact in case we want to use it as part of a
 // placeholder fault estimator.
+
 class FaultInjector
 {
 
@@ -39,65 +39,74 @@ public:
   void faultsConfigCb(ow_faults_injection::FaultsConfig& faults, uint32_t level);
 
 private:
+
+  // Functions
   
-  ////////// functions
   void publishSystemFaultsMessage();
 
-  //Arm functions
+  // Arm functions
+  
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void jointStateCb(const sensor_msgs::JointStateConstPtr& msg);
+  
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
   void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
+  
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
-  int findPositionInGroup(const std::vector<std::string>& group, const std::string& item);
+  int findPositionInGroup(const std::vector<std::string>& group,
+                          const std::string& item);
+  
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
   bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
-  //camera function
+  // Camera functions
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
   void checkCamFaults();
-               
-  // publishers and subscribers
 
-  // arm faults
+  // Publishers and subscribers
+
+  // Arm
   ros::Subscriber m_joint_state_sub;
   ros::Publisher m_joint_state_remapped_pub;
 
-  // ft sensor
+  // Force/Torque sensor
   ros::Subscriber m_dist_pitch_ft_sensor_sub;
   ros::Publisher m_dist_pitch_ft_sensor_pub;
 
-  // camera
+  // Camera
   ros::Subscriber m_camera_raw_sub;
   ros::Publisher m_camera_trigger_remapped_pub;
 
-  //antenna 
+  // Antenna
   ros::Subscriber m_fault_ant_pan_sub;
   ros::Subscriber m_fault_ant_tilt_sub;
   ros::Publisher m_ant_pan_remapped_pub;
   ros::Publisher m_ant_tilt_remapped_pub;
 
-  ////////// vars
-  //system
+  // Variables
+  
+  // System
   std::bitset<10> m_system_faults_bitset{};
 
-  //general component faults
+  // General component faults
   bool m_cam_fault = false;
 
-  //arm joint faults
+  // Arm joint faults
   ow_faults_injection::FaultsConfig m_faults;
 
-  // antenna vars
+  // Antenna
   float m_fault_pan_value;
   float m_fault_tilt_value;
 
   // Map ow_lander::joint_t enum values to indices in JointState messages
   std::vector<unsigned int> m_joint_state_indices;
-  std::mt19937 m_random_generator; // Utilize a Mersenne Twister pesduo random generation
+
+  // Utilize Mersenne Twister pseudo-random generation
+  std::mt19937 m_random_generator;
 };
 
 #endif

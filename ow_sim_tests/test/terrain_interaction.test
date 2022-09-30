@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="gzclient" default="true" />
+
+    <include file="$(find ow)/launch/europa_terminator_workspace.launch">
+        <arg name="rqt_gui" value="false" />
+        <arg name="use_rviz" value="false"/>
+        <arg name="gzclient" value="$(arg gzclient)"/>
+    </include>
+
+    <test test-name="terrain_interaction" pkg="ow_sim_tests"
+        type="terrain_interaction.py" time-limit="550.0"/>
+
+</launch>

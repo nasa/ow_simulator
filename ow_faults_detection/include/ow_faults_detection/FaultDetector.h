@@ -1,6 +1,6 @@
-// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
-// Research and Simulation can be found in README.md in the root directory of
-// this repository.
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for
+// Exploration Research and Simulation can be found in README.md in
+// the root directory of this repository.
 
 #ifndef FaultDetector_h
 #define FaultDetector_h
@@ -25,11 +25,11 @@
 #include <control_msgs/JointTrajectoryControllerState.h>
 #include <sensor_msgs/Image.h>
 
-// This class detects system faults and publishes the relevant fault information to a series of topics. 
-// Fault topics are prefixed with "/faults".
+// This class detects system faults and publishes the relevant fault
+// information to a series of topics.  Fault topics are prefixed with
+// "/faults".
 class FaultDetector
 {
-
 public:
   FaultDetector(ros::NodeHandle& nh);
   ~FaultDetector(){}
@@ -66,7 +66,7 @@ public:
   static constexpr std::bitset<3> isCapLossError{    0b010 };
   static constexpr std::bitset<3> isThermalError{    0b100 };
 
-  static constexpr float THERMAL_MAX = 50;
+  static constexpr float THERMAL_MAX = 70;
   static constexpr float SOC_MIN = 0.1;
   static constexpr float SOC_MAX_DIFF = 0.05;
   
@@ -75,31 +75,34 @@ public:
 
 private:
   // COMPONENT FUNCTIONS
-  // arm functions
+  
+  // Arm
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
+  
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
   template<typename group_t, typename item_t>
   int findPositionInGroup(const group_t& group, const item_t& item);
+  
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
 
-  // antennae functions
+  // Antenna
   void antPublishFaultMessages();
   
-  // camera functions
+  // Camera
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
-  // // power functions
+  // Power
   void publishPowerSystemFault();
   void powerSOCListener(const std_msgs::Float64& msg);
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
-  // JPL MESSAGE FUNCTIONS AND PUBLISHERS
+  // OWLAT MESSAGE FUNCTIONS AND PUBLISHERS
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
@@ -110,6 +113,7 @@ private:
 
 
   // PUBLISHERS AND SUBSCRIBERS
+  
   // faults topic publishers
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
@@ -117,30 +121,33 @@ private:
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_fault_msg_pub;
 
-  //arm and ant
+  // Arm and antenna
   ros::Subscriber m_joint_states_sub;
 
-  // camera
+  // Camera
   ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
 
-  // power
+  // Power
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
 
-
   // VARIABLES
-  // system 
+  
+  // System 
   std::bitset<10> m_system_faults_bitset{};
   std::vector<unsigned int> m_joint_state_indices;
-  //antenna
+  
+  // Antenna
   bool m_pan_fault;
   bool m_tilt_fault;
-  // camera
+  
+  // Camera
   ros::Time m_cam_raw_time;
   ros::Time m_cam_trigger_time;
-  // power vars
+  
+  // Power
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
   bool m_soc_fault = false;
   bool m_temperature_fault = false;
