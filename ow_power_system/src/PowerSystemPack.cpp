@@ -22,7 +22,7 @@ using namespace PCOE;
 // This boolean determines whether or not debug statements containing all inputs
 // and outputs of the various PowerSystemNode objects are printed to console
 // at runtime. Important for testing, but should not be printed in the full release.
-const bool PRINT_DEBUG      = false;
+const bool PRINT_DEBUG      = true;
 
 const auto START_TIME       = MessageClock::now();
 
