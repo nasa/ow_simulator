@@ -2,6 +2,12 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// This is the header file for the PowerSystemPack class, which handles
+// the creation and managing of several PowerSystemNode objects (each
+// representing a single cell in a battery). It gathers the data used as 
+// input to GSAP's asynchronous prognosers from each PowerSystemNode, sends
+// it off, stores GSAP's predictions, and publishes them after manipulations.
+
 #ifndef __POWER_SYSTEM_PACK_H__
 #define __POWER_SYSTEM_PACK_H__
 
@@ -34,7 +40,9 @@ const int NUM_NODES = 8;
 // accuracy (needs testing for confirmation).
 // The default value is 100, but this is very slow and infeasible for the simulation.
 // My computer reached similar speeds to the original simple prognoser at a sample
-// value of 25, but this may vary from computer to computer. ~Liam
+// value of 25, but this may vary from computer to computer, and it also varies
+// depending on the value of the RUL prediction. Higher RULs take significantly longer
+// to return. ~Liam
 const int NUM_SAMPLES = 100;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";

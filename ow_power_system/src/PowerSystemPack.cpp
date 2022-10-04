@@ -19,6 +19,11 @@
 
 using namespace PCOE;
 
+// This boolean determines whether or not debug statements containing all inputs
+// and outputs of the various PowerSystemNode objects are printed to console
+// at runtime. Important for testing, but should not be printed in the full release.
+const bool PRINT_DEBUG      = false;
+
 const auto START_TIME       = MessageClock::now();
 
 void PowerSystemPack::InitAndRun()
@@ -101,10 +106,9 @@ void PowerSystemPack::InitAndRun()
       m_nodes[i].node.RunOnce();
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
-      //ROS_INFO_STREAM("Calling RunOnce on node " << i << "..."); TEST
 
       // /* DEBUG PRINT
-      if (!(m_nodes[i].model.timestamp <= 0))
+      if (PRINT_DEBUG && !(m_nodes[i].model.timestamp <= 0))
       {
         ROS_INFO_STREAM("Node " << i << "  time: " << m_nodes[i].model.timestamp
                         << ". power: " << m_nodes[i].model.wattage << ".  volts: "
@@ -158,7 +162,7 @@ void PowerSystemPack::InitAndRun()
     }
 
     // /* DEBUG PRINT
-    if (!(m_nodes[0].model.timestamp <= 0))
+    if (PRINT_DEBUG && !(m_nodes[0].model.timestamp <= 0))
     {
       ROS_INFO_STREAM("Waiting for all...");
     }
@@ -169,36 +173,41 @@ void PowerSystemPack::InitAndRun()
       m_nodes[i].bus.waitAll();
     }
 
-    // /* DEBUG PRINT
-    if (!(m_nodes[0].model.timestamp <= 0))
+    // DEBUG PRINT
+    if (PRINT_DEBUG && !(m_nodes[0].model.timestamp <= 0))
     {
       ROS_INFO_STREAM("Waited for all!");
     }
-    // */
 
     // /* DEBUG PRINT
-    for (int i = 0; i < NUM_NODES; i++)
+    if (PRINT_DEBUG)
     {
-      // Display output if the time is past the initial startup phase, no matter what
-      // (for debugging purposes).
-      if ((!(m_EoD_events[i].remaining_useful_life <= 0)) || (m_nodes[i].model.timestamp >= 50))
+      for (int i = 0; i < NUM_NODES; i++)
       {
-        ROS_INFO_STREAM("Node " << i << " RUL: " << m_EoD_events[i].remaining_useful_life
-                        << ". SOC: " << m_EoD_events[i].state_of_charge << ". TMP: "
-                        << m_EoD_events[i].battery_temperature);
+        // Display output if the time is past the initial startup phase, no matter what
+        // (for debugging purposes).
+        if ((!(m_EoD_events[i].remaining_useful_life <= 0)) || (m_nodes[i].model.timestamp >= 50))
+        {
+          ROS_INFO_STREAM("Node " << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+                          << ". SOC: " << m_EoD_events[i].state_of_charge << ". TMP: "
+                          << m_EoD_events[i].battery_temperature);
+        }
       }
-    }
-    if (!(m_nodes[0].model.timestamp <= 0))
-    {
-      std::cout << std::endl;
+      if (!(m_nodes[0].model.timestamp <= 0))
+      {
+        std::cout << std::endl;
+      }
     }
     // */
 
     // Now that EoD_events is ready, manipulate and publish the relevant values.
     publishPredictions();
 
-    // NOTE: Unsure if this sleep call is necessary or otherwise, but it appears
-    // strange behavior occurs without it.
+    // Sleep for any remaining time in the loop that would cause it to
+    // complete before the set rate of GSAP.
+    // NOTE: Currently there is no catch for if the loop takes longer than the
+    // specified ROS rate. If this occurs, the simulation will lag behind real
+    // time.
     rate.sleep();
   }
 }
@@ -311,8 +320,9 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
 
   if (fault_activated && fault_enabled && custom_fault_ready)
   {
-    // TODO: Unspecified how to handle end of fault profile. For now, simply disable
-    // the fault from updating any parameters.
+    // TODO: There's no specification on how to handle reaching the end
+    // of a custom fault profile. For now, simply disable
+    // the fault.
     if (index >= sequence.size())
     {
       if (!end_fault_warning_displayed)
@@ -327,12 +337,20 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
     {
       auto data = sequence[index];
 
-      // Pass in an evenly distributed amount of high power draw to each node.
+      // Evenly distribute the power draw, voltage, and temperature
+      // across each node. Note this behavior may need to be updated
+      // in the future (e.g. unsure exactly how voltage and temperature
+      // affect predictions, as they do not directly add to the values
+      // like power does).
       double wattage = data[MessageId::Watts] / NUM_NODES;
+      double voltage = data[MessageId::Volts] / NUM_NODES;
+      double temperature = data[MessageId::Centigrade] / NUM_NODES;
 
       for (int i = 0; i < NUM_NODES; i++)
       {
         m_nodes[i].node.SetCustomPowerDraw(wattage);
+        m_nodes[i].node.SetCustomVoltageFault(voltage);
+        m_nodes[i].node.SetCustomTemperatureFault(temperature);
       }
       
       index += m_profile_increment;
@@ -376,6 +394,10 @@ void PowerSystemPack::injectFault (const std::string& fault_name,
         m_nodes[i].node.SetHighPowerDraw(split_wattage);
       }
     }
+
+    // NOTE: If other faults are added to the RQT window in the future,
+    // this is where their related flags/logic would be checked/used
+    // in a similar manner to the above code block with high power draw.
   }
 }
 
@@ -392,10 +414,6 @@ void PowerSystemPack::injectFaults()
 
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  /* DEBUG
-  ROS_INFO_STREAM("Pack jointStatesCb called!!!");
-  */
-
   // NOTE: This callback function appears to call after the nodes' callback
   //       functions complete, every single time. This is quite convenient since
   //       it depends on values determined from those callbacks, but
@@ -408,29 +426,11 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   double avg_mechanical_values[NUM_NODES];
   double avg_power = 0.0;
 
-  /* DEBUG
-  bool differing_avgs = false;
-  */
-
   for (int i = 0; i < NUM_NODES; i++)
   {
     raw_mechanical_values[i] = m_nodes[i].node.GetRawMechanicalPower();
     avg_mechanical_values[i] = m_nodes[i].node.GetAvgMechanicalPower();
     avg_power += raw_mechanical_values[i];
-    /* DEBUG PRINT
-    if (i > 0)
-    {
-      if (avg_mechanical_values[i] != avg_mechanical_values[i - 1])
-      {
-        ROS_ERROR_STREAM("Average mechanical values differ: Node " <<
-                         std::to_string(i - 1) << " AMP is " << avg_mechanical_values[i - 1] <<
-                         " while Node " << std::to_string(i) << " AMP is " << avg_mechanical_values[i]);
-        // DEBUG
-        differing_avgs = true;
-        
-      }
-    }
-    */
   }
 
   // Publish the mechanical raw and average power values.
@@ -440,16 +440,7 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 
   std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
   mechanical_power_raw_msg.data = avg_power;
-  /* DEBUG PRINT
-  if (!differing_avgs)
-  {
-    ROS_INFO_STREAM("All avg mechanical values were equal to " <<
-                    std::to_string(avg_mechanical_values[0]) << "!");
-  }
-  */
-  /* DEBUG PRINT
-  ROS_INFO_STREAM("Raw mechanical power (averaged) is " << std::to_string(avg_power) << "!");
-  */
+
   // Since all average mechanical power values should be identical, it doesn't
   // matter which node's value we take.
   mechanical_power_avg_msg.data = avg_mechanical_values[0];
@@ -515,10 +506,12 @@ PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, s
       Datum<double> power(std::stod(cell));
       power.setTime(timestamp);
 
-      Datum<double> temperature(0.0);
+      getline(line_stream, cell, ',');
+      Datum<double> temperature(std::stod(cell));
       temperature.setTime(timestamp);
 
-      Datum<double> voltage(0.0);
+      getline(line_stream, cell, ',');
+      Datum<double> voltage(std::stod(cell));
       voltage.setTime(timestamp);
 
       data.insert({ MessageId::Watts, power });
@@ -550,9 +543,6 @@ bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string 
 
 void PowerSystemPack::publishPredictions()
 {
-  /* DEBUG
-  ROS_INFO_STREAM("publishPredictions called!");
-  */
   // Using EoD_events, publish the relevant values.
 
   int min_rul = -1;
@@ -584,7 +574,7 @@ void PowerSystemPack::publishPredictions()
   }
 
   // /* DEBUG PRINT
-  if ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50))
+  if (PRINT_DEBUG && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50)))
   {
     ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
                     ", min_soc: " << std::to_string(min_soc) <<

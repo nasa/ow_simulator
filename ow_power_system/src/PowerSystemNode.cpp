@@ -271,15 +271,21 @@ double PowerSystemNode::generateVoltageEstimate()
   return voltage_dist(m_random_generator);
 }
 
-void PowerSystemNode::injectFaults(double& power)
+void PowerSystemNode::applyValueMods(double& power, double& voltage, double& temperature)
 {
   power += m_added_hpd;
   power += m_added_cpd;
+
+  voltage += m_voltage_modifier;
+
+  temperature += m_temperature_modifier;
 
   // Reset the fault values in anticipation of the next cycle.
   // If the next cycle does not modify them, injection is assumed complete.
   m_added_hpd = 0.0;
   m_added_cpd = 0.0;
+  m_voltage_modifier = 0.0;
+  m_temperature_modifier = 0.0;
 }
 
 // NOTED FOR DELETION
@@ -348,7 +354,7 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
   m_wattage_estimate = electrical_power + m_baseline_wattage;
-  injectFaults(m_wattage_estimate);
+  applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
     ROS_WARN_STREAM("Power system node computed excessive power input for GSAP, "
@@ -433,4 +439,14 @@ void PowerSystemNode::SetHighPowerDraw(double draw)
 void PowerSystemNode::SetCustomPowerDraw(double draw)
 {
   m_added_cpd = draw;
+}
+
+void PowerSystemNode::SetCustomVoltageFault(double volts)
+{
+  m_voltage_modifier = volts;
+}
+
+void PowerSystemNode::SetCustomTemperatureFault(double temp)
+{
+  m_temperature_modifier = temp;
 }

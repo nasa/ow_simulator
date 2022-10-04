@@ -2,6 +2,12 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// This is the header file for the PowerSystemNode class, which handles
+// the simulation of a single cell within a PowerSystemPack. It stores the
+// data used as inputs to a GSAP asynchronous prognoser and generates the next
+// set (including any value modifications from faults or other functions) to be
+// sent to GSAP.
+
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
@@ -13,8 +19,8 @@
 #include <sensor_msgs/JointState.h>
 #include <PrognoserFactory.h>
 
-using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
-using PrognoserVector = std::vector<PrognoserMap>;
+/*using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
+using PrognoserVector = std::vector<PrognoserMap>; NOTED FOR DELETION */
 
 class PowerSystemNode
 {
@@ -30,6 +36,8 @@ public:
   double GetAvgMechanicalPower();
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
+  void SetCustomVoltageFault(double volts);
+  void SetCustomTemperatureFault(double temp);
 private:
   bool loadSystemConfig();
   //PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file); NOTED FOR DELETION
@@ -39,7 +47,7 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
-  void injectFaults(double& power);
+  void applyValueMods(double& power, double& voltage, double& temperature);
   /*PrognoserMap composePrognoserData(double power, NOTED FOR DELETION
                                     double voltage,
                                     double temperature);*/
@@ -62,7 +70,8 @@ private:
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
-  std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
+  /* std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
+   NOTED FOR DELETION */
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
@@ -113,9 +122,11 @@ private:
   // fault injection modification.
   int m_total_nodes;
 
-  // The power draw values used by fault injection.
+  // The stored values for modifying input to GSAP.
   double m_added_hpd = 0.0;
   double m_added_cpd = 0.0;
+  double m_voltage_modifier = 0.0;
+  double m_temperature_modifier = 0.0;
 
   // End main system configuration.
 
@@ -126,7 +137,7 @@ private:
   
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
-  PrognoserVector m_custom_power_fault_sequence;
+  //PrognoserVector m_custom_power_fault_sequence; /* NOTED FOR DELETION */
   size_t m_custom_power_fault_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
