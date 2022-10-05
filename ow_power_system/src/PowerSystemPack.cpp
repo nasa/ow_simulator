@@ -75,6 +75,10 @@ void PowerSystemPack::InitAndRun()
   builder.setModelName("Battery");
   builder.setObserverName("UKF");
   builder.setPredictorName("MC");
+  // There is a value in async_prognoser.cfg: "LoadEstimator.Window", which sets
+  // the number of values looked back on for the moving average. It is 1 by default
+  // (so the most recent prediction value is used for the estimation step), but
+  // may benefit from being increased in the future.
   builder.setLoadEstimatorName("MovingAverage");
   // To modify the number of samples & horizon (and thus change performance), see the
   // constant declared in PowerSystemPack.h.
