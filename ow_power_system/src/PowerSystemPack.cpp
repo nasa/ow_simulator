@@ -21,11 +21,6 @@
 
 using namespace PCOE;
 
-// This boolean determines whether or not debug statements containing all inputs
-// and outputs of the various PowerSystemNode objects are printed to console
-// at runtime. Important for testing, but should not be printed in the full release.
-const bool PRINT_DEBUG      = true;
-
 const auto START_TIME       = MessageClock::now();
 
 /*
@@ -34,6 +29,22 @@ const auto START_TIME       = MessageClock::now();
  */
 void PowerSystemPack::InitAndRun()
 {
+  // Read system.cfg for the 'print_debug' flag.
+  auto system_config_path = ros::package::getPath("ow_power_system")
+    + "/config/system.cfg";
+  auto system_config = ConfigMap(system_config_path);
+  m_print_debug_val = system_config.getString("print_debug");
+  // See explanation of m_print_debug_val in the header file for why this
+  // is needed for what is essentially a bool.
+  if (m_print_debug_val == "true") 
+  {
+    m_print_debug = true;
+  }
+  else
+  {
+    m_print_debug = false;
+  }
+
   if (!initNodes())
   {
     ROS_ERROR_STREAM("Power system pack failed to initialize nodes");
@@ -108,6 +119,9 @@ void PowerSystemPack::InitAndRun()
     firstLoop[i] = true;
   }
 
+  // For debug prints.
+  int saved_timestamp = -1;
+
   // Loop through the PowerSystemNodes to update their values and send them to the bus
   // to get predictions.
   while(ros::ok())
@@ -117,6 +131,14 @@ void PowerSystemPack::InitAndRun()
     // Set up value modifiers in each node for injection later.
     injectFaults();
 
+    // /* DEBUG PRINT
+    if (m_print_debug)
+    {
+      saved_timestamp = m_nodes[0].model.timestamp;
+      ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS:");
+    }
+    // */
+
     for (int i = 0; i < NUM_NODES; i++)
     {
       m_nodes[i].node.RunOnce();
@@ -124,11 +146,11 @@ void PowerSystemPack::InitAndRun()
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
 
       // /* DEBUG PRINT
-      if (PRINT_DEBUG && !(m_nodes[i].model.timestamp <= 0))
+      if (m_print_debug && !(m_nodes[i].model.timestamp <= 0))
       {
-        ROS_INFO_STREAM("Node " << i << "  time: " << m_nodes[i].model.timestamp
-                        << ". power: " << m_nodes[i].model.wattage << ".  volts: "
-                        << m_nodes[i].model.voltage << ".  temp: " << m_nodes[i].model.temperature);
+        ROS_INFO_STREAM("Node " << i << " power: " << m_nodes[i].model.wattage 
+                        << ".  volts: " << m_nodes[i].model.voltage
+                        << ".  tmp: " << m_nodes[i].model.temperature);
       }
       // */
 
@@ -143,21 +165,21 @@ void PowerSystemPack::InitAndRun()
         // each individual component.
         std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
         double input_power;
-        double input_temp;
+        double input_tmp;
         double input_voltage;
 
         if (firstLoop[i])
         {
           // The very first values sent in should be the init values.
           input_power = m_initial_power;
-          input_temp = m_initial_temperature;
+          input_tmp = m_initial_temperature;
           input_voltage = m_initial_voltage;
           firstLoop[i] = false;
         }
         else
         {
           input_power = m_nodes[i].model.wattage;
-          input_temp = m_nodes[i].model.temperature;
+          input_tmp = m_nodes[i].model.temperature;
           input_voltage = m_nodes[i].model.voltage;
         }
 
@@ -166,7 +188,7 @@ void PowerSystemPack::InitAndRun()
         data_to_publish.push_back(
           std::make_shared<DoubleMessage>(MessageId::Watts, m_nodes[i].name, timestamp, input_power));
         data_to_publish.push_back(
-          std::make_shared<DoubleMessage>(MessageId::Centigrade, m_nodes[i].name, timestamp, input_temp));
+          std::make_shared<DoubleMessage>(MessageId::Centigrade, m_nodes[i].name, timestamp, input_tmp));
         data_to_publish.push_back(
           std::make_shared<DoubleMessage>(MessageId::Volts, m_nodes[i].name, timestamp, input_voltage));
 
@@ -181,7 +203,7 @@ void PowerSystemPack::InitAndRun()
     }
 
     // /* DEBUG PRINT
-    if (PRINT_DEBUG && !(m_nodes[0].model.timestamp <= 0))
+    if (m_print_debug && !(m_nodes[0].model.timestamp <= 0))
     {
       ROS_INFO_STREAM("Waiting for all...");
     }
@@ -194,14 +216,15 @@ void PowerSystemPack::InitAndRun()
     }
 
     // DEBUG PRINT
-    if (PRINT_DEBUG && !(m_nodes[0].model.timestamp <= 0))
+    if (m_print_debug && !(m_nodes[0].model.timestamp <= 0))
     {
       ROS_INFO_STREAM("Waited for all!");
     }
 
     // /* DEBUG PRINT
-    if (PRINT_DEBUG)
+    if (m_print_debug)
     {
+      ROS_INFO_STREAM("Timestamp " << saved_timestamp << " OUTPUTS:");
       for (int i = 0; i < NUM_NODES; i++)
       {
         // Display output if the time is past the initial startup phase, no matter what
@@ -618,7 +641,7 @@ void PowerSystemPack::publishPredictions()
       min_soc = m_EoD_events[i].state_of_charge;
     }
     
-    // Published battery temperature is defined as the highest temp of all EoDs.
+    // Published battery temperature is defined as the highest tmp of all EoDs.
     if (m_EoD_events[i].battery_temperature > max_tmp || max_tmp == -1)
     {
       max_tmp = m_EoD_events[i].battery_temperature;
@@ -626,7 +649,7 @@ void PowerSystemPack::publishPredictions()
   }
 
   // /* DEBUG PRINT
-  if (PRINT_DEBUG && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50)))
+  if (m_print_debug && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50)))
   {
     ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
                     ", min_soc: " << std::to_string(min_soc) <<

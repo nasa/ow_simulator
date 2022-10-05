@@ -28,13 +28,13 @@ public:
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
   bool Initialize();
   void RunOnce();
-  void GetPowerStats(double &time, double &power, double &volts, double &temp);
+  void GetPowerStats(double &time, double &power, double &volts, double &tmp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
   void SetCustomVoltageFault(double volts);
-  void SetCustomTemperatureFault(double temp);
+  void SetCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
   bool initCallback();

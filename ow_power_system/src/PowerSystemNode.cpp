@@ -224,12 +224,12 @@ void PowerSystemNode::RunOnce()
  * Getter function that obtains all the input data currently stored in this
  * PowerSystemNode.
  */
-void PowerSystemNode::GetPowerStats(double &time, double &power, double &volts, double &temp)
+void PowerSystemNode::GetPowerStats(double &time, double &power, double &volts, double &tmp)
 {
   time = m_current_timestamp;
   power = m_wattage_estimate;
   volts = m_voltage_estimate;
-  temp = m_temperature_estimate;
+  tmp = m_temperature_estimate;
 }
 
 double PowerSystemNode::GetRawMechanicalPower()
@@ -257,7 +257,7 @@ void PowerSystemNode::SetCustomVoltageFault(double volts)
   m_voltage_modifier = volts;
 }
 
-void PowerSystemNode::SetCustomTemperatureFault(double temp)
+void PowerSystemNode::SetCustomTemperatureFault(double tmp)
 {
-  m_temperature_modifier = temp;
+  m_temperature_modifier = tmp;
 }
