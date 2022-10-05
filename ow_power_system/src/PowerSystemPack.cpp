@@ -2,6 +2,8 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// See PowerSystemPack.h for a summary of the purpose of this file.
+
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -26,6 +28,10 @@ const bool PRINT_DEBUG      = true;
 
 const auto START_TIME       = MessageClock::now();
 
+/*
+ * The primary function with the loop that controls each cycle.
+ * Initializes everything, then starts looping.
+ */
 void PowerSystemPack::InitAndRun()
 {
   if (!initNodes())
@@ -70,9 +76,10 @@ void PowerSystemPack::InitAndRun()
   builder.setObserverName("UKF");
   builder.setPredictorName("MC");
   builder.setLoadEstimatorName("MovingAverage");
-  // To modify the number of samples (and thus change performance), see the
+  // To modify the number of samples & horizon (and thus change performance), see the
   // constant declared in PowerSystemPack.h.
   builder.setConfigParam("Predictor.SampleCount", std::to_string(NUM_SAMPLES));
+  builder.setConfigParam("Predictor.Horizon", std::to_string(MAX_HORIZON));
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
@@ -84,6 +91,11 @@ void PowerSystemPack::InitAndRun()
 
   ROS_INFO_STREAM("Power system pack running.");
 
+  // This rate object is used to sync the cycles up to the provided Hz.
+  // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
+  //       necessarily occur, but the simulation will be out of sync with real
+  //       time. Ideally, values like NUM_SAMPLES and MAX_HORIZON should be set
+  //       such that the cycle time is under the provided rate (currently 0.5Hz).
   ros::Rate rate(m_gsap_rate_hz);
 
   bool firstLoop[NUM_NODES];
@@ -98,7 +110,7 @@ void PowerSystemPack::InitAndRun()
   {
     ros::spinOnce();
 
-    // Set up fault values in each node for injection later.
+    // Set up value modifiers in each node for injection later.
     injectFaults();
 
     for (int i = 0; i < NUM_NODES; i++)
@@ -145,6 +157,8 @@ void PowerSystemPack::InitAndRun()
           input_voltage = m_nodes[i].model.voltage;
         }
 
+        // Set up the input data that will be passed through the message bus
+        // to GSAP's asynchronous prognosers.
         data_to_publish.push_back(
           std::make_shared<DoubleMessage>(MessageId::Watts, m_nodes[i].name, timestamp, input_power));
         data_to_publish.push_back(
@@ -154,6 +168,7 @@ void PowerSystemPack::InitAndRun()
 
       
         m_nodes[i].previous_time = m_nodes[i].model.timestamp;
+        // Publish the data to GSAP's async prognosers, triggering a prediction.
         for (const auto& info : data_to_publish)
         {
           m_nodes[i].bus.publish(info);
@@ -168,6 +183,7 @@ void PowerSystemPack::InitAndRun()
     }
     // */
 
+    // Wait for all predictions to complete from all async prognosers.
     for (int i = 0; i < NUM_NODES; i++)
     {
       m_nodes[i].bus.waitAll();
@@ -212,13 +228,17 @@ void PowerSystemPack::InitAndRun()
   }
 }
 
+/* 
+ * Initializes every PowerSystemNode by calling their respective Initialize()
+ * functions.
+ */
 bool PowerSystemPack::initNodes()
 {
   // Initialize the nodes.
   for (int i = 0; i < NUM_NODES; i++)
   {
     m_nodes[i].name = setNodeName(i);
-    if (!m_nodes[i].node.Initialize(NUM_NODES))
+    if (!m_nodes[i].node.Initialize())
     {
         return false;
     }
@@ -226,6 +246,10 @@ bool PowerSystemPack::initNodes()
   return true;
 }
 
+/*
+ * Initializes all publishers for other components in OceanWATERS to get battery
+ * outputs from.
+ */
 bool PowerSystemPack::initTopics()
 {
   // Construct the PowerSystemNode publishers
@@ -239,6 +263,11 @@ bool PowerSystemPack::initTopics()
   return true;
 }
 
+/*
+ * If a custom fault profile has been designated within the RQT window, this
+ * function handles getting the relevant information from the file and activating
+ * the fault. Also handles deactivation and any errors that might arise.
+ */
 void PowerSystemPack::injectCustomFault(bool& fault_activated,
                                         const PrognoserVector& sequence,
                                         size_t& index)
@@ -337,8 +366,9 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
     {
       auto data = sequence[index];
 
-      // Evenly distribute the power draw, voltage, and temperature
-      // across each node. Note this behavior may need to be updated
+      // Evenly distribute the power draw, voltage, and temperature values from
+      // the custom fault profile across each node.
+      // Note this behavior may need to be updated
       // in the future (e.g. unsure exactly how voltage and temperature
       // affect predictions, as they do not directly add to the values
       // like power does).
@@ -358,6 +388,9 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
   }
 }
 
+/*
+ * Handles defined faults within the RQT window (currently only high power draw).
+ */
 void PowerSystemPack::injectFault (const std::string& fault_name,
                                    bool& fault_activated)
 {
@@ -401,6 +434,9 @@ void PowerSystemPack::injectFault (const std::string& fault_name,
   }
 }
 
+/*
+ * Basic function that calls the other fault-handling functions.
+ */
 void PowerSystemPack::injectFaults()
 {
   injectFault(FAULT_NAME_HPD_ACTIVATE,
@@ -410,8 +446,9 @@ void PowerSystemPack::injectFaults()
                     m_custom_power_fault_sequence_index);
 }
 
-// TODO: All the fault injection mechanisms need to be updated.
-
+/*
+ * Callback function that publishes mechanical power values.
+ */
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
   // NOTE: This callback function appears to call after the nodes' callback
@@ -419,7 +456,7 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   //       it depends on values determined from those callbacks, but
   //       I don't know why exactly this is the case. If they should happen
   //       to stop calling in this order, it could potentially cause problems.
-  //       ~Liam
+  //       (Liam SU22)
   
   // Get the mechanical power values from each node.
   double raw_mechanical_values[NUM_NODES];
@@ -448,6 +485,10 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 }
 
+/*
+ * Function called during custom fault injection that attempts to
+ * load the specified file and its data.
+ */
 PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, std::string custom_file)
 {
   std::ifstream file(filename);
@@ -494,10 +535,10 @@ PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, s
 
       // Get the time index and power values.
 
-      // NOTE: The voltage and temperature values of a PrognoserVector are non-functional
-      //       when it comes to fault injection. Only power values are used. As such,
-      //       voltage and temperature are initialized to 0 and the fault profile
-      //       should not contain them.
+      // NOTE: The voltage and temperature values of a PrognoserVector have much
+      //       different functions as GSAP inputs than power does. It's not fully
+      //       understood what exactly they do yet, but they seem to affect the
+      //       estimation step rather than the prediction step.
       getline(line_stream, cell, ',');
       double file_time = std::stod(cell);
       auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
@@ -533,6 +574,9 @@ PrognoserVector PowerSystemPack::loadPowerProfile(const std::string& filename, s
   return result;
 }
 
+/*
+ * Attempts to call loadPowerProfile and returns true or false depending on its success.
+ */
 bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string custom_file)
 {
   m_custom_power_fault_sequence = loadPowerProfile(path, custom_file);
@@ -541,6 +585,10 @@ bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string 
   return (m_custom_power_fault_sequence.size() > 0);
 }
 
+/*
+ * Called at the end of a cycle, this publishes RUL/SoC/battery temperature
+ * based on all prognoser predictions obtained.
+ */
 void PowerSystemPack::publishPredictions()
 {
   // Using EoD_events, publish the relevant values.

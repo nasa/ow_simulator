@@ -45,9 +45,18 @@ const int NUM_NODES = 8;
 // to return. ~Liam
 const int NUM_SAMPLES = 100;
 
+// Change this value to modify the maximum RUL estimation output from the Monte
+// Carlo prediction process. Lower values mean faster performance in the event
+// a RUL prediction would exceed the horizon value, but it also means the prognoser
+// can't return RUL values higher than this.
+// The default value is 10000, but this is slow in situations where the prognoser
+// predicts a value that high (or higher than that). Testing and discussion
+// is needed to determine the ideal value for this.
+const int MAX_HORIZON = 10000;
+
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
-const int CUSTOM_FILE_EXPECTED_COLS           = 2;
+const int CUSTOM_FILE_EXPECTED_COLS           = 4;
 
 // Error flags.
 const int ERR_CUSTOM_FILE_FORMAT              = -1;
@@ -115,29 +124,8 @@ private:
   // The matrix used to store EoD events.
   EoDValues m_EoD_events[NUM_NODES];
 
-  int m_moving_average_window = 25;
-  std::vector<double> m_power_values;
-  size_t m_power_values_index = 0;
-
-  std::chrono::time_point<std::chrono::system_clock> m_init_time;
-
-  double m_current_timestamp = 0.0;
-
   // GSAP's cycle time
   double m_gsap_rate_hz = 0.5;
-
-  // Baseline value for power drawn by continuously-running systems.
-  // This initial value is overriden by the system config.
-  double m_baseline_wattage = 1.0;
-
-  // HACK ALERT.  The prognoser produced erratic/erroneous output when
-  // given too high a power input.  This made-up value protects
-  // against this, but is a temporary hack until a circuit breaker
-  // model is added to the power system, and/or the multi-pack battery
-  // model is implemented and can handle any envisioned power draw.
-  // This initial value is overriden by the system config.
-  //
-  double m_max_gsap_input_watts = 30;
 
   // Number of lines in power fault profiles to skip, in order to
   // synchonize the consumption of the profile with GSAP's cycle rate
@@ -153,23 +141,11 @@ private:
   double m_initial_voltage = 4.1;
 
   // End main system configuration.
-
-  // Utilize a Mersenne Twister pseudo-random generation.
-  std::mt19937 m_random_generator;
-
-  std::uniform_real_distribution<double> m_temperature_dist;
   
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
-
-  // Flag that indicates that the prognoser is handling current batch.
-  bool m_processing_power_batch = false;
-
-  bool m_trigger_processing_new_power_batch = false;
-  double m_unprocessed_mechanical_power = 0.0;
-  double m_mechanical_power_to_be_processed = 0.0;
 };
 
 #endif
