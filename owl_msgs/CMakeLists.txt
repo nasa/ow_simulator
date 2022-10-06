@@ -52,6 +52,11 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   SystemFaultsStatus.msg
+  ArmFaults.msg
+  PowerFaults.msg
+  PTFaults.msg
+  CamFaults.msg
+  JointStatesFlag.msg
 )
 
 ## Generate services in the 'srv' folder
