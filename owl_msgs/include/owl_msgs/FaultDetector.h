@@ -12,12 +12,12 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <ow_faults_detection/JointStatesFlag.h>
+#include <owl_msgs/JointStatesFlag.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include <ow_faults_detection/ArmFaults.h>
-#include <ow_faults_detection/PowerFaults.h>
-#include <ow_faults_detection/PTFaults.h>
-#include <ow_faults_detection/CamFaults.h>
+#include <owl_msgs/ArmFaults.h>
+#include <owl_msgs/PowerFaults.h>
+#include <owl_msgs/PTFaults.h>
+#include <owl_msgs/CamFaults.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -77,7 +77,7 @@ private:
   // COMPONENT FUNCTIONS
   
   // Arm
-  void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
+  void jointStatesFlagCb(const owl_msgs::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
   
   // Find an item in an std::vector or other find-able data structure, and
