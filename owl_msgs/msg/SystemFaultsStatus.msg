@@ -5,14 +5,15 @@
 # associated message is a bitmask that can represent any subset of
 # these faults occuring at the same time.
 
-# System=1,
-# ArmGoalError=2,
-# ArmExecutionError=4,
-# TaskGoalError=8,
-# CamGoalError=16,
-# CamExecutionError=32,
-# PtGoalError=64,
-# PtExecutionError=128,
+# NoFault = 0,
+# System = 1,
+# ArmGoalError = 2,
+# ArmExecutionError = 4,
+# TaskGoalError = 8,
+# CameraGoalError = 16,
+# CameraExecutionError = 32,
+# PanTiltGoalError = 64,
+# PanTiltExecutionError = 128,
 # LanderExecutionError = 256,
 # PowerExecutionError = 512
 
