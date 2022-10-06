@@ -10,7 +10,7 @@
 #include <ros/subscribe_options.h>
 #include <ros/callback_queue.h>
 #include <gazebo/common/Plugin.hh>
-#include <ow_faults_detection/JointStatesFlag.h>
+#include <owl_msgs/JointStatesFlag.h>
 #include <sensor_msgs/JointState.h>
 
 struct JointFaultInfo
@@ -63,7 +63,7 @@ private:
   ros::Publisher m_joint_state_flags_pub;
 
   std::vector<unsigned int> m_joint_state_indices;
-  ow_faults_detection::JointStatesFlag m_flag_msg;
+  owl_msgs::JointStatesFlag m_flag_msg;
 
 };
 

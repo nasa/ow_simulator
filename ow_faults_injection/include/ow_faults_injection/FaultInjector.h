@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <ow_faults_injection/FaultsConfig.h>
-#include <ow_faults_detection/JointStatesFlag.h>
+#include <owl_msgs/JointStatesFlag.h>
 #include <std_msgs/Empty.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>

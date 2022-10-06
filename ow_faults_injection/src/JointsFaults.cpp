@@ -23,7 +23,7 @@ JointsFaults::JointsFaults() :
   m_node_handle->setCallbackQueue(&m_callback_queue);
 
   const char* joint_states_str = "/joint_states";
-  m_joint_state_flags_pub = m_node_handle->advertise<ow_faults_detection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
+  m_joint_state_flags_pub = m_node_handle->advertise<owl_msgs::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
   m_JointsFaultsMap = {
     {"j_shou_yaw", JointFaultInfo("shou_yaw", ow_lander::J_SHOU_YAW)},

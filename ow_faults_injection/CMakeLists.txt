@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   ow_lander
   std_msgs
-  ow_faults_detection
+  owl_msgs
 )
 
 include(FindPkgConfig)

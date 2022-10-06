@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <owl_msgs/JointStatesFlag.h>
+#include "owl_msgs/JointStatesFlag.h"
 #include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaults.h>
 #include <owl_msgs/PowerFaults.h>
