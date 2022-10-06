@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ow_faults_detection</name>
+  <name>owl_msgs</name>
   <version>0.0.0</version>
   <description>Manage the state of simulated faults in OceanWATERS</description>
 
