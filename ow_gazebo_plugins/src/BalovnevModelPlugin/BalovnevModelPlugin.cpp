@@ -23,25 +23,22 @@ using namespace ignition::math;
 const double GRAVITY                  = 1.315;           // m/s^2
 
 // scoop properties
-const double BUCKET_WIDTH             = 0.06;            // m
-const double BUCKET_SIDE_PLATE_LENGTH = 0.08;            // m
-const double BUCKET_HEIGHT_FROM_TIP   = 0.06;            // m
-const double BLUNT_EDGE_THICK         = 0.002;           // m
-const double BLUNT_EDGE_ANGLE         = 45./180 * M_PI;  // rad
+const double BUCKET_WIDTH             = 0.085;           // m
+const double BUCKET_SIDE_PLATE_LENGTH = 0.1225;          // m
+const double BUCKET_HEIGHT_FROM_TIP   = 0.0026;          // m
+const double BLUNT_EDGE_THICK         = 0.0004;          // m
+const double BLUNT_EDGE_ANGLE         = 89./180 * M_PI;  // rad
 const double SIDE_PLATE_THICK         = 0.0016;          // m
-const double BLADE_RADIUS             = 0.2;             // m
 
 // regolith properties
 const double SOIL_DENSITY             = 1700;            // kg/m^3
-const double COHESION                 = 1500;            // N/m^2
+const double COHESION                 = 0;               // N/m^2
 const double INT_FRICTION_ANGLE       = 44./180 * M_PI;  // rad
 const double EXT_FRICTION_ANGLE       = 28./180 * M_PI;  // rad
 const double SURCHARGE_MASS           = 1;               // kg/m^2
-// const double SOIL_PRISM_HEIGHT        = 0;               // m
 
 // real-time variables placeheld by constants
 const double RAKE_ANGLE               = 10./180 * M_PI;  // rad
-const double BUCKET_VELOCITY          = 0.1;             // m/s
 const int BURIED = 0;  // define BURIED: BURIED = 1 if entire bucket is below the soil otherwise BURIED = 0 
 
 // constants specific to the scoop end-effector
@@ -120,13 +117,10 @@ void BalovnevModelPlugin::onUpdate()
 // efa - ext friction angle
 double BalovnevModelPlugin::getParameterA(double x, double ifa, double efa)
 {  
-  if (x <= 0.5 * asin(sin(efa)/sin(ifa)) - efa)
-  {
+  if (x <= 0.5 * asin(sin(efa)/sin(ifa)) - efa) {
     double a = (1 - sin(ifa) * cos(2 * x)) / (1 - sin(ifa));
     return a;
-  } 
-  else 
-  {
+  } else {
     double a = (cos(efa) * (cos(efa) + sqrt(sin2(ifa) - sin2(efa)))
         / (1 - sin(ifa))) * exp((2 * x - M_PI + efa + asin(sin(efa)
         / sin(ifa))) * tan(ifa));
@@ -145,20 +139,18 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
   double et   = BLUNT_EDGE_THICK;
   double ea   = BLUNT_EDGE_ANGLE;
   double s    = SIDE_PLATE_THICK;
-  double r    = BLADE_RADIUS;
   double sd   = SOIL_DENSITY;
   double c    = COHESION;
   double phi  = INT_FRICTION_ANGLE;
   double delta= EXT_FRICTION_ANGLE;
   double q    = SURCHARGE_MASS; 
-  // double h    = SOIL_PRISM_HEIGHT;
-  double v    = BUCKET_VELOCITY;
   // define vertical_cut_depth
   double d = vertical_cut_depth;
   // get constant a1,a2,a3
   double a1 = getParameterA(beta, phi, delta);
   double a2 = getParameterA(ea, phi, delta);
   double a3 = getParameterA(M_PI_2, phi, delta);
+
   //calculate horizontal force and vertical force
   m_horizontal_force =
     w*d*a1 * (1+(1/tan(beta))*tan(delta)) * (d*g*sd/2 + c*(1/tan(phi))
@@ -172,7 +164,7 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
   //       far too large, and immediately deflect the scoop off course. Until we
   //       find the parameter that's causing this, we have added a fudge factor
   //       that lowers both forces by a factor of 1/100.
-  constexpr double FUDGE_FACTOR = 0.05;
+  constexpr double FUDGE_FACTOR = 1.0; // 0.05
   m_horizontal_force *= FUDGE_FACTOR;
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
 
