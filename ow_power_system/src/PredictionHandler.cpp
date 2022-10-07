@@ -2,6 +2,8 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// See PredictionHandler.h for a summary of the purpose of this file.
+
 #include <chrono>
 #include <ros/package.h>
 #include <ros/ros.h>
@@ -14,7 +16,7 @@ using namespace PCOE;
 
 // The indices use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
-//
+// (predecessor comment to SU22, unsure exactly what it means)
 static constexpr int BATTERY_TEMPERATURE_INDEX = 0;
 static constexpr int MODEL_TEMPERATURE_INDEX = 1;
 
@@ -71,6 +73,9 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
     return;
   }
 
+  // Get the median RUL, SoC, and battery temperature from the returned
+  // prediction:
+
   // valid prediction
   // Determine the median RUL.
   double eod_median = findMedian(eod_time.getVec());
@@ -90,11 +95,12 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
     temperature_state.push_back(sample[BATTERY_TEMPERATURE_INDEX]);
   }
 
-  // HACK ALERT:
-  // The asynchronous prognoser does not have a function to get its model like
+  // HACK ALERT (as of Sept '22):
+  // GSAP's asynchronous prognoser does not have a function to get its model like
   // the simple prognoser does. As such, one can instantiate a simple prognoser
-  // and get its model; it should be identical. However, a getter function would
-  // be much more ideal and more efficient.
+  // and get its model instead; it should be identical. However, a getter function
+  // would be much more ideal and more efficient.
+
   // Construct a simple prognoser to get the battery model.
   auto prognoser_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
   ConfigMap prognoser_config(prognoser_config_path);
@@ -105,7 +111,7 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
 
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
 
-  // Store the newly obtained data.
+  // Put the newly obtained data in the stored references.
   m_rul_ref = rul_median;
   m_soc_ref = soc_median;
   m_temp_ref = model_output[MODEL_TEMPERATURE_INDEX];
@@ -116,22 +122,4 @@ double PredictionHandler::findMedian(std::vector<double> samples)
   std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2)),
                    samples.end());
   return samples.at(samples.size() / 2);
-  /* TEST CODE (may replace the above 3 lines later)
-  if (samples.size() % 2 == 0)
-  {
-    // Even size set, median is the average of the middle 2 values.
-    double first_val = samples.at(samples.size() / 2);
-    std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2) + 1),
-                      samples.end());
-    std::cout << "even findM eod_median: " << std::to_string((first_val + 
-                  samples.at((samples.size() / 2) + 1)) / 2) << std::endl;
-    return ((first_val + samples.at((samples.size() / 2) + 1)) / 2);
-  }
-  else
-  {
-    // Odd size set, median is the middle value.
-    std::cout << "odd findM eod_median:  " << std::to_string(samples.at(samples.size() / 2)) << std::endl;
-    return samples.at(samples.size() / 2);
-  }
-  */
 }

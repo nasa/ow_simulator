@@ -2,6 +2,12 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// This is the header file of the PredictionHandler class, which deals with
+// the asynchronous callbacks from GSAP's prognosers during runtime.
+// It handles the setup for subscribing to a provided MessageBus which returns
+// GSAP predictions as they are completed, as well as the function that runs
+// on receiving those predictions.
+
 #ifndef __PREDICTION_HANDLER_H__
 #define __PREDICTION_HANDLER_H__
 

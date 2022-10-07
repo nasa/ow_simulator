@@ -2,6 +2,12 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+// This is the header file for the PowerSystemNode class, which handles
+// the simulation of a single cell within a PowerSystemPack. It stores the
+// data used as inputs to a GSAP asynchronous prognoser and generates the next
+// input set (including any value modifications from faults or other functions) 
+// to be sent to GSAP.
+
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
@@ -13,9 +19,6 @@
 #include <sensor_msgs/JointState.h>
 #include <PrognoserFactory.h>
 
-using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
-using PrognoserVector = std::vector<PrognoserMap>;
-
 class PowerSystemNode
 {
 public:
@@ -23,52 +26,31 @@ public:
   ~PowerSystemNode() = default;
   PowerSystemNode(const PowerSystemNode&) = default;
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
-  bool Initialize(int nodes);
+  bool Initialize();
   void RunOnce();
-  void GetPowerStats(double &time, double &power, double &volts, double &temp);
+  void GetPowerStats(double &time, double &power, double &volts, double &tmp);
+  double GetRawMechanicalPower();
+  double GetAvgMechanicalPower();
+  void SetHighPowerDraw(double draw);
+  void SetCustomPowerDraw(double draw);
+  void SetCustomVoltageFault(double volts);
+  void SetCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& path_name, std::string custom_file);
-  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  bool initPrognoser();
-  bool initTopics();
+  bool initCallback();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
-  void injectFault(const std::string& power_fault_name,
-                   bool& fault_activated,
-                   double& power,
-                   double& voltage,
-                   double& temperature);
-  void injectCustomFault(bool& fault_activated,
-                         const PrognoserVector& sequence,
-                         size_t& index,
-                         double& wattage,
-                         double& voltage,
-                         double& temperature);
-  void injectFaults(double& power, double& temperature, double& voltage);
-  PrognoserMap composePrognoserData(double power,
-                                    double voltage,
-                                    double temperature);
-  void parseEoD_Event(const ProgEvent& eod_event,
-                      std_msgs::Float64& soc_msg,
-                      std_msgs::Int16& rul_msg,
-                      std_msgs::Float64& battery_temperature_msg);
+  void applyValueMods(double& power, double& voltage, double& temperature);
+
   void runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
-  ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
-  ros::Publisher m_mechanical_power_avg_pub;   // Mechanical Power Averaged
-  ros::Publisher m_state_of_charge_pub;        // State of Charge Publisher
-  ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
-  ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
   int m_moving_average_window = 25;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
-
-  std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
@@ -115,9 +97,11 @@ private:
   double m_voltage_estimate;
   double m_temperature_estimate;
 
-  // The number of parallel PowerSystemNodes created. Used for
-  // fault injection modification.
-  int m_total_nodes;
+  // The stored values for modifying input to GSAP.
+  double m_added_hpd = 0.0;
+  double m_added_cpd = 0.0;
+  double m_voltage_modifier = 0.0;
+  double m_temperature_modifier = 0.0;
 
   // End main system configuration.
 
@@ -125,11 +109,6 @@ private:
   std::mt19937 m_random_generator;
 
   std::uniform_real_distribution<double> m_temperature_dist;
-  
-  bool m_high_power_draw_activated = false;
-  bool m_custom_power_fault_activated = false;
-  PrognoserVector m_custom_power_fault_sequence;
-  size_t m_custom_power_fault_sequence_index = 0;
 
   // Flag that indicates that the prognoser is handling current batch.
   bool m_processing_power_batch = false;
@@ -137,6 +116,9 @@ private:
   bool m_trigger_processing_new_power_batch = false;
   double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;
+
+  double m_mechanical_power_raw = 0.0;
+  double m_mechanical_power_avg = 0.0;
 };
 
 #endif
