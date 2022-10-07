@@ -12,10 +12,10 @@ using namespace ow_lander;
 using std::bitset;
 using std::string;
 
-constexpr bitset<10> FaultDetector::isCamExecutionError;
+constexpr bitset<10> FaultDetector::isCameraExecutionError;
 constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
 constexpr bitset<10> FaultDetector::isArmExecutionError;
-constexpr bitset<10> FaultDetector::isPowerSystemFault;
+constexpr bitset<10> FaultDetector::isPowerExecutionError;
 
 constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
@@ -86,9 +86,9 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 // publish system messages
 void FaultDetector::publishSystemFaultsStatusMessage()
 {
-  owl_msgs::SystemFaultsStatus system_faults_status_msg;
-  setBitsetFaultsMessage(system_faults_status_msg, m_system_faults_status_bitset);
-  m_system_faults_status_msg_pub.publish(system_faults_status_msg);
+  owl_msgs::SystemFaultsStatus system_fault_msg;
+  setBitsetFaultsMessage(system_fault_msg, m_system_fault_bitset);
+  m_system_fault_msg_pub.publish(system_fault_msg);
 }
 
 //// Publish Camera Messages
@@ -99,9 +99,9 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
   if (m_cam_trigger_time <= m_cam_raw_time &&  
     m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
     diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_bitset &= ~isCamExecutionError;
+    m_system_fault_bitset &= ~isCameraExecutionError;
   } else {
-    m_system_faults_bitset |= isCamExecutionError;
+    m_system_fault_bitset |= isCameraExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
 

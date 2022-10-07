@@ -119,7 +119,7 @@ private:
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
-  ros::Publisher m_system_faults_status_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
 
   // Arm and antenna
   ros::Subscriber m_joint_states_sub;
@@ -136,7 +136,7 @@ private:
   // VARIABLES
   
   // System 
-  std::bitset<10> m_system_faults_status_bitset{};
+  std::bitset<10> m_system_fault_bitset{};
   std::vector<unsigned int> m_joint_state_indices;
   
   // Antenna
