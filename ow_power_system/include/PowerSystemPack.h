@@ -52,7 +52,7 @@ const int NUM_SAMPLES = 100;
 // The default value is 10000, but this is slow in situations where the prognoser
 // predicts a value that high (or higher than that). Testing and discussion
 // is needed to determine the ideal value for this.
-const int MAX_HORIZON = 10000;
+const int MAX_HORIZON_SECS = 10000;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
@@ -124,6 +124,9 @@ private:
   // update if such a function is added in the future.
   std::string m_print_debug_val = "false";
   bool m_print_debug = false;
+
+  // Flag determining if the battery has reached a fail state.
+  bool m_battery_failed = false;
 
   // Create a PowerNode struct, containing all the necessary information for a
   // node to operate, for each node.

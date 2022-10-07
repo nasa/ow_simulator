@@ -94,7 +94,7 @@ void PowerSystemPack::InitAndRun()
   // To modify the number of samples & horizon (and thus change performance), see the
   // constant declared in PowerSystemPack.h.
   builder.setConfigParam("Predictor.SampleCount", std::to_string(NUM_SAMPLES));
-  builder.setConfigParam("Predictor.Horizon", std::to_string(MAX_HORIZON));
+  builder.setConfigParam("Predictor.Horizon", std::to_string(MAX_HORIZON_SECS));
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
@@ -109,7 +109,7 @@ void PowerSystemPack::InitAndRun()
   // This rate object is used to sync the cycles up to the provided Hz.
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
   //       necessarily occur, but the simulation will be out of sync with real
-  //       time. Ideally, values like NUM_SAMPLES and MAX_HORIZON should be set
+  //       time. Ideally, values like NUM_SAMPLES and MAX_HORIZON_SECS should be set
   //       such that the cycle time is under the provided rate (currently 0.5Hz).
   ros::Rate rate(m_gsap_rate_hz);
 
@@ -229,7 +229,7 @@ void PowerSystemPack::InitAndRun()
       {
         // Display output if the time is past the initial startup phase, no matter what
         // (for debugging purposes).
-        if ((!(m_EoD_events[i].remaining_useful_life <= 0)) || (m_nodes[i].model.timestamp >= 50))
+        if ((!(m_EoD_events[i].remaining_useful_life <= 0)) || (m_nodes[i].model.timestamp >= 20))
         {
           ROS_INFO_STREAM("Node " << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                           << ". SOC: " << m_EoD_events[i].state_of_charge << ". TMP: "
@@ -483,7 +483,7 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   //       it depends on values determined from those callbacks, but
   //       I don't know why exactly this is the case. If they should happen
   //       to stop calling in this order, it could potentially cause problems.
-  //       (Liam SU22)
+  //       (~Liam, Summer 2022)
   
   // Get the mechanical power values from each node.
   double raw_mechanical_values[NUM_NODES];
@@ -629,6 +629,12 @@ void PowerSystemPack::publishPredictions()
 
   for (int i = 0; i < NUM_NODES; i++)
   {
+    // If RUL is infinity, set it to the maximum horizon value instead.
+    if (isinf(m_EoD_events[i].remaining_useful_life))
+    {
+      m_EoD_events[i].remaining_useful_life = MAX_HORIZON_SECS;
+    }
+
     // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
     if (m_EoD_events[i].remaining_useful_life < min_rul || min_rul == -1)
     {
@@ -648,14 +654,38 @@ void PowerSystemPack::publishPredictions()
     }
   }
 
+  // If either RUL or SoC have entered the negative, it indicates the battery
+  // is in a fail state.
+  // While it is possible sometimes for the battery to recover from this,
+  // differentiating between the 2 different types of fail states has not been
+  // implemented yet.
+  // For now, treat all fail states as permanent and flatline all future
+  // publications.
+  // The timestamp stipulation is to prevent odd values on startup from triggering
+  // the fail state.
+  if ((min_rul < 0 || min_soc < 0) && (!m_battery_failed) && (m_nodes[0].model.timestamp >= 10))
+  {
+    ROS_WARN_STREAM("The battery has reached a fail state. Flatlining "
+                    << "all future published predictions");
+    m_battery_failed = true;
+  }
+
+  if (m_battery_failed)
+  {
+    min_rul = 0;
+    min_soc = 0;
+    max_tmp = 0;
+  }
+
   // /* DEBUG PRINT
-  if (m_print_debug && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 50)))
+  // Note that the debug printouts do not cap at MAX_HORIZON_SECS, nor do they
+  // flatline at 0 when the battery fails.
+  if (m_print_debug && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 20)))
   {
     ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
                     ", min_soc: " << std::to_string(min_soc) <<
                     ", max_tmp: " << std::to_string(max_tmp));
   }
-  // */
 
   // Publish the values for other components.
   rul_msg.data = min_rul;

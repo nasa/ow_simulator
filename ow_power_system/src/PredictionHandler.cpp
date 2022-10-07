@@ -16,7 +16,7 @@ using namespace PCOE;
 
 // The indices use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
-// (predecessor comment to SU22, unsure exactly what it means)
+// (predecessor comment to Summer 2022, unsure exactly what it means)
 static constexpr int BATTERY_TEMPERATURE_INDEX = 0;
 static constexpr int MODEL_TEMPERATURE_INDEX = 1;
 

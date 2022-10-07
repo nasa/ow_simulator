@@ -90,7 +90,14 @@ bool PowerSystemNode::initCallback()
  * but now simply prepares the PowerSystemNode for creating another set of input data.
  * 
  * NOTE: The raw and average mechanical power values seemed to always be 0 during
- * testing. Maybe this function isn't working properly? (~Liam SU22)
+ * testing. I realize in hindsight that I didn't test using arm commands,
+ * which generate mechanical power. Thus, this function may not work correctly.
+ * 
+ * Chetan should be consulted on how mechanical power should be handled on a
+ * per-node basis. The main points to consider are that all nodes' callbacks
+ * run before the PowerSystemPack's callback does, and the Pack callback is the
+ * one that publishes mechanical power values. The mechanical values here are fed
+ * into the individual nodes' input data. (~Liam, Summer 2022)
  */
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
@@ -127,7 +134,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
  *          would not respond to GSAP's predictions.
  *       3. Gather real data and feed that in here instead. Testing against
  *          real data is great, but needs to be pre-collected.
- *       (~Liam SU22)
+ *       (~Liam, Summer 2022)
  */
 double PowerSystemNode::generateTemperatureEstimate()
 {
@@ -142,7 +149,7 @@ double PowerSystemNode::generateTemperatureEstimate()
  *       The voltage drop over time does not line up with GSAP's data if 
  *       faults/etc are applied.
  *       (see note for generateTemperatureEstimate)
- *       (~Liam SU22)
+ *       (~Liam, Summer 2022)
  */
 double PowerSystemNode::generateVoltageEstimate()
 {
