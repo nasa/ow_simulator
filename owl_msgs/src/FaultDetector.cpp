@@ -57,7 +57,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   m_antenna_fault_msg_pub = nh.advertise<owl_msgs::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<owl_msgs::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<owl_msgs::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
+  m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
 }
 
@@ -86,9 +86,9 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 // publish system messages
 void FaultDetector::publishSystemFaultsStatusMessage()
 {
-  owl_msgs::SystemFaultsStatus system_fault_msg;
-  setBitsetFaultsMessage(system_fault_msg, m_system_fault_bitset);
-  m_system_fault_msg_pub.publish(system_fault_msg);
+  owl_msgs::SystemFaultsStatus system_faults_msg;
+  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
+  m_system_faults__msg_pub.publish(system_faults_status_msg);
 }
 
 //// Publish Camera Messages
@@ -99,9 +99,9 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
   if (m_cam_trigger_time <= m_cam_raw_time &&  
     m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
     diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_fault_bitset &= ~isCameraExecutionError;
+    m_system_faults_bitset &= ~isCameraExecutionError;
   } else {
-    m_system_fault_bitset |= isCameraExecutionError;
+    m_system_faults_bitset |= isCameraExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
 
@@ -116,11 +116,11 @@ void FaultDetector::publishPowerSystemFault()
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
-    m_system_faults_bitset |= isPowerSystemFault;
+    m_system_faults_bitset |= isPowerExecutionError;
     //power
     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
+    m_system_faults_bitset &= ~isPowerExecutionError;
   }
   publishSystemFaultsMessage();
   m_power_fault_msg_pub.publish(power_faults_msg);
