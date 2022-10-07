@@ -84,11 +84,11 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 }
 
 // publish system messages
-void FaultDetector::publishSystemFaultsStatusMessage()
+void FaultDetector::publishSystemFaultsMessage()
 {
   owl_msgs::SystemFaultsStatus system_faults_msg;
   setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_faults__msg_pub.publish(system_faults_status_msg);
+  m_system_faults_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages

@@ -103,11 +103,11 @@ private:
   void powerTemperatureListener(const std_msgs::Float64& msg);
 
   // OWLAT MESSAGE FUNCTIONS AND PUBLISHERS
-  void publishSystemFaultsStatusMessage();
+  void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
   template<typename bitsetFaultsMsg, typename bitmask>
-  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsStatusBitmask);
+  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
 
