@@ -1,6 +1,9 @@
-#Pan/Tilt fault status
-#None = 0
-#PanJointLocked = 1
-#TiltJointLocked = 2
+# Pan/Tilt fault status
+#
+# Values for 'value' :
+#   NONE = 0
+#   PAN_JOINT_LOCKEC = 1
+#   TILT_JOINT_LOCKED = 2
+
 Header header
-uint64 value
+uint32 value

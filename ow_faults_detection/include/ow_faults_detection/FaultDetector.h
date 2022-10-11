@@ -70,7 +70,7 @@ public:
   static constexpr std::bitset<2> isPanLockedError{  0b01 };
   static constexpr std::bitset<2> isTiltLockedError{ 0b10 };
 
-  static constexpr float THERMAL_MAX = 50;
+  static constexpr float THERMAL_MAX = 70;
   static constexpr float SOC_MIN = 0.1;
   static constexpr float SOC_MAX_DIFF = 0.05;
   
