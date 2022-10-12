@@ -19,7 +19,9 @@ from ground_detection import GroundDetector
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point
 from math import pi
+from ow_faults_detection.msg import SystemFaults
 
+ARM_EXECUTION_ERROR = 4
 
 class UnstowActionServer(object):
 
@@ -185,6 +187,9 @@ class StopActionServer(object):
 
     def __init__(self, name):
         self._action_name = name
+        # subscribe to system_fault_status for any arm faults
+        rospy.Subscriber("/faults/system_faults_status",
+                          SystemFaults, self.faultCheckCallback)
         # Action Feedback/Result
         self._fdbk = ow_lander.msg.StopFeedback()
         self._result = ow_lander.msg.StopResult()
@@ -197,6 +202,15 @@ class StopActionServer(object):
                                                     execute_cb=self.on_stop_action,
                                                     auto_start=False)
         self._server.start()
+
+    def faultCheckCallback(self, data):
+        """
+        If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+        """
+        self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
+                           ARM_EXECUTION_ERROR)        
+        if self.arm_fault:
+            self.stopped = True                   
 
     def reset(self):
         self.stopped = False
@@ -212,7 +226,8 @@ class StopActionServer(object):
         self._result.final.z = self._ls.z
 
         self.stopped = True
-        trajectory_async_executer.stop()
+        trajectory_async_executer.get_goal_status_text()
+        rospy.loginfo(trajectory_async_executer.stop())
 
         rospy.loginfo('%s: Succeeded' % self._action_name)
         rospy.loginfo('Current Arm Action was stopped.')
@@ -480,21 +495,21 @@ class DigCircularActionServer(object):
                                                     auto_start=False)
         self._server.start()
 
-    def switch_controllers(self, start_controller, stop_controller):
-        rospy.wait_for_service('/controller_manager/switch_controller')
-        success = False
-        try:
-            switch_controller = rospy.ServiceProxy(
-                '/controller_manager/switch_controller', SwitchController)
-            success = switch_controller(
-                [start_controller], [stop_controller], 2, False, 1.0)
-        except rospy.ServiceException as e:
-            rospy.loginfo("switch_controllers error: %s" % e)
-        finally:
-            # This sleep is a workaround for "start point deviates from current robot
-            #  state" error on dig_circular trajectory execution.
-            rospy.sleep(0.2)
-            return success
+    # def switch_controllers(self, start_controller, stop_controller):
+    #     rospy.wait_for_service('/controller_manager/switch_controller')
+    #     success = False
+    #     try:
+    #         switch_controller = rospy.ServiceProxy(
+    #             '/controller_manager/switch_controller', SwitchController)
+    #         success = switch_controller(
+    #             [start_controller], [stop_controller], 2, False, 1.0)
+    #     except rospy.ServiceException as e:
+    #         rospy.loginfo("switch_controllers error: %s" % e)
+    #     finally:
+    #         # This sleep is a workaround for "start point deviates from current robot
+    #         #  state" error on dig_circular trajectory execution.
+    #         rospy.sleep(0.2)
+    #         return success
 
     def _update_feedback(self):
 

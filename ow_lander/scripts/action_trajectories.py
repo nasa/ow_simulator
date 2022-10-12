@@ -18,7 +18,9 @@ from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from std_msgs.msg import Header
+from ow_faults_detection.msg import SystemFaults
 
+ARM_EXECUTION_ERROR = 4
 
 class ActionTrajectories:
     '''
@@ -27,12 +29,24 @@ class ActionTrajectories:
 
     def __init__(self):
         self.stopped = False
+        # subscribe to system_fault_status for any arm faults
+        # rospy.Subscriber("/faults/system_faults_status",
+        #                  SystemFaults, self.faultCheckCallback)
 
     def check_for_stop(self, action_name, server_stop):
         if server_stop.get_state():
             rospy.loginfo('%s was stopped.', action_name)
             return True
+        # elif self.arm_fault:
+        #     return True    
         return False
+
+    # def faultCheckCallback(self, data):
+    #     """
+    #     If system fault occurs, and it is an arm failure, an arm failure flag is set for the whole class
+    #     """
+    #     self.arm_fault = (data.value & ARM_EXECUTION_ERROR ==
+    #                       ARM_EXECUTION_ERROR)         
 
     def calculate_joint_state_end_pose_from_plan_arm(self, robot, plan, move_arm, moveit_fk):
         ''' 
@@ -602,6 +616,10 @@ class ActionTrajectories:
 
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj, move_arm, moveit_fk)
+
+        if self.check_for_stop("dig_linear", server_stop):
+            return False    
+
         cartesian_plan, fraction = self.plan_cartesian_path_lin(
             move_arm, current_pose, length, alpha, z_start, cs)
         dig_linear_traj = self.cascade_plans(dig_linear_traj, cartesian_plan)

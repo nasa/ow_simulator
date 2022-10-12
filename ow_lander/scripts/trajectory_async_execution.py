@@ -103,15 +103,24 @@ class TrajectoryAsyncExecuter:
         Stops the execution of the last trajectory submitted for executoin
         """
         action_state = self.get_state()
-        if self._connected and action_state == GoalStatus.ACTIVE:
-            self._client.cancel_goal()
+        #if self._connected and action_state == GoalStatus.ACTIVE:
+        #if self._connected:
+            #self._client.cancel_goal()
+        #self._client.cancel_all_goals()
+            #self._client.send_goal (None, None, None, None)
+        self._client.cancel_goals_at_and_before_time(rospy.Time.now())
+        #rospy.loginfo(self._client.get_goal_status_text ())
+
+    def get_goal_status_text(self):
+        return  self._client.get_goal_status_text ()
+        #self._client.
 
     def wait(self, timeout=0):
         """
         Blocks until the execution of the current trajectory comes to an end
         :type timeout: int
         """
-        if self._connected:
+        if self._connected and not self.arm_fault:
             self._client.wait_for_result(timeout=rospy.Duration(timeout))
 
         return True
