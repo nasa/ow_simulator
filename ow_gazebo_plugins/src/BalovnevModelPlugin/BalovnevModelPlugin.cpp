@@ -53,7 +53,8 @@ const Duration DIG_TIMEOUT_INTERVAL = Duration(1.0); // seconds
 const size_t DEPTH_MAX_FILTER_WIDTH = 100;
 
 // define sin-squared function for use in getParameterA
-static double sin2(double x) {
+static double sin2(double x)
+{
   double y = sin(x);
   return y * y;
 }
@@ -169,12 +170,10 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
 
   publishForces();
-
-  // DEBUG CODE
-  // gzlog << "horizontal_force" << m_horizontal_force <<"   vertical_force" << m_vertical_force << endl;
 }
 
-void BalovnevModelPlugin::publishForces() {
+void BalovnevModelPlugin::publishForces()
+{
   static std_msgs::Float64 hf, vf;
   hf.data = m_horizontal_force;
   vf.data = m_vertical_force;
@@ -182,7 +181,8 @@ void BalovnevModelPlugin::publishForces() {
   m_pub_vertical_force.publish<std_msgs::Float64>(vf);
 }
 
-void BalovnevModelPlugin::resetForces() {
+void BalovnevModelPlugin::resetForces()
+{
   m_vertical_force = 0.0;
   m_horizontal_force = 0.0;
   publishForces();
@@ -195,7 +195,8 @@ void BalovnevModelPlugin::resetForces() {
   m_pub_depth.publish<std_msgs::Float64>(depth);
 }
 
-bool BalovnevModelPlugin::isScoopDigging() {
+bool BalovnevModelPlugin::isScoopDigging()
+{
   static const Vector3 SCOOP_DOWNWARD(0.0, 0.0, 1.0);
   static const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
   Vector3 scoop_bottom(
@@ -250,13 +251,9 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   // reset timeout at each terrain modification
   m_dig_timeout.stop();
   m_dig_timeout.start();
-
-  // DEBUG CODE
-  // count_finished++;
-  // gzlog << "count_called = " << count_called << std::endl;
-  // gzlog << "count_finished = " << count_finished << std::endl;
 }
 
-void BalovnevModelPlugin::onDigTimeout(const TimerEvent &) {
+void BalovnevModelPlugin::onDigTimeout(const TimerEvent &)
+{
   resetForces();
 }
