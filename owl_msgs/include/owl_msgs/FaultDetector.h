@@ -14,7 +14,7 @@
 #include <std_msgs/Empty.h>
 #include <owl_msgs/JointStatesFlag.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include <owl_msgs/ArmFaults.h>
+#include <owl_msgs/ArmFaultsStatus.h>
 #include <owl_msgs/PowerFaults.h>
 #include <owl_msgs/PTFaults.h>
 #include <owl_msgs/CamFaults.h>
@@ -36,16 +36,17 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-  enum class ComponentFaults : uint {
+  enum class ArmFaults : uint64 {
+    None = 0,
     Hardware = 1, 
-    JointLimit = 2,
     TrajectoryGeneration = 2,
     Collision = 3, 
-    Estop = 4, 
+    EStop = 4, 
     PositionLimit = 5, 
-    TorqueLimit = 6, 
+    JointTorqueLimit = 6, 
     VelocityLimit = 7, 
     NoForceData = 8
+    ForceTorqueLimit = 6, 
     };
 
   //system

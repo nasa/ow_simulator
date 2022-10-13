@@ -53,7 +53,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           this);
 
   // topics for OWLAT msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_arm_fault_msg_pub = nh.advertise<owl_msgs::ArmFaults>("/faults/arm_faults_status", 10);
+  m_arm_fault_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<owl_msgs::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<owl_msgs::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<owl_msgs::PowerFaults>("/faults/power_faults_status", 10);
@@ -169,7 +169,7 @@ void FaultDetector::jointStatesFlagCb(const owl_msgs::JointStatesFlagConstPtr& m
     armFault = armFault || isFlagSet( name, msg->flags);
   }
 
-  owl_msgs::ArmFaults arm_faults_msg;
+  owl_msgs::ArmFaultsStatus arm_faults_msg;
   if (armFault){
     m_system_faults_bitset |= isArmExecutionError;
     setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
