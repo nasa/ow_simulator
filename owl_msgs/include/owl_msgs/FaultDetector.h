@@ -36,7 +36,7 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-  enum class ArmFaults : uint64 {
+  enum class ComponentFaults : uint {
     None = 0,
     Hardware = 1, 
     TrajectoryGeneration = 2,
@@ -50,7 +50,7 @@ public:
     };
 
   //system
-  static constexpr std::bitset<10> isNoFault{               0b00'0000'0001 };
+  static constexpr std::bitset<10> isNoFault{               0b00'0000'0000 };
   static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
   static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
   static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
@@ -72,6 +72,7 @@ public:
   static constexpr float SOC_MAX_DIFF = 0.05;
   
   //arm
+  static constexpr std::bitset<9> is
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
