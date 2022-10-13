@@ -72,7 +72,6 @@ public:
   static constexpr float SOC_MAX_DIFF = 0.05;
   
   //arm
-  static constexpr std::bitset<9> is
   static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
 
 private:
