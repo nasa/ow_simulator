@@ -49,7 +49,7 @@ public:
     };
 
   //system
-  static constexpr std::bitset<10> isNoFault{               0b00'0000'0001 };
+  static constexpr std::bitset<10> isNoFault{               0b00'0000'0000 };
   static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
   static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
   static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
