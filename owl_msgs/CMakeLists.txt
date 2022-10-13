@@ -52,7 +52,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   SystemFaultsStatus.msg
-  ArmFaults.msg
+  ArmFaultsStatus.msg
   PowerFaults.msg
   PTFaults.msg
   CamFaults.msg
