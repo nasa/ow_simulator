@@ -50,6 +50,10 @@ class AntennaPanTiltActionServer(object):
             return
         self._tilt_value = wrap_angle(data.position[id_tilt])
         self._pan_value = wrap_angle(data.position[id_pan])
+        rospy.loginfo ("---- raw pan    : %s" % data.position[id_pan])
+        rospy.loginfo ("---- wrapped pan: %s" % self._pan_value)
+        rospy.loginfo ("---- raw tilt    : %s" % data.position[id_tilt])
+        rospy.loginfo ("---- wrapped tilt: %s" % self._tilt_value)
 
 
     def _update_feedback(self):
@@ -59,6 +63,17 @@ class AntennaPanTiltActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def on_antenna_action(self, goal):
+
+        halfpi = pi / 2.0 ;
+
+        if goal.pan < -3.2 or goal.pan > 3.2:
+            rospy.logwarn('Requested pan %s not within allowed limit' % goal.pan)
+            self._server.set_rejected()
+            return
+
+        if goal.tilt < -halfpi or goal.tilt > halfpi:
+            rospy.logwarn('Requested tilt %s not within allowed limit' % goal.tilt)
+            return
 
         done = False
         while (done == False):
@@ -73,16 +88,17 @@ class AntennaPanTiltActionServer(object):
             self._tilt_pub.publish(goal.tilt)
             self._update_feedback()
 
-            if (abs(goal.pan - self._pan_value) < 0.05 and abs(goal.tilt - self._tilt_value) < 0.05):
+            if (abs(goal.pan - self._pan_value) < 0.05 and
+                abs(goal.tilt - self._tilt_value) < 0.05):
                 done = True
-        if done:
-            self._result.pan_position = self._fdbk.pan_position
-            self._result.tilt_position = self._fdbk.tilt_position
-            rospy.loginfo('%s: Succeeded' % self._action_name)
-            self._server.set_succeeded(self._result)
-        else:
-            rospy.loginfo('%s: Failed' % self._action_name)
-            self._server.set_aborted(self._result)
+                if done:
+                    self._result.pan_position = self._fdbk.pan_position
+                    self._result.tilt_position = self._fdbk.tilt_position
+                    rospy.loginfo('%s: Succeeded' % self._action_name)
+                    self._server.set_succeeded(self._result)
+                else:
+                    rospy.loginfo('%s: Failed' % self._action_name)
+                    self._server.set_aborted(self._result)
 
 
 if __name__ == '__main__':

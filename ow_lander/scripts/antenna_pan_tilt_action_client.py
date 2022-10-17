@@ -30,9 +30,15 @@ def antenna_client():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        'pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
+        'pan',
+        type=float,
+        help='Antenna pan value in radians (-3.2 - 3.2)',
+        nargs='?', default=0, const=0)
     parser.add_argument(
-        'tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
+        'tilt',
+        type=float,
+        help='Antenna tilt value in radians (-pi/2 - pi/2)',
+        nargs='?', default=0, const=0)
     args = parser.parse_args()
     print_arguments(args)
 
@@ -44,8 +50,8 @@ def antenna_client():
     goal.pan = args.pan
     goal.tilt = args.tilt
 
-    goal.tilt = wrap_angle(goal.tilt)
-    goal.pan = wrap_angle(goal.pan)
+#    goal.tilt = wrap_angle(goal.tilt)
+#    goal.pan = wrap_angle(goal.pan)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
