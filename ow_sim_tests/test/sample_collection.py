@@ -18,9 +18,10 @@ from geometry_msgs.msg import Point
 
 import ow_lander.msg
 
-import common_test_methods as common
+from common_test_methods import *
 
 PKG = 'ow_sim_tests'
+TEST_NAME = 'sample_collection'
 roslib.load_manifest(PKG)
 
 GROUND_POSITION = -0.155
@@ -46,8 +47,6 @@ class SampleCollection(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     rospy.init_node("arm_check_action_test")
-
-    cls.ignore_checks = '--ignore_checks' in sys.argv
 
     # subscribe to get all gazebo link positions
     cls._gz_link_names = []
@@ -127,10 +126,10 @@ class SampleCollection(unittest.TestCase):
     if scoop_position is None:
       return
     # setup assertion and assertion message conditionally
-    assert_func = common.assert_point_is_far
+    assert_func = assert_point_is_far
     assert_msg = "Regolith remains in scoop!\n"
     if assert_regolith_in_scoop:
-      assert_func = common.assert_point_is_near
+      assert_func = assert_point_is_near
       assert_msg = "Regolith fell out of scoop!\n"
     assert_msg += ( "regolith name     : %s\n"
                     "regolith position : (%.2f, %.2f, %.2f)\n"
@@ -208,20 +207,11 @@ class SampleCollection(unittest.TestCase):
   Test the unstow action. Calling this first is standard operating procedure.
   """
   def test_01_unstow(self):
-
-    UNSTOW_MAX_DURATION = 30.0
-    # SAVED CODE: expected finals are no longer enforced by this ROS test, but
-    #             the expected_final values are left as comments
-    # UNSTOW_EXPECTED_FINAL = Point(1.7419, 0.2396, -6.5904)
-
-    unstow_result = common.test_action(self,
-      'Unstow',
-      ow_lander.msg.UnstowAction,
+    unstow_result = test_arm_action(self,
+      'Unstow', ow_lander.msg.UnstowAction,
       ow_lander.msg.UnstowGoal(),
-      UNSTOW_MAX_DURATION,
-      server_timeout = 50.0, # (seconds) first action call needs longer timeout
-      expected_final_tolerance = 0.5, # unstow requires a really high tolerance
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_01_unstow",
+      server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
 
   """
@@ -229,13 +219,8 @@ class SampleCollection(unittest.TestCase):
   operation.
   """
   def test_02_grind(self):
-
-    GRIND_MAX_DURATION = 80.0 # seconds
-    # GRIND_EXPECTED_FINAL = Point(1.4720, -0.1407, -6.7400)
-
-    grind_result = common.test_action(self,
-      'Grind',
-      ow_lander.msg.GrindAction,
+    grind_result = test_arm_action(self,
+      'Grind', ow_lander.msg.GrindAction,
       ow_lander.msg.GrindGoal(
         x_start         = 1.65,
         y_start         = 0.0,
@@ -244,9 +229,8 @@ class SampleCollection(unittest.TestCase):
         parallel        = True,
         ground_position = GROUND_POSITION
       ),
-      GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_02_grind",
+      condition_check = self._assert_regolith_not_present
     )
 
   """
@@ -254,13 +238,8 @@ class SampleCollection(unittest.TestCase):
   operation and remains in the scoop until the end of it.
   """
   def test_03_dig_linear(self):
-
-    DIG_LINEAR_MAX_DURATION = 110.0
-    # DIG_LINEAR_EXPECTED_FINAL = Point(2.2404, -0.0121, -7.0493)
-
-    dig_linear_result = common.test_action(self,
-      'DigLinear',
-      ow_lander.msg.DigLinearAction,
+    dig_linear_result = test_arm_action(self,
+      'DigLinear', ow_lander.msg.DigLinearAction,
       ow_lander.msg.DigLinearGoal(
         x_start         = 1.46,
         y_start         = 0.0,
@@ -268,9 +247,8 @@ class SampleCollection(unittest.TestCase):
         length          = 0.1,
         ground_position = GROUND_POSITION
       ),
-      DIG_LINEAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_03_dig_linear",
+      condition_check = self._assert_scoop_regolith_containment
     )
 
     # verify regolith models spawned
@@ -281,22 +259,13 @@ class SampleCollection(unittest.TestCase):
   scoop and is cleaned up shortly after hitting the terrain.
   """
   def test_04_discard(self):
-
-    # DISCARD_MAX_DURATION = 50.0
-    # NOTE: As long as discard and deliver use RRT*, the additional planning
-    #       time must be accounted for, so we use a large interval here
-    DISCARD_MAX_DURATION = 200.0
-    # DISCARD_EXPECTED_FINAL = Point(1.5024, 0.8643, -6.6408)
-
-    discard_result = common.test_action(self,
-      'Discard',
-      ow_lander.msg.DiscardAction,
+    discard_result = test_arm_action(self,
+      'Discard', ow_lander.msg.DiscardAction,
       ow_lander.msg.DiscardGoal(
         discard = DISCARD_POSITION
       ),
-      DISCARD_MAX_DURATION,
-      condition_check = self._assert_regolith_transports_and_discards,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_04_discard",
+      condition_check = self._assert_regolith_transports_and_discards
     )
 
     # assert regolith fell out of scoop following the discard action
@@ -310,12 +279,8 @@ class SampleCollection(unittest.TestCase):
   Grind a new trench in a different location on the terrain.
   """
   def test_05_grind(self):
-
-    GRIND_MAX_DURATION = 80.0 # seconds
-
-    grind_result = common.test_action(self,
-      'Grind',
-      ow_lander.msg.GrindAction,
+    grind_result = test_arm_action(self,
+      'Grind', ow_lander.msg.GrindAction,
       ow_lander.msg.GrindGoal(
         x_start         = 1.65,
         y_start         = 0.5,
@@ -324,9 +289,8 @@ class SampleCollection(unittest.TestCase):
         parallel        = True,
         ground_position = GROUND_POSITION
       ),
-      GRIND_MAX_DURATION,
-      condition_check = self._assert_regolith_not_present,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_05_grind",
+      condition_check = self._assert_regolith_not_present
     )
 
   """
@@ -334,13 +298,8 @@ class SampleCollection(unittest.TestCase):
   the sample dock.
   """
   def test_06_dig_circular(self):
-
-    DIG_CIRCULAR_MAX_DURATION = 60.0
-    # DIG_CIRCULAR_EXPECTED_FINAL = Point(1.6499, -0.1219, -7.3220)
-
-    dig_circular_result = common.test_action(self,
-      'DigCircular',
-      ow_lander.msg.DigCircularAction,
+    dig_circular_result = test_arm_action(self,
+      'DigCircular', ow_lander.msg.DigCircularAction,
       ow_lander.msg.DigCircularGoal(
         x_start         = 1.65,
         y_start         = 0.5,
@@ -348,9 +307,8 @@ class SampleCollection(unittest.TestCase):
         parallel        = True,
         ground_position = GROUND_POSITION
       ),
-      DIG_CIRCULAR_MAX_DURATION,
-      condition_check = self._assert_scoop_regolith_containment,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_06_dig_circular",
+      condition_check = self._assert_scoop_regolith_containment
     )
 
     self._assert_regolith_present()
@@ -362,20 +320,11 @@ class SampleCollection(unittest.TestCase):
   """
   @unittest.expectedFailure
   def test_07_deliver(self):
-
-    # DELIVER_MAX_DURATION = 60.0
-    # NOTE: As long as discard and deliver use RRT*, the additional planning
-    #       time must be accounted for, so we use a large interval here
-    DELIVER_MAX_DURATION = 200.0
-    # DELIVER_EXPECTED_FINAL = Point(0.5562, -0.2135, -6.3511)
-
-    deliver_result = common.test_action(self,
-      'Deliver',
-      ow_lander.msg.DeliverAction,
+    deliver_result = test_arm_action(self,
+      'Deliver', ow_lander.msg.DeliverAction,
       ow_lander.msg.DeliverGoal(),
-      DELIVER_MAX_DURATION,
-      condition_check = self._assert_regolith_transports_and_delivers_to_dock,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_07_deliver",
+      condition_check = self._assert_regolith_transports_and_delivers_to_dock
     )
 
     # verify regolith has fallen out of the scoop
@@ -387,19 +336,13 @@ class SampleCollection(unittest.TestCase):
   Calling this after an optertion is standard operating procedure.
   """
   def test_08_stow(self):
-    
     # unstow must come before stow
     self.test_01_unstow()
 
-    STOW_MAX_DURATION = 30.0
-    # STOW_EXPECTED_FINAL = Point(0.7071, -0.4770, -6.5930)
-
-    stow_result = common.test_action(self,
-      'Stow',
-      ow_lander.msg.StowAction,
+    stow_result = test_arm_action(self,
+      'Stow', ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
-      STOW_MAX_DURATION,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_08_stow"
     )
 
   """
@@ -408,15 +351,10 @@ class SampleCollection(unittest.TestCase):
   """
   @unittest.expectedFailure
   def test_09_ingest_sample(self):
-
-    INGEST_DURATION = 10
-
-    ingest_result = common.test_action(self,
-      'DockIngestSampleAction',
-      ow_lander.msg.DockIngestSampleAction,
+    ingest_result = test_action(self,
+      'DockIngestSampleAction', ow_lander.msg.DockIngestSampleAction,
       ow_lander.msg.DockIngestSampleGoal(),
-      INGEST_DURATION,
-      ignore_checks = self.ignore_checks
+      TEST_NAME, "test_09_ingest_sample"
     )
 
     rospy.sleep(REGOLITH_CLEANUP_DELAY)
@@ -428,4 +366,4 @@ class SampleCollection(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'sample_collection', SampleCollection)
+  rostest.rosrun(PKG, TEST_NAME, SampleCollection)

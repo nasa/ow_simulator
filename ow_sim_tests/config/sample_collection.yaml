@@ -1,0 +1,27 @@
+arm_action_results:
+  test_01_unstow:
+    duration: 30.
+    final: {x: 1.7419, y: 0.2396, z: -6.5904}
+    final_tolerance: 0.5
+  test_02_grind:
+    duration: 80.
+    final: {x: 1.4720, y: -0.1407, z: -6.7400}
+  test_03_dig_linear:
+    duration: 110.
+    final: {x: 2.2404, y: -0.0121, z: -7.0493}
+  test_04_discard:
+    duration: 200.0
+    final: {x: 1.5024, y: 0.8643, z: -6.6408}
+  test_05_grind:
+    duration: 80.
+  test_06_dig_circular:
+    duration: 60.
+    final: {x: 1.6499, y: -0.1219, z: -7.3220}
+  test_07_deliver:
+    duration: 200.
+    final: {x: 0.5562, y: -0.2135, z: -6.3511}
+  test_08_stow:
+    duration: 30.
+    final: {x: 0.7071, y: -0.4770, z: -6.5930}
+  test_09_ingest_sample:
+    duration: 10.
