@@ -65,14 +65,18 @@ class AntennaPanTiltActionServer(object):
     def on_antenna_action(self, goal):
 
         halfpi = pi / 2.0 ;
+        # KMD: original tolerances were 0.5, which seem too loose.
+        pan_tolerance = 0.01;
+        tilt_tolerance = 0.01;
 
         if goal.pan < -3.2 or goal.pan > 3.2:
-            rospy.logwarn('Requested pan %s not within allowed limit' % goal.pan)
-            self._server.set_rejected()
+            rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
+                          % goal.pan)
             return
 
         if goal.tilt < -halfpi or goal.tilt > halfpi:
-            rospy.logwarn('Requested tilt %s not within allowed limit' % goal.tilt)
+            rospy.logwarn('Requested tilt %s not within allowed limit, rejecting'
+                          % goal.tilt)
             return
 
         done = False
@@ -81,16 +85,19 @@ class AntennaPanTiltActionServer(object):
             if self._server.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._server.set_preempted()
-                done = False
+#                done = False
                 break
 
             self._pan_pub.publish(goal.pan)
             self._tilt_pub.publish(goal.tilt)
             self._update_feedback()
 
-            if (abs(goal.pan - self._pan_value) < 0.05 and
-                abs(goal.tilt - self._tilt_value) < 0.05):
+            # KMD: add a timeout to this condition, and decouple termination
+            # from success.
+            if (abs(goal.pan - self._pan_value) < pan_tolerance and
+                abs(goal.tilt - self._tilt_value) < tilt_tolerance):
                 done = True
+                # KMD: this check is reduntant, and the 'else' will never run (?)
                 if done:
                     self._result.pan_position = self._fdbk.pan_position
                     self._result.tilt_position = self._fdbk.tilt_position
