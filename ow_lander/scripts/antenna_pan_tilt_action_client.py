@@ -11,20 +11,6 @@ import argparse
 import ow_lander.msg
 from guarded_move_action_client import print_arguments
 
-
-def wrap_angle(angle):
-    """
-    :param angle: (float)
-    :return: (float) the angle in [-pi, pi]
-    """
-    tolerance = 0.01
-    while angle > (pi+tolerance):
-        angle -= 2 * pi
-    while angle < -(pi-tolerance):
-        angle += 2 * pi
-    return angle
-
-
 def antenna_client():
 
     parser = argparse.ArgumentParser(
@@ -50,9 +36,6 @@ def antenna_client():
     goal.pan = args.pan
     goal.tilt = args.tilt
 
-#    goal.tilt = wrap_angle(goal.tilt)
-#    goal.pan = wrap_angle(goal.pan)
-
     # Sends the goal to the action server.
     client.send_goal(goal)
 
@@ -69,6 +52,6 @@ if __name__ == '__main__':
 
         rospy.init_node('antenna_client_py')
         result = antenna_client()
-        rospy.loginfo("Result: %s", result)
+        rospy.loginfo("Result from server: %s", result)
     except rospy.ROSInterruptException:
         rospy.logerror("program interrupted before completion")

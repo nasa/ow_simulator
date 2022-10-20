@@ -12,10 +12,23 @@ from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
 from math import pi
-from antenna_pan_tilt_action_client import wrap_angle
-
 
 class AntennaPanTiltActionServer(object):
+
+    pan_tolerance = 0.05;
+    tilt_tolerance = 0.05;
+
+    def wrap_angle(angle):
+        """
+        :param angle: (float)
+        :return: (float) the angle in [-pi, pi]
+        """
+        tolerance = 0.01
+        while angle > (pi+tolerance):
+            angle -= 2 * pi
+        while angle < -(pi-tolerance):
+            angle += 2 * pi
+        return angle
 
     def __init__(self, name):
         self._action_name = name
@@ -50,11 +63,12 @@ class AntennaPanTiltActionServer(object):
             return
         self._tilt_value = wrap_angle(data.position[id_tilt])
         self._pan_value = wrap_angle(data.position[id_pan])
-        rospy.loginfo ("---- raw pan    : %s" % data.position[id_pan])
-        rospy.loginfo ("---- wrapped pan: %s" % self._pan_value)
-        rospy.loginfo ("---- raw tilt    : %s" % data.position[id_tilt])
-        rospy.loginfo ("---- wrapped tilt: %s" % self._tilt_value)
-
+        pan_correction = abs(data.position[id_pan] - self._pan_value);
+        tilt_correction = abs(data.position[id_tilt] - self._tilt_value);
+        if  pan_correction > AntennaPanTiltActionServer.pan_tolerance:
+            rospy.logwarn ("Wrapping altered pan by %s" % pan_correction)
+        if  tilt_correction > AntennaPanTiltActionServer.tilt_tolerance:
+            rospy.logwarn ("Wrapping altered tilt by %s" % tilt_correction)
 
     def _update_feedback(self):
         #self._ls =  self._current_link_state._link_value
@@ -65,18 +79,20 @@ class AntennaPanTiltActionServer(object):
     def on_antenna_action(self, goal):
 
         halfpi = pi / 2.0 ;
-        # KMD: original tolerances were 0.5, which seem too loose.
-        pan_tolerance = 0.01;
-        tilt_tolerance = 0.01;
+
+        # ISSUE: How can '3.2' typed on the command line (client
+        # script) come in as 3.200000047683716 in 'goal' ?
 
         if goal.pan < -3.2 or goal.pan > 3.2:
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
+            self._server.set_aborted(None)
             return
 
         if goal.tilt < -halfpi or goal.tilt > halfpi:
             rospy.logwarn('Requested tilt %s not within allowed limit, rejecting'
                           % goal.tilt)
+            self._server.set_aborted(None)
             return
 
         done = False
@@ -85,7 +101,7 @@ class AntennaPanTiltActionServer(object):
             if self._server.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._server.set_preempted()
-#                done = False
+                done = False
                 break
 
             self._pan_pub.publish(goal.pan)
@@ -94,10 +110,10 @@ class AntennaPanTiltActionServer(object):
 
             # KMD: add a timeout to this condition, and decouple termination
             # from success.
-            if (abs(goal.pan - self._pan_value) < pan_tolerance and
-                abs(goal.tilt - self._tilt_value) < tilt_tolerance):
+            if (abs(goal.pan - self._pan_value) < AntennaPanTiltActionServer.pan_tolerance and
+                abs(goal.tilt - self._tilt_value) < AntennaPanTiltActionServer.tilt_tolerance) :
                 done = True
-                # KMD: this check is reduntant, and the 'else' will never run (?)
+                # KMD: this check seems redundant, and the 'else' unreachable
                 if done:
                     self._result.pan_position = self._fdbk.pan_position
                     self._result.tilt_position = self._fdbk.tilt_position
