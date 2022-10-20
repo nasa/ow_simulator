@@ -77,7 +77,7 @@
   <node name="faults" pkg="ow_faults_injection" type="faults" output="screen" />
   
   <!-- Start faults detection node -->
-  <node name="faults_detection" pkg="owl_msgs" type="faults_detection" output="screen" />
+  <node name="faults_detection" pkg="ow_faults_detection" type="faults_detection" output="screen" />
 
   <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
   <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
