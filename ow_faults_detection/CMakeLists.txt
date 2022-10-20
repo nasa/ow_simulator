@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   ow_lander
+  owl_msgs
   std_msgs
   message_generation
 )
@@ -52,7 +53,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   SystemFaults.msg
-  ArmFaults.msg
   PowerFaults.msg
   PTFaults.msg
   CamFaults.msg

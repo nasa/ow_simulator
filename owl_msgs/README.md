@@ -18,4 +18,4 @@ systems is reflected in the telemetry messages listed below, which
 include a system fault message that aggregates the states.
 
 
-
+Arm Faults: `/arm_faults_status`

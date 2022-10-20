@@ -10,7 +10,7 @@ import moveit_commander
 from geometry_msgs.msg import Point
 from controller_manager_msgs.srv import SwitchController
 from actionlib_msgs.msg import GoalStatus
-from ow_faults_detection.msg import ArmFaults
+from owl_msgs.msg import ArmFaultsStatus
 
 from ow_lander.srv import *
 from ow_lander.msg import *
@@ -201,7 +201,7 @@ class PathPlanningCommander(object):
   def run(self):
     rospy.init_node('path_planning_commander', anonymous=True)
     self.arm_faults_sub = rospy.Subscriber(
-        '/faults/arm_faults_status', ArmFaults, self.handle_arm_faults)
+        '/arm_faults_status', ArmFaultsStatus, self.handle_arm_faults)
     self.stop_srv = rospy.Service(
         'arm/stop', Stop, self.handle_stop)
     self.stow_srv = rospy.Service(

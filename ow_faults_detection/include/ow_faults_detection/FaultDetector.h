@@ -14,7 +14,7 @@
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
 #include "ow_faults_detection/SystemFaults.h"
-#include "ow_faults_detection/ArmFaults.h"
+#include <owl_msgs/ArmFaultsStatus.h>
 #include "ow_faults_detection/PowerFaults.h"
 #include "ow_faults_detection/PTFaults.h"
 #include "ow_faults_detection/CamFaults.h"
@@ -114,7 +114,7 @@ private:
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
-  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_arm_faults_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
