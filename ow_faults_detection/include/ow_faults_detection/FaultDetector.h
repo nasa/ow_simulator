@@ -12,12 +12,12 @@
 #include <cstdint>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
-#include <owl_msgs/JointStatesFlag.h>
-#include <owl_msgs/SystemFaultsStatus.h>
-#include <owl_msgs/ArmFaultsStatus.h>
-#include <owl_msgs/PowerFaults.h>
-#include <owl_msgs/PTFaults.h>
-#include <owl_msgs/CamFaults.h>
+#include <ow_faults_detection/JointStatesFlag.h>
+#include "ow_faults_detection/SystemFaults.h"
+#include "ow_faults_detection/ArmFaults.h"
+#include "ow_faults_detection/PowerFaults.h"
+#include "ow_faults_detection/PTFaults.h"
+#include "ow_faults_detection/CamFaults.h"
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -37,30 +37,28 @@ public:
   FaultDetector& operator= (const FaultDetector&) = delete;
 
   enum class ComponentFaults : uint {
-    None = 0,
     Hardware = 1, 
+    JointLimit = 2,
     TrajectoryGeneration = 2,
     Collision = 3, 
-    EStop = 4, 
+    Estop = 4, 
     PositionLimit = 5, 
-    JointTorqueLimit = 6, 
+    TorqueLimit = 6, 
     VelocityLimit = 7, 
     NoForceData = 8
-    ForceTorqueLimit = 6, 
     };
 
   //system
-  static constexpr std::bitset<10> isNoFault{               0b00'0000'0000 };
   static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
   static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
   static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
   static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
-  static constexpr std::bitset<10> isCameraGoalError{       0b00'0001'0000 };
-  static constexpr std::bitset<10> isCameraExecutionError{  0b00'0010'0000 };
+  static constexpr std::bitset<10> isCamGoalError{          0b00'0001'0000 };
+  static constexpr std::bitset<10> isCamExecutionError{     0b00'0010'0000 };
   static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
   static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
   static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
-  static constexpr std::bitset<10> isPowerExecutionError{   0b10'0000'0000 };
+  static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
 
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
@@ -78,7 +76,7 @@ private:
   // COMPONENT FUNCTIONS
   
   // Arm
-  void jointStatesFlagCb(const owl_msgs::JointStatesFlagConstPtr& msg);
+  void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
   
   // Find an item in an std::vector or other find-able data structure, and
@@ -120,7 +118,7 @@ private:
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
-  ros::Publisher m_system_faults_msg_pub;
+  ros::Publisher m_system_fault_msg_pub;
 
   // Arm and antenna
   ros::Subscriber m_joint_states_sub;

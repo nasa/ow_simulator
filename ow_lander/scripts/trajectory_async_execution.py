@@ -8,7 +8,7 @@ import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from owl_msgs.msg import SystemFaultsStatus
+from ow_faults_detection.msg import SystemFaults
 import dynamic_reconfigure.client
 
 ARM_EXECUTION_ERROR = 4
@@ -26,8 +26,8 @@ class TrajectoryAsyncExecuter:
         self.arm_fault = False
         # rospy.init_node('trajectoryAsyncExecuter')
         # subscribe to system_fault_status for any arm faults
-        rospy.Subscriber("/system_faults_status",
-                         SystemFaultsStatus, self.faultCheckCallback)
+        rospy.Subscriber("/faults/system_faults_status",
+                         SystemFaults, self.faultCheckCallback)
         self.continue_in_fault = False
         # intialize client to get status of faults
         self.faults_client()
