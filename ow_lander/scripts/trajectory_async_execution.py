@@ -8,7 +8,7 @@ import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from ow_faults_detection.msg import SystemFaults
+from owl_msgs.msg import SystemFaultsStatus
 import dynamic_reconfigure.client
 
 ARM_EXECUTION_ERROR = 4
