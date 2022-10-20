@@ -9,7 +9,6 @@ project(owl_msgs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   message_generation
-  message_runtime
   std_msgs
 )
 
@@ -103,7 +102,7 @@ add_message_files(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES owl_msgs
- CATKIN_DEPENDS message_generation message_runtime std_msgs
+ CATKIN_DEPENDS message_runtime std_msgs
 #  DEPENDS system_lib
 )
 
