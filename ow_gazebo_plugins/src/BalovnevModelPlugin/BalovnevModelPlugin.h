@@ -12,9 +12,9 @@
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
 
-
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
 
+#include <MovingMaxFilter.h>
 
 namespace gazebo
 {
@@ -23,7 +23,6 @@ namespace gazebo
 class BalovnevModelPlugin : public gazebo::ModelPlugin
 {
 public:
-
   BalovnevModelPlugin() = default;
   BalovnevModelPlugin (const BalovnevModelPlugin&) = default;
   BalovnevModelPlugin& operator= (const BalovnevModelPlugin&) = default;
@@ -50,21 +49,26 @@ private:
 
   void onDigTimeout(const ros::TimerEvent &);
 
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
+
   ros::Subscriber m_sub_mod_diff_visual;
 
   ros::Publisher m_pub_horizontal_force;
   ros::Publisher m_pub_vertical_force;
+  // DEBUG CODE
+  ros::Publisher m_pub_depth;
   
   ros::Timer m_dig_timeout;
 
   physics::LinkPtr m_link;
 
-  double m_horizontal_force;
-  double m_vertical_force;
+  event::ConnectionPtr m_updateConnection;  
 
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
-  event::ConnectionPtr m_updateConnection;
-  };
+  double m_horizontal_force, m_vertical_force;
+
+  std::unique_ptr<MovingMaxFilter> m_moving_max_depth;
+
+};
 
   // Register this plugin with the simulator
   GZ_REGISTER_MODEL_PLUGIN(BalovnevModelPlugin)
