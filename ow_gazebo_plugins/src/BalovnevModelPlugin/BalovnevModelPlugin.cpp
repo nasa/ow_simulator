@@ -161,11 +161,7 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
     + d*a3 * (2*s + 4*ls*tan(delta))*(d*g*sd/2 + c*(1/tan(phi))
     + g*q + BURIED * (d-ls*sin(beta)) * g*sd * (1-sin(phi))/(1+sin(phi)));
 
-  // NOTE: With accurate depths being fed to the equation, the forces are now
-  //       far too large, and immediately deflect the scoop off course. Until we
-  //       find the parameter that's causing this, we have added a fudge factor
-  //       that lowers both forces by a factor of 1/100.
-  constexpr double FUDGE_FACTOR = 1.0; // 0.05
+  constexpr double FUDGE_FACTOR = 1.0;
   m_horizontal_force *= FUDGE_FACTOR;
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
 
@@ -237,7 +233,7 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   // NOTE: pixel values should always be negative, so grab the minimum
   double min_pixel;
   cv::minMaxLoc(image_handle->image, &min_pixel);
-  m_moving_max_depth->addDatum(static_cast<float>(-min_pixel));
+  m_moving_max_depth->addDatum(-min_pixel);
 
   float depth = m_moving_max_depth->evaluate();
 
