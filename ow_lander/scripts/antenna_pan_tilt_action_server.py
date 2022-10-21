@@ -18,15 +18,16 @@ class AntennaPanTiltActionServer(object):
     pan_tolerance = 0.05;
     tilt_tolerance = 0.05;
 
-    def wrap_angle(angle):
+    def normalize_angle(angle):
         """
         :param angle: (float)
         :return: (float) the angle in [-pi, pi]
         """
-        tolerance = 0.01
+        # tolerance = 0.01
+        tolerance = 0.0
         while angle > (pi+tolerance):
             angle -= 2 * pi
-        while angle < -(pi-tolerance):
+        while angle < -(pi+tolerance):
             angle += 2 * pi
         return angle
 
@@ -61,14 +62,14 @@ class AntennaPanTiltActionServer(object):
             rospy.logerr_throttle(
                 1, "LanderInterface: j_ant_pan or j_ant_tilt not found in joint_states")
             return
-        self._tilt_value = wrap_angle(data.position[id_tilt])
-        self._pan_value = wrap_angle(data.position[id_pan])
+        self._tilt_value = normalize_angle(data.position[id_tilt])
+        self._pan_value = normalize_angle(data.position[id_pan])
         pan_correction = abs(data.position[id_pan] - self._pan_value);
         tilt_correction = abs(data.position[id_tilt] - self._tilt_value);
         if  pan_correction > AntennaPanTiltActionServer.pan_tolerance:
-            rospy.logwarn ("Wrapping altered pan by %s" % pan_correction)
+            rospy.logwarn ("Normalizing altered pan by %s" % pan_correction)
         if  tilt_correction > AntennaPanTiltActionServer.tilt_tolerance:
-            rospy.logwarn ("Wrapping altered tilt by %s" % tilt_correction)
+            rospy.logwarn ("Normalizing altered tilt by %s" % tilt_correction)
 
     def _update_feedback(self):
         #self._ls =  self._current_link_state._link_value
@@ -90,7 +91,7 @@ class AntennaPanTiltActionServer(object):
             return
 
         if goal.tilt < -halfpi or goal.tilt > halfpi:
-            rospy.logwarn('Requested tilt %s not within allowed limit, rejecting'
+            rospy.logwarn('Requested tilt %s not within allowed limit, rejecting.'
                           % goal.tilt)
             self._server.set_aborted(None)
             return
