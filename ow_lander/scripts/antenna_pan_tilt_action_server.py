@@ -7,29 +7,15 @@
 import rospy
 import actionlib
 import ow_lander.msg
+from constants import PAN_MIN, PAN_MAX, PAN_TOLERANCE
+from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE
+from utils import normalize_radians, in_range
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
-from math import pi
 
 class AntennaPanTiltActionServer(object):
-
-    pan_tolerance = 0.05;
-    tilt_tolerance = 0.05;
-
-    def normalize_angle(angle):
-        """
-        :param angle: (float)
-        :return: (float) the angle in [-pi, pi]
-        """
-        # tolerance = 0.01
-        tolerance = 0.0
-        while angle > (pi+tolerance):
-            angle -= 2 * pi
-        while angle < -(pi+tolerance):
-            angle += 2 * pi
-        return angle
 
     def __init__(self, name):
         self._action_name = name
@@ -62,13 +48,13 @@ class AntennaPanTiltActionServer(object):
             rospy.logerr_throttle(
                 1, "LanderInterface: j_ant_pan or j_ant_tilt not found in joint_states")
             return
-        self._tilt_value = normalize_angle(data.position[id_tilt])
-        self._pan_value = normalize_angle(data.position[id_pan])
+        self._tilt_value = normalize_radians(data.position[id_tilt])
+        self._pan_value = normalize_radians(data.position[id_pan])
         pan_correction = abs(data.position[id_pan] - self._pan_value);
         tilt_correction = abs(data.position[id_tilt] - self._tilt_value);
-        if  pan_correction > AntennaPanTiltActionServer.pan_tolerance:
+        if  pan_correction > PAN_TOLERANCE:
             rospy.logwarn ("Normalizing altered pan by %s" % pan_correction)
-        if  tilt_correction > AntennaPanTiltActionServer.tilt_tolerance:
+        if  tilt_correction > TILT_TOLERANCE:
             rospy.logwarn ("Normalizing altered tilt by %s" % tilt_correction)
 
     def _update_feedback(self):
@@ -78,19 +64,12 @@ class AntennaPanTiltActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def on_antenna_action(self, goal):
-
-        halfpi = pi / 2.0 ;
-
-        # ISSUE: How can '3.2' typed on the command line (client
-        # script) come in as 3.200000047683716 in 'goal' ?
-
-        if goal.pan < -3.2 or goal.pan > 3.2:
+        if not in_range(goal.pan, PAN_MIN, PAN_MAX):
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
             self._server.set_aborted(None)
             return
-
-        if goal.tilt < -halfpi or goal.tilt > halfpi:
+        if not in_range(goal.tilt, TILT_MIN, TILT_MAX):
             rospy.logwarn('Requested tilt %s not within allowed limit, rejecting.'
                           % goal.tilt)
             self._server.set_aborted(None)
@@ -111,8 +90,8 @@ class AntennaPanTiltActionServer(object):
 
             # KMD: add a timeout to this condition, and decouple termination
             # from success.
-            if (abs(goal.pan - self._pan_value) < AntennaPanTiltActionServer.pan_tolerance and
-                abs(goal.tilt - self._tilt_value) < AntennaPanTiltActionServer.tilt_tolerance) :
+            if (abs(goal.pan - self._pan_value) < PAN_TOLERANCE and
+                abs(goal.tilt - self._tilt_value) < TILT_TOLERANCE) :
                 done = True
                 # KMD: this check seems redundant, and the 'else' unreachable
                 if done:
