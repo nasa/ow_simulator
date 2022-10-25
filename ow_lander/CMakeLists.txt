@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   actionlib_msgs
+  sensor_msgs
 )
 
 add_service_files(
@@ -41,6 +42,7 @@ add_action_files(
   FILES ArmMoveJoint.action
   FILES ArmMoveJoints.action
   FILES LightSetIntensity.action
+  FILES CameraCapture.action
 )
 
 add_message_files(
@@ -57,7 +59,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs actionlib_msgs
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs actionlib_msgs sensor_msgs
 )
 
 catkin_add_env_hooks(

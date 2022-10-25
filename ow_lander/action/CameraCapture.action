@@ -1,0 +1,7 @@
+# goal
+float32 exposure
+---
+# result
+bool point_cloud_created
+---
+# feedback
