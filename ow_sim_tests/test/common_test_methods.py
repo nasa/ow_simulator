@@ -6,6 +6,19 @@ import actionlib
 from geometry_msgs.msg import Point
 import ow_lander.msg
 
+ignore_action_checks = False
+
+"""
+Set the value of the ignore_action_checks global. When true, action unit tests
+are allowed to exceed their maximum duration without producing a failure (and
+may execute indefinitely). For arm action tests the final position of the
+arm will additionally never produce a failure.
+@param  value: New value of the global boolean ignore_action_checks
+"""
+def set_ignore_action_checks(value: bool):
+  global ignore_action_checks
+  ignore_action_checks = value
+
 """
 Computes the 3D distance between two geometry_msgs.msg Points
 """
@@ -15,29 +28,45 @@ def distance(p1, p2):
             p2.z - p1.z)
   return math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 
+"""
+Does nothing. Simply here to be act as a non-check function for the
+test_action and test_arm_action functions.
+"""
 def assert_nothing():
   pass
 
 """
-Asserts two Points are near each
-@param  p1: First point
-@param  p2: Second point
-@param  delta: Distance under which points are considered "near"
+Asserts a value is between low and high (inclusive)
+@param  value: Value being tested
+@param  low: Lowest value it must be greater than or equal to
+@param  high: Highest value it must be less than or equal to
 @param  msg: Assert message
 """
-def assert_point_is_near(test_object, p1, p2, delta, msg):
-  test_object.assertLessEqual(distance(p1, p2), delta, msg)
+def assert_in_closed_range(test_object, value, low, high, msg=None):
+  test_object.assertGreaterEqual(value, low, msg)
+  test_object.assertLessEqual(value, high, msg)
 
 """
-Asserts two Points are far enough from each
-@param  p1: First point
-@param  p2: Second point
-@param  delta: Distance above which points are considered "far"
+Asserts two Points are withing a deviation vector of each other
+@param  p: Point being tested
+@param  expected: Expected Point
+@param  dev: A vector of acceptable deviations in x, y, and z
 @param  msg: Assert message
 """
-def assert_point_is_far(test_object, p1, p2, delta, msg):
-  test_object.assertGreater(distance(p1, p2), delta, msg)
-
+def assert_point_is_within_deviation(test_object, p, expected, dev, msg=None):
+  DEFAULT_MSG = "%s-coordinate is out of acceptable range"
+  assert_in_closed_range(
+    test_object, p.x, expected.x - dev.x, expected.x + dev.x,
+    DEFAULT_MSG % 'x' if msg == None else msg
+  )
+  assert_in_closed_range(
+    test_object, p.y, expected.y - dev.y, expected.y + dev.y,
+    DEFAULT_MSG % 'y' if msg == None else msg
+  )
+  assert_in_closed_range(
+    test_object, p.z, expected.z - dev.z, expected.z + dev.z,
+    DEFAULT_MSG % 'z' if msg == None else msg
+  )
 
 """
 Returns true if an action is done
@@ -51,7 +80,7 @@ Calls an action asynchronously allowing checks to occur during its execution.
 @param  test_object: Object of type unittest.TestCase
 @param  action_name: Name of action to be called
 @param  action: ROS action object
-@param  goal: Goal object that kwargs populates
+@param  goal: Goal object passed to action server
 @param  max_duration: Max time allotted to action in seconds.
 @param  condition_check: A function repeatedly called during action
         execution that asserts requirements for a successful action operation
@@ -63,22 +92,13 @@ def test_action_noyaml(test_object, action_name, action, goal, max_duration,
                        condition_check = assert_nothing,
                        condition_check_interval = 0.2,
                        server_timeout = 10.0):
-
-  rospy.loginfo("max_duration = %f" % max_duration)
-
   client = actionlib.SimpleActionClient(action_name, action)
   connected = client.wait_for_server(timeout=rospy.Duration(server_timeout))
   test_object.assertTrue(
     connected,
     "Timeout exceeded waiting for %s action server" % action_name
   )
-
   client.send_goal(goal)
-
-  rospy.loginfo(
-    "\n===%s action goal sent===\n%s" % (action_name, goal)
-  )
-
   # monitor for failed conditions during action execution
   start = rospy.get_time()
   elapsed = 0.0
@@ -88,25 +108,18 @@ def test_action_noyaml(test_object, action_name, action, goal, max_duration,
     elapsed = rospy.get_time() - start
     if elapsed > max_duration:
       break
-
   test_object.assertLess(
     elapsed, max_duration,
     "Timeout reached waiting for %s action to finish!" % action_name
   )
-
-  rospy.loginfo(
-    "\n=== %s action completed in %0.3fs ===" % (action_name, elapsed)
-  )
-
-  return client.get_result()
+  return client.get_result(), elapsed
 
 """
 Calls an action asynchronously allowing checks to occur during its execution.
-See test_action for explanation of other parameters.
 @param  test_object: Object of type unittest.TestCase
 @param  action_name: Name of action to be called
 @param  action: ROS action object
-@param  goal: Goal object that kwargs populates
+@param  goal: Goal object passed to action server
 @param  max_duration: Max time allotted to action in seconds.
 @param  expected_final: Final arm position to be compared with action result
         (default: None)
@@ -116,98 +129,165 @@ See test_action for explanation of other parameters.
 """
 def test_arm_action_noyaml(test_object, action_name, action, goal, max_duration,
                            expected_final = None,
-                           expected_final_tolerance = 0.02,
+                           expected_final_tolerance = Point(0.2, 0.2, 0.2),
                            **kwargs):
-  result = test_action_noyaml(
+  result, elapsed = test_action_noyaml(
     test_object, action_name, action, goal, max_duration, **kwargs
   )
-
-  rospy.loginfo(
-    "=== arm final position is (%0.3f, %0.3f, %0.3f) ==="
-    % (result.final.x, result.final.y, result.final.z)
-  )
-
-  # verify action ended where we expected
+    # verify action ended where we expected
   if expected_final:
-    assert_point_is_near(test_object,
-      result.final, expected_final, expected_final_tolerance,
-      "Arm did not complete the %s action in the position expected!"
-        % action_name
+    assert_point_is_within_deviation(test_object,
+      result.final, expected_final, expected_final_tolerance
     )
+  return result, elapsed
 
-  return result
+def print_action_start(unit_name, goal):
+  rospy.loginfo("\n=== %s goal sent ===\n%s", unit_name, goal)
 
-def get_test_results_uri(test_name, test_unit, parameter = None):
-  if parameter:
-    return '/%s/arm_action_results/%s/%s' % (test_name, test_unit, parameter)
-  else:
-    return '/%s/arm_action_results/%s' % (test_name, test_unit)
+def print_action_complete(unit_name, elapsed):
+  rospy.loginfo("\n=== %s completed in %0.4fs ===", unit_name, elapsed)
 
-def is_test_results_present(test_name, test_unit):
-  return rospy.has_param(get_test_results_uri(test_name, test_unit))
-
-def get_param_duration(test_name, test_unit):
-  DEFAULT = 9999
-  return rospy.get_param(
-    get_test_results_uri(test_name, test_unit, 'duration'), DEFAULT
+def print_arm_action_final(unit_name, final):
+  rospy.loginfo(
+    "\n=== %s completed with arm in position (%0.4f, %0.4f, %0.4f) ===",
+    unit_name, final.x, final.y, final.z
   )
 
-def get_param_final(test_name, test_unit):
-  DEFAULT = None
-  uri = get_test_results_uri(test_name, test_unit, 'final')
-  if not rospy.has_param(uri):
-    return DEFAULT
-  final = rospy.get_param(uri)
-  return Point(final['x'], final['y'], final['z'])
+def are_test_parameters_available(test_name, unit_name):
+  return rospy.has_param('/%s/test_parameters/%s' % (test_name, unit_name))
 
-def get_param_final_tolerance(test_name, test_unit):
-  DEFAULT = 0.02
+def get_test_parameter_mean(test_name, unit_name, parameter):
   return rospy.get_param(
-    get_test_results_uri(test_name, test_unit, 'final_tolerance'), DEFAULT
+    '/%s/test_parameters/%s/%s/mean' % (test_name, unit_name, parameter)
   )
+
+def get_test_parameter_std(test_name, unit_name, parameter):
+  return rospy.get_param(
+    '/%s/test_parameters/%s/%s/std' % (test_name, unit_name, parameter)
+  )
+
+def get_max_duration(test_name, unit_name, std_factor):
+  duration = get_test_parameter_mean(test_name, unit_name, 'duration')
+  duration_std = get_test_parameter_std(test_name, unit_name, 'duration')
+  return duration + std_factor * duration_std
 
 """
-Version of test_action_noyaml that grabs test result parameters from a
-configuration file.
+Version of test_action_noyaml that grabs testing parameters from a
+configuration file, typically generated by the arm_test_analysis.py script.
 @param  test_object: Object of type unittest.TestCase
 @param  action_name: Name of action to be called
 @param  action: ROS action object
-@param  goal: Goal object that kwargs populates
+@param  goal: Goal object passed to action server
 @param  test_name: Name of rostest. Used to lookup results from a config file.
-@param  unit_name: Name of test method that calls this function. Can be
-        typically be filled with __name__.
+@param  unit_name: Name of unit test that calls this function. Used to lookup
+        results from config file.
+@param  duration_std_factor: The product of this and the unit test's duration
+        standard deviation are added to the duration mean to yield a maximum
+        allowed duration for the test. In statistical nomenclature, assigning a
+        factor 2.0 is the same as allowing the test to go on for 2-sigma longer
+        than it's mean duration. (default: 4)
 @kwargs keyword arguments of test_action_noyaml
 """
 def test_action(test_object, action_name, action, goal,
-                test_name, unit_name, **kwargs):
-  if not is_test_results_present(test_name, unit_name):
-    rospy.logerror("Test results not found.")
-  test_action_noyaml(
-    test_object, action_name, action, goal,
-    get_param_duration(test_name, unit_name),
-    **kwargs
-  )
+                test_name, unit_name,
+                duration_std_factor = 4,
+                **kwargs):
+  print_action_start(unit_name, goal)
+  result, elapsed = None, None
+  if ignore_action_checks:
+    result, elapsed = test_action_noyaml(
+      test_object, action_name, action, goal, 99999999.0,
+      **kwargs
+    )
+  else:
+    if not are_test_parameters_available(test_name, unit_name):
+      rospy.logerr("Test results not found.")
+    max_duration = get_max_duration(test_name, unit_name, duration_std_factor)
+    rospy.loginfo("%s:\n\tmax_duration = %f"
+      % (unit_name, max_duration)
+    )
+    result, elapsed = test_action_noyaml(
+      test_object, action_name, action, goal,
+      max_duration,
+      **kwargs
+    )
+  print_action_complete(unit_name, elapsed)
 
 """
-Version of test_arm_action_noyaml that grabs test result parameters from a
-configuration file.
+Version of test_arm_action_noyaml that grabs testing parameters from a
+configuration file, typically generated by the arm_test_analysis.py script.
 @param  test_object: Object of type unittest.TestCase
 @param  action_name: Name of action to be called
 @param  action: ROS action object
-@param  goal: Goal object that kwargs populates
+@param  goal: Goal object passed to action server.
 @param  test_name: Name of rostest. Used to lookup results from a config file.
-@param  unit_name: Name of test method that calls this function. Can be
-        typically be filled with __name__.
+@param  unit_name: Name of unit test that calls this function. Used to lookup
+        results from config file.
+@param  duration_std_factor: The product of this and the unit test's duration
+        standard deviation are added to the duration mean to yield a maximum
+        allowed duration for the test. In statistical nomenclature, assigning a
+        factor 2.0 is the same as allowing the test to go on for 2-sigma longer
+        than it's mean duration. (default: 4)
+@param  expected_final_std_factor: The product of this and the unit test's final
+        arm position standard deviation vector yield a tolerance around the
+        mean final arm position of acceptable positions the arm should finalize
+        its trajectory in. In statistical nomenclature, assigning a factor of
+        2.0 is the same as allowing the arm's final position to be within
+        2-sigma of its mean final position. The standard deviation vector
+        provides a standard deviation for each of the three coordinates
+        (x, y, and z), so the arm's final position is verified to be within an
+        axis-aligned box of dimensions defined by the scalar-vector product of
+        this value and the standard deviation vector. (default: 4)
+@param  expected_final_minimum_tolerance: Minimum tolerance used for the arm's
+        final position in any of the three coordinates (x, y, and z).
+        (default: 0.0005)
 @kwargs keyword arguments of test_arm_action_noyaml
 """
 def test_arm_action(test_object, action_name, action, goal,
-                    test_name, unit_name, **kwargs):
-  if not is_test_results_present(test_name, unit_name):
-    rospy.logerror("Test results not found.")
-  test_arm_action_noyaml(
-    test_object, action_name, action, goal,
-    get_param_duration(test_name, unit_name),
-    expected_final = get_param_final(test_name, unit_name),
-    expected_final_tolerance = get_param_final_tolerance(test_name, unit_name),
-    **kwargs
-  )
+                    test_name, unit_name,
+                    duration_std_factor = 4,
+                    expected_final_std_factor = 4,
+                    expected_final_minimum_tolerance = 0.0005,
+                    **kwargs):
+  print_action_start(unit_name, goal)
+  result, elapsed = None, None
+  if ignore_action_checks:
+    result, elapsed = test_arm_action_noyaml(
+      test_object, action_name, action, goal, 99999999.0,
+      **kwargs
+    )
+  else:
+    if not are_test_parameters_available(test_name, unit_name):
+      rospy.logerr("Test results not found.")
+    max_duration = get_max_duration(test_name, unit_name, duration_std_factor)
+    final = Point(
+      get_test_parameter_mean(test_name, unit_name, 'final_x'),
+      get_test_parameter_mean(test_name, unit_name, 'final_y'),
+      get_test_parameter_mean(test_name, unit_name, 'final_z')
+    )
+    final_tolerance = Point(
+      max(
+        expected_final_std_factor * get_test_parameter_std(test_name, unit_name, 'final_x'),
+        expected_final_minimum_tolerance
+      ),
+      max(
+        expected_final_std_factor * get_test_parameter_std(test_name, unit_name, 'final_y'),
+        expected_final_minimum_tolerance
+      ),
+      max(
+        expected_final_std_factor * get_test_parameter_std(test_name, unit_name, 'final_z'),
+        expected_final_minimum_tolerance
+      )
+    )
+    rospy.loginfo("%s:\n\tmax_duration = %f\n\tfinal = (%f, %f, %f)\n\tfinal_tol = (%f, %f, %f)"
+      % (unit_name, max_duration, final.x, final.y, final.z, final_tolerance.x, final_tolerance.y, final_tolerance.z)
+    )
+    result, elapsed = test_arm_action_noyaml(
+      test_object, action_name, action, goal,
+      max_duration,
+      expected_final = final,
+      expected_final_tolerance = final_tolerance,
+      **kwargs
+    )
+  print_arm_action_final(unit_name, result.final)
+  print_action_complete(unit_name, elapsed)

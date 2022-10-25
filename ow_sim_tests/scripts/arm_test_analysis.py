@@ -9,8 +9,13 @@ import os
 import re
 import subprocess
 import time
-import pprint
 import argparse
+import yaml
+from statistics import mean, stdev
+
+import rospkg
+
+PKG = 'ow_sim_tests'
 
 def get_ros_log_path():
   ENV_ROS_LOG_DIR = 'ROS_LOG_DIR'
@@ -32,28 +37,13 @@ def get_latest_test_log(test_name):
     if 'stdout' not in p:
       return p
   # log not found
-  return ''
-
-def process_latest_log(test_name):
-  PATTERN = r"""===(\w+)\ action\ goal\ sent===                                    # start of an action
-                (?:.|\n)+?                                                         # fewest possible line skips
-                final\ position\ =\ \((-?\d+\.\d*),\ (-?\d+\.\d*),\ (-?\d+\.\d*)\) # final vector
-                (?:.|\n)+?                                                         # fewest possible line skips
-                ===\1\ action\ completed\ in\ (\d+\.\d*)s===                       # end of the same action
-                """
-  with open(get_latest_test_log(test_name), 'r') as log:
-    final_positions = dict()
-    for match in re.finditer(PATTERN, log.read(), flags=re.VERBOSE):
-      final_positions[match[1]] = {
-        'final_x': float(match[2]),
-        'final_y': float(match[3]),
-        'final_z': float(match[4]),
-        'duration': float(match[5])
-      }
-  return final_positions
+  return ""
 
 def run_test(test_name, real_time_update_rate):
-  test_cmd = ["rostest", "ow_sim_tests", test_name, "gzclient:=false"]
+  test_cmd = [
+    "rostest", "ow_sim_tests", test_name,
+    "gzclient:=false", "ignore_action_checks:=true"
+  ]
   test_proc = subprocess.Popen(test_cmd)
   # attempt to change physics update rate until it succeeds
   gz_speedup_cmd = ["gz", "physics", "-u", str(real_time_update_rate)]
@@ -64,40 +54,55 @@ def run_test(test_name, real_time_update_rate):
     time.sleep(0.1)
   test_proc.wait()
 
-def average_results(results):
-  summations = dict()
-  occurrences = dict()
-  for test in results:
-    for action in test.keys():
-      if action not in summations:
-        summations[action] = dict()
-        occurrences[action] = 1
-      else:
-        occurrences[action] += 1
-      for value in test[action].keys():
-        if value not in summations[action]:
-          summations[action][value] = test[action][value]
-        else:
-          summations[action][value] += test[action][value]
+def parse_latest_log(test_name, out_results):
+  # NOTE: To see from where this syntax originates inspect print_action_start,
+  #       print_action_complete, and print_arm_action_final in
+  #       common_test_methods.py
+  PATTERN = r"""===\ (?P<unit>\w+)\ goal\ sent\ ===                # start of an action
+                (?:(?:.|\n)+?                              # fewest possible line skips
+                ===\ \1\ completed\ with\ arm\ in\ position\ \((?P<final_x>-?\d+\.\d*),\ (?P<final_y>-?\d+\.\d*),\ (?P<final_z>-?\d+\.\d*)\)\ ===)? # final vector
+                (?:.|\n)+?                                 # fewest possible line skips
+                ===\ \1\ completed\ in\ (?P<duration>\d+\.\d*)s\ ===   # end of the same action
+                """
+  log_path = get_latest_test_log(test_name)
+  if log_path == "":
+    print("Log for test %s was not found." % test_name)
+    return
+  with open(log_path, 'r') as log:
+    for match in re.finditer(PATTERN, log.read(), flags=re.VERBOSE):
+      groups = match.groupdict()
+      unit = groups.pop('unit')
+      if not unit in out_results:
+        out_results[unit] = dict()
+      for param in groups.keys():
+        if groups[param] == None:
+          continue
+        if not param in out_results[unit]:
+          out_results[unit][param] = list()
+        out_results[unit][param] += [ float(groups[param]) ]
 
-  averages = dict()
-  for action in summations.keys():
-    averages[action] = dict()
-    for value in summations[action].keys():
-      averages[action][value] = float(summations[action][value]) / occurrences[action]
+def generate_statistics(results):
+  STATS_FORMAT = {
+    'mean': mean,
+    'std': stdev,
+    'samples': len
+  }
+  stats = dict()
+  for unit in results.keys():
+    stats[unit] = dict()
+    for param in results[unit].keys():
+      stats[unit][param] = dict()
+      for stat in STATS_FORMAT:
+        stats[unit][param][stat] = STATS_FORMAT[stat](results[unit][param])
+  return stats
 
-  return averages
-
-def pretty_dictionary_print(d, indent=0):
-  for key, value in d.items():
-    print('  ' * indent + str(key))
-    if isinstance(value, dict):
-      pretty_dictionary_print(value, indent+1)
-    else:
-      print('  ' * (indent+1) + str(value))
+def save_to_yaml(data, output_path):
+  # put into correct format for dump method
+  with open(output_path, 'w') as output:
+    formatted_data = {'test_parameters': data}
+    yaml.dump(formatted_data, output)
 
 if __name__ == '__main__':
-
   parser = argparse.ArgumentParser(
     description="""Run a rostest that calls the test_action method from
     common_test_methods.py on arm actions multiple times compute the average
@@ -114,53 +119,31 @@ if __name__ == '__main__':
     '--real_time_update_rate', '-u', type=float, required=False, default=1200,
     help="Rate each simulation will be ran at."
   )
+  parser.add_argument(
+    '--output', '-o', type=str, required=False, default=None,
+    help="YAML file which test results will be saved to."
+  )
   args = parser.parse_args()
 
-  results = list()
+  test_name_noext = os.path.splitext(args.test_name)[0]
+  results = dict()
   for i in range(args.repeats):
     print("Running test %d of %d..." % (i, args.repeats))
     run_test(args.test_name, args.real_time_update_rate)
-    results.append(process_latest_log(args.test_name.rsplit('.')[0]))
+    parse_latest_log(test_name_noext, results)
+    ## DEBUG CODE
+    print(results)
 
-
-  # TEST INPUT
-  # results = [
-  #   {
-  #     "dig_linear": {
-  #       "final_x"  : 20,
-  #       "final_y"  : 0,
-  #       "final_z"  : 60,
-  #       "duration" : 200,
-  #     },
-  #     "grind": {
-  #       "final_x"  : 2,
-  #       "final_y"  : 5,
-  #       "final_z"  : 8,
-  #       "duration" : 20
-  #     }
-  #   },
-  #   {
-  #     "dig_linear": {
-  #       "final_x"  : 10,
-  #       "final_y"  : 50,
-  #       "final_z"  : 20,
-  #       "duration" : 100,
-  #     }
-  #     ,
-  #     "grind": {
-  #       "final_x"  : 6,
-  #       "final_y"  : 10,
-  #       "final_z"  : 4,
-  #       "duration" : 10
-  #     }
-  #   }
-  # ]
-  # expected results
-  # dig_linear: 15, 25, 40, 150
-  # grind     : 4, 7.5, 6, 15
-
-
-  print("All %d runs of test %s completed." % (ARG2, ARG1))
+  print("All %d runs of test %s completed." % (args.repeats, args.test_name))
   print("Here are the results:")
 
-  pretty_dictionary_print(average_results(results))
+  processed = generate_statistics(results)
+
+  # DEBUG CODE
+  print(processed)
+
+  output = args.output
+  if output == None:
+    pkg_path = rospkg.RosPack().get_path(PKG)
+    output = os.path.join(pkg_path, 'config', test_name_noext + '.yaml')
+  save_to_yaml(processed, output)

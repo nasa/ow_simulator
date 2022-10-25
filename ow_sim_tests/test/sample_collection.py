@@ -55,6 +55,9 @@ class SampleCollection(unittest.TestCase):
                                              LinkStates,
                                              cls._on_link_states)
 
+    # changes behavior of test_action and test_arm_action
+    set_ignore_action_checks('--ignore_action_checks' in sys.argv)
+
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
@@ -118,6 +121,26 @@ class SampleCollection(unittest.TestCase):
     )
 
   """
+  Asserts two Points are near each
+  @param  p1: First point
+  @param  p2: Second point
+  @param  delta: Distance under which points are considered "near"
+  @param  msg: Assert message
+  """
+  def _assert_point_is_near(self, p1, p2, delta, msg=None):
+    self.assertLessEqual(distance(p1, p2), delta, msg)
+
+  """
+  Asserts two Points are far enough from each
+  @param  p1: First point
+  @param  p2: Second point
+  @param  delta: Distance above which points are considered "far"
+  @param  msg: Assert message
+  """
+  def _assert_point_is_far(self, p1, p2, delta, msg=None):
+    self.assertGreater(distance(p1, p2), delta, msg)
+
+  """
   Assert that, if regolith exists, it is in the scoop
   """
   def _assert_scoop_regolith_containment(self, assert_regolith_in_scoop=True):
@@ -126,10 +149,10 @@ class SampleCollection(unittest.TestCase):
     if scoop_position is None:
       return
     # setup assertion and assertion message conditionally
-    assert_func = assert_point_is_far
+    assert_func = self._assert_point_is_far
     assert_msg = "Regolith remains in scoop!\n"
     if assert_regolith_in_scoop:
-      assert_func = assert_point_is_near
+      assert_func = self._assert_point_is_near
       assert_msg = "Regolith fell out of scoop!\n"
     assert_msg += ( "regolith name     : %s\n"
                     "regolith position : (%.2f, %.2f, %.2f)\n"
@@ -137,7 +160,7 @@ class SampleCollection(unittest.TestCase):
     # Verify regolith models remain in the scoop after spawning
     for name, pose in zip(self._gz_link_names, self._gz_link_poses):
       if self._is_regolith(name):
-        assert_func(self,
+        assert_func(
           pose.position, scoop_position, SCOOP_CONTAINMENT_RADIUS,
           assert_msg % (
                 name,

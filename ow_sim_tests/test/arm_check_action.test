@@ -12,7 +12,7 @@
 
     <test if="$(arg ignore_checks)"
         test-name="arm_check_action" pkg="ow_sim_tests"
-        type="arm_check_action.py" time-limit="9999999999.0"
+        type="arm_check_action.py" time-limit="99999999.0"
         args="--ignore_checks"/>
 
     <test unless="$(arg ignore_checks)"
