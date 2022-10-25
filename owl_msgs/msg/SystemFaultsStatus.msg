@@ -1,11 +1,12 @@
 # System Fault Status Mask
 
 # The 'value' field is the fault classification, which is the
-# following enumeration, implemented in FaultDetector.h.  The
-# associated message is a bitmask that can represent any subset of
+# following enumeration, implemented as bitset constant expressions in
+# ow_faults_detection/include/ow_faults_detection/FaultDetector.h
+# The associated message is a bitmask that can represent any subset of
 # these faults occuring at the same time.
 
-# NO_FAULT = 0,
+# NONE = 0,
 # SYSTEM = 1,
 # ARM_GOAL_ERROR = 2,
 # ARM_EXECUTION_ERROR = 4,
