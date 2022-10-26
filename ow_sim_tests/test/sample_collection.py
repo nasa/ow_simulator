@@ -144,7 +144,7 @@ class SampleCollection(unittest.TestCase):
   Assert that, if regolith exists, it is in the scoop
   """
   def _assert_scoop_regolith_containment(self, assert_regolith_in_scoop=True):
-    SCOOP_CONTAINMENT_RADIUS = 0.12 # meters
+    SCOOP_CONTAINMENT_RADIUS = 0.16 # meters
     scoop_position = self._get_link_position(SCOOP_LINK_NAME)
     if scoop_position is None:
       return
@@ -355,17 +355,28 @@ class SampleCollection(unittest.TestCase):
     self._assert_dock_regolith_containment()
 
   """
-  Test the unstow then stow action.
+  Test the unstow action.
   Calling this after an optertion is standard operating procedure.
   """
-  def test_08_stow(self):
+  def test_08_unstow(self):
+    unstow_result = test_arm_action(self,
+      'Unstow', ow_lander.msg.UnstowAction,
+      ow_lander.msg.UnstowGoal(),
+      TEST_NAME, "test_08_unstow"
+    )
+
+  """
+  Test the stow action.
+  Calling this after an optertion is standard operating procedure.
+  """
+  def test_09_stow(self):
     # unstow must come before stow
     self.test_01_unstow()
 
     stow_result = test_arm_action(self,
       'Stow', ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),
-      TEST_NAME, "test_08_stow"
+      TEST_NAME, "test_09_stow"
     )
 
   """
@@ -373,11 +384,11 @@ class SampleCollection(unittest.TestCase):
   the simulation.
   """
   @unittest.expectedFailure
-  def test_09_ingest_sample(self):
+  def test_10_ingest_sample(self):
     ingest_result = test_action(self,
       'DockIngestSampleAction', ow_lander.msg.DockIngestSampleAction,
       ow_lander.msg.DockIngestSampleGoal(),
-      TEST_NAME, "test_09_ingest_sample"
+      TEST_NAME, "test_10_ingest_sample"
     )
 
     rospy.sleep(REGOLITH_CLEANUP_DELAY)

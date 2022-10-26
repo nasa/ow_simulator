@@ -12,7 +12,7 @@
 
     <test if="$(arg ignore_action_checks)"
           test-name="sample_collection" pkg="ow_sim_tests"
-          type="sample_collection.py" time-limit="99999999.0"
+          type="sample_collection.py" time-limit="550.0"
           args="--ignore_action_checks" />
 
     <test unless="$(arg ignore_action_checks)"
