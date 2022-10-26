@@ -42,7 +42,7 @@ def get_latest_test_log(test_name):
 def run_test(test_name, real_time_update_rate):
   test_cmd = [
     "rostest", "ow_sim_tests", test_name,
-    "gzclient:=false", "ignore_action_checks:=true"
+    "gzclient:=true", "ignore_action_checks:=true"
   ]
   test_proc = subprocess.Popen(test_cmd)
   # attempt to change physics update rate until it succeeds
@@ -131,16 +131,16 @@ if __name__ == '__main__':
     print("Running test %d of %d..." % (i, args.repeats))
     run_test(args.test_name, args.real_time_update_rate)
     parse_latest_log(test_name_noext, results)
-    ## DEBUG CODE
-    print(results)
 
   print("All %d runs of test %s completed." % (args.repeats, args.test_name))
   print("Here are the results:")
 
   processed = generate_statistics(results)
 
+  ## DEBUG CODE
+  print("results = ", results)
   # DEBUG CODE
-  print(processed)
+  print("statistics = ", processed)
 
   output = args.output
   if output == None:

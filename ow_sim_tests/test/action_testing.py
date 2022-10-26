@@ -247,7 +247,7 @@ def test_arm_action(test_object, action_name, action, goal,
                     test_name, unit_name,
                     duration_std_factor = 6,
                     expected_final_std_factor = 6,
-                    expected_final_minimum_tolerance = 0.0005,
+                    expected_final_minimum_tolerance = 0.01,
                     **kwargs):
   print_action_start(unit_name, goal)
   result, elapsed = None, None

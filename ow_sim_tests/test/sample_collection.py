@@ -18,7 +18,7 @@ from geometry_msgs.msg import Point
 
 import ow_lander.msg
 
-from common_test_methods import *
+from action_testing import *
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'sample_collection'
