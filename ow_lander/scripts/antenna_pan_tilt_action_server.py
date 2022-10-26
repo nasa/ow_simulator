@@ -28,6 +28,8 @@ class AntennaPanTiltActionServer(object):
             '/ant_pan_position_controller/command', Float64, queue_size=10)
         self._subscriber = rospy.Subscriber(
             "/joint_states", JointState, self._handle_joint_states)
+        # KMD: the following two lines seem questionable since these
+        # members are assigned by the previous subscriber.
         self._pan_value = None
         self._tilt_value = None
         self._server = actionlib.SimpleActionServer(self._action_name,
@@ -50,12 +52,16 @@ class AntennaPanTiltActionServer(object):
             return
         self._tilt_value = normalize_radians(data.position[id_tilt])
         self._pan_value = normalize_radians(data.position[id_pan])
+        
+        # KMD: the rest of this function is for debugging only.
         pan_correction = abs(data.position[id_pan] - self._pan_value);
         tilt_correction = abs(data.position[id_tilt] - self._tilt_value);
         if  pan_correction > PAN_TOLERANCE:
-            rospy.logwarn ("Normalizing altered pan by %s" % pan_correction)
+            rospy.logwarn_throttle (60, "Normalizing altered pan by %s"
+                                    % pan_correction)
         if  tilt_correction > TILT_TOLERANCE:
-            rospy.logwarn ("Normalizing altered tilt by %s" % tilt_correction)
+            rospy.logwarn_throttle (60, "Normalizing altered tilt by %s"
+                                    % tilt_correction)
 
     def _update_feedback(self):
         #self._ls =  self._current_link_state._link_value
@@ -64,6 +70,8 @@ class AntennaPanTiltActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def on_antenna_action(self, goal):
+        # Check for valid range.  Note that action servers don't
+        # support a "rejected" state, so using aborted if out of range.
         if not in_range(goal.pan, PAN_MIN, PAN_MAX):
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
@@ -88,8 +96,8 @@ class AntennaPanTiltActionServer(object):
             self._tilt_pub.publish(goal.tilt)
             self._update_feedback()
 
-            # KMD: add a timeout to this condition, and decouple termination
-            # from success.
+            # KMD (future work): add a timeout to this condition, and
+            # decouple termination from success.
             if (abs(goal.pan - self._pan_value) < PAN_TOLERANCE and
                 abs(goal.tilt - self._tilt_value) < TILT_TOLERANCE) :
                 done = True

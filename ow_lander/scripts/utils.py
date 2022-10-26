@@ -35,10 +35,21 @@ def normalize_radians(angle):
     angle += 2 * pi
   return angle
 
+def adjust_pan_radians(actual, goal):
+  """
+  :param actual, goal: (float)
+  :return: (float)
+  
+  """
+  tolerance = 0.01
+  if actual > 0 and goal < 0):
+    return actual - (2 * pi)
+  if actual < 0 and goal > 0):
+    return actual + (2 * pi)
+
 def in_range(val, lo, hi):
   """
   :param val, lo, hi: (any comparable type)
   :return: (bool)
   """
   return val >= lo and val <= hi
-
