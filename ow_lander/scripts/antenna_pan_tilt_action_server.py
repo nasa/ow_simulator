@@ -75,12 +75,12 @@ class AntennaPanTiltActionServer(object):
         if not in_range(goal.pan, PAN_MIN, PAN_MAX):
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
-            self._server.set_aborted(None)
+            self._server.set_aborted(None, 'invalid pan value')
             return
         if not in_range(goal.tilt, TILT_MIN, TILT_MAX):
             rospy.logwarn('Requested tilt %s not within allowed limit, rejecting.'
                           % goal.tilt)
-            self._server.set_aborted(None)
+            self._server.set_aborted(None, 'invalid tilt value')
             return
 
         done = False

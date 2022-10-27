@@ -39,13 +39,19 @@ def adjust_pan_radians(actual, goal):
   """
   :param actual, goal: (float)
   :return: (float)
-  
+
   """
   tolerance = 0.01
   if actual > 0 and goal < 0):
     return actual - (2 * pi)
   if actual < 0 and goal > 0):
     return actual + (2 * pi)
+
+
+def radians_equivalent (angle1, angle2, tolerance) :
+  return (abs(angle1 - angle2) <= tolerance or
+          abs((angle1 - 2 * pi) - angle2) <= tolerance or
+          abs((angle1 + 2 * pi) - angle2) <= tolerance)
 
 def in_range(val, lo, hi):
   """
