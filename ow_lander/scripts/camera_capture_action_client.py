@@ -30,16 +30,12 @@ def camera_capture_client():
   # Waits for the server to finish performing the action.
   client.wait_for_result()
 
-  # Prints out the result of executing the action
-  return client.get_result()
-
 
 if __name__ == '__main__':
   try:
     # Initializes a rospy node
     rospy.init_node('camera_capture_client_py')
-    result = camera_capture_client()
-    rospy.loginfo(f'Result: {result}')
+    camera_capture_client()
   except rospy.ROSInterruptException:
     rospy.logerror('program interrupted before completion')
 
