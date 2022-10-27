@@ -13,8 +13,6 @@ from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 
 class CameraCaptureActionServer(object):
-  #_result = std_msgs.msg.Bool()
-
   def __init__(self, name):
     self._action_name = name
     self._result = ow_lander.msg.CameraCaptureResult()
@@ -22,7 +20,8 @@ class CameraCaptureActionServer(object):
       '/gazebo/plugins/camera_sim/exposure', Float64, queue_size=10)
     self._trigger_pub = rospy.Publisher(
       '/StereoCamera/left/image_trigger', Empty, queue_size=10)
-    self._point_cloud_sub = rospy.Subscriber('/StereoCamera/points2', PointCloud2, self._handle_point_cloud)
+    self._point_cloud_sub = rospy.Subscriber('/StereoCamera/points2',
+                                             PointCloud2, self._handle_point_cloud)
     self._server = actionlib.SimpleActionServer(self._action_name,
                                                 ow_lander.msg.CameraCaptureAction,
                                                 execute_cb=self.execute_cb,
@@ -64,8 +63,8 @@ class CameraCaptureActionServer(object):
     
     # CameraCapture was successful if a point cloud is received. However, there
     # does not appear to be a way to associate this point cloud with the
-    # original trigger message. A trigger could have been sent using without
-    # using the CameraCapture action client.
+    # original trigger message. A trigger could have been sent without using
+    # the CameraCapture action client.
     self._result.point_cloud_created = True
 
 if __name__ == '__main__':

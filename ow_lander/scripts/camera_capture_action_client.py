@@ -12,10 +12,10 @@ from guarded_move_action_client import print_arguments
 
 
 def camera_capture_client():
-  parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument(
-    'exposure', type=float, help='Camera exposure in seconds', nargs='?', default=-1, const=0)
+  parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument('exposure', type=float,
+                      help='Camera exposure in seconds. Must be > 0 or current exposure will be used.',
+                      nargs='?', default=-1)
   args = parser.parse_args()
   print_arguments(args)
 
