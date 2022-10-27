@@ -66,9 +66,9 @@ class SampleCollection(unittest.TestCase):
   Callback function for the link_states topic
   """
   @classmethod
-  def _on_link_states(self, message):
-    self._gz_link_names = message.name
-    self._gz_link_poses = message.pose
+  def _on_link_states(cls, message):
+    cls._gz_link_names = message.name
+    cls._gz_link_poses = message.pose
 
   """
   Returns true if an action is done
