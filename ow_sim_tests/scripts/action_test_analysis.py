@@ -39,10 +39,10 @@ def get_latest_test_log(test_name):
   # log not found
   return ""
 
-def run_test(test_name, real_time_update_rate):
+def run_test(test_name, real_time_update_rate, show_gzclient):
   test_cmd = [
     "rostest", "ow_sim_tests", test_name,
-    "gzclient:=true", "ignore_action_checks:=true"
+    "ignore_action_checks:=true", "gzclient:=%s" % str(show_gzclient)
   ]
   test_proc = subprocess.Popen(test_cmd)
   # attempt to change physics update rate until it succeeds
@@ -57,8 +57,8 @@ def run_test(test_name, real_time_update_rate):
 def parse_latest_log(test_name, out_results):
   # NOTE: To see from where this syntax originates inspect print_action_start,
   #       print_action_complete, and print_arm_action_final in
-  #       common_test_methods.py
-  PATTERN = r"""===\ (?P<unit>\w+)\ goal\ sent\ ===                # start of an action
+  #       action_testing.py
+  PATTERN = r"""===\ (?P<unit>\w+)\ goal\ sent\ ===        # start of an action
                 (?:(?:.|\n)+?                              # fewest possible line skips
                 ===\ \1\ completed\ with\ arm\ in\ position\ \((?P<final_x>-?\d+\.\d*),\ (?P<final_y>-?\d+\.\d*),\ (?P<final_z>-?\d+\.\d*)\)\ ===)? # final vector
                 (?:.|\n)+?                                 # fewest possible line skips
@@ -99,29 +99,34 @@ def generate_statistics(results):
 def save_to_yaml(data, output_path):
   # put into correct format for dump method
   with open(output_path, 'w') as output:
-    formatted_data = {'test_parameters': data}
+    formatted_data = {'test_action_statistics': data}
     yaml.dump(formatted_data, output)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
-    description="""Run a rostest that calls the test_action method from
-    common_test_methods.py on arm actions multiple times compute the average
-    final position and duration.""",
+    description="""Run a rostest that calls the test_action or test_arm_action
+    methods from action_testing.py multiple times to compute statistics on the
+    final position and duration of each action called.""",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
   )
   parser.add_argument(
-    'test_name', type=str, help="Name of rostest that will be ran"
+    'test_name', type=str, help="Name of rostest"
   )
   parser.add_argument(
-    'repeats', type=int, help="Number of times rostest will run"
+    'repeats', type=int, help="Number of times rostest will be repeated"
   )
   parser.add_argument(
-    '--real_time_update_rate', '-u', type=float, required=False, default=1200,
-    help="Rate each simulation will be ran at."
+    '--real-time-update-rate', '-u', type=float, required=False, default=1200,
+    help="Update rate each test simulation will run at.",
+    dest='rt_update_rate'
   )
   parser.add_argument(
     '--output', '-o', type=str, required=False, default=None,
-    help="YAML file which test results will be saved to."
+    help="YAML file results will be saved to."
+  )
+  parser.add_argument(
+    '--show-gzclient', action='store_true', dest='show_gzclient',
+    help="If true, gzclient will launch and show each test as it happens."
   )
   args = parser.parse_args()
 
@@ -129,21 +134,22 @@ if __name__ == '__main__':
   results = dict()
   for i in range(args.repeats):
     print("Running test %d of %d..." % (i, args.repeats))
-    run_test(args.test_name, args.real_time_update_rate)
+    run_test(args.test_name, args.rt_update_rate, args.show_gzclient)
     parse_latest_log(test_name_noext, results)
 
   print("All %d runs of test %s completed." % (args.repeats, args.test_name))
-  print("Here are the results:")
 
-  processed = generate_statistics(results)
+  stats = generate_statistics(results)
 
-  ## DEBUG CODE
-  print("results = ", results)
-  # DEBUG CODE
-  print("statistics = ", processed)
+  # TODO: Save results to the same file as statistics or make it a script option
+  #       to output them to another file
+
+  # SAVED: Helpful for debugging faulty tests in the sequence
+  # print("results = ", results)
 
   output = args.output
   if output == None:
     pkg_path = rospkg.RosPack().get_path(PKG)
     output = os.path.join(pkg_path, 'config', test_name_noext + '.yaml')
-  save_to_yaml(processed, output)
+  save_to_yaml(stats, output)
+  print("Statistical results of test runs saved to %s" % output)

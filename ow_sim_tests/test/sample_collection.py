@@ -370,9 +370,6 @@ class SampleCollection(unittest.TestCase):
   Calling this after an optertion is standard operating procedure.
   """
   def test_09_stow(self):
-    # unstow must come before stow
-    self.test_01_unstow()
-
     stow_result = test_arm_action(self,
       'Stow', ow_lander.msg.StowAction,
       ow_lander.msg.StowGoal(),

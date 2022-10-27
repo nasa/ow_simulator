@@ -1,4 +1,4 @@
-test_parameters:
+test_action_statistics:
   test_01_unstow:
     duration:
       mean: 16.928684210526317

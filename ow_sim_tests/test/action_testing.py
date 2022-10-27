@@ -154,16 +154,18 @@ def print_arm_action_final(unit_name, final):
   )
 
 def are_test_parameters_available(test_name, unit_name):
-  return rospy.has_param('/%s/test_parameters/%s' % (test_name, unit_name))
+  return rospy.has_param(
+    '/%s/test_action_statistics/%s' % (test_name, unit_name)
+  )
 
 def get_test_parameter_mean(test_name, unit_name, parameter):
   return rospy.get_param(
-    '/%s/test_parameters/%s/%s/mean' % (test_name, unit_name, parameter)
+    '/%s/test_action_statistics/%s/%s/mean' % (test_name, unit_name, parameter)
   )
 
 def get_test_parameter_std(test_name, unit_name, parameter):
   return rospy.get_param(
-    '/%s/test_parameters/%s/%s/std' % (test_name, unit_name, parameter)
+    '/%s/test_action_statistics/%s/%s/std' % (test_name, unit_name, parameter)
   )
 
 def get_max_duration(test_name, unit_name, std_factor, min_tolerance):
@@ -208,9 +210,6 @@ def test_action(test_object, action_name, action, goal,
       rospy.logerr("Test results not found.")
     max_duration = get_max_duration(
       test_name, unit_name, duration_std_factor, duration_minimum_tolerance
-    )
-    rospy.loginfo("%s:\n\tmax_duration = %f"
-      % (unit_name, max_duration)
     )
     result, elapsed = test_action_noyaml(
       test_object, action_name, action, goal,
@@ -290,9 +289,6 @@ def test_arm_action(test_object, action_name, action, goal,
         expected_final_std_factor * get_test_parameter_std(test_name, unit_name, 'final_z'),
         expected_final_minimum_tolerance
       )
-    )
-    rospy.loginfo("%s:\n\tmax_duration = %f\n\tfinal = (%f, %f, %f)\n\tfinal_tol = (%f, %f, %f)"
-      % (unit_name, max_duration, final.x, final.y, final.z, final_tolerance.x, final_tolerance.y, final_tolerance.z)
     )
     result, elapsed = test_arm_action_noyaml(
       test_object, action_name, action, goal,
