@@ -6,7 +6,7 @@ ow_faults_detection
 ===================
 
 This package contains infrastructure for fault detection. The
-detection is relayed through a series of /fault rostopics.
+detection is relayed through a series of rostopics.
 
 ## `faults_detection` node
 
@@ -23,6 +23,7 @@ systems is reflected in the telemetry messages listed below, which
 include a system fault message that aggregates the states.
 
 Antenna Faults: `/faults/pt_faults_status`
+Arm Faults": `/arm_faults_status`
 Force-Torque Sensor Faults: `/faults/pt_faults_status`
 Power Faults: `/faults/power_faults_status`
 Camera Faults: `/faults/camera_faults_status`
