@@ -6,7 +6,7 @@ ow_faults_detection
 ===================
 
 This package contains infrastructure for fault detection. The
-detection is relayed through a series of /fault rostopics.
+detection is relayed through a series of rostopics.
 
 ## `faults_detection` node
 
