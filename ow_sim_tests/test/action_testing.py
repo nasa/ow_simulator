@@ -171,7 +171,7 @@ def get_test_parameter_std(test_name, unit_name, parameter):
 def get_max_duration(test_name, unit_name, std_factor, min_tolerance):
   duration = get_test_parameter_mean(test_name, unit_name, 'duration')
   duration_std = get_test_parameter_std(test_name, unit_name, 'duration')
-  return max(duration + std_factor * duration_std, min_tolerance)
+  return duration + max(std_factor * duration_std, min_tolerance)
 
 """
 Version of test_action_noyaml that grabs testing parameters from a
