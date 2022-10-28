@@ -68,8 +68,12 @@ class AntennaPanTiltActionServer(object):
                           % goal.tilt)
             self._server.set_aborted(None, 'invalid tilt value')
             return
-        timeout = 30; # seconds, rather generous, but matches ow_plexil
+        
+        # This timeout is rather generous, but 20 seconds wasn't long enough in
+        # one case.
+        timeout = 30;
         rate = rospy.Rate(1)
+        
         for i in range(0, timeout):
             if self._server.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
