@@ -8,9 +8,8 @@ import rospy
 import actionlib
 import argparse
 import ow_lander.msg
-from constants import PAN_MIN, PAN_MAX, PAN_TOLERANCE
-from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE
-from utils import normalize_radians, in_range
+from constants import PAN_MIN, PAN_MAX, TILT_MIN, TILT_MAX
+from utils import in_range
 from guarded_move_action_client import print_arguments
 
 def antenna_client():

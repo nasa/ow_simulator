@@ -19,34 +19,19 @@ def is_shou_yaw_goal_in_range(joint_goal):
 
   if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper):
     return False
-
   else:
     return True
 
-def normalize_radians(angle):
+def normalize_radians(angle, tolerance):
   """
-  :param angle: (float)
+  :param angle, tolerance: (float)
   :return: (float) the angle in [-pi, pi]
   """
-  tolerance = 0.01
   while angle > (pi+tolerance):
     angle -= 2 * pi
   while angle < -(pi+tolerance):
     angle += 2 * pi
   return angle
-
-def adjust_pan_radians(actual, goal):
-  """
-  :param actual, goal: (float)
-  :return: (float)
-
-  """
-  tolerance = 0.01
-  if actual > 0 and goal < 0):
-    return actual - (2 * pi)
-  if actual < 0 and goal > 0):
-    return actual + (2 * pi)
-
 
 def radians_equivalent (angle1, angle2, tolerance) :
   return (abs(angle1 - angle2) <= tolerance or
