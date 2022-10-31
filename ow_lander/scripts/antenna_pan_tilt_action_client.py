@@ -31,10 +31,10 @@ def antenna_client():
 
     if not in_range(args.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested pan %s not within allowed limit.' % args.pan)
-        return
+        return None
     if not in_range(args.tilt, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested tilt %s not within allowed limit.' % args.tilt)
-        return
+        return None
 
     client = actionlib.SimpleActionClient(
         'AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
