@@ -8,7 +8,7 @@ import rospy
 import actionlib
 import ow_lander.msg
 from constants import PAN_MIN, PAN_MAX, PAN_TOLERANCE
-from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE
+from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE, PAN_TILT_INPUT_TOLERANCE
 from utils import in_range, normalize_radians, radians_equivalent
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
@@ -58,22 +58,22 @@ class AntennaPanTiltActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def on_antenna_action(self, goal):
-        if not in_range(goal.pan, PAN_MIN, PAN_MAX):
+        if not in_range(goal.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
             self._server.set_aborted(None, 'invalid pan value')
             return
-        if not in_range(goal.tilt, TILT_MIN, TILT_MAX):
+        if not in_range(goal.tilt, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE):
             rospy.logwarn('Requested tilt %s not within allowed limit, rejecting.'
                           % goal.tilt)
             self._server.set_aborted(None, 'invalid tilt value')
             return
-        
+
         # This timeout is rather generous, but 20 seconds wasn't long enough in
         # one case.
         timeout = 30;
         rate = rospy.Rate(1)
-        
+
         for i in range(0, timeout):
             if self._server.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)

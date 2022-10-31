@@ -8,7 +8,7 @@ import rospy
 import actionlib
 import argparse
 import ow_lander.msg
-from constants import PAN_MIN, PAN_MAX, TILT_MIN, TILT_MAX
+from constants import PAN_MIN, PAN_MAX, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE
 from utils import in_range
 from guarded_move_action_client import print_arguments
 
@@ -29,10 +29,10 @@ def antenna_client():
     args = parser.parse_args()
     print_arguments(args)
 
-    if not in_range(args.pan, PAN_MIN, PAN_MAX):
+    if not in_range(args.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested pan %s not within allowed limit.' % args.pan)
         return
-    if not in_range(args.tilt, TILT_MIN, TILT_MAX):
+    if not in_range(args.tilt, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested tilt %s not within allowed limit.' % args.tilt)
         return
 

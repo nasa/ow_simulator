@@ -57,9 +57,10 @@ R_PARALLEL_FALSE_A = 0.10
 
 # Antenna pan/tilt: all values are radians
 
-TILT_MIN       = -(pi/2.0)
-TILT_MAX       = pi/2.0
-TILT_TOLERANCE = 0.05
 PAN_MIN        = -3.2
 PAN_MAX        = 3.2
 PAN_TOLERANCE  = 0.05
+TILT_MIN       = -(pi/2.0)
+TILT_MAX       = pi/2.0
+TILT_TOLERANCE = 0.05
+PAN_TILT_INPUT_TOLERANCE = 0.0001
