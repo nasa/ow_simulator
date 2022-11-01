@@ -9,7 +9,7 @@ import actionlib
 import ow_lander.msg
 from constants import PAN_MIN, PAN_MAX, PAN_TOLERANCE
 from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE, PAN_TILT_INPUT_TOLERANCE
-from utils import in_range, normalize_radians, radians_equivalent
+from utils import in_closed_range, normalize_radians, radians_equivalent
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
@@ -58,12 +58,14 @@ class AntennaPanTiltActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def on_antenna_action(self, goal):
-        if not in_range(goal.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
+        if not in_closed_range(goal.pan, PAN_MIN, PAN_MAX,
+                               PAN_TILT_INPUT_TOLERANCE):
             rospy.logwarn('Requested pan %s not within allowed limit, rejecting.'
                           % goal.pan)
             self._server.set_aborted(None, 'invalid pan value')
             return
-        if not in_range(goal.tilt, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE):
+        if not in_closed_range(goal.tilt, TILT_MIN, TILT_MAX,
+                               PAN_TILT_INPUT_TOLERANCE):
             rospy.logwarn('Requested tilt %s not within allowed limit, rejecting.'
                           % goal.tilt)
             self._server.set_aborted(None, 'invalid tilt value')

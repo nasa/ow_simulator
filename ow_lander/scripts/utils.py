@@ -38,7 +38,7 @@ def radians_equivalent (angle1, angle2, tolerance) :
           abs((angle1 - 2 * pi) - angle2) <= tolerance or
           abs((angle1 + 2 * pi) - angle2) <= tolerance)
 
-def in_range(val, lo, hi, tolerance):
+def in_closed_range(val, lo, hi, tolerance):
   """
   :param val, lo, hi, tolerance: (any mutually comparable types)
   :return: (bool)

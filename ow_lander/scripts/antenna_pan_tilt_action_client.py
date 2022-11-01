@@ -9,30 +9,29 @@ import actionlib
 import argparse
 import ow_lander.msg
 from constants import PAN_MIN, PAN_MAX, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE
-from utils import in_range
+from utils import in_closed_range
 from guarded_move_action_client import print_arguments
 
 def antenna_client():
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        'pan',
-        type=float,
-        help='Antenna pan value in radians (-3.2 - 3.2)',
-        nargs='?', default=0, const=0)
-    parser.add_argument(
-        'tilt',
-        type=float,
-        help='Antenna tilt value in radians (-pi/2 - pi/2)',
-        nargs='?', default=0, const=0)
+    parser.add_argument('pan',
+                        type=float,
+                        help='Antenna pan value in radians [-3.2 3.2]',
+                        nargs='?', default=0)
+    parser.add_argument('tilt',
+                        type=float,
+                        help='Antenna tilt value in radians [-pi/2 pi/2]',
+                        nargs='?', default=0)
     args = parser.parse_args()
     print_arguments(args)
 
-    if not in_range(args.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(args.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested pan %s not within allowed limit.' % args.pan)
         return None
-    if not in_range(args.tilt, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(args.tilt, TILT_MIN, TILT_MAX,
+                           PAN_TILT_INPUT_TOLERANCE):
         rospy.logwarn('Requested tilt %s not within allowed limit.' % args.tilt)
         return None
 
