@@ -1,10 +1,10 @@
 # System Fault Status Mask
 
-# The 'value' field is the fault classification, which is the
-# following enumeration, implemented as bitset constant expressions in
-# ow_faults_detection/include/ow_faults_detection/FaultDetector.h
+# The 'value' field is the fault classification as the following enumeration.
 # The associated message is a bitmask that can represent any subset of
 # these faults occuring at the same time.
+# Bitwise operations on uints should be safe as ROS messages are serialized in
+# little endian format.
 
 Header header
 uint64 value
