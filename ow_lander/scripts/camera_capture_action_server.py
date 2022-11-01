@@ -28,8 +28,6 @@ class CameraCaptureActionServer(object):
     self._server.start()
 
   def execute_cb(self, goal):
-    # helper variables
-    r = rospy.Rate(1)
     self.point_cloud_created = False
 
     # Set exposure if it is specified
@@ -37,11 +35,15 @@ class CameraCaptureActionServer(object):
       self._exposure_pub.publish(goal.exposure)
       # There is no guarantee that exposure is set before the image is triggered.
       # Pause to make it highly likely that exposure is received first.
-      r.sleep()
+      rospy.sleep(1)
 
     self._trigger_pub.publish()
 
-    for i in range(0, 5):
+    frequency = 10 # Hz
+    time_out = 5   # seconds
+    rate = rospy.Rate(frequency)
+
+    for i in range(0, int(time_out * frequency)):
       if self._server.is_preempt_requested():
         rospy.loginfo(f'{self._action_name}: Preempted')
         self._server.set_preempted()
@@ -50,7 +52,7 @@ class CameraCaptureActionServer(object):
         rospy.loginfo(f'{self._action_name}: Succeeded')
         self._server.set_succeeded('point cloud received')
         return
-      r.sleep()
+      rate.sleep()
 
     rospy.loginfo(f'{self._action_name}: Failed')
     self._server.set_aborted('timed out')
