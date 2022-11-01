@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from math import pi
+from math import pi, tau
 import constants
 import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
@@ -22,21 +22,15 @@ def is_shou_yaw_goal_in_range(joint_goal):
   else:
     return True
 
-def normalize_radians(angle, tolerance):
+def _normalize_radians(angle):
   """
-  :param angle, tolerance: (float)
-  :return: (float) the angle in [-pi, pi]
+  :param angle: (float)
+  :return: (float) the angle in [-pi, pi)
   """
-  while angle > (pi+tolerance):
-    angle -= 2 * pi
-  while angle < -(pi+tolerance):
-    angle += 2 * pi
-  return angle
+  return (angle + pi) % tau - pi
 
 def radians_equivalent (angle1, angle2, tolerance) :
-  return (abs(angle1 - angle2) <= tolerance or
-          abs((angle1 - 2 * pi) - angle2) <= tolerance or
-          abs((angle1 + 2 * pi) - angle2) <= tolerance)
+  return _normalize_radians(abs(angle1 - angle2)) <= tolerance
 
 def in_closed_range(val, lo, hi, tolerance):
   """

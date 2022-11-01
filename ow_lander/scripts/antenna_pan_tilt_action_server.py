@@ -9,7 +9,7 @@ import actionlib
 import ow_lander.msg
 from constants import PAN_MIN, PAN_MAX, PAN_TOLERANCE
 from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE, PAN_TILT_INPUT_TOLERANCE
-from utils import in_closed_range, normalize_radians, radians_equivalent
+from utils import in_closed_range, radians_equivalent
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from gazebo_msgs.msg import LinkStates
@@ -48,8 +48,8 @@ class AntennaPanTiltActionServer(object):
             rospy.logerr_throttle(
                 1, "LanderInterface: j_ant_pan or j_ant_tilt not found in joint_states")
             return
-        self._tilt_value = normalize_radians(data.position[id_tilt], 0.0)
-        self._pan_value = normalize_radians(data.position[id_pan], 0.0)
+        self._tilt_value = data.position[id_tilt]
+        self._pan_value = data.position[id_pan]
 
     def _update_feedback(self):
         #self._ls =  self._current_link_state._link_value

@@ -18,11 +18,11 @@ def antenna_client():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('pan',
                         type=float,
-                        help='Antenna pan value in radians [-3.2 3.2]',
+                        help='Antenna pan value in radians [-3.2, 3.2]',
                         nargs='?', default=0)
     parser.add_argument('tilt',
                         type=float,
-                        help='Antenna tilt value in radians [-pi/2 pi/2]',
+                        help='Antenna tilt value in radians [-pi/2, pi/2]',
                         nargs='?', default=0)
     args = parser.parse_args()
     print_arguments(args)
