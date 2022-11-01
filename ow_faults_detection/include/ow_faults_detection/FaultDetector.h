@@ -48,19 +48,6 @@ public:
     NoForceData = 8
     };
 
-  //system
-  static constexpr std::bitset<10> isNone{                  0b00'0000'0000 };
-  static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
-  static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
-  static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
-  static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
-  static constexpr std::bitset<10> isCameraGoalError{       0b00'0001'0000 };
-  static constexpr std::bitset<10> isCameraExecutionError{  0b00'0010'0000 };
-  static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
-  static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
-  static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
-  static constexpr std::bitset<10> isPowerExecutionError{   0b10'0000'0000 };
-
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
   static constexpr std::bitset<3> isCapLossError{    0b010 };
