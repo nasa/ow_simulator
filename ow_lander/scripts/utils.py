@@ -27,6 +27,7 @@ def _normalize_radians(angle):
   :param angle: (float)
   :return: (float) the angle in [-pi, pi)
   """
+  # Note: tau = 2 * pi
   return (angle + pi) % tau - pi
 
 def radians_equivalent (angle1, angle2, tolerance) :
