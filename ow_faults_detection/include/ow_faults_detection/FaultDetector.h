@@ -93,8 +93,6 @@ private:
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  template<typename bitsetFaultsMsg, typename bitmask>
-  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
   template<typename fault_msg>
   void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
 
@@ -123,7 +121,7 @@ private:
   // VARIABLES
   
   // System 
-  std::bitset<10> m_system_faults_bitset{};
+  uint64_t m_system_faults_flags = 0;
   std::vector<unsigned int> m_joint_state_indices;
   
   // Antenna
