@@ -2,6 +2,7 @@
 
 Header header
 uint64 value
+
 uint64 NONE                  = 0
 uint64 HARDWARE              = 1
 uint64 TRAJECTORY_GENERATION = 2

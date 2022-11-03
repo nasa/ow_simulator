@@ -36,18 +36,6 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-  enum class ComponentFaults : uint {
-    Hardware = 1, 
-    JointLimit = 2,
-    TrajectoryGeneration = 2,
-    Collision = 3, 
-    Estop = 4, 
-    PositionLimit = 5, 
-    TorqueLimit = 6, 
-    VelocityLimit = 7, 
-    NoForceData = 8
-    };
-
   //system
   static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
   static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
@@ -107,9 +95,6 @@ private:
   void setFaultsMessageHeader(fault_msg& msg);
   template<typename bitsetFaultsMsg, typename bitmask>
   void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
-  template<typename fault_msg>
-  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
-
 
   // PUBLISHERS AND SUBSCRIBERS
   
