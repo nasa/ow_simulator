@@ -31,7 +31,7 @@ def _normalize_radians(angle):
   return (angle + pi) % tau - pi
 
 def radians_equivalent (angle1, angle2, tolerance) :
-  return _normalize_radians(abs(angle1 - angle2)) <= tolerance
+  return abs(_normalize_radians(angle1 - angle2)) <= tolerance
 
 def in_closed_range(val, lo, hi, tolerance):
   """
