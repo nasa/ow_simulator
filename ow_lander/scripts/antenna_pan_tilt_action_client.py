@@ -22,7 +22,7 @@ def antenna_client():
                         nargs='?', default=0)
     parser.add_argument('tilt',
                         type=float,
-                        help='Antenna tilt value in radians [-pi/2, pi/2]',
+                        help='Antenna tilt value in radians [-1.56, 1.56]',
                         nargs='?', default=0)
     args = parser.parse_args()
     print_arguments(args)
