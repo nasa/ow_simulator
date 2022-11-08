@@ -245,13 +245,13 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   cv::minMaxLoc(image, &min_pixel);
   m_moving_max_depth->addDatum(-min_pixel);
 
-  float depth = m_moving_max_depth->evaluate();
+  double depth = m_moving_max_depth->evaluate();
 
   computeForces(depth);
 
   // DEBUG CODE
   static std_msgs::Float64 depth_msg;
-  depth_msg.data = static_cast<double>(depth);
+  depth_msg.data = depth;
   m_pub_depth.publish<std_msgs::Float64>(depth_msg);
 
   // reset timeout at each terrain modification
