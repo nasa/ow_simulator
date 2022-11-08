@@ -91,6 +91,7 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   );
 
   resetForces();
+  resetDepth();
 
   m_dig_timeout = m_node_handle->createTimer(
     DIG_TIMEOUT_INTERVAL, &BalovnevModelPlugin::onDigTimeout, this, true, false
@@ -99,14 +100,25 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   gzlog << "BavlovnevModelPlugin - successfully loaded" <<endl;
 }
 
-
 void BalovnevModelPlugin::onUpdate()
 {
+  if (!isScoopDigging())
+    return;
+
   if(!m_link) {
     gzwarn << " m_link is invalid." << endl;
     return;
   }
-  // DEBUG DISABLED
+  // check for pushback
+  const Vector3 SCOOP_FORWARD = Vector3(1.0, 0.0, 0.0);
+  auto link_vel = m_link->RelativeLinearVel();
+  if (link_vel.Dot(SCOOP_FORWARD) < 0.0) {
+    // reset force if pushback occurs
+    resetForces();
+    m_link->ResetPhysicsStates();
+  }
+  if (m_horizontal_force == 0.0 || m_vertical_force == 0.0)
+    return; // no force to apply, early return
   m_link->AddRelativeForce(
     ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
   );
@@ -183,9 +195,11 @@ void BalovnevModelPlugin::resetForces()
   m_vertical_force = 0.0;
   m_horizontal_force = 0.0;
   publishForces();
+}
+
+void BalovnevModelPlugin::resetDepth() {
   // reset moving average
   m_moving_max_depth->clear();
-
   // DEBUG CODE
   static std_msgs::Float64 depth;
   depth.data = 0.0;
@@ -263,4 +277,5 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
 void BalovnevModelPlugin::onDigTimeout(const TimerEvent &)
 {
   resetForces();
+  resetDepth();
 }

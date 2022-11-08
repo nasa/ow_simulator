@@ -42,6 +42,8 @@ private:
 
   void resetForces();
 
+  void resetDepth();
+
   bool isScoopDigging() const;
 
   void onModDiffVisualMsg(
