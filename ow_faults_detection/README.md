@@ -23,9 +23,9 @@ systems is reflected in the telemetry messages listed below, which
 include a system fault message that aggregates the states.
 
 Antenna Faults: `/faults/pt_faults_status`
-Arm Faults": `/arm_faults_status`
+Arm Faults: `/arm_faults_status`
 Force-Torque Sensor Faults: `/faults/pt_faults_status`
 Power Faults: `/faults/power_faults_status`
 Camera Faults: `/faults/camera_faults_status`
-System Faults: `/faults/system_faults_status`
+System Faults: `/system_faults_status`
 

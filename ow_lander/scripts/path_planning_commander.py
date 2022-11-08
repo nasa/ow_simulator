@@ -39,7 +39,7 @@ class PathPlanningCommander(object):
     self.log_started("Stop")
     self.trajectory_async_executer.stop()
     return self.log_finish_and_return("Stop")
-    
+
   # === SERVICE ACTIVITIES - Stow =============================
   def handle_stow(self, req):
     """
@@ -52,7 +52,7 @@ class PathPlanningCommander(object):
     _, plan, _, _ = self.arm_move_group.plan()
     if len(plan.joint_trajectory.points) == 0:
       return False
-    self.trajectory_async_executer.execute(plan.joint_trajectory, 
+    self.trajectory_async_executer.execute(plan.joint_trajectory,
                                           feedback_cb=None)
     self.trajectory_async_executer.wait()
     return self.log_finish_and_return("Stow")
@@ -152,7 +152,7 @@ class PathPlanningCommander(object):
         self.grinder_move_group,
         grind_args)
     self.switch_controllers('arm_controller', 'grinder_controller')
-    
+
     return self.log_finish_and_return("Grind", success)
 
   def handle_guarded_move_done(self, state, result):
@@ -222,7 +222,7 @@ class PathPlanningCommander(object):
         '/guarded_move_result', GuardedMoveFinalResult, queue_size=10)
     self.guarded_move_srv = rospy.Service(
         'arm/guarded_move', GuardedMove, self.handle_guarded_move)
-    
+
     rospy.loginfo("path_planning_commander has started!")
 
     rospy.spin()
@@ -230,7 +230,7 @@ class PathPlanningCommander(object):
   def log_started(self, activity_name):
     rospy.loginfo("%s arm activity started", activity_name)
 
-  def log_finish_and_return(self, activity_name, success=True):  
+  def log_finish_and_return(self, activity_name, success=True):
     rospy.loginfo("%s arm activity completed", activity_name)
     return success, "Done"
 

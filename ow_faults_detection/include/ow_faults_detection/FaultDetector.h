@@ -13,7 +13,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
-#include "ow_faults_detection/SystemFaults.h"
+#include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include "ow_faults_detection/PowerFaults.h"
 #include "ow_faults_detection/PTFaults.h"
@@ -35,18 +35,6 @@ public:
   
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
-
-  //system
-  static constexpr std::bitset<10> isSystem{                0b00'0000'0001 };
-  static constexpr std::bitset<10> isArmGoalError{          0b00'0000'0010 };
-  static constexpr std::bitset<10> isArmExecutionError{     0b00'0000'0100 };
-  static constexpr std::bitset<10> isTaskGoalError{         0b00'0000'1000 };
-  static constexpr std::bitset<10> isCamGoalError{          0b00'0001'0000 };
-  static constexpr std::bitset<10> isCamExecutionError{     0b00'0010'0000 };
-  static constexpr std::bitset<10> isPanTiltGoalError{      0b00'0100'0000 };
-  static constexpr std::bitset<10> isPanTiltExecutionError{ 0b00'1000'0000 };
-  static constexpr std::bitset<10> isLanderExecutionError{  0b01'0000'0000 };
-  static constexpr std::bitset<10> isPowerSystemFault{      0b10'0000'0000 };
 
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
@@ -93,8 +81,6 @@ private:
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  template<typename bitsetFaultsMsg, typename bitmask>
-  void setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask systemFaultsBitmask);
 
   // PUBLISHERS AND SUBSCRIBERS
   
@@ -103,7 +89,7 @@ private:
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
-  ros::Publisher m_system_fault_msg_pub;
+  ros::Publisher m_system_faults_msg_pub;
 
   // Arm and antenna
   ros::Subscriber m_joint_states_sub;
@@ -120,7 +106,7 @@ private:
   // VARIABLES
   
   // System 
-  std::bitset<10> m_system_faults_bitset{};
+  uint64_t m_system_faults_flags = 0;
   std::vector<unsigned int> m_joint_state_indices;
   
   // Antenna
