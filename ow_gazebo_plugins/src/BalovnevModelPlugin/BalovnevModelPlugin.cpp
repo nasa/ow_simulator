@@ -117,6 +117,7 @@ void BalovnevModelPlugin::onUpdate()
 // ifa - int friction angle
 // efa - ext friction angle
 double BalovnevModelPlugin::getParameterA(double x, double ifa, double efa)
+const
 {  
   if (x <= 0.5 * asin(sin(efa)/sin(ifa)) - efa) {
     double a = (1 - sin(ifa) * cos(2 * x)) / (1 - sin(ifa));
@@ -191,7 +192,7 @@ void BalovnevModelPlugin::resetForces()
   m_pub_depth.publish<std_msgs::Float64>(depth);
 }
 
-bool BalovnevModelPlugin::isScoopDigging()
+bool BalovnevModelPlugin::isScoopDigging() const
 {
   static const Vector3 SCOOP_DOWNWARD(0.0, 0.0, 1.0);
   static const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
@@ -229,7 +230,7 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
     return;
   }
 
-  // trim 40% of the image's edges so to only process central pixels
+  // trim 40% of the image's edges so to only work with central pixels
   const float MARGIN_RATIO = 0.2f;
   const int row_margin = static_cast<int>(round(MARGIN_RATIO * rows));
   const int col_margin = static_cast<int>(round(MARGIN_RATIO * cols));
