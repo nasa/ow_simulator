@@ -244,13 +244,13 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
     return;
   }
 
-  // trim 40% of the image's edges so to only work with central pixels
+  // trim a 20% margin from the image so to only work with the central pixels
   const float MARGIN_RATIO = 0.2f;
   const int row_margin = static_cast<int>(round(MARGIN_RATIO * rows));
   const int col_margin = static_cast<int>(round(MARGIN_RATIO * cols));
   const cv::Rect region_of_interest(
-    col_margin, row_margin,
-    cols - col_margin, rows - row_margin
+    col_margin, row_margin,                        // top-right corner position
+    cols - 2 * col_margin, rows - 2 * row_margin   // rectangle size
   );
   cv::Mat image(image_handle->image, region_of_interest);
 
