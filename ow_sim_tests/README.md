@@ -17,15 +17,15 @@ rostest ow_sim_tests fps_monitor.test
 
 * To test terrain modification and regolith spawning run the following command:
 ```bash
-rostest ow_sim_tests terrain_interaction.test
+rostest ow_sim_tests sample_collection.test
 ```
 
 ## Plugins
 
 ### FPS Monitor
 
-A plugin that monitors average frame rate as obsered from the
- active user camera and publishs the value to a rostopic "/monitor\_fps/avg\_fps".  
+A plugin that monitors average frame rate as observed from the active user camera
+and publishes the value to a rostopic "/monitor\_fps/avg\_fps".
 
 The plugin also comes with a configurable rostest that lets the user set the
  minimum acceptable average frame rate over a given period of time.
