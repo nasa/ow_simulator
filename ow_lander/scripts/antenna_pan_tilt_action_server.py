@@ -12,7 +12,6 @@ from constants import TILT_MIN, TILT_MAX, TILT_TOLERANCE, PAN_TILT_INPUT_TOLERAN
 from utils import in_closed_range, radians_equivalent
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
-from gazebo_msgs.msg import LinkStates
 from moveit_commander.conversions import pose_to_list
 
 class AntennaPanTiltActionServer(object):
@@ -52,7 +51,6 @@ class AntennaPanTiltActionServer(object):
         self._pan_value = data.position[id_pan]
 
     def _update_feedback(self):
-        #self._ls =  self._current_link_state._link_value
         self._fdbk.pan_position = self._pan_value
         self._fdbk.tilt_position = self._tilt_value
         self._server.publish_feedback(self._fdbk)
@@ -86,6 +84,11 @@ class AntennaPanTiltActionServer(object):
             self._update_feedback()
             if (radians_equivalent(goal.pan, self._pan_value, PAN_TOLERANCE) and
                 radians_equivalent(goal.tilt, self._tilt_value, TILT_TOLERANCE)) :
+                # For planned debugging (pan warnings are common):
+                # if (abs(goal.pan - self._pan_value) > PAN_TOLERANCE) :
+                #     rospy.logwarn (f'Actual pan result {self._pan_value} differed from goal {goal.pan}')
+                # if (abs(goal.tilt - self._tilt_value) > TILT_TOLERANCE) :
+                #     rospy.logwarn (f'Actual tilt result {self._tilt_value} differed from goal {goal.tilt}')
                 self._result.pan_position = self._fdbk.pan_position
                 self._result.tilt_position = self._fdbk.tilt_position
                 rospy.loginfo('%s: Succeeded' % self._action_name)
