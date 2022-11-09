@@ -8,14 +8,10 @@
 #include <iostream> 
 
 using namespace ow_lander;
+using namespace owl_msgs;
 
 using std::bitset;
 using std::string;
-
-constexpr bitset<10> FaultDetector::isCamExecutionError;
-constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
-constexpr bitset<10> FaultDetector::isArmExecutionError;
-constexpr bitset<10> FaultDetector::isPowerSystemFault;
 
 constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
@@ -52,12 +48,12 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           &FaultDetector::powerTemperatureListener,
                                           this);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
+  // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
+  m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
 }
 
@@ -67,13 +63,6 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
 {
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-}
-
-template<typename bitsetFaultsMsg, typename bitmask>
-void FaultDetector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) 
-{
-  setFaultsMessageHeader(msg);
-  msg.value = bm.to_ullong();
 }
 
 template<typename fault_msg>
@@ -86,9 +75,10 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage()
 {
-  ow_faults_detection::SystemFaults system_faults_msg;
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_msg_pub.publish(system_faults_msg);
+  owl_msgs::SystemFaultsStatus system_faults_msg;
+  setFaultsMessageHeader(system_faults_msg);
+  system_faults_msg.value = m_system_faults_flags;
+  m_system_faults_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
@@ -99,9 +89,9 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
   if (m_cam_trigger_time <= m_cam_raw_time &&  
     m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
     diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_bitset &= ~isCamExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
   } else {
-    m_system_faults_bitset |= isCamExecutionError;
+    m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
 
@@ -116,11 +106,11 @@ void FaultDetector::publishPowerSystemFault()
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
-    m_system_faults_bitset |= isPowerSystemFault;
+    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
     //power
     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
+    m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
   publishSystemFaultsMessage();
   m_power_fault_msg_pub.publish(power_faults_msg);
@@ -171,10 +161,10 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
 
   ow_faults_detection::ArmFaults arm_faults_msg;
   if (armFault){
-    m_system_faults_bitset |= isArmExecutionError;
+    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
     setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
   } else {
-    m_system_faults_bitset &= ~isArmExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
   }
 
   m_arm_fault_msg_pub.publish(arm_faults_msg);
@@ -207,9 +197,9 @@ void FaultDetector::antPublishFaultMessages()
   ow_faults_detection::PTFaults ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
     setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
-    m_system_faults_bitset |= isPanTiltExecutionError;
+    m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }else {
-    m_system_faults_bitset &= ~isPanTiltExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }
   publishSystemFaultsMessage();
   m_antenna_fault_msg_pub.publish(ant_fault_msg);
