@@ -153,10 +153,13 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   owl_msgs::ArmFaultsStatus arm_faults_msg;
   if (armFault){
     m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    arm_faults_msg.value |= ArmFaultsStatus::HARDWARE;
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    arm_faults_msg.value &= ~ArmFaultsStatus::HARDWARE;
   }
 
+  setFaultsMessageHeader(arm_faults_msg);
   m_arm_faults_msg_pub.publish(arm_faults_msg);
   publishSystemFaultsMessage();
 }
