@@ -30,14 +30,15 @@
 
   <xacro:macro name="lander_sample_dock_link" params="suffix roll pitch y">
     <link name="lander_sample_dock${suffix}">
+
       <collision>
-        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
           <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
         </geometry>
       </collision>
       <visual>
-        <origin rpy="0 0 0" xyz="0 0 0.025"/>
+        <origin rpy="0 0 0" xyz="0 0 0.0"/>
         <geometry>
           <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
         </geometry>
@@ -46,7 +47,7 @@
         </material>
       </visual>
       <inertial>
-        <origin rpy="0 0 0" xyz="0 0 0.05"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
         <mass value="0.01"/>
         <inertia
             ixx="${sample_dock_mass * 0.000001}" ixy="0.0" ixz="0.0"

@@ -341,7 +341,6 @@ class SampleCollection(unittest.TestCase):
   the final portion when it is dumped into the sample dock. Upon completion of
   the operation it also asserts that regolith models are deleted.
   """
-  @unittest.expectedFailure
   def test_07_deliver(self):
     deliver_result = test_arm_action(self,
       'Deliver', ow_lander.msg.DeliverAction,
@@ -380,7 +379,6 @@ class SampleCollection(unittest.TestCase):
   Test the ingest sample action. Upon completion, ensure no sample remains in
   the simulation.
   """
-  @unittest.expectedFailure
   def test_10_ingest_sample(self):
     ingest_result = test_action(self,
       'DockIngestSampleAction', ow_lander.msg.DockIngestSampleAction,

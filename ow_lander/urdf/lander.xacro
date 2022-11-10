@@ -21,7 +21,7 @@
 
   <xacro:include filename="$(find ow_lander)/urdf/lander_sample_dock.xacro" />
   <xacro:lander_sample_dock lander_sample_dock_parent_link="base_link"
-                     off_x="0.5226" off_y="-0.35" off_z="0.32" off_R="-${pi/2.0}" off_P="0.0" off_Y="-${pi/2.0}"
+                     off_x="0.5476" off_y="-0.35" off_z="0.32" off_R="-${pi/2.0}" off_P="0.0" off_Y="-${pi/2.0}"
                      vis_mask="${vis_mask}" />
 
   <xacro:arg name="freeze_base_link" default="false"/>
