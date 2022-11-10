@@ -7,7 +7,7 @@
 # little endian format.
 
 Header header
-int64 value
+uint64 value
 
 # Constant bitset of error types/flags to set as value
 uint64 NONE     = 0
