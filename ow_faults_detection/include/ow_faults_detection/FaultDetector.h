@@ -17,7 +17,7 @@
 #include "ow_faults_detection/ArmFaults.h"
 #include "ow_faults_detection/PowerFaults.h"
 #include "ow_faults_detection/PTFaults.h"
-#include "ow_faults_detection/CamFaults.h"
+#include <owl_msgs/CameraFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -80,7 +80,7 @@ private:
   void antPublishFaultMessages();
   
   // Camera
-  void camerTriggerCb(const std_msgs::Empty& msg);
+  void cameraTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
   void cameraTriggerPublishCb(const ros::TimerEvent& t);
 
@@ -102,7 +102,7 @@ private:
   // faults topic publishers
   ros::Publisher m_arm_fault_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
-  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_camera_faults_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
 
@@ -129,8 +129,8 @@ private:
   bool m_tilt_fault;
   
   // Camera
-  ros::Time m_cam_raw_time;
-  ros::Time m_cam_trigger_time;
+  ros::Time m_camera_raw_time;
+  ros::Time m_camera_trigger_time;
   
   // Power
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
