@@ -5,17 +5,13 @@
 #include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
 #include <iomanip>
-#include <iostream> 
+#include <iostream>
 
 using namespace ow_lander;
+using namespace owl_msgs;
 
 using std::bitset;
 using std::string;
-
-constexpr bitset<10> FaultDetector::isCamExecutionError;
-constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
-constexpr bitset<10> FaultDetector::isArmExecutionError;
-constexpr bitset<10> FaultDetector::isPowerSystemFault;
 
 constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
@@ -35,14 +31,14 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   // camera
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
-                                                10, 
-                                                &FaultDetector::camerTriggerCb, 
+                                                10,
+                                                &FaultDetector::camerTriggerCb,
                                                 this);
   m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
-                                   10, 
-                                   &FaultDetector::cameraRawCb, 
+                                   10,
+                                   &FaultDetector::cameraRawCb,
                                    this);
-  
+
   m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
 
   //  power fault publishers and subs
@@ -55,12 +51,12 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           &FaultDetector::powerTemperatureListener,
                                           this);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PanTiltFaults.msg
+  // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PanTiltFaultsStatus>("/faults/pan_tilt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
+  m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
 }
 
@@ -72,15 +68,8 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
   msg.header.frame_id = "world";
 }
 
-template<typename bitsetFaultsMsg, typename bitmask>
-void FaultDetector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) 
-{
-  setFaultsMessageHeader(msg);
-  msg.value = bm.to_ullong();
-}
-
 template<typename fault_msg>
-void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) 
+void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value)
 {
   setFaultsMessageHeader(msg);
   msg.value = static_cast<uint>(value);
@@ -89,9 +78,10 @@ void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults va
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage()
 {
-  ow_faults_detection::SystemFaults system_faults_msg;
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_msg_pub.publish(system_faults_msg);
+  owl_msgs::SystemFaultsStatus system_faults_msg;
+  setFaultsMessageHeader(system_faults_msg);
+  system_faults_msg.value = m_system_faults_flags;
+  m_system_faults_msg_pub.publish(system_faults_msg);
 }
 
 //// Publish Camera Messages
@@ -99,12 +89,12 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
 {
   ow_faults_detection::CamFaults camera_faults_msg;
   auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&  
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
+  if (m_cam_trigger_time <= m_cam_raw_time &&
+    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) ||
     diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_bitset &= ~isCamExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
   } else {
-    m_system_faults_bitset |= isCamExecutionError;
+    m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
 
@@ -119,11 +109,11 @@ void FaultDetector::publishPowerSystemFault()
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
-    m_system_faults_bitset |= isPowerSystemFault;
+    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
     //power
     setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
+    m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
   publishSystemFaultsMessage();
   m_power_fault_msg_pub.publish(power_faults_msg);
@@ -131,7 +121,7 @@ void FaultDetector::publishPowerSystemFault()
 
 // Listeners
 // Arm listeners
-bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
+bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
 {
   unsigned int index;
   auto found = findJointIndex(joint, index);
@@ -148,7 +138,7 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
 void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
 {
   unsigned int index;
-  
+
   // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_state_indices.empty()) {
@@ -160,7 +150,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   bool armFault = false;
-  auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
+  auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH,
                   J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
   //ant faults
   m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
@@ -174,10 +164,10 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
 
   ow_faults_detection::ArmFaults arm_faults_msg;
   if (armFault){
-    m_system_faults_bitset |= isArmExecutionError;
+    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
     setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
   } else {
-    m_system_faults_bitset &= ~isArmExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
   }
 
   m_arm_fault_msg_pub.publish(arm_faults_msg);
@@ -208,6 +198,9 @@ void FaultDetector::antPublishFaultMessages()
   ow_faults_detection::PanTiltFaultsStatus pan_tilt_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
 
+    /* This was added in OW-779 but will no longer compile because
+       these members have been removed.  This needs some rework.
+
     m_system_faults_bitset |= isPanTiltExecutionError;
 
     if (m_pan_fault && m_tilt_fault) {
@@ -226,8 +219,14 @@ void FaultDetector::antPublishFaultMessages()
     m_system_faults_bitset &= ~isPanTiltExecutionError;
     m_pan_tilt_faults_bitset &= ~isPanLockedError;
     m_pan_tilt_faults_bitset &= ~isTiltLockedError;
-  }
+
+    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
+    m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
+  }else {
+    m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   setBitsetFaultsMessage(pan_tilt_fault_msg, m_pan_tilt_faults_bitset);
+*/
+  }
   publishSystemFaultsMessage();
   m_antenna_fault_msg_pub.publish(pan_tilt_fault_msg);
 }
@@ -249,7 +248,7 @@ void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
   m_temperature_fault = msg.data > THERMAL_MAX;
   publishPowerSystemFault();
 }
- 
+
 void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
 {
   float newSOC = msg.data;

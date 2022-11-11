@@ -6,17 +6,15 @@
 
 import rospy
 import actionlib
-# import argparse
+import argparse
 import ow_lander.msg
-# from guarded_move_action_client import print_arguments
 
 def dock_ingest_sample_client():
-    # parser = argparse.ArgumentParser(
-    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # args = parser.parse_args()
-    # print_arguments(args)
-
-    rospy.loginfo("waiting for action")
+    parser = argparse.ArgumentParser(
+        description="Ingest material present in the sample dock.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    args = parser.parse_args()
 
     client = actionlib.SimpleActionClient(
         'DockIngestSampleAction', ow_lander.msg.DockIngestSampleAction)
