@@ -76,7 +76,7 @@ class AntennaPanTiltActionServer(object):
 
         for i in range(0, timeout):
             if self._server.is_preempt_requested():
-                rospy.loginfo('%s: Preempted' % self._action_name)
+                rospy.logwarn('%s: Preempted' % self._action_name)
                 self._server.set_preempted()
                 return
             self._pan_pub.publish(goal.pan)
@@ -91,11 +91,11 @@ class AntennaPanTiltActionServer(object):
                 #     rospy.logwarn (f'Actual tilt result {self._tilt_value} differed from goal {goal.tilt}')
                 self._result.pan_position = self._fdbk.pan_position
                 self._result.tilt_position = self._fdbk.tilt_position
-                rospy.loginfo('%s: Succeeded' % self._action_name)
+                rospy.logdebug('%s: Succeeded' % self._action_name)
                 self._server.set_succeeded(self._result, 'pan/tilt goal reached')
                 return
             rate.sleep()
-        rospy.loginfo('%s: Failed' % self._action_name)
+        rospy.logerr('%s: Failed' % self._action_name)
         self._server.set_aborted(self._result, 'pan/tilt timed out')
 
 
