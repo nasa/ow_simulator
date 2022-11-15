@@ -52,3 +52,13 @@ R_PARALLEL_FALSE = 0.25
 # Radii in dig_circular for actions
 R_PARALLEL_TRUE_A = 0.46
 R_PARALLEL_FALSE_A = 0.10
+
+# Antenna pan/tilt: all values are radians
+
+PAN_MIN        = -3.2
+PAN_MAX        = 3.2
+PAN_TOLERANCE  = 0.05
+TILT_MIN       = -1.56
+TILT_MAX       = 1.56
+TILT_TOLERANCE = 0.05
+PAN_TILT_INPUT_TOLERANCE = 0.0001

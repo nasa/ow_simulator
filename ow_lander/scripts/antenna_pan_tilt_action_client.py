@@ -6,35 +6,34 @@
 
 import rospy
 import actionlib
-from math import pi
 import argparse
 import ow_lander.msg
+from constants import PAN_MIN, PAN_MAX, TILT_MIN, TILT_MAX, PAN_TILT_INPUT_TOLERANCE
+from utils import in_closed_range
 from guarded_move_action_client import print_arguments
-
-
-def wrap_angle(angle):
-    """
-    :param angle: (float)
-    :return: (float) the angle in [-pi, pi]
-    """
-    tolerance = 0.01
-    while angle > (pi+tolerance):
-        angle -= 2 * pi
-    while angle < -(pi-tolerance):
-        angle += 2 * pi
-    return angle
-
 
 def antenna_client():
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        'pan', type=float, help='Antenna pan value in radians', nargs='?', default=0, const=0)
-    parser.add_argument(
-        'tilt', type=float, help='Antenna tilt value in radians', nargs='?', default=0, const=0)
+    parser.add_argument('pan',
+                        type=float,
+                        help='Antenna pan value in radians [-3.2, 3.2]',
+                        nargs='?', default=0)
+    parser.add_argument('tilt',
+                        type=float,
+                        help='Antenna tilt value in radians [-1.56, 1.56]',
+                        nargs='?', default=0)
     args = parser.parse_args()
     print_arguments(args)
+
+    if not in_closed_range(args.pan, PAN_MIN, PAN_MAX, PAN_TILT_INPUT_TOLERANCE):
+        rospy.logwarn('Requested pan %s not within allowed limit.' % args.pan)
+        return None
+    if not in_closed_range(args.tilt, TILT_MIN, TILT_MAX,
+                           PAN_TILT_INPUT_TOLERANCE):
+        rospy.logwarn('Requested tilt %s not within allowed limit.' % args.tilt)
+        return None
 
     client = actionlib.SimpleActionClient(
         'AntennaPanTiltAction', ow_lander.msg.AntennaPanTiltAction)
@@ -43,9 +42,6 @@ def antenna_client():
     goal = ow_lander.msg.AntennaPanTiltGoal()
     goal.pan = args.pan
     goal.tilt = args.tilt
-
-    goal.tilt = wrap_angle(goal.tilt)
-    goal.pan = wrap_angle(goal.pan)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
@@ -63,6 +59,6 @@ if __name__ == '__main__':
 
         rospy.init_node('antenna_client_py')
         result = antenna_client()
-        rospy.loginfo("Result: %s", result)
+        rospy.loginfo("Result from server: %s", result)
     except rospy.ROSInterruptException:
         rospy.logerror("program interrupted before completion")
