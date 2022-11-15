@@ -31,12 +31,59 @@
   <xacro:macro name="lander_sample_dock_link" params="suffix roll pitch y">
     <link name="lander_sample_dock${suffix}">
 
-      <collision>
+      <!-- <collision>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
           <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
         </geometry>
+      </collision> -->
+
+      <!-- dock bottom -->
+      <collision>
+        <origin
+          xyz="0 0.0197015 0"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.3 0.010597 0.095"/>
+        </geometry>
       </collision>
+      <!-- dock +z wall -->
+      <collision>
+        <origin
+          xyz="0 0 0.04275"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.3 0.05 0.0095"/>
+        </geometry>
+      </collision>
+      <!-- dock -z wall -->
+      <collision>
+        <origin
+          xyz="0 0 -0.04275"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.3 0.05 0.0095"/>
+        </geometry>
+      </collision>
+      <!-- dock +x wall -->
+      <collision>
+        <origin
+          xyz="0.1425 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.015 0.05 0.095"/>
+        </geometry>
+      </collision>
+      <!-- dock -x wall -->
+      <collision>
+        <origin
+          xyz="-0.1425 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.015 0.05 0.095"/>
+        </geometry>
+      </collision>
+
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0.0"/>
         <geometry>
