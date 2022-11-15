@@ -19,9 +19,10 @@
 
       <collision name="collision">
         <geometry>
-          <sphere>
-            <radius>0.01</radius>
-          </sphere>
+          <box>
+            <!-- a cube with a diagonal equal to the visual sphere's radius -->
+            <size>0.011547 0.011547 0.011547</size>
+          </box>
         </geometry>
         <surface>
           <contact>
