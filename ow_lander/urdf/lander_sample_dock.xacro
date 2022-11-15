@@ -31,13 +31,6 @@
   <xacro:macro name="lander_sample_dock_link" params="suffix roll pitch y">
     <link name="lander_sample_dock${suffix}">
 
-      <!-- <collision>
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-        <geometry>
-          <mesh filename="package://ow_lander/meshes/sample_dock.stl" />
-        </geometry>
-      </collision> -->
-
       <!-- dock bottom -->
       <collision>
         <origin
@@ -108,7 +101,6 @@
       <parent link="lander_sample_dock_link"/>
       <child link="lander_sample_dock${suffix}"/>
     </joint>
-    
     
     <gazebo reference="lander_sample_dock${suffix}">
       <visual>
