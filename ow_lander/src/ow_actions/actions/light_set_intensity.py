@@ -1,24 +1,25 @@
-#!/usr/bin/env python3
-
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.ow_action_server import OWActionServer
+import rospy
 
 import ow_lander.msg
 
+from ow_actions.server import ActionServerBase
+from ow_actions.client import ActionClient
+
 from irg_gazebo_plugins.msg import ShaderParamUpdate
 
-class LightSetIntensityServer(OWActionServer):
+class LightSetIntensityServer(ActionServerBase):
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__(
       'LightSetIntensity',
-      LightSetIntensityAction,
-      LightSetIntensityGoal,
-      LightSetIntensityFeedback,
-      LightSetIntensityResult
+      ow_lander.msg.LightSetIntensityAction,
+      ow_lander.msg.LightSetIntensityGoal(),
+      ow_lander.msg.LightSetIntensityFeedback(),
+      ow_lander.msg.LightSetIntensityResult()
     )
 
     # set up interface for changing mast light brightness
@@ -36,7 +37,7 @@ class LightSetIntensityServer(OWActionServer):
       goal.intensity
     )
     if self.result.success:
-      self.set_succeded()
+      self.set_succeeded()
     else:
       self.set_aborted()
 
@@ -56,7 +57,16 @@ class LightSetIntensityServer(OWActionServer):
     self.light_pub.publish(self.light_msg)
     return True, f"{name} light intensity setting succeeded."
 
-if __name__ == '__main__':
+def spin_action_server():
   rospy.init_node('light_set_intensity_server')
   server = LightSetIntensityServer()
   rospy.spin()
+
+def call_action(name, intensity):
+  client = ActionClient(
+    'LightSetIntensity',
+    ow_lander.msg.LightSetIntensityAction
+  )
+  return client.call(
+    ow_lander.msg.LightSetIntensityGoal(name = name, intensity = intensity)
+  )

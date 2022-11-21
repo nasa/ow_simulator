@@ -4,22 +4,25 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.ow_action_server import OWActionServer
+import rospy
 
 import ow_lander.msg
+
+from ow_actions.server import ActionServerBase
+from ow_actions.client import ActionClient
 
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 
-class CameraCaptureServer(OWActionServer):
+class CameraCaptureServer(ActionServerBase):
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__(
       'CameraCapture',
-      CameraCaptureAction,
-      CameraCaptureGoal,
-      CameraCaptureFeedback,
-      CameraCaptureResult,
+      ow_lander.msg.CameraCaptureAction,
+      ow_lander.msg.CameraCaptureGoal(),
+      ow_lander.msg.CameraCaptureFeedback(),
+      ow_lander.msg.CameraCaptureResult()
     )
 
     # set up interface for capturing a photograph witht he camera
@@ -71,7 +74,16 @@ class CameraCaptureServer(OWActionServer):
       rate.sleep()
     self.set_aborted("Timed out waiting for point cloud")
 
-if __name__ == '__main__':
+def spin_action_server():
   rospy.init_node('camera_capture_server')
-  server = CameraCaptureActionServer()
+  server = CameraCaptureServer()
   rospy.spin()
+
+def call_action(exposure):
+  client = ActionClient(
+    'CameraCapture',
+    ow_lander.msg.CameraCaptureAction
+  )
+  return client.call(
+    ow_lander.msg.CameraCaptureGoal(exposure=exposure)
+  )

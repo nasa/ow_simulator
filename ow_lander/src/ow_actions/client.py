@@ -5,12 +5,10 @@
 import rospy
 import actionlib
 
-class OWActionClient(object):
-
+class ActionClient(object):
   def __init__(self, name, action):
     self.client = actionlib.SimpleActionClient(name, action)
     self.client.wait_for_server()
-
   def call(self, goal):
     self.client.send_goal_and_wait(goal)
     return self.client.get_result()

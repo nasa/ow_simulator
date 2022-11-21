@@ -7,14 +7,7 @@ import actionlib
 
 from abc import ABC, abstractmethod
 
-def _format_log(prefix, statement=None):
-  if statement is None:
-    return prefix
-  else:
-    return f"{prefix} - {statement}"
-
-class OWActionServer(ABC):
-
+class ActionServerBase(ABC):
   def __init__(self, name, action, goal, feedback, result):
     self.name    = name
     self.action  = action
@@ -22,31 +15,31 @@ class OWActionServer(ABC):
     self.feedack = feedback
     self.result  = result
     self._server  = actionlib.SimpleActionServer(
-      self._action_name,
+      self.name,
       action,
       execute_cb = self._on_action_called,
       auto_start = False
     )
-
-  def start_server(self):
-    self._server.start()
-
   @abstractmethod
   def _on_action_called(self, goal):
     pass
-
+  @staticmethod
+  def _format_log(prefix, statement=None):
+    if statement is None:
+      return prefix
+    else:
+      return f"{prefix} - {statement}"
+  def start_server(self):
+    self._server.start()
   def publish_feedback(self):
     self._server.publish_feedback(self.feedback)
     pass
-
   def set_succeeded(self, msg=None):
-    rospy.loginfo(_format_log(f"{self.name}: Succeded", msg))
-    self._server.set_succeded(self.result)
-
+    rospy.loginfo(self._format_log(f"{self.name}: Succeded", msg))
+    self._server.set_succeeded(self.result)
   def set_aborted(self, msg=None):
-    rospy.loginfo(_format_log(f"{self.name}: Aborted", msg))
+    rospy.loginfo(self._format_log(f"{self.name}: Aborted", msg))
     self._server.set_aborted(self.result)
-
   def set_preempted(self, msg=None):
-    rospy.loginfo(_format_log(f"{self.name}: Preempted", msg))
+    rospy.loginfo(self._format_log(f"{self.name}: Preempted", msg))
     self._server.set_preempted()
