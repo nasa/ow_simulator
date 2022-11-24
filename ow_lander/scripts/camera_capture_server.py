@@ -5,5 +5,6 @@
 # this repository.
 
 from ow_actions.actions import camera_capture
+from ow_actions import helper
 
-camera_capture.spin_action_server()
+helper.spin_action_server(camera_capture.CameraCaptureServer)

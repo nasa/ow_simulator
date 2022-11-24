@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
@@ -9,21 +7,20 @@ import rospy
 import ow_lander.msg
 
 from ow_actions.server import ActionServerBase
-from ow_actions.client import ActionClient
 
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 
 class CameraCaptureServer(ActionServerBase):
 
+  name          = 'CameraCapture'
+  action_type   = ow_lander.msg.CameraCaptureAction
+  goal_type     = ow_lander.msg.CameraCaptureGoal
+  feedback_type = ow_lander.msg.CameraCaptureFeedback
+  result_type   = ow_lander.msg.CameraCaptureResult
+
   def __init__(self):
-    super(CameraCaptureServer, self).__init__(
-      'CameraCapture',
-      ow_lander.msg.CameraCaptureAction,
-      ow_lander.msg.CameraCaptureGoal(),
-      ow_lander.msg.CameraCaptureFeedback(),
-      ow_lander.msg.CameraCaptureResult()
-    )
+    super(CameraCaptureServer, self).__init__()
 
     # set up interface for capturing a photograph witht he camera
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
@@ -37,7 +34,7 @@ class CameraCaptureServer(ActionServerBase):
                                              self._handle_point_cloud)
     self.point_cloud_created = False
 
-    self.start_server()
+    self._start_server()
 
   def _handle_point_cloud(self, points):
     """
@@ -49,7 +46,7 @@ class CameraCaptureServer(ActionServerBase):
     # the CameraCapture action client.
     self.point_cloud_created = True
 
-  def _on_action_called(self, goal):
+  def execute(self, goal):
     self.point_cloud_created = False
     # Set exposure if it is specified
     if goal.exposure > 0:
@@ -66,24 +63,11 @@ class CameraCaptureServer(ActionServerBase):
     rate = rospy.Rate(frequency)
     for i in range(0, int(time_out * frequency)):
       if self._server.is_preempt_requested():
-        self.set_preempted()
+        self._set_preempted(self.result_type())
         return
       if self.point_cloud_created:
-        self.set_succeeded("Point cloud received")
+        self._set_succeeded(self.result_type(), "Point cloud received")
         return
       rate.sleep()
-    self.set_aborted("Timed out waiting for point cloud")
+    self._set_aborted(self.result_type(), "Timed out waiting for point cloud")
 
-def spin_action_server():
-  rospy.init_node('camera_capture_server')
-  server = CameraCaptureServer()
-  rospy.spin()
-
-def call_action(exposure):
-  client = ActionClient(
-    'CameraCapture',
-    ow_lander.msg.CameraCaptureAction
-  )
-  return client.call(
-    ow_lander.msg.CameraCaptureGoal(exposure=exposure)
-  )

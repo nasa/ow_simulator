@@ -4,8 +4,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import rospy
 import argparse
+from ow_actions import helper
 from ow_actions.actions import light_set_intensity
 
 parser = argparse.ArgumentParser(
@@ -23,9 +23,7 @@ parser.add_argument(
        "0 is entirely off, and 1 is max intensity."
 )
 args = parser.parse_args()
-rospy.loginfo(args)
-try:
-  rospy.init_node('light_set_intensity_client')
-  light_set_intensity.call_action(args.name, args.intensity)
-except rospy.ROSInterruptException:
-  rospy.logerror("program interrupted before completion")
+
+helper.call_single_use_action_client(
+  light_set_intensity.LightSetIntensityServer, **vars(args)
+)

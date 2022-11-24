@@ -4,8 +4,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import rospy
 import argparse
+from ow_actions import helper
 from ow_actions.actions import camera_capture
 
 parser = argparse.ArgumentParser(
@@ -18,11 +18,7 @@ parser.add_argument(
        "will be used."
 )
 args = parser.parse_args()
-rospy.loginfo(args)
-try:
-  # Initializes a rospy node
-  rospy.init_node('camera_capture_client')
-  camera_capture.call_action(args.exposure)
-except rospy.ROSInterruptException:
-  rospy.logerror('program interrupted before completion')
 
+helper.call_single_use_action_client(
+  camera_capture.CameraCaptureServer, **vars(args)
+)

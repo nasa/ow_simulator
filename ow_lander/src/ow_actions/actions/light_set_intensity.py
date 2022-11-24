@@ -7,20 +7,19 @@ import rospy
 import ow_lander.msg
 
 from ow_actions.server import ActionServerBase
-from ow_actions.client import ActionClient
 
 from irg_gazebo_plugins.msg import ShaderParamUpdate
 
 class LightSetIntensityServer(ActionServerBase):
 
+  name          = 'LightSetIntensity'
+  action_type   = ow_lander.msg.LightSetIntensityAction
+  goal_type     = ow_lander.msg.LightSetIntensityGoal
+  feedback_type = ow_lander.msg.LightSetIntensityFeedback
+  result_type   = ow_lander.msg.LightSetIntensityResult
+
   def __init__(self):
-    super(LightSetIntensityServer, self).__init__(
-      'LightSetIntensity',
-      ow_lander.msg.LightSetIntensityAction,
-      ow_lander.msg.LightSetIntensityGoal(),
-      ow_lander.msg.LightSetIntensityFeedback(),
-      ow_lander.msg.LightSetIntensityResult()
-    )
+    super(LightSetIntensityServer, self).__init__()
 
     # set up interface for changing mast light brightness
     self.light_pub = rospy.Publisher('/gazebo/global_shader_param',
@@ -29,44 +28,31 @@ class LightSetIntensityServer(ActionServerBase):
     self.light_msg = ShaderParamUpdate()
     self.light_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
 
-    self.start_server()
+    self._start_server()
 
-  def _on_action_called(self, goal):
-    self.result.success, self.result.message = self._set_light_intensity(
-      goal.name.lower(),
-      goal.intensity
-    )
-    if self.result.success:
-      self.set_succeeded()
+  def execute(self, goal):
+    result = self._set_light_intensity(goal.name.lower(), goal.intensity)
+    if result.success:
+      self._set_succeeded(result)
     else:
-      self.set_aborted()
+      self._set_aborted(result)
 
   def _set_light_intensity(self, name, intensity):
     # check intensity range
     if intensity < 0.0 or intensity > 1.0:
-      return False, f"Light intensity setting failed. " \
-                    f"Intensity = {intensity} is out of range."
+      return self.result_type(
+        False, f"Light intensity setting failed. Intensity = {intensity} is " \
+               f"out of range."
+      )
     if name == 'left':
       self.light_msg.paramName = 'spotlightIntensityScale[0]'
     elif name == 'right':
       self.light_msg.paramName = 'spotlightIntensityScale[1]'
     else:
-      return False, f"Light intensity setting failed. " \
-                    f"\'{name}\' is not a light indentifier."
+      return self.result_type(
+        False, f"Light intensity setting failed. \'{name}\' is not a light "
+               f"indentifier."
+      )
     self.light_msg.paramValue = str(intensity)
     self.light_pub.publish(self.light_msg)
-    return True, f"{name} light intensity setting succeeded."
-
-def spin_action_server():
-  rospy.init_node('light_set_intensity_server')
-  server = LightSetIntensityServer()
-  rospy.spin()
-
-def call_action(name, intensity):
-  client = ActionClient(
-    'LightSetIntensity',
-    ow_lander.msg.LightSetIntensityAction
-  )
-  return client.call(
-    ow_lander.msg.LightSetIntensityGoal(name = name, intensity = intensity)
-  )
+    return self.result_type(True, f"{name} light intensity setting succeeded.")

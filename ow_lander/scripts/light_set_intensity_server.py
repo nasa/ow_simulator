@@ -5,5 +5,6 @@
 # this repository.
 
 from ow_actions.actions import light_set_intensity
+from ow_actions import helper
 
-light_set_intensity.spin_action_server()
+helper.spin_action_server(light_set_intensity.LightSetIntensityServer)
