@@ -41,8 +41,8 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    this);
   
   m_camera_trigger_timer = nh.createTimer( CAMERA_RESPONSE_THRESHOLD, 
-                                           &FaultDetector::cameraTriggerPublishCb, 
-                                           this, true, false);
+                                           &FaultDetector::cameraTriggerPublishCb,this,
+                                           true, false); // oneshot, autostart
 
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
