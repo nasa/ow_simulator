@@ -114,4 +114,7 @@
     type="camera_capture_action_server.py"
     launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
     output="screen"/>
+
+  <!-- == launch the state repackaging node ============== -->
+  <node pkg="ow_lander" name="state_publisher" type="state_publisher.py" output="screen"/>
 </launch>
