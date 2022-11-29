@@ -40,7 +40,9 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    &FaultDetector::cameraRawCb, 
                                    this);
   
-  m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
+  m_camera_trigger_timer = nh.createTimer( CAMERA_RESPONSE_THRESHOLD, 
+                                           &FaultDetector::cameraTriggerPublishCb, 
+                                           this, true, false);
 
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
@@ -94,11 +96,14 @@ void FaultDetector::publishSystemFaultsMessage()
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
 {
+  // reset the timer for next time
+  m_camera_trigger_timer.stop();
+  m_camera_trigger_timer.setPeriod(CAMERA_RESPONSE_THRESHOLD);
+
+  // check that raw camera data arrived within the threshold of the camera trigger
   ow_faults_detection::CamFaults camera_faults_msg;
-  auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&  
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
-    diff < ros::Duration(0) && ros::Duration(-1) < diff) {
+  if (m_cam_raw_time >= m_cam_trigger_time &&
+      m_cam_raw_time <= m_cam_trigger_time + CAMERA_RESPONSE_THRESHOLD) { 
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
     m_system_faults_bitset |= isCamExecutionError;
@@ -219,6 +224,7 @@ void FaultDetector::antPublishFaultMessages()
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 {
   m_cam_trigger_time = ros::Time::now();
+  m_camera_trigger_timer.start();
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)

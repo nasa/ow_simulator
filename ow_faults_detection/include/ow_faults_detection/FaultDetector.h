@@ -125,6 +125,7 @@ private:
   ros::Subscriber m_joint_states_sub;
 
   // Camera
+  const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
   ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
