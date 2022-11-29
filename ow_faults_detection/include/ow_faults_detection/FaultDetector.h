@@ -14,7 +14,7 @@
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include "ow_faults_detection/ArmFaults.h"
+#include <owl_msgs/ArmFaultsStatus.h>
 #include "ow_faults_detection/PowerFaults.h"
 #include "ow_faults_detection/PTFaults.h"
 #include "ow_faults_detection/CamFaults.h"
@@ -35,18 +35,6 @@ public:
   
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
-
-  enum class ComponentFaults : uint {
-    Hardware = 1, 
-    JointLimit = 2,
-    TrajectoryGeneration = 2,
-    Collision = 3, 
-    Estop = 4, 
-    PositionLimit = 5, 
-    TorqueLimit = 6, 
-    VelocityLimit = 7, 
-    NoForceData = 8
-    };
 
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
@@ -93,14 +81,11 @@ private:
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  template<typename fault_msg>
-  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
-
 
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
-  ros::Publisher m_arm_fault_msg_pub;
+  ros::Publisher m_arm_faults_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_fault_msg_pub;
   ros::Publisher m_power_fault_msg_pub;

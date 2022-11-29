@@ -49,7 +49,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
-  m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
+  m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
@@ -63,13 +63,6 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
 {
   msg.header.stamp = ros::Time::now();
   msg.header.frame_id = "world";
-}
-
-template<typename fault_msg>
-void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) 
-{
-  setFaultsMessageHeader(msg);
-  msg.value = static_cast<uint>(value);
 }
 
 // publish system messages
@@ -92,7 +85,6 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
     m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
   } else {
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   }
 
   publishSystemFaultsMessage();
@@ -108,7 +100,6 @@ void FaultDetector::publishPowerSystemFault()
     //system
     m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
     //power
-    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
@@ -159,15 +150,17 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
     armFault = armFault || isFlagSet( name, msg->flags);
   }
 
-  ow_faults_detection::ArmFaults arm_faults_msg;
+  owl_msgs::ArmFaultsStatus arm_faults_msg;
   if (armFault){
     m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-    setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
+    arm_faults_msg.value |= ArmFaultsStatus::HARDWARE;
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    arm_faults_msg.value &= ~ArmFaultsStatus::HARDWARE;
   }
 
-  m_arm_fault_msg_pub.publish(arm_faults_msg);
+  setFaultsMessageHeader(arm_faults_msg);
+  m_arm_faults_msg_pub.publish(arm_faults_msg);
   publishSystemFaultsMessage();
 }
 
@@ -196,7 +189,6 @@ void FaultDetector::antPublishFaultMessages()
 {
   ow_faults_detection::PTFaults ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
-    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }else {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
