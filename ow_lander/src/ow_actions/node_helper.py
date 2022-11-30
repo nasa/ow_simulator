@@ -25,5 +25,14 @@ def call_single_use_action_client(action_server_type, **kwargs):
     goal = action_server_type.goal_type(**kwargs)
     client.send_goal_and_wait(goal)
   except rospy.ROSInterruptException:
-    rospy.logerror("Program interrupted before completion")
+    rospy.logerr("Program interrupted before completion")
 
+# def call_single_use_action_client(name, action_type, goal_type, **kwargs):
+#   node_name = camel_to_snake_case(name) + '_client'
+#   rospy.init_node(node_name, anonymous=True)
+#   client = actionlib.SimpleActionClient(name, action_type)
+#   try:
+#     client.wait_for_server()
+#     client.send_goal_and_wait(goal_type(**kwargs))
+#   except rospy.ROSInterruptException:
+#     rospy.logerr("Program interrupted before completion")

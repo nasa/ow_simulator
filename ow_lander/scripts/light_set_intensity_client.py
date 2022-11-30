@@ -5,7 +5,7 @@
 # this repository.
 
 import argparse
-from ow_actions import helper
+from ow_actions import node_helper
 from ow_actions.actions import light_set_intensity
 
 parser = argparse.ArgumentParser(
@@ -24,6 +24,6 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-helper.call_single_use_action_client(
+node_helper.call_single_use_action_client(
   light_set_intensity.LightSetIntensityServer, **vars(args)
 )

@@ -46,7 +46,7 @@ class CameraCaptureServer(ActionServerBase):
     # the CameraCapture action client.
     self.point_cloud_created = True
 
-  def execute(self, goal):
+  def execute_action(self, goal):
     self.point_cloud_created = False
     # Set exposure if it is specified
     if goal.exposure > 0:

@@ -6,16 +6,19 @@
 
 import rospy
 import actionlib
+import numpy as np
 from ow_lander.msg import *
+
 from LanderInterface import MoveItInterface
 from LanderInterface import LinkStateSubscriber
 from LanderInterface import ArmJointStateSubscriber
-import numpy as np
 from trajectory_async_execution import TrajectoryAsyncExecuter
 from action_trajectories import ActionTrajectories
+from ground_detection import GroundDetector
+
+
 from moveit_msgs.msg import RobotTrajectory
 from controller_manager_msgs.srv import SwitchController
-from ground_detection import GroundDetector
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point
 from math import pi

@@ -4,7 +4,13 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_actions.actions import light_set_intensity
-from ow_actions import node_helper
+import rospy
 
-node_helper.spin_action_server(light_set_intensity.LightSetIntensityServer)
+from ow_actions.actions import unstow
+
+rospy.init_node('arm_action_servers_experimental')
+server_unstow = unstow.UnstowServer()
+
+# TODO: other actions go here
+
+rospy.spin()

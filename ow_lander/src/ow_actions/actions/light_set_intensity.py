@@ -30,7 +30,7 @@ class LightSetIntensityServer(ActionServerBase):
 
     self._start_server()
 
-  def execute(self, goal):
+  def execute_action(self, goal):
     result = self._set_light_intensity(goal.name.lower(), goal.intensity)
     if result.success:
       self._set_succeeded(result)
