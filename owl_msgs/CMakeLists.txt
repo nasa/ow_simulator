@@ -50,6 +50,7 @@ add_message_files(
   FILES
   ArmFaultsStatus.msg
   SystemFaultsStatus.msg
+  CameraFaultsStatus.msg
 )
 
 ## Generate services in the 'srv' folder

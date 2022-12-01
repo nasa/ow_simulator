@@ -49,7 +49,7 @@ void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, ui
 
 void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
 {
-  if (!m_cam_fault) {// if no fault
+  if (!m_camera_fault) {// if no fault
     m_camera_trigger_remapped_pub.publish(msg);
   } 
 }
@@ -70,7 +70,7 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   // checking rqt
-  checkCamFaults();
+  checkCameraFaults();
 
   m_joint_state_remapped_pub.publish(output);
 }
@@ -104,9 +104,9 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   m_dist_pitch_ft_sensor_pub.publish(out_msg);
 }
 
-void FaultInjector::checkCamFaults()
+void FaultInjector::checkCameraFaults()
 {
-  m_cam_fault = m_faults.camera_left_trigger_failure;
+  m_camera_fault = m_faults.camera_left_trigger_failure;
 }
 
 int FaultInjector::findPositionInGroup(const std::vector<string>& group, const string& item)

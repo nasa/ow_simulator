@@ -54,7 +54,6 @@ add_message_files(
   FILES
   PowerFaults.msg
   PTFaults.msg
-  CamFaults.msg
   JointStatesFlag.msg
 )
 

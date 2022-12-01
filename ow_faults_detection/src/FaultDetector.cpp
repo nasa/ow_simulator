@@ -29,7 +29,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
                                                 10, 
-                                                &FaultDetector::camerTriggerCb, 
+                                                &FaultDetector::cameraTriggerCb, 
                                                 this);
   m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
                                    10, 
@@ -51,7 +51,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
-  m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
+  m_camera_faults_msg_pub = nh.advertise<owl_msgs::CameraFaultsStatus>("/camera_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
   m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
@@ -77,10 +77,10 @@ void FaultDetector::publishSystemFaultsMessage()
 //// Publish Camera Messages
 void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
 {
-  ow_faults_detection::CamFaults camera_faults_msg;
-  auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&  
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
+  owl_msgs::CameraFaultsStatus camera_faults_msg;
+  auto diff = m_camera_raw_time - m_camera_trigger_time;
+  if (m_camera_trigger_time <= m_camera_raw_time &&  
+    m_camera_raw_time <= m_camera_trigger_time + ros::Duration(2) || 
     diff < ros::Duration(0) && ros::Duration(-1) < diff) {
     m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
   } else {
@@ -88,7 +88,7 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
   }
 
   publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
+  m_camera_faults_msg_pub.publish(camera_faults_msg);
 }
 
 //// Publish Power Faults Messages
@@ -198,14 +198,14 @@ void FaultDetector::antPublishFaultMessages()
 }
 
 //// Camera listeners
-void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
+void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
 {
-  m_cam_trigger_time = ros::Time::now();
+  m_camera_trigger_time = ros::Time::now();
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  m_cam_raw_time = ros::Time::now();
+  m_camera_raw_time = ros::Time::now();
 }
 
 //// Power Topic Listeners
