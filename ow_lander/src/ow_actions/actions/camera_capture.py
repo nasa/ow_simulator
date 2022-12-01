@@ -21,7 +21,6 @@ class CameraCaptureServer(ActionServerBase):
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
-
     # set up interface for capturing a photograph witht he camera
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
                                          Float64,
@@ -33,7 +32,6 @@ class CameraCaptureServer(ActionServerBase):
                                              PointCloud2,
                                              self._handle_point_cloud)
     self.point_cloud_created = False
-
     self._start_server()
 
   def _handle_point_cloud(self, points):
@@ -62,12 +60,13 @@ class CameraCaptureServer(ActionServerBase):
     time_out = 5   # seconds
     rate = rospy.Rate(frequency)
     for i in range(0, int(time_out * frequency)):
-      if self._server.is_preempt_requested():
-        self._set_preempted(self.result_type())
+      # TODO: investigate replacing with an optional preempt callback function
+      if self._is_preempt_requested():
+        self._set_preempted("Action was preempted")
         return
       if self.point_cloud_created:
-        self._set_succeeded(self.result_type(), "Point cloud received")
+        self._set_succeeded("Point cloud received")
         return
       rate.sleep()
-    self._set_aborted(self.result_type(), "Timed out waiting for point cloud")
+    self._set_aborted("Timed out waiting for point cloud")
 

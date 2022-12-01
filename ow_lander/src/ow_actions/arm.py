@@ -19,63 +19,88 @@ class ArmActionMixin:
     moveit_commander.roscpp_initialize(sys.argv)
 
     # initialize/reference trajectory planner singleton
-    self._arm_trajectory_planner = ArmTrajectoryPlanner()
+    self._planner = ArmTrajectoryPlanner()
     # initialize/reference trajectory execution singleton
-    self._arm_trajectory_executor = ArmTrajectoryExecutor()
-    # # initialize/reference stop singleton
-    # self._arm_stop_server =
+    self._executor = ArmTrajectoryExecutor()
     # initialize interface for querying scoop tip position
     self._arm_tip = LinkPositionSubscriber('lander::l_scoop_tip')
 
-  def get_arm_tip_position(self):
+    # DEACTIVATED: still investigating how best to incorporate the stop action
+    # # initialize/reference stop singleton
+    # self._arm_stop_server =
+
+  def _execution_feedback_cb(self, _feedback):
+    """Called during the trajectory execution. Does nothing by default, but
+    optionally can be override by the child class.
+    _feedback -- An instance of control_msgs.msg.FollowJointTrajectoryFeedback
+    """
+    pass
+
+  def _execution_active_cb(self):
+    """Called when the trajectory execution begins. Does nothing by default, but
+    optionally can be overridden by the child class.
+    """
+    pass
+
+  def _execution_done_cb(self, _state, _result):
+    """Called when the trajectory execution completes. Does nothing by default,
+    but optionally can be overridden by the child class.
+    _state  -- An instance of actionlib_msgs.GoalStatus that provides the final
+               state of the action.
+    _result -- An instance of control_msgs.msg.FollowJointTrajectoryResult
+    """
+    pass
+
+  def _publish_action_feedback(self):
+    """Publishes the action's feedback. Most arm actions publish the scoop tip
+    position under the name "current" in their feedback, so that is what this
+    method does by default, but it can be overridden by the child class.
+
+    This method is called at a rate of 100 Hertz while the trajectory is
+    executed.
+    """
+    self._publish_feedback(current=self._get_arm_tip_position())
+
+  def _get_arm_tip_position(self):
     return self._arm_tip.get_link_position()
 
-  def feedback_callback(self, _feedback):
-    pass
-
-  def active_callback(self):
-    pass
-
-  def done_callback(self, _state, _result):
-    pass
-
-  def execute_arm_trajectory(self, plan,
-      done_cb = None, active_cb = None, feedback_cb = None):
+  def _execute_arm_trajectory(self, plan):
+    """Executes the provided plan and awaits its completions
+    plan - An instance of moveit_msgs.msg.RobotTrajectory that describes the
+           arm trajectory to be executed. Can be None, in which case planning
+           is assumed to have failed.
+    returns True if plan was executed successfully and without preempt.
+    """
 
     if plan is None:
-      self._set_aborted(self.result_type(), "Plan was aborted")
+      self._set_aborted("Trajectory planning failed")
 
+    # DEACTIVATED: still investigating how best to incorporate the stop action
     # if _server_stop.stopped:
     #   self._set_aborted(self.result_type(), "Stop server is stopped")
     #   return
 
-    self._arm_trajectory_executor.execute(
+    self._executor.execute(
       plan.joint_trajectory,
-      active_cb=self.active_callback,
-      feedback_cb=self.feedback_callback,
-      done_cb=self.done_callback
+      active_cb=self._execution_active_cb,
+      feedback_cb=self._execution_feedback_cb,
+      done_cb=self._execution_done_cb
     )
 
     # publish feedback while waiting for trajectory execution completion
+    # TODO: verify that timeout is the appropriate time to loop for
     FEEDBACK_RATE = 100 # hertz
     rate = rospy.Rate(FEEDBACK_RATE) # hertz
     timeout = plan.joint_trajectory.points[-1].time_from_start \
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
-    while rospy.get_time() - start_time < timeout.secs: #and not _server_stop.stopped:
-      self._publish_feedback(
-        self.feedback_type(current=self.get_arm_tip_position())
-      )
+    # DEACTIVATED: still investigating how best to incorporate the stop action
+    # while rospy.get_time() - start_time < timeout.secs and not _server_stop.stopped:
+    while rospy.get_time() - start_time < timeout.secs:
+      self._publish_action_feedback()
       rate.sleep()
 
-    self._arm_trajectory_executor.wait()
+    self._executor.wait()
 
-    success = self._arm_trajectory_executor.success() \
-              and not self._arm_trajectory_executor.was_preempted()
+    return self._executor.success() and not self._executor.was_preempted()
 
-    if success:
-      self._set_succeeded(
-        self.result_type(final=self.get_arm_tip_position())
-      )
-    else:
-      self._set_aborted(self.result_type(final=self.get_arm_tip_position()))

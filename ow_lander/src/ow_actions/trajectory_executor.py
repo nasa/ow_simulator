@@ -42,8 +42,10 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     config = self._faults_reconfigure_client.get_configuration(
       DYNRECON_CLIENT_TIMEOUT)
     if not config:
-      raise TimeoutError(f"Timed out waiting {DYNRECON_CLIENT_TIMEOUT} seconds" \
-                     f"for a connection with the {DYNRECON_NAME} dynamic reconfigure server.")
+      raise TimeoutError(
+        f"Timed out waiting {DYNRECON_CLIENT_TIMEOUT} seconds for a " \
+        f"connection with the {DYNRECON_NAME} dynamic reconfigure server."
+      )
     rospy.loginfo("Successfully connected to the dyanmic reconfigure server.")
     self.arm_motion_continues_in_fault = config['arm_motion_continues_in_fault']
 
@@ -51,12 +53,15 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     ACTION_CLIENT_TIMEOUT = 30 # seconds
     ARM_CONTROLLER_NAME = 'arm_controller'
     self._follow_action_client = actionlib.SimpleActionClient(
-      f"{ARM_CONTROLLER_NAME}/follow_joint_trajectory", FollowJointTrajectoryAction)
+      f"{ARM_CONTROLLER_NAME}/follow_joint_trajectory",
+      FollowJointTrajectoryAction
+    )
     if not self._follow_action_client.wait_for_server(
         rospy.Duration(ACTION_CLIENT_TIMEOUT)):
-      raise TimeoutError(f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for " \
-                     f"connection to the {ARM_CONTROLLER_NAME} joint trajectory " \
-                     f"action server.")
+      raise TimeoutError(
+        f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for connection " \
+        f"the {ARM_CONTROLLER_NAME} joint trajectory action server."
+      )
     rospy.loginfo(f"Successfully connected to {ARM_CONTROLLER_NAME} joint "\
                   f"trajectory action server.")
 

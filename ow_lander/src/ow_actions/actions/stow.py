@@ -9,14 +9,14 @@ import ow_lander.msg
 from ow_actions.server import ActionServerBase
 from ow_actions.arm import ArmActionMixin
 
-class UnstowServer(ArmActionMixin, ActionServerBase):
+class StowServer(ArmActionMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Unstow" to "ArmUnstow"
-  name          = 'Unstow'
-  action_type   = ow_lander.msg.UnstowAction
-  goal_type     = ow_lander.msg.UnstowGoal
-  feedback_type = ow_lander.msg.UnstowFeedback
-  result_type   = ow_lander.msg.UnstowResult
+  # UNIFICATION TODO: rename "Stow" to "ArmStow"
+  name          = 'Stow'
+  action_type   = ow_lander.msg.StowAction
+  goal_type     = ow_lander.msg.StowGoal
+  feedback_type = ow_lander.msg.StowFeedback
+  result_type   = ow_lander.msg.StowResult
 
   def __init__(self):
     super().__init__()
@@ -28,7 +28,7 @@ class UnstowServer(ArmActionMixin, ActionServerBase):
     # DEACTIVATED: still investigating how best to incorporate the stop action
     # _server_stop.reset()
 
-    plan = self._planner.plan_arm_to_target("arm_unstowed")
+    plan = self._planner.plan_arm_to_target("arm_stowed")
 
     if self._execute_arm_trajectory(plan):
       self._set_succeeded(

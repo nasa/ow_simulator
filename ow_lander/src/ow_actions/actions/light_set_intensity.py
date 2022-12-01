@@ -20,39 +20,35 @@ class LightSetIntensityServer(ActionServerBase):
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__()
-
     # set up interface for changing mast light brightness
     self.light_pub = rospy.Publisher('/gazebo/global_shader_param',
                                      ShaderParamUpdate,
                                      queue_size=1)
     self.light_msg = ShaderParamUpdate()
     self.light_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
-
     self._start_server()
 
   def execute_action(self, goal):
-    result = self._set_light_intensity(goal.name.lower(), goal.intensity)
-    if result.success:
-      self._set_succeeded(result)
-    else:
-      self._set_aborted(result)
-
-  def _set_light_intensity(self, name, intensity):
+    intensity = goal.intensity
+    name = goal.name.lower()
     # check intensity range
     if intensity < 0.0 or intensity > 1.0:
-      return self.result_type(
-        False, f"Light intensity setting failed. Intensity = {intensity} is " \
-               f"out of range."
-      )
+      msg = f"Intensity = {intensity} is out of range."
+      # NOTE: This action's result format is redundant since actionlib already
+      #       conveys both a "success" flag and a "message" string. This
+      #       redundancy will be removed following command unification.
+      self._set_aborted(msg, success=False, message=msg)
+      return
+    # check for correct names
     if name == 'left':
       self.light_msg.paramName = 'spotlightIntensityScale[0]'
     elif name == 'right':
       self.light_msg.paramName = 'spotlightIntensityScale[1]'
     else:
-      return self.result_type(
-        False, f"Light intensity setting failed. \'{name}\' is not a light "
-               f"indentifier."
-      )
-    self.light_msg.paramValue = str(intensity)
+      msg = f"\'{name}\' is not a light indentifier."
+      self._set_aborted(msg, success=False, message=msg)
+      return
+    self.light_msg.paramValue = str(goal.intensity)
     self.light_pub.publish(self.light_msg)
-    return self.result_type(True, f"{name} light intensity setting succeeded.")
+    msg = f"{name} light intensity set successfully."
+    self._set_succeeded(msg, success=True, message=msg)

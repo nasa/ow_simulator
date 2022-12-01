@@ -6,10 +6,11 @@
 
 import rospy
 
-from ow_actions.actions import unstow
+from ow_actions.actions import unstow, stow
 
 rospy.init_node('arm_action_servers_experimental')
 server_unstow = unstow.UnstowServer()
+server_stow = stow.StowServer()
 
 # TODO: other actions go here
 

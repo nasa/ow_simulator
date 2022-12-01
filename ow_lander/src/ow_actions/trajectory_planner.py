@@ -4,7 +4,6 @@
 
 import rospy
 import math
-import constants
 import copy
 import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
@@ -15,6 +14,7 @@ from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
+from ow_actions import constants
 from ow_actions.common import Singleton, is_shou_yaw_goal_in_range
 
 class ArmTrajectoryPlanner(metaclass = Singleton):
@@ -44,6 +44,14 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       robot_state
     )
     return goal_pose_stamped.pose_stamped[0].pose
+
+  def plan_arm_to_target(self, target_name):
+    target_joints = self._move_arm.get_named_target_values(target_name)
+    self._move_arm.set_joint_value_target(target_joints)
+    # NOTE: _success, _planning_time, and _error are not used but are named in
+    #       case they are needed
+    _success, plan, _planning_time, _error = self._move_arm.plan()
+    return plan
 
   ## DEPRECATED and logic disabled
   def check_for_stop(self, action_name, server_stop):
