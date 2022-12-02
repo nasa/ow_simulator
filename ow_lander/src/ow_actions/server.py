@@ -117,9 +117,9 @@ class ActionServerBase(ABC):
     except AttributeError as err:
       attribute_err = f"{err}; an empty action result will be published"
       rospy.logerr(attribute_err)
-      # append the error to pre-existing message so action clients have full
-      # information
-      msg += attribute_err_msg
+      # append the error to pre-existing message so action clients have all the
+      # information about what happened
+      msg += "\n" + attribute_err
     return result, msg
 
   @staticmethod
