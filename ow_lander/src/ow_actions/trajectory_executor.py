@@ -31,7 +31,7 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     self._sub_system_faults = rospy.Subscriber(
       SYSTEM_FAULTS_TOPIC, SystemFaultsStatus, self._system_faults_callback)
 
-    # intialize a dynamic reconfigure client to receive reconfigurations
+    # initialize a dynamic reconfigure client to receive reconfiguration
     DYNRECON_CLIENT_TIMEOUT = 30 # seconds
     DYNRECON_NAME = "faults"
     self._faults_reconfigure_client = dynamic_reconfigure.client.Client(
@@ -62,6 +62,9 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
       )
     rospy.loginfo(f"Successfully connected to {ARM_CONTROLLER_NAME} joint "\
                   f"trajectory action server.")
+
+    # initialize stop server
+
 
   def _dyanmic_reconfigure_callback(self, config):
     """
@@ -104,11 +107,12 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
 
   def stop(self):
     """
-    Stops the execution of the last trajectory submitted for executoin
+    Stops the execution of the last trajectory submitted for execution
     """
-    action_state = self.get_state()
-    if action_state == GoalStatus.ACTIVE:
+    if self._follow_action_client.get_state() == GoalStatus.ACTIVE:
       self._follow_action_client.cancel_goal()
+      return True
+    return False # nothing was cancelled
 
   def wait(self, timeout=0):
     """
