@@ -39,7 +39,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
   def compute_forward_kinematics(self, fk_target_link, robot_state):
     # TODO: may raise ROSSerializationException
     goal_pose_stamped = self._compute_fk_srv(
-      Header(0, rospy.Time.now(), "base_link")
+      Header(0, rospy.Time.now(), 'base_link'),
       [fk_target_link],
       robot_state
     )
@@ -55,7 +55,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
   ## DEPRECATED and logic disabled
   def check_for_stop(self, action_name, server_stop):
-    # TODO: Strongly suspect this is unnecessary. Will have it return true and
+    # TODO: Strongly suspect this is unnecessary. Will have it return false and
     #       see if that breaks the stop function
     # if server_stop.get_state():
     #   rospy.loginfo('%s was stopped.', action_name)
@@ -63,7 +63,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     # return False
     return False
 
-  def calculate_joint_state_end_pose_from_plan_arm(plan):
+  def calculate_joint_state_end_pose_from_plan_arm(self, plan):
     '''
     calculate the end pose (position and orientation), joint states and robot states
     from the current plan
@@ -83,7 +83,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     goal_pose = self.compute_forward_kinematics('l_scoop', robot_state)
     return robot_state, joint_states, goal_pose
 
-  def go_to_XYZ_coordinate(cs, goal_pose, x_start, y_start, z_start, approximate=True):
+  def go_to_XYZ_coordinate(self, cs, goal_pose, x_start, y_start, z_start, approximate=True):
     """
     :param approximate: use an approximate solution. default True
     :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
@@ -118,7 +118,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     return plan
 
-  def go_to_Z_coordinate_dig_circular(cs, goal_pose, z_start, approximate=True):
+  def go_to_Z_coordinate_dig_circular(self, cs, goal_pose, z_start, approximate=True):
     """
     :type cs: class 'moveit_msgs/RobotState'
     :type goal_pose: Pose
@@ -149,7 +149,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     return plan
 
-  def move_to_pre_trench_configuration_dig_circ(x_start, y_start):
+  def move_to_pre_trench_configuration_dig_circ(self, x_start, y_start):
     """
     :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type x_start: float
@@ -184,7 +184,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     _, plan, _, _ = self._move_arm.plan()
     return plan
 
-  def dig_circular(args, server_stop):
+  def dig_circular(self, args, server_stop):
     """
     :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type args: List[bool, float, int, float, float, float]
@@ -204,12 +204,12 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_a = move_to_pre_trench_configuration_dig_circ(x_start, y_start)
+      plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
       if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
       # Once aligned to move goal and offset, place scoop tip at surface target offset
 
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(plan_a)
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(plan_a)
       z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
       end_pose.position.x = x_start
       end_pose.position.y = y_start
@@ -227,16 +227,17 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
       # Rotate J_HAND_YAW to correct postion
 
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(circ_traj)
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_c = change_joint_value(cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
+      plan_c = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
 
       circ_traj = _cascade_plans(circ_traj, plan_c)
 
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(circ_traj)
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
       # if not parallel:
       # Once aligned to trench goal, place hand above trench middle point
       z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
@@ -244,17 +245,17 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_d = go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
+      plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
       circ_traj = _cascade_plans(circ_traj, plan_d)
 
       # Rotate hand perpendicular to arm direction
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(circ_traj)
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_e = change_joint_value(
-        cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
+      plan_e = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
       circ_traj = _cascade_plans(circ_traj, plan_e)
 
     else:
@@ -262,69 +263,69 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_a = move_to_pre_trench_configuration(x_start, y_start)
+      plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
       if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
         return False
       # Rotate hand so scoop is in middle point
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
         plan_a)
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_b = change_joint_value(
-        cs, start_state, constants.J_HAND_YAW, 0.0)
+      plan_b = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
       circ_traj = _cascade_plans(plan_a, plan_b)
 
       # Rotate scoop
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
         circ_traj)
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_c = change_joint_value(
-        cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
+      plan_c = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
       circ_traj = _cascade_plans(circ_traj, plan_c)
 
       # Rotate dist so scoop is back
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
         circ_traj)
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_d = change_joint_value(
-        cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
+      plan_d = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
       circ_traj = _cascade_plans(circ_traj, plan_d)
 
       # Once aligned to trench goal, place hand above trench middle point
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
         circ_traj)
       z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_e = go_to_XYZ_coordinate(
+      plan_e = self.go_to_XYZ_coordinate(
         cs, end_pose, x_start, y_start, z_start)
       circ_traj = _cascade_plans(circ_traj, plan_e)
 
       # Rotate dist to dig
-      cs, start_state, end_pose = calculate_joint_state_end_pose_from_plan_arm(
+      cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
         circ_traj)
       dist_now = start_state[3]
 
       if check_for_stop("dig_circular", server_stop):
         return False
 
-      plan_f = change_joint_value(
-        cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
+      plan_f = self.change_joint_value(
+        self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
       circ_traj = _cascade_plans(circ_traj, plan_f)
 
     return circ_traj
 
-  def move_to_pre_trench_configuration(x_start, y_start):
+  def move_to_pre_trench_configuration(self, x_start, y_start):
     """
     :type x_start: float
     :type y_start: float
@@ -358,7 +359,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     _, plan, _, _ = self._move_arm.plan()
     return plan
 
-  def plan_cartesian_path(move_group, wpose, length, alpha, parallel, z_start, cs):
+  def plan_cartesian_path(self, move_group, wpose, length, alpha, parallel, z_start, cs):
     """
     :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
     :type length: float
@@ -381,12 +382,12 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     return plan, fraction
 
-  def plan_cartesian_path_lin(wpose, length, alpha, z_start, cs):
+  def plan_cartesian_path_lin(self, move_group, wpose, length, alpha, z_start, cs):
     """
     :type length: float
     :type alpha: float
     """
-    self._move_arm.set_start_state(cs)
+    move_group.set_start_state(cs)
     waypoints = []
 
     wpose.position.x += length*math.cos(alpha)
@@ -394,14 +395,14 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     waypoints.append(copy.deepcopy(wpose))
 
-    (plan, fraction) = self._move_arm.compute_cartesian_path(
+    (plan, fraction) = move_group.compute_cartesian_path(
       waypoints,   # waypoints to follow
       0.01,        # end effector follow step (meters)
       0.0)         # jump threshold
 
     return plan, fraction
 
-  def change_joint_value(cs, start_state, joint_index, target_value):
+  def change_joint_value(self, move_group, cs, start_state, joint_index, target_value):
     """
     :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
     :type joint_index: int
@@ -418,7 +419,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     _, plan, _, _ = self._move_arm.plan()
     return plan
 
-  def go_to_Z_coordinate(cs, goal_pose, x_start, y_start, z_start, approximate=True):
+  def go_to_Z_coordinate(self, move_group, cs, goal_pose, x_start, y_start, z_start, approximate=True):
     """
     :param approximate: use an approximate solution. default True
     :type x_start: float
@@ -427,7 +428,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     :type approximate: bool
     """
 
-    self._move_arm.set_start_state(cs)
+    move_group.set_start_state(cs)
 
     goal_pose.position.x = x_start
     goal_pose.position.y = y_start
@@ -437,15 +438,15 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     # by kinematics builtin IK solver. For more insight on this issue refer to:
     # https://github.com/nasa/ow_simulator/pull/60
     if approximate:
-      self._move_arm.set_joint_value_target(goal_pose, True)
+      move_group.set_joint_value_target(goal_pose, True)
     else:
-      self._move_arm.set_pose_target(goal_pose)
-    _, plan, _, _ = self._move_arm.plan()
+      move_group.set_pose_target(goal_pose)
+    _, plan, _, _ = move_group.plan()
     if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
       return False
     return plan
 
-  def dig_linear(args, server_stop):
+  def dig_linear(self, args, server_stop):
     """
     :type args: List[bool, float, int, float, float, float]
     """
@@ -458,17 +459,18 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_a = move_to_pre_trench_configuration(x_start, y_start)
+    plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
     if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
       return False
 
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       plan_a)
     #################### Rotate hand yaw to dig in#################################
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_b = change_joint_value(cs, start_state, constants.J_HAND_YAW, 0.0)
+    plan_b = self.change_joint_value(
+      self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
 
     # If no plan found, send the previous plan only
     if len(plan_b.joint_trajectory.points) == 0:
@@ -478,27 +480,27 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     ######################### rotate scoop #######################################
 
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
 
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_c = change_joint_value(
-      cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
+    plan_c = self.change_joint_value(
+      self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
 
     dig_linear_traj = _cascade_plans(dig_linear_traj, plan_c)
 
     ######################### rotate dist pith to pre-trenching position###########
 
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
 
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_d = change_joint_value(
-      cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
+    plan_d = self.change_joint_value(
+      self._move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
 
     dig_linear_traj = _cascade_plans(dig_linear_traj, plan_d)
 
@@ -510,33 +512,33 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       (math.cos(alpha) - math.sin(alpha))
     z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
 
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
 
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_e = go_to_Z_coordinate(
-      cs, goal_pose, x_start, y_start, z_start)
+    plan_e = self.go_to_Z_coordinate(
+      self._move_arm, cs, goal_pose, x_start, y_start, z_start)
 
     dig_linear_traj = _cascade_plans(dig_linear_traj, plan_e)
 
     # rotate to dig in the ground
 
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       robot, dig_linear_traj)
 
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_f = change_joint_value(
-      cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
+    plan_f = self.change_joint_value(
+      self._move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
 
     dig_linear_traj = _cascade_plans(dig_linear_traj, plan_f)
 
     # determine linear trenching direction (alpha) value obtained from rviz
 
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
 
     quaternion = [current_pose.orientation.x, current_pose.orientation.y,
@@ -546,26 +548,27 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     # linear trenching
 
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
-    cartesian_plan, fraction = plan_cartesian_path_lin(
-      current_pose, length, alpha, z_start, cs)
+    cartesian_plan, fraction = self.plan_cartesian_path_lin(
+      self._move_arm, current_pose, length, alpha, z_start, cs)
     dig_linear_traj = _cascade_plans(dig_linear_traj, cartesian_plan)
 
     #  rotate to dig out
-    cs, start_state, current_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       dig_linear_traj)
 
     if check_for_stop("dig_linear", server_stop):
       return False
 
-    plan_g = change_joint_value(
-      cs, start_state, constants.J_DIST_PITCH, math.pi/2)
+    plan_g = self.change_joint_value(
+      self._move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
     dig_linear_traj = _cascade_plans(dig_linear_traj, plan_g)
 
     return dig_linear_traj
 
-  def calculate_starting_state_grinder(plan):
+  # FIXME: is this ever used?
+  def calculate_starting_state_grinder(self, plan):
     #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
     # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
     # j_grinder, j_scoop_yaw]
@@ -580,7 +583,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     cs.joint_state.position = new_value
     return cs, start_state
 
-  def calculate_joint_state_end_pose_from_plan_grinder(plan):
+  def calculate_joint_state_end_pose_from_plan_grinder(self, plan):
     '''
     calculate the end pose (position and orientation), joint states and robot states
     from the current plan
@@ -590,8 +593,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     :type plan: JointTrajectory
     '''
     # get joint states from the end of the plan
-    joint_states = plan.joint_trajectory.points[len(
-      plan.joint_trajectory.points)-1].positions
+    joint_states = plan.joint_trajectory.points[-1].positions
     # construct robot state at the end of the plan
     robot_state = self._robot.get_current_state()
     # adding antenna (0,0) and j_scoop_yaw (0.1) which should not change
@@ -599,10 +601,10 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     # modify current state of robot to the end state of the previous plan
     robot_state.joint_state.position = new_value
     # TODO: may raise ROSSerializationException
-    goal_pose = self.compute_forward_kinematics(fkln, robot_state)
+    goal_pose = self.compute_forward_kinematics('l_grinder', robot_state)
     return robot_state, joint_states, goal_pose
 
-  def grind(args):
+  def grind(self, args):
     """
     :type self._move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
     :type robot: class 'moveit_commander.RobotCommander'
@@ -654,77 +656,77 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     goal_pose.orientation.w = 0.0307192507001
     self._move_grinder.set_pose_target(goal_pose)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
     _, plan_a, _, _ = self._move_grinder.plan()
     if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-      return False
+      return None
 
     # entering terrain
     z_start = ground_position + constants.GRINDER_OFFSET - depth
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_grinder(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_grinder(
       plan_a)
-    plan_b = go_to_Z_coordinate(
-      cs, goal_pose, x_start, y_start, z_start, False)
+    plan_b = self.go_to_Z_coordinate(
+      self._move_grinder, cs, goal_pose, x_start, y_start, z_start, False)
 
     grind_traj = _cascade_plans(plan_a, plan_b)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
 
     # grinding ice forward
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_grinder(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_grinder(
       grind_traj)
-    cartesian_plan, fraction = plan_cartesian_path(
-      goal_pose, length, alpha, parallel, z_start, cs)
+    cartesian_plan, fraction = self.plan_cartesian_path(
+      self._move_grinder, goal_pose, length, alpha, parallel, z_start, cs)
 
     grind_traj = _cascade_plans(grind_traj, cartesian_plan)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
 
     # grinding sideways
-    cs, start_state, joint_goal = calculate_joint_state_end_pose_from_plan_grinder(
+    cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
       grind_traj)
     if parallel:
-      plan_c = change_joint_value(
-        cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
+      plan_c = self.change_joint_value(
+        self._move_grinder, cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
     else:
       x_now = joint_goal.position.x
       y_now = joint_goal.position.y
       z_now = joint_goal.position.z
       x_goal = x_now + 0.08*math.cos(alpha)
       y_goal = y_now + 0.08*math.sin(alpha)
-      plan_c = go_to_Z_coordinate(
-        cs, joint_goal, x_goal, y_goal, z_now, False)
+      plan_c = self.go_to_Z_coordinate(
+        self._move_grinder, cs, joint_goal, x_goal, y_goal, z_now, False)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
 
     grind_traj = _cascade_plans(grind_traj, plan_c)
     # grinding ice backwards
-    cs, start_state, joint_goal = calculate_joint_state_end_pose_from_plan_grinder(
+    cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
       grind_traj)
-    cartesian_plan2, fraction2 = plan_cartesian_path(
-      joint_goal, -length, alpha, parallel, z_start, cs)
+    cartesian_plan2, fraction2 = self.plan_cartesian_path(
+      self._move_grinder, joint_goal, -length, alpha, parallel, z_start, cs)
     grind_traj = _cascade_plans(grind_traj, cartesian_plan2)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
 
     # exiting terrain
-    cs, start_state, joint_goal = calculate_joint_state_end_pose_from_plan_grinder(
+    cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
       grind_traj)
-    plan_d = go_to_Z_coordinate(
-      cs, joint_goal, x_start, y_start, 0.22, False)
+    plan_d = self.go_to_Z_coordinate(
+      self._move_grinder, cs, joint_goal, x_start, y_start, 0.22, False)
     grind_traj = _cascade_plans(grind_traj, plan_d)
 
-    if check_for_stop("grind_action", server_stop):
-      return False
+    # if check_for_stop("grind_action", server_stop):
+    #   return None
 
     return grind_traj
 
-  def guarded_move_plan(args):
+  def guarded_move_plan(self, args):
     """
     :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type robot: class 'moveit_commander.RobotCommander'
@@ -785,7 +787,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
       return False, False
 
     # Once aligned to move goal and offset, place scoop tip at surface target offset
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       plan_a)
     self._move_arm.set_start_state(cs)
     goal_pose.position.x = targ_x
@@ -806,7 +808,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     # Drive scoop tip along norm vector, distance is search_distance
 
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       pre_guarded_move_traj)
     self._move_arm.set_start_state(cs)
     goal_pose.position.x = targ_x
@@ -834,7 +836,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     estimated_time_ratio =0.5
     return guarded_move_traj, estimated_time_ratio
 
-  def discard_sample(args):
+  def discard_sample(self, args):
     """
     :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type robot: class 'moveit_commander.RobotCommander'
@@ -893,7 +895,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     y = -90
     q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
 
-    cs, start_state, goal_pose = calculate_joint_state_end_pose_from_plan_arm(
+    cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
       robot, plan_a, self._move_arm, moveit_fk)
 
     self._move_arm.set_start_state(cs)
@@ -913,7 +915,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     self._move_arm.set_planner_id("RRTconnect")
     return discard_sample_traj
 
-  def deliver_sample():
+  def deliver_sample(self):
     """
     :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
     :type robot: class 'moveit_commander.RobotCommander'

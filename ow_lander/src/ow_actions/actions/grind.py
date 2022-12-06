@@ -9,26 +9,23 @@ import ow_lander.msg
 from ow_actions.server import ActionServerBase
 from ow_actions.arm import ArmActionMixin
 
-class StowServer(ArmActionMixin, ActionServerBase):
+class GrindServer(ArmActionMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Stow'
-  action_type   = ow_lander.msg.StowAction
-  goal_type     = ow_lander.msg.StowGoal
-  feedback_type = ow_lander.msg.StowFeedback
-  result_type   = ow_lander.msg.StowResult
+  name          = 'Grind'
+  action_type   = ow_lander.msg.GrindAction
+  goal_type     = ow_lander.msg.GrindGoal
+  feedback_type = ow_lander.msg.GrindFeedback
+  result_type   = ow_lander.msg.GrindResult
 
   def __init__(self):
     super().__init__()
     self._start_server()
 
-  def execute_action(self, _goal):
+  def execute_action(self, goal):
 
-    ## TODO: is this necessary? can it be redesigned?
-    # DEACTIVATED: still investigating how best to incorporate the stop action
-    # _server_stop.reset()
+    plan = self._planner.grind(goal)
 
-    plan = self._planner.plan_arm_to_target('arm_stowed')
+    self._switch_to_grind_controller()
 
     if self._execute_arm_trajectory(plan):
       self._set_succeeded(
@@ -40,3 +37,6 @@ class StowServer(ArmActionMixin, ActionServerBase):
         f"{self.name} arm trajectory aborted",
         final=self._get_arm_tip_position()
       )
+
+    self._switch_to_arm_controller()
+

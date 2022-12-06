@@ -7,6 +7,7 @@ import actionlib
 import dynamic_reconfigure.client
 from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from controller_manager_msgs.srv import SwitchController
 from owl_msgs.msg import SystemFaultsStatus
 
 from ow_actions.common import Singleton
@@ -44,27 +45,36 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         f"Timed out waiting {DYNRECON_CLIENT_TIMEOUT} seconds for a " \
         f"connection with the {DYNRECON_NAME} dynamic reconfigure server."
       )
-    rospy.loginfo("Successfully connected to the dyanmic reconfigure server.")
+    rospy.loginfo("Successfully connected to the dynamic reconfigure server.")
     self.arm_motion_continues_in_fault = config['arm_motion_continues_in_fault']
 
-    # initialize an action client to send joint trajectories
+    # initialize action client for all required controllers (arm and grinder)
     ACTION_CLIENT_TIMEOUT = 30 # seconds
-    ARM_CONTROLLER_NAME = 'arm_controller'
-    self._follow_action_client = actionlib.SimpleActionClient(
-      f"{ARM_CONTROLLER_NAME}/follow_joint_trajectory",
-      FollowJointTrajectoryAction
-    )
-    if not self._follow_action_client.wait_for_server(
-        rospy.Duration(ACTION_CLIENT_TIMEOUT)):
-      raise TimeoutError(
-        f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for connection " \
-        f"the {ARM_CONTROLLER_NAME} joint trajectory action server."
+    self.active_controller = 'arm_controller'
+    self.SUPPORTED_CONTROLLERS = ['arm_controller', 'grinder_controller']
+    self._follow_action_clients = dict()
+    for controller in self.SUPPORTED_CONTROLLERS:
+      self._follow_action_clients[controller] = actionlib.SimpleActionClient(
+        f"{controller}/follow_joint_trajectory",
+        FollowJointTrajectoryAction
       )
-    rospy.loginfo(f"Successfully connected to {ARM_CONTROLLER_NAME} joint "\
-                  f"trajectory action server.")
+      if not self._follow_action_clients[controller].wait_for_server(
+          rospy.Duration(ACTION_CLIENT_TIMEOUT)):
+        raise TimeoutError(
+          f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for connection " \
+          f"the {controller} joint trajectory action server."
+        )
+      rospy.loginfo(f"Successfully connected to {controller} joint "\
+                    f"trajectory action server.")
 
-    # initialize stop server
+    # initialize controller switch service proxy to enable grinder trajectories
+    SWITCH_CONTROLLER_SERVICE = '/controller_manager/switch_controller'
+    SERVICE_PROXY_TIMEOUT = 30 # seconds
+    rospy.wait_for_service(SWITCH_CONTROLLER_SERVICE, SERVICE_PROXY_TIMEOUT)
+    self._switch_controller_srv = rospy.ServiceProxy(
+      SWITCH_CONTROLLER_SERVICE, SwitchController)
 
+    self._stopped = False
 
   def _dyanmic_reconfigure_callback(self, config):
     """
@@ -79,6 +89,27 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     """
     self.arm_fault = data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR
 
+  def switch_controllers(self, switch_to, switch_from):
+    if not switch_to in self.SUPPORTED_CONTROLLERS:
+      rospy.logerr(f"{switch_to} is not a supported controller")
+      return False
+
+    if switch_to == self.active_controller:
+      return False
+
+    success = False
+    try:
+      success = self._switch_controller_srv(
+        [switch_to], [switch_from], 2, False, 1.0)
+    except rospy.ServiceException as err:
+      rospy.loginfo(f"Failed to call switch_controller service: {err}")
+    # This sleep is a workaround for "start point deviates from current robot
+    # state" error on dig_circular trajectory execution.
+    if success:
+      self.active_controller = switch_to
+      rospy.sleep(0.2)
+    return success
+
   def execute(self, trajectory, goal_time_tolerance=rospy.Time(0.1),
               done_cb=None, active_cb=None, feedback_cb=None):
     """
@@ -89,11 +120,19 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     """
     if self.arm_fault:
       return False
+
     goal = FollowJointTrajectoryGoal(
       trajectory = trajectory,
       goal_time_tolerance = goal_time_tolerance
     )
-    self._follow_action_client.send_goal(goal, done_cb, active_cb, feedback_cb)
+    self._get_active_follow_client().send_goal(
+      goal, done_cb, active_cb, feedback_cb)
+
+    # only return when follow action has been accepted
+    rospy.sleep(0.2)
+
+    # FOLLOW_ACTION_ACCEPTED_TIMEOUT = rospy.log
+    # while
 
   def stop_arm_if_fault(self, _feedback):
     """
@@ -105,27 +144,43 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
   def success(self):
     return not self.arm_fault
 
+  def _get_active_follow_client(self):
+    return self._follow_action_clients[self.active_controller]
+
   def stop(self):
     """
     Stops the execution of the last trajectory submitted for execution
     """
-    if self._follow_action_client.get_state() == GoalStatus.ACTIVE:
-      self._follow_action_client.cancel_goal()
-      return True
-    return False # nothing was cancelled
+    if self._get_active_follow_client().get_state() == GoalStatus.ACTIVE:
+      self._get_active_follow_client().cancel_goal()
+      self._stopped = True
+    return True
+    # return False # nothing was cancelled
+
+  def is_stopped(self):
+    return self._stopped
+
+  def reset_stopped_state(self):
+    self._stopped = False
 
   def wait(self, timeout=0):
     """
     Blocks until the execution of the current trajectory comes to an end
     :type timeout: int
     """
-    self._follow_action_client.wait_for_result(timeout=rospy.Duration(timeout))
+    self._get_active_follow_client().wait_for_result(
+      timeout=rospy.Duration(timeout))
 
   def result(self):
     """
     Gets the result of the last goal
     """
-    return self._follow_action_client.get_result()
+    return self._get_active_follow_client().get_result()
 
-  def was_preempted(self):
-    return self._follow_action_client.get_state() == GoalStatus.PREEMPTED
+  # FIXME: returns 4 (GoalStatus.ABORTED) after the initial movement on complex
+  #        trajectories like grind
+  def is_active(self):
+    return self._get_active_follow_client().get_state() == GoalStatus.ACTIVE
+
+  def is_preempted(self):
+    return self._get_active_follow_client().get_state() == GoalStatus.PREEMPTED

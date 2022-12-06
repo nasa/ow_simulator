@@ -24,10 +24,11 @@ class ArmActionMixin:
     self._executor = ArmTrajectoryExecutor()
     # initialize interface for querying scoop tip position
     self._arm_tip = LinkPositionSubscriber('lander::l_scoop_tip')
-
-    # DEACTIVATED: still investigating how best to incorporate the stop action
-    # # initialize/reference stop singleton
-    # self._arm_stop_server =
+    # initialize stop flag
+    # NOTE: True when the stop action is called. Always set to false upon action
+    #       completion (success or abort). Enables stopping an action during
+    #       the planning phase.
+    self._stopped = False
 
   def _execution_feedback_cb(self, _feedback):
     """Called during the trajectory execution. Does nothing by default, but
@@ -64,6 +65,17 @@ class ArmActionMixin:
   def _get_arm_tip_position(self):
     return self._arm_tip.get_link_position()
 
+  def _switch_to_grind_controller(self):
+    return self._executor.switch_controllers(
+      'grinder_controller', 'arm_controller')
+
+  def _switch_to_arm_controller(self):
+    return self._executor.switch_controllers(
+      'arm_controller', 'grinder_controller')
+
+  def _stop_arm_action(self):
+    return self._executor.stop()
+
   def _execute_arm_trajectory(self, plan):
     """Executes the provided plan and awaits its completions
     plan - An instance of moveit_msgs.msg.RobotTrajectory that describes the
@@ -94,13 +106,14 @@ class ArmActionMixin:
     timeout = plan.joint_trajectory.points[-1].time_from_start \
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
-    # DEACTIVATED: still investigating how best to incorporate the stop action
-    # while rospy.get_time() - start_time < timeout.secs and not _server_stop.stopped:
-    while rospy.get_time() - start_time < timeout.secs:
+    while rospy.get_time() - start_time < timeout.secs \
+        and not self._executor.is_stopped():
       self._publish_action_feedback()
       rate.sleep()
 
     self._executor.wait()
 
-    return self._executor.success() and not self._executor.was_preempted()
+    self._executor.reset_stopped_state()
+
+    return self._executor.success() and not self._executor.is_preempted()
 
