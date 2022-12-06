@@ -9,12 +9,20 @@ def camel_to_snake_case(s):
   return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
 
 def spin_action_server(action_server_type):
+  """Creates an action server node from the provided action server class type.
+  action_server_type -- A class that inherits from ActionServerBase
+  """
   node_name = camel_to_snake_case(action_server_type.name) + '_server'
   rospy.init_node(node_name)
   server = action_server_type()
   rospy.spin()
 
 def call_single_use_action_client(action_server_type, **kwargs):
+  """Creates an anonymous action client node so a single call to the action
+  server can be sent. The anonymous node is shutdown before the function
+  returns.
+  kwargs -- parameters of the action's goal
+  """
   node_name = camel_to_snake_case(action_server_type.name) + '_client'
   rospy.init_node(node_name, anonymous=True)
   client = actionlib.SimpleActionClient(
@@ -26,13 +34,5 @@ def call_single_use_action_client(action_server_type, **kwargs):
     client.send_goal_and_wait(goal)
   except rospy.ROSInterruptException:
     rospy.logerr("Program interrupted before completion")
-
-# def call_single_use_action_client(name, action_type, goal_type, **kwargs):
-#   node_name = camel_to_snake_case(name) + '_client'
-#   rospy.init_node(node_name, anonymous=True)
-#   client = actionlib.SimpleActionClient(name, action_type)
-#   try:
-#     client.wait_for_server()
-#     client.send_goal_and_wait(goal_type(**kwargs))
-#   except rospy.ROSInterruptException:
-#     rospy.logerr("Program interrupted before completion")
+  # ensure no nodes are left over before function ends
+  rospy.shutdown()

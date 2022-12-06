@@ -14,9 +14,8 @@ from ow_actions.common import Singleton
 ARM_EXECUTION_ERROR = 4
 
 class ArmTrajectoryExecutor(metaclass=Singleton):
-    """
-    Interfaces with a Joint Trajectory Action Server of a given controller to
-    execute a precomputed trajectory.
+    """Interfaces with the Joint Trajectory Actions of a given controller to
+    execute a trajectory provided as a moveit_msgs.msg.RobotTrajectory
     """
 
     def __init__(self):
@@ -36,7 +35,7 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         DYNRECON_NAME = "faults"
         self._faults_reconfigure_client = dynamic_reconfigure.client.Client(
             DYNRECON_NAME, timeout=DYNRECON_CLIENT_TIMEOUT,
-            config_callback=self._dyanmic_reconfigure_callback)
+            config_callback=self._dynamic_reconfigure_callback)
         config = self._faults_reconfigure_client.get_configuration(
             DYNRECON_CLIENT_TIMEOUT)
         if not config:
@@ -63,7 +62,7 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         rospy.loginfo(f"Successfully connected to {ARM_CONTROLLER_NAME} joint "\
                                     f"trajectory action server.")
 
-    def _dyanmic_reconfigure_callback(self, config):
+    def _dynamic_reconfigure_callback(self, config):
         """
         Update the corresponding flag from dynamic reconfigure server.
         """

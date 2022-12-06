@@ -18,11 +18,11 @@ from ow_actions import constants
 from ow_actions.common import Singleton, is_shou_yaw_goal_in_range
 
 def _cascade_plans(plan1, plan2):
-    '''
-    Joins two robot motion plans into one
-    inputs:  two robot trajactories
-    outputs: final robot trjactory
-    '''
+    """Joins two robot motion plans into one
+    plan1 -- first part of plan
+    plan2 -- second part of plan
+    return the conjoined result
+    """
     # Create a new trajectory object
     new_traj = RobotTrajectory()
     # Initialize the new trajectory to be the same as the planned trajectory
@@ -71,6 +71,9 @@ def _cascade_plans(plan1, plan2):
     return new_traj
 
 class ArmTrajectoryPlanner(metaclass = Singleton):
+    """Computes trajectories for arm actions and returns the result as a
+    moveit_msgs.msg.RobotTrajectory
+    """
 
     def __init__(self):
         # basic moveit interface for arm control
@@ -85,10 +88,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         rospy.wait_for_service('compute_fk', SERVICE_TIMEOUT)
         self._compute_fk_srv = rospy.ServiceProxy('compute_fk', GetPositionFK)
 
-    # def __del__(self):
-    #   # persistent service proxies must be manually closed
-    #   self._compute_fk_srv.close()
-
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
@@ -101,9 +100,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def plan_arm_to_target(self, target_name):
         target_joints = self._move_arm.get_named_target_values(target_name)
         self._move_arm.set_joint_value_target(target_joints)
-        # NOTE: _success, _planning_time, and _error are not used but are named in
-        #       case they are needed
-        _success, plan, _planning_time, _error = self._move_arm.plan()
+        _, plan, _, _ = self._move_arm.plan()
         return plan
 
     ## DEPRECATED and logic disabled
@@ -619,9 +616,11 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         return dig_linear_traj
 
     def calculate_starting_state_grinder(plan):
-        #joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw, j_grinder]
-        # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch, j_hand_yaw,
-        # j_grinder, j_scoop_yaw]
+        # joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch,
+        #               j_hand_yaw, j_grinder]
+        # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw,
+        #                         j_shou_pitch, j_prox_pitch, j_dist_pitch,
+        #                         j_hand_yaw, j_grinder, j_scoop_yaw]
 
         start_state = plan.joint_trajectory.points[len(
             plan.joint_trajectory.points)-1].positions
@@ -927,7 +926,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
 
-        # adding position constraint on the solution so that the tip doesnot diverge to get to the solution.
+        # adding position constraint on the solution so that the tip does not
+        # diverge to get to the solution.
         pos_constraint = PositionConstraint()
         pos_constraint.header.frame_id = "base_link"
         pos_constraint.link_name = "l_scoop"
