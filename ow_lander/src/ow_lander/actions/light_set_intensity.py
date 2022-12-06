@@ -6,7 +6,7 @@ import rospy
 
 import ow_lander.msg
 
-from ow_actions.server import ActionServerBase
+from ow_lander.server import ActionServerBase
 
 from irg_gazebo_plugins.msg import ShaderParamUpdate
 

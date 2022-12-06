@@ -7,9 +7,9 @@ import rospy
 import actionlib
 import moveit_commander
 
-from ow_actions.trajectory_executor import ArmTrajectoryExecutor
-from ow_actions.trajectory_planner import ArmTrajectoryPlanner
-from ow_actions.subscribers import LinkPositionSubscriber
+from ow_lander.trajectory_executor import ArmTrajectoryExecutor
+from ow_lander.trajectory_planner import ArmTrajectoryPlanner
+from ow_lander.subscribers import LinkPositionSubscriber
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. Must be placed

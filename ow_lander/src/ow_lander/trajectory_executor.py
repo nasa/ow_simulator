@@ -9,7 +9,7 @@ from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from owl_msgs.msg import SystemFaultsStatus
 
-from ow_actions.common import Singleton
+from ow_lander.common import Singleton
 
 ARM_EXECUTION_ERROR = 4
 

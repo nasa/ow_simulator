@@ -3,7 +3,7 @@
 # this repository.
 
 from math import pi, tau
-from ow_actions import constants
+from ow_lander import constants
 # import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
 

@@ -6,7 +6,7 @@
 
 import rospy
 
-from ow_actions.actions import unstow, stow
+from ow_lander.actions import unstow, stow
 
 rospy.init_node('arm_action_servers_experimental')
 server_unstow = unstow.UnstowServer()

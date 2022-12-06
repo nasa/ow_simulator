@@ -14,8 +14,8 @@ from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
-from ow_actions import constants
-from ow_actions.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander import constants
+from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
 
 def _cascade_plans(plan1, plan2):
     """Joins two robot motion plans into one
