@@ -19,8 +19,7 @@ def spin_action_server(action_server_type):
 
 def call_single_use_action_client(action_server_type, **kwargs):
   """Creates an anonymous action client node so a single call to the action
-  server can be sent. The anonymous node is shutdown before the function
-  returns.
+  server can be sent.
   kwargs -- parameters of the action's goal
   """
   node_name = camel_to_snake_case(action_server_type.name) + '_client'
@@ -34,5 +33,3 @@ def call_single_use_action_client(action_server_type, **kwargs):
     client.send_goal_and_wait(goal)
   except rospy.ROSInterruptException:
     rospy.logerr("Program interrupted before completion")
-  # ensure no nodes are left over before function ends
-  rospy.shutdown()
