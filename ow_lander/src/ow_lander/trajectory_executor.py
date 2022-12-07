@@ -143,8 +143,8 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         if self._get_active_follow_client().get_state() == GoalStatus.ACTIVE:
             self._get_active_follow_client().cancel_goal()
             self._stopped = True
-        return True
-        # return False # nothing was cancelled
+            return True
+        return False # nothing was cancelled
 
     def is_stopped(self):
         return self._stopped

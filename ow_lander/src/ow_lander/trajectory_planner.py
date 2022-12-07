@@ -38,7 +38,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            Header(0, rospy.Time.now(), 'base_link')
+            Header(0, rospy.Time.now(), 'base_link'),
             [fk_target_link],
             robot_state
         )

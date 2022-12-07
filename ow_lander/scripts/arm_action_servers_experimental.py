@@ -6,7 +6,7 @@
 
 import rospy
 
-from ow_actions.actions import stop, unstow, stow, grind
+from ow_lander.actions import stop, unstow, stow, grind
 
 rospy.init_node('arm_action_servers_experimental')
 server_stop = stop.StopServer()

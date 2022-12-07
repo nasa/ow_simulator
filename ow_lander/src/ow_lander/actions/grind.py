@@ -6,8 +6,8 @@ import rospy
 
 import ow_lander.msg
 
-from ow_actions.server import ActionServerBase
-from ow_actions.arm import ArmActionMixin
+from ow_lander.server import ActionServerBase
+from ow_lander.arm import ArmActionMixin
 
 class GrindServer(ArmActionMixin, ActionServerBase):
 
