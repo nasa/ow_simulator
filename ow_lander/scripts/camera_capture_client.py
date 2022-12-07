@@ -4,8 +4,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_actions.actions import camera_capture
-from ow_actions import node_helper
+from ow_lander.actions import camera_capture
+from ow_lander import node_helper
 
 import argparse
 

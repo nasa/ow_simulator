@@ -5,8 +5,8 @@
 # this repository.
 
 import argparse
-from ow_actions import node_helper
-from ow_actions.actions import light_set_intensity
+from ow_lander import node_helper
+from ow_lander.actions import light_set_intensity
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,

@@ -8,6 +8,8 @@ from sensor_msgs.msg import JointState
 
 # UNIFICATION TODO: This will provide the full pose instead of just position
 class LinkPositionSubscriber:
+  """Subscribes to /gazebo/link_states and returns the position of a specified
+  link."""
 
   _message_buffer = None
   _subscriber = None
@@ -42,6 +44,9 @@ class LinkPositionSubscriber:
     return LinkPositionSubscriber._message_buffer.pose[idx].position
 
 class JointAnglesSubscriber:
+  """Subscribes to /joint_states and returns the angle positions of a provided
+  list of joints.
+  """
 
   _message_buffer = None
   _subscriber = None
