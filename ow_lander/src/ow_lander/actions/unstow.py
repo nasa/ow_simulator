@@ -23,20 +23,14 @@ class UnstowServer(ArmActionMixin, ActionServerBase):
     self._start_server()
 
   def execute_action(self, _goal):
-
-    ## TODO: is this necessary? can it be redesigned?
-    # DEACTIVATED: still investigating how best to incorporate the stop action
-    # _server_stop.reset()
-
-    plan = self._planner.plan_arm_to_target("arm_unstowed")
-
-    if self._execute_arm_trajectory(plan):
-      self._set_succeeded(
-        f"{self.name} arm trajectory succeeded",
-        final=self._get_arm_tip_position()
-      )
+    try:
+      ArmActionMixin._checkout_arm()
+      plan = self._planner.plan_arm_to_target("arm_unstowed")
+      self._execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._set_aborted(str(err), final=self._get_arm_tip_position())
     else:
-      self._set_aborted(
-        f"{self.name} arm trajectory aborted",
-        final=self._get_arm_tip_position()
-      )
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._get_arm_tip_position())
+    finally:
+      ArmActionMixin._checkin_arm()

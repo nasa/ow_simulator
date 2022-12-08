@@ -22,8 +22,7 @@ class StopServer(ArmActionMixin, ActionServerBase):
     self._start_server()
 
   def execute_action(self, _goal):
-
-    if self._stop_arm_action():
+    if ArmActionMixin._stop_arm():
       self._set_succeeded(
         "Arm trajectory stopped", final=self._get_arm_tip_position())
     else:

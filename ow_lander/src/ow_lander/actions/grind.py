@@ -22,21 +22,16 @@ class GrindServer(ArmActionMixin, ActionServerBase):
     self._start_server()
 
   def execute_action(self, goal):
-
-    plan = self._planner.grind(goal)
-
-    self._switch_to_grind_controller()
-
-    if self._execute_arm_trajectory(plan):
-      self._set_succeeded(
-        f"{self.name} arm trajectory succeeded",
-        final=self._get_arm_tip_position()
-      )
+    try:
+      ArmActionMixin._checkout_arm()
+      self._switch_to_grinder_controller()
+      plan = self._planner.grind(goal)
+      self._execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._set_aborted(str(err), final=self._get_arm_tip_position())
     else:
-      self._set_aborted(
-        f"{self.name} arm trajectory aborted",
-        final=self._get_arm_tip_position()
-      )
-
-    self._switch_to_arm_controller()
-
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._get_arm_tip_position())
+    finally:
+      self._switch_to_arm_controller()
+      ArmActionMixin._checkin_arm()

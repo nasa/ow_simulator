@@ -111,9 +111,6 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         :type active_cb: function
         :type feedback_cb: function
         """
-        if self.arm_fault:
-            return False
-
         goal = FollowJointTrajectoryGoal(
             trajectory = trajectory,
             goal_time_tolerance = goal_time_tolerance
@@ -121,16 +118,10 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         self._get_active_follow_client().send_goal(
             goal, done_cb, active_cb, feedback_cb)
 
-        # only return when follow action has been accepted
-        rospy.sleep(0.2)
-
-        # FOLLOW_ACTION_ACCEPTED_TIMEOUT = rospy.log
-        # while
-
     def stop_arm_if_fault(self, _feedback):
         """stops arm if arm fault exists during feedback callback"""
         if self.arm_motion_continues_in_fault is False and self.arm_fault:
-            self.stop()
+            self.cease_execution()
 
     def success(self):
         return not self.arm_fault
@@ -138,19 +129,11 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     def _get_active_follow_client(self):
         return self._follow_action_clients[self.active_controller]
 
-    def stop(self):
+    # FIXME: May not cancel follow_client if it has failed. See OW-1090
+    def cease_execution(self):
         """Stops the execution of the last trajectory submitted for execution"""
         if self._get_active_follow_client().get_state() == GoalStatus.ACTIVE:
             self._get_active_follow_client().cancel_goal()
-            self._stopped = True
-            return True
-        return False # nothing was cancelled
-
-    def is_stopped(self):
-        return self._stopped
-
-    def reset_stopped_state(self):
-        self._stopped = False
 
     def wait(self, timeout=0):
         """
@@ -167,7 +150,7 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         return self._get_active_follow_client().get_result()
 
     # FIXME: returns 4 (GoalStatus.ABORTED) after the initial movement on complex
-    #        trajectories like grind
+    #        trajectories like grind (see OW-1090 for more details)
     def is_active(self):
         return self._get_active_follow_client().get_state() == GoalStatus.ACTIVE
 
