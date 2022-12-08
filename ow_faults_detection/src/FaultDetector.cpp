@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <iostream> 
 
+#include <ros/console.h>
+
 using namespace ow_lander;
 
 using std::bitset;
@@ -20,6 +22,8 @@ constexpr bitset<10> FaultDetector::isPowerSystemFault;
 constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
+
+const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
 
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
@@ -101,9 +105,13 @@ void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
   m_camera_trigger_timer.setPeriod(CAMERA_RESPONSE_THRESHOLD);
 
   // check that raw camera data arrived within the threshold of the camera trigger
+  //  also allow for reasonably close out of order messages as the topics are 
+  //  not currently synchronized
   ow_faults_detection::CamFaults camera_faults_msg;
-  if (m_cam_raw_time >= m_cam_trigger_time &&
-      m_cam_raw_time <= m_cam_trigger_time + CAMERA_RESPONSE_THRESHOLD) { 
+  ROS_INFO("cam raw - diff = %f", (m_cam_raw_time - m_cam_trigger_time).toSec());
+  if ((m_cam_raw_time >= m_cam_trigger_time &&
+       m_cam_raw_time <= m_cam_trigger_time + CAMERA_RESPONSE_THRESHOLD)
+      || m_cam_trigger_time - m_cam_raw_time < ros::Duration(1)) { 
     m_system_faults_bitset &= ~isCamExecutionError;
   } else {
     m_system_faults_bitset |= isCamExecutionError;
