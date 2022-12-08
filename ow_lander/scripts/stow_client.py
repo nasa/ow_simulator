@@ -10,12 +10,12 @@ from ow_lander import node_helper
 import argparse
 
 parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    description="Move arm to its stowed position."
+  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+  description="Move arm to its stowed position."
 )
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-    stow.StowServer, **vars(args)
+  stow.StowServer, **vars(args)
 )
 

@@ -10,11 +10,11 @@ from ow_lander import node_helper
 import argparse
 
 parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    description="Move arm to its unstowed position."
+  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+  description="Move arm to its unstowed position."
 )
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-    unstow.UnstowServer, **vars(args)
+  unstow.UnstowServer, **vars(args)
 )

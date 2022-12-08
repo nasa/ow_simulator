@@ -103,7 +103,7 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
 
     def stop(self):
         """
-        Stops the execution of the last trajectory submitted for executoin
+        Stops the execution of the last trajectory submitted for execution
         """
         action_state = self.get_state()
         if action_state == GoalStatus.ACTIVE:
