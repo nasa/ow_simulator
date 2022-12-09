@@ -5,11 +5,11 @@
 # this repository.
 
 import rospy
-import constants
+from ow_lander import constants
 import math
 import copy
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from utils import is_shou_yaw_goal_in_range
+from ow_lander.common import is_shou_yaw_goal_in_range
 
 
 def go_to_Z_coordinate(move_group, x_start, y_start, z_start, approximate=True):

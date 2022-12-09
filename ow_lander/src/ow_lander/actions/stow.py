@@ -7,7 +7,7 @@ import rospy
 import ow_lander.msg
 
 from ow_lander.server import ActionServerBase
-from ow_lander.arm import ArmActionMixin
+from ow_lander.arm_action_mixin import ArmActionMixin
 
 class StowServer(ArmActionMixin, ActionServerBase):
 
