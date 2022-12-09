@@ -143,8 +143,12 @@ private:
   bool m_tilt_fault;
   
   // Camera
-  ros::Time m_cam_raw_time;
-  ros::Time m_cam_trigger_time;
+  bool m_camera_data_pending = false;
+  // Camera faults are currently defined by subsequent trigger topics received 
+  //  without an expected raw topic. A possible fault case could be if the 
+  //  topics arrive after a threshold, recording topic timestamps with the following.
+  // ros::Time m_cam_raw_time;
+  // ros::Time m_cam_trigger_time;
   
   // Power
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();

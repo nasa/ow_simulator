@@ -21,8 +21,8 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
-static bool camera_data_pending = false;
-const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
+// Not currently in use, see notes with camera members in FaultDetctor.h
+// const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
 
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
@@ -213,24 +213,27 @@ void FaultDetector::antPublishFaultMessages()
 //// Camera listeners
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 {
-  m_cam_trigger_time = ros::Time::now();
+  // Not currently in use, see notes with member declaration in FaultDetctor.h
+  // m_cam_trigger_time = ros::Time::now();
 
   // fault if camera data is still pending when trigger is received
-  if (camera_data_pending) {
+  if (m_camera_data_pending) {
     cameraPublishFaultMessages(true);
   }
-  camera_data_pending = true;
+  m_camera_data_pending = true;
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  m_cam_raw_time = ros::Time::now();
+  // Not currently in use, see notes with member declaration in FaultDetctor.h
+  // m_cam_raw_time = ros::Time::now();
   
   // fault if camera data took too long to arrive
-  bool is_camera_data_stale 
-    = m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD;
-  cameraPublishFaultMessages(is_camera_data_stale);
-  camera_data_pending = false;
+  // bool is_camera_data_stale 
+  //   = m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD;
+  // cameraPublishFaultMessages(is_camera_data_stale);
+  cameraPublishFaultMessages(false);
+  m_camera_data_pending = false;
 }
 
 //// Power Topic Listeners
