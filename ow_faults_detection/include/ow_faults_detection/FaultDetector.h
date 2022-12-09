@@ -95,7 +95,7 @@ private:
   // Camera
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
-  void cameraTriggerPublishCb(const ros::TimerEvent& t);
+  void cameraPublishFaultMessages(bool isFault);
 
   // Power
   void publishPowerSystemFault();
@@ -125,7 +125,6 @@ private:
   ros::Subscriber m_joint_states_sub;
 
   // Camera
-  ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
 

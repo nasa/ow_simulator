@@ -7,8 +7,6 @@
 #include <iomanip>
 #include <iostream> 
 
-#include <ros/console.h>
-
 using namespace ow_lander;
 
 using std::bitset;
@@ -23,6 +21,7 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
+static bool camera_data_pending = false;
 const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
 
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
@@ -44,10 +43,6 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    &FaultDetector::cameraRawCb, 
                                    this);
   
-  m_camera_trigger_timer = nh.createTimer( CAMERA_RESPONSE_THRESHOLD, 
-                                           &FaultDetector::cameraTriggerPublishCb,this,
-                                           true, false); // oneshot, autostart
-
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
                                   10,
@@ -98,28 +93,17 @@ void FaultDetector::publishSystemFaultsMessage()
 }
 
 //// Publish Camera Messages
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
+void FaultDetector::cameraPublishFaultMessages(bool isFault)
 {
-  // reset the timer for next time
-  m_camera_trigger_timer.stop();
-  m_camera_trigger_timer.setPeriod(CAMERA_RESPONSE_THRESHOLD);
-
-  // check that raw camera data arrived within the threshold of the camera trigger
-  //  also allow for reasonably close out of order messages as the topics are 
-  //  not currently synchronized
   ow_faults_detection::CamFaults camera_faults_msg;
-  ROS_INFO("cam raw - diff = %f", (m_cam_raw_time - m_cam_trigger_time).toSec());
-  if ((m_cam_raw_time >= m_cam_trigger_time &&
-       m_cam_raw_time <= m_cam_trigger_time + CAMERA_RESPONSE_THRESHOLD)
-      || m_cam_trigger_time - m_cam_raw_time < ros::Duration(1)) { 
-    m_system_faults_bitset &= ~isCamExecutionError;
-  } else {
+  if (isFault) {
+    ROS_ERROR("Camera Fault");
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isCamExecutionError;
   }
-
   publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 //// Publish Power Faults Messages
@@ -194,8 +178,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   publishSystemFaultsMessage();
 }
 
-
-
 template<typename group_t, typename item_t>
 int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
 {
@@ -232,12 +214,25 @@ void FaultDetector::antPublishFaultMessages()
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 {
   m_cam_trigger_time = ros::Time::now();
-  m_camera_trigger_timer.start();
+
+  // fault if camera data is still pending when trigger is received
+  if (camera_data_pending) {
+    cameraPublishFaultMessages(true);
+  }
+  camera_data_pending = true;
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
   m_cam_raw_time = ros::Time::now();
+  
+  // fault if camera data took too long to arrive
+  bool is_camera_data_stale = false;
+  if (m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD) {
+    is_camera_data_stale = true;
+  }
+  cameraPublishFaultMessages(is_camera_data_stale);
+  camera_data_pending = false;
 }
 
 //// Power Topic Listeners
