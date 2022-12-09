@@ -227,10 +227,8 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
   m_cam_raw_time = ros::Time::now();
   
   // fault if camera data took too long to arrive
-  bool is_camera_data_stale = false;
-  if (m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD) {
-    is_camera_data_stale = true;
-  }
+  bool is_camera_data_stale 
+    = m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD;
   cameraPublishFaultMessages(is_camera_data_stale);
   camera_data_pending = false;
 }
