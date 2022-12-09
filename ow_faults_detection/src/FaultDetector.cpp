@@ -93,17 +93,17 @@ void FaultDetector::publishSystemFaultsMessage()
 }
 
 //// Publish Camera Messages
-void FaultDetector::cameraPublishFaultMessages(bool isFault)
+void FaultDetector::cameraPublishFaultMessages(bool is_fault)
 {
   ow_faults_detection::CamFaults camera_faults_msg;
-  if (isFault) {
-    ROS_ERROR("Camera Fault");
+  if (is_fault) {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
   } else {
     m_system_faults_bitset &= ~isCamExecutionError;
   }
   publishSystemFaultsMessage();
+  m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
 
 //// Publish Power Faults Messages

@@ -95,7 +95,7 @@ private:
   // Camera
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
-  void cameraPublishFaultMessages(bool isFault);
+  void cameraPublishFaultMessages(bool is_fault);
 
   // Power
   void publishPowerSystemFault();
