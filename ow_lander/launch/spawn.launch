@@ -90,7 +90,7 @@
   </include>
 
   <!-- == launch the services servers ============== -->
-  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"/>
+  <!-- <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"/> -->
   <node pkg="ow_lander" name="lander_service_server" type="lander_service_server.py" output="screen"/>
   
   <!-- == launch the action servers ============== -->
