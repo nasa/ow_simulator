@@ -11,127 +11,138 @@ from ow_lander.trajectory_executor import ArmTrajectoryExecutor
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkPositionSubscriber
 
+from abc import ABC, abstractmethod
+
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. Must be placed
   first in the inheritance statement.
   e.g.
-  class GenericArmAction(ArmActionMixin, ActionServerBase):
+  class FooArmActionServer(ArmActionMixin, ActionServerBase):
     ...
   """
-
-  # true if arm is in use by an arm action
-  arm_in_use = False
-  # true if _stop_arm was called and arm was checked out
-  # reverts to false when arm is checked in
-  stopped = False
-
-  @classmethod
-  def _stop_arm(cls):
-    if cls.arm_in_use:
-      cls.stopped = True
-    return cls.stopped
-
-  @classmethod
-  def _checkout_arm(cls):
-    if cls.arm_in_use:
-      raise RuntimeError("Arm is already checked out by another action server")
-    cls.arm_in_use = True
-
-  @classmethod
-  def _checkin_arm(cls):
-    cls.arm_in_use = False
-    cls.stopped = False
-
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     # initialize moveit interface for arm control
     moveit_commander.roscpp_initialize(sys.argv)
-
-    # initialize/reference trajectory planner singleton
+    # initialize/reference trajectory planner singleton (for external use)
     self._planner = ArmTrajectoryPlanner()
-    # initialize/reference trajectory execution singleton
-    self._executor = ArmTrajectoryExecutor()
+    # initialize/reference
+    self._arm = ArmInterface()
     # initialize interface for querying scoop tip position
-    self._arm_tip = LinkPositionSubscriber('lander::l_scoop_tip')
-    # initialize stop flag
-    # NOTE: True when the stop action is called. Always set to false upon action
-    #       completion (success or abort). Enables stopping an action during
-    #       the planning phase.
+    self._arm_tip_monitor = LinkPositionSubscriber('lander::l_scoop_tip')
+    self._start_server()
 
-  def _execution_feedback_cb(self, _feedback):
-    """Called during the trajectory execution. Does nothing by default, but
-    optionally can be override by the child class.
-    _feedback -- An instance of control_msgs.msg.FollowJointTrajectoryFeedback
-    """
-    pass
-
-  def _execution_active_cb(self):
-    """Called when the trajectory execution begins. Does nothing by default, but
-    optionally can be overridden by the child class.
-    """
-    pass
-
-  def _execution_done_cb(self, _state, _result):
-    """Called when the trajectory execution completes. Does nothing by default,
-    but optionally can be overridden by the child class.
-    _state  -- An instance of actionlib_msgs.GoalStatus that provides the final
-               state of the action.
-    _result -- An instance of control_msgs.msg.FollowJointTrajectoryResult
-    """
-    pass
-
-  def _publish_action_feedback(self):
+  def publish_action_feedback(self):
     """Publishes the action's feedback. Most arm actions publish the scoop tip
     position under the name "current" in their feedback, so that is what this
     method does by default, but it can be overridden by the child class.
-
-    This method is called at a rate of 100 Hertz while the trajectory is
-    executed.
     """
-    self._publish_feedback(current=self._get_arm_tip_position())
+    self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
-  def _get_arm_tip_position(self):
-    return self._arm_tip.get_link_position()
+class ArmToGroupStateMixin(ArmActionMixin, ABC):
+  """A specialization of an arm action mixin that move the arm directly to
+  a group state, which is a series of joint angles."""
 
-  def _switch_to_grinder_controller(self):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+  """The named group state which the arm will move directly to when this
+  particular type of action is executed.
+  """
+  @property
+  @abstractmethod
+  def target_group_state(self):
+    pass
+
+  def execute_action(self, _goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self._planner.plan_arm_to_target(self.target_group_state)
+      self._arm.execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
+    else:
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._arm_tip_monitor.get_link_position())
+    finally:
+      self._arm.checkin_arm()
+
+class ArmInterface:
+  """Implements an interface to the OceanWATERS arm that enables stopping and
+  ownership via check out/in methods."""
+
+  # string that identify what facility is using the arm
+  # if None, arm is not in use
+  _in_use_by = None
+  # true if arm is checked out and stop_arm was called
+  # reverts to false when arm is checked in
+  _stopped = False
+
+  @classmethod
+  def checkout_arm(cls, owner):
+    if cls._in_use_by:
+      raise RuntimeError(
+        f"Arm is already checked out by the {cls._in_use_by} action server")
+    cls._in_use_by = owner
+
+  @classmethod
+  def checkin_arm(cls):
+    cls._in_use_by = None
+    cls._stopped = False
+
+  @classmethod
+  def stop_arm(cls):
+    if cls._in_use_by:
+      cls._stopped = True
+    return cls._stopped
+
+  @classmethod
+  def _assert_arm_is_checked_out(cls):
+    if not cls._in_use_by:
+      raise RuntimeError("Arm action did not check-out the arm before " \
+                         "attempting to execute a trajectory.")
+
+  def __init__(self):
+    # initialize/reference trajectory execution singleton
+    self._executor = ArmTrajectoryExecutor()
+
+  def switch_to_grinder_controller(self):
+    ArmInterface._assert_arm_is_checked_out()
     if self._executor.active_controller == 'grinder_controller':
       return
     if not self._executor.switch_controllers('grinder_controller',
                                              'arm_controller'):
       raise RuntimeError("Failed to grinder_controller")
 
-  def _switch_to_arm_controller(self):
+  def switch_to_arm_controller(self):
+    ArmInterface._assert_arm_is_checked_out()
     if self._executor.active_controller == 'arm_controller':
       return
     if not self._executor.switch_controllers('arm_controller',
                                              'grinder_controller'):
       raise RuntimeError("Failed to switch to arm_controller")
 
-  def _execute_arm_trajectory(self, plan):
+  def execute_arm_trajectory(self, plan, feedback_publish_cb=None):
     """Executes the provided plan and awaits its completions
-    plan - An instance of moveit_msgs.msg.RobotTrajectory that describes the
-           arm trajectory to be executed. Can be None, in which case planning
-           is assumed to have failed.
+    plan -- An instance of moveit_msgs.msg.RobotTrajectory that describes the
+            arm trajectory to be executed. Can be None, in which case planning
+            is assumed to have failed.
+    feedback_publish_cb -- A function called at 100 Hz during execution of a
+                           trajectory. Exists to publish the action's feedback
+                           message. Handles no arguments.
     returns True if plan was executed successfully and without preempt.
     """
+
+    ArmInterface._assert_arm_is_checked_out()
 
     if plan is None:
       raise RuntimeError("Trajectory planning failed")
 
-    if ArmActionMixin.stopped:
+    if ArmInterface._stopped:
       raise RuntimeError("Stop was called; trajectory will not be executed")
 
-    # DEACTIVATED: still investigating how best to incorporate the stop action
-    # if _server_stop.stopped:
-    #   self._set_aborted(self.result_type(), "Stop server is stopped")
-    #   return
-
-    self._executor.execute(
-      plan.joint_trajectory,
-      active_cb=self._execution_active_cb,
-      feedback_cb=self._execution_feedback_cb,
-      done_cb=self._execution_done_cb
-    )
+    self._executor.execute(plan.joint_trajectory)
 
     # publish feedback while waiting for trajectory execution completion
     # NOTE : Looping for a timeout like this is prone to errors and results in a
@@ -153,10 +164,11 @@ class ArmActionMixin:
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
     while rospy.get_time() - start_time < timeout.secs:
-      if ArmActionMixin.stopped:
+      if ArmInterface._stopped:
         self._executor.cease_execution()
         raise RuntimeError("Stop was called; trajectory execution ceased")
-      self._publish_action_feedback()
+      if feedback_publish_cb:
+        feedback_publish_cb()
       rate.sleep()
 
     # wait for action to complete in case it takes longer than the timeout

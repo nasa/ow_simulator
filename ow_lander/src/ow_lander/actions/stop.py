@@ -7,7 +7,7 @@ import rospy
 import ow_lander.msg
 
 from ow_lander.server import ActionServerBase
-from ow_lander.arm import ArmActionMixin
+from ow_lander.arm_action_mixin import ArmActionMixin
 
 class StopServer(ArmActionMixin, ActionServerBase):
 
@@ -19,12 +19,11 @@ class StopServer(ArmActionMixin, ActionServerBase):
 
   def __init__(self):
     super().__init__()
-    self._start_server()
 
   def execute_action(self, _goal):
-    if ArmActionMixin._stop_arm():
-      self._set_succeeded(
-        "Arm trajectory stopped", final=self._get_arm_tip_position())
+    if self._arm.stop_arm():
+      self._set_succeeded("Arm trajectory stopped",
+        final=self._arm_tip_monitor.get_link_position())
     else:
-      self._set_aborted(
-        "No arm trajectory to stop", final=self._get_arm_tip_position())
+      self._set_aborted("No arm trajectory to stop",
+        final=self._arm_tip_monitor.get_link_position())

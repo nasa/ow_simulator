@@ -7,7 +7,7 @@ import rospy
 import ow_lander.msg
 
 from ow_lander.server import ActionServerBase
-from ow_lander.arm import ArmActionMixin
+from ow_lander.arm_action_mixin import ArmActionMixin
 
 class GrindServer(ArmActionMixin, ActionServerBase):
 
@@ -19,19 +19,19 @@ class GrindServer(ArmActionMixin, ActionServerBase):
 
   def __init__(self):
     super().__init__()
-    self._start_server()
 
   def execute_action(self, goal):
     try:
-      ArmActionMixin._checkout_arm()
-      self._switch_to_grinder_controller()
+      self._arm.checkout_arm(self.name)
+      self._arm.switch_to_grinder_controller()
       plan = self._planner.grind(goal)
-      self._execute_arm_trajectory(plan)
+      self._arm.execute_arm_trajectory(plan)
     except RuntimeError as err:
-      self._set_aborted(str(err), final=self._get_arm_tip_position())
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
     else:
       self._set_succeeded("Arm trajectory succeeded",
-        final=self._get_arm_tip_position())
+        final=self._arm_tip_monitor.get_link_position())
     finally:
-      self._switch_to_arm_controller()
-      ArmActionMixin._checkin_arm()
+      self._arm.switch_to_arm_controller()
+      self._arm.checkin_arm()

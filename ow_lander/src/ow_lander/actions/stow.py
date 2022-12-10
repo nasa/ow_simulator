@@ -7,9 +7,9 @@ import rospy
 import ow_lander.msg
 
 from ow_lander.server import ActionServerBase
-from ow_lander.arm_action_mixin import ArmActionMixin
+from ow_lander.arm_action_mixin import ArmToGroupStateMixin
 
-class StowServer(ArmActionMixin, ActionServerBase):
+class StowServer(ArmToGroupStateMixin, ActionServerBase):
 
   # UNIFICATION TODO: rename "Stow" to "ArmStow"
   name          = 'Stow'
@@ -18,19 +18,7 @@ class StowServer(ArmActionMixin, ActionServerBase):
   feedback_type = ow_lander.msg.StowFeedback
   result_type   = ow_lander.msg.StowResult
 
+  target_group_state = 'arm_stowed'
+
   def __init__(self):
     super().__init__()
-    self._start_server()
-
-  def execute_action(self, _goal):
-    try:
-      ArmActionMixin._checkout_arm()
-      plan = self._planner.plan_arm_to_target('arm_stowed')
-      self._execute_arm_trajectory(plan)
-    except RuntimeError as err:
-      self._set_aborted(str(err), final=self._get_arm_tip_position())
-    else:
-      self._set_succeeded("Arm trajectory succeeded",
-        final=self._get_arm_tip_position())
-    finally:
-      ArmActionMixin._checkin_arm()
