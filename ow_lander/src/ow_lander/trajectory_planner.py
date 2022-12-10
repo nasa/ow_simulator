@@ -17,6 +17,59 @@ from moveit_msgs.srv import GetPositionFK
 from ow_lander import constants
 from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
 
+def _cascade_plans(plan1, plan2):
+    """Joins two robot motion plans into one
+    plan1 -- first part of plan
+    plan2 -- second part of plan
+    return the conjoined result
+    """
+    # Create a new trajectory object
+    new_traj = RobotTrajectory()
+    # Initialize the new trajectory to be the same as the planned trajectory
+    traj_msg = JointTrajectory()
+    # Get the number of joints involved
+    n_joints1 = len(plan1.joint_trajectory.joint_names)
+    n_joints2 = len(plan2.joint_trajectory.joint_names)
+    # Get the number of points on the trajectory
+    n_points1 = len(plan1.joint_trajectory.points)
+    n_points2 = len(plan2.joint_trajectory.points)
+    # Store the trajectory points
+    points1 = list(plan1.joint_trajectory.points)
+    points2 = list(plan2.joint_trajectory.points)
+    end_time = plan1.joint_trajectory.points[n_points1-1].time_from_start
+    start_time = plan1.joint_trajectory.points[0].time_from_start
+    duration = end_time - start_time
+    # add a time toleracne between  successive plans
+    time_tolerance = rospy.Duration.from_sec(0.1)
+
+    for i in range(n_points1):
+        point = JointTrajectoryPoint()
+        point.time_from_start = plan1.joint_trajectory.points[i].time_from_start
+        point.velocities = list(
+            plan1.joint_trajectory.points[i].velocities)
+        point.accelerations = list(
+            plan1.joint_trajectory.points[i].accelerations)
+        point.positions = plan1.joint_trajectory.points[i].positions
+        points1[i] = point
+        traj_msg.points.append(point)
+        end_time = plan1.joint_trajectory.points[i].time_from_start
+
+    for i in range(n_points2):
+        point = JointTrajectoryPoint()
+        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + \
+            end_time + time_tolerance
+        point.velocities = list(
+            plan2.joint_trajectory.points[i].velocities)
+        point.accelerations = list(
+            plan2.joint_trajectory.points[i].accelerations)
+        point.positions = plan2.joint_trajectory.points[i].positions
+        traj_msg.points.append(point)
+
+    traj_msg.joint_names = plan1.joint_trajectory.joint_names
+    traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
+    new_traj.joint_trajectory = traj_msg
+    return new_traj
+
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -928,57 +981,3 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 _cascade_plans(total_plan, plan)
         self._move_arm.set_planner_id("RRTconnect")
         return total_plan
-
-
-def _cascade_plans(plan1, plan2):
-    """Joins two robot motion plans into one
-    plan1 -- first part of plan
-    plan2 -- second part of plan
-    return the conjoined result
-    """
-    # Create a new trajectory object
-    new_traj = RobotTrajectory()
-    # Initialize the new trajectory to be the same as the planned trajectory
-    traj_msg = JointTrajectory()
-    # Get the number of joints involved
-    n_joints1 = len(plan1.joint_trajectory.joint_names)
-    n_joints2 = len(plan2.joint_trajectory.joint_names)
-    # Get the number of points on the trajectory
-    n_points1 = len(plan1.joint_trajectory.points)
-    n_points2 = len(plan2.joint_trajectory.points)
-    # Store the trajectory points
-    points1 = list(plan1.joint_trajectory.points)
-    points2 = list(plan2.joint_trajectory.points)
-    end_time = plan1.joint_trajectory.points[n_points1-1].time_from_start
-    start_time = plan1.joint_trajectory.points[0].time_from_start
-    duration = end_time - start_time
-    # add a time toleracne between  successive plans
-    time_tolerance = rospy.Duration.from_sec(0.1)
-
-    for i in range(n_points1):
-        point = JointTrajectoryPoint()
-        point.time_from_start = plan1.joint_trajectory.points[i].time_from_start
-        point.velocities = list(
-            plan1.joint_trajectory.points[i].velocities)
-        point.accelerations = list(
-            plan1.joint_trajectory.points[i].accelerations)
-        point.positions = plan1.joint_trajectory.points[i].positions
-        points1[i] = point
-        traj_msg.points.append(point)
-        end_time = plan1.joint_trajectory.points[i].time_from_start
-
-    for i in range(n_points2):
-        point = JointTrajectoryPoint()
-        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + \
-            end_time + time_tolerance
-        point.velocities = list(
-            plan2.joint_trajectory.points[i].velocities)
-        point.accelerations = list(
-            plan2.joint_trajectory.points[i].accelerations)
-        point.positions = plan2.joint_trajectory.points[i].positions
-        traj_msg.points.append(point)
-
-    traj_msg.joint_names = plan1.joint_trajectory.joint_names
-    traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
-    new_traj.joint_trajectory = traj_msg
-    return new_traj
