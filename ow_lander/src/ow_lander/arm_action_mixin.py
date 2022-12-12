@@ -14,8 +14,8 @@ from ow_lander.subscribers import LinkPositionSubscriber
 from abc import ABC, abstractmethod
 
 class ArmActionMixin:
-  """Enables an action server to control the OceanWATERS arm. Must be placed
-  first in the inheritance statement.
+  """Enables an action server to control the OceanWATERS arm. This or one of its
+  children class must be placed first in the inheritance statement.
   e.g.
   class FooArmActionServer(ArmActionMixin, ActionServerBase):
     ...
@@ -40,14 +40,14 @@ class ArmActionMixin:
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
 class ArmToGroupStateMixin(ArmActionMixin, ABC):
-  """A specialization of an arm action mixin that move the arm directly to
+  """A specialization of an arm action mixin that moves the arm directly to
   a group state, which is a series of joint angles."""
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
   """The named group state which the arm will move directly to when this
-  particular type of action is executed.
+  particular type of action is executed. Must be set by child class!
   """
   @property
   @abstractmethod
@@ -69,14 +69,15 @@ class ArmToGroupStateMixin(ArmActionMixin, ABC):
       self._arm.checkin_arm()
 
 class ArmInterface:
-  """Implements an interface to the OceanWATERS arm that enables stopping and
-  ownership via check out/in methods."""
+  """Implements an ownership layer over trajectory execution and a stop method.
+  Ownership is claimed/relinquished via the check out/in methods.
+  """
 
-  # string that identify what facility is using the arm
+  # string that identifies what facility is using the arm
   # if None, arm is not in use
   _in_use_by = None
   # true if arm is checked out and stop_arm was called
-  # reverts to false when arm is checked in
+  # set to false when arm is checked in
   _stopped = False
 
   @classmethod
@@ -155,9 +156,9 @@ class ArmInterface:
     #        before the actual completion of the action.
     #        Ideally this would loop so long as _executor is active, or in other
     #        words, so long as the active follow_joint_trajectory action client
-    #        in _executor returns a get_state() of 1. This however is bugged,
-    #        and returning an aborted state is common enough that this cannot
-    #        be done. See OW-1090 for more details.
+    #        in _executor returns a get_state() of 1 (ACTIVE). However, this is
+    #        bugged and an aborted state is commonly returned by this method in
+    #        the middle of a trajectory. See OW-1090 for more details.
     FEEDBACK_RATE = 100 # hertz
     rate = rospy.Rate(FEEDBACK_RATE) # hertz
     timeout = plan.joint_trajectory.points[-1].time_from_start \

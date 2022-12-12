@@ -6,7 +6,8 @@ import rospy
 import actionlib
 import dynamic_reconfigure.client
 from actionlib_msgs.msg import GoalStatus
-from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from control_msgs.msg import FollowJointTrajectoryAction, \
+                             FollowJointTrajectoryGoal
 from controller_manager_msgs.srv import SwitchController
 from owl_msgs.msg import SystemFaultsStatus
 
@@ -15,21 +16,21 @@ from ow_lander.common import Singleton
 ARM_EXECUTION_ERROR = 4
 
 class ArmTrajectoryExecutor(metaclass=Singleton):
-    """Interfaces with the Joint Trajectory Actions of a given controller to
-    execute a trajectory provided as a moveit_msgs.msg.RobotTrajectory
+    """Invokes the follow_joint_trajectory actions of a given controller to
+    execute a trajectory provided as a moveit_msgs.msg.RobotTrajectory.
+    Execution occurs asynchronously and can be ceased with a method call.
     """
 
     def __init__(self):
-        """
-        Connects to action server of specified controller and the dynamic
-        reconfigure server. If either connection fails false is returned.
-        :returns: True if ground connection was established, False otherwise
-        :rtype: boolean
+        """Connect to action server of specified controller and the dynamic
+        reconfigure server.
+        May raise a TimeoutError if a server connection fails.
         """
         # subscribe to system_fault_status for any arm faults
         SYSTEM_FAULTS_TOPIC = "/system_faults_status"
         self._sub_system_faults = rospy.Subscriber(
-            SYSTEM_FAULTS_TOPIC, SystemFaultsStatus, self._system_faults_callback)
+            SYSTEM_FAULTS_TOPIC, SystemFaultsStatus,
+            self._system_faults_callback)
 
         # initialize a dynamic reconfigure client to receive reconfiguration
         DYNRECON_CLIENT_TIMEOUT = 30 # seconds
@@ -42,10 +43,13 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         if not config:
             raise TimeoutError(
                 f"Timed out waiting {DYNRECON_CLIENT_TIMEOUT} seconds for a " \
-                f"connection with the {DYNRECON_NAME} dynamic reconfigure server."
+                f"connection with the {DYNRECON_NAME} dynamic reconfigure " \
+                f"server."
             )
-        rospy.loginfo("Successfully connected to the dynamic reconfigure server.")
-        self.arm_motion_continues_in_fault = config['arm_motion_continues_in_fault']
+        rospy.loginfo(
+            "Successfully connected to the dynamic reconfigure server.")
+        self.arm_motion_continues_in_fault = config[
+            'arm_motion_continues_in_fault']
 
         # initialize action client for all required controllers (arm and grinder)
         ACTION_CLIENT_TIMEOUT = 30 # seconds
@@ -104,12 +108,10 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         return success
 
     def execute(self, trajectory, goal_time_tolerance=rospy.Time(0.1),
-                            done_cb=None, active_cb=None, feedback_cb=None):
-        """
-        :type trajectory: trajectory_msgs/JointTrajectory
-        :type done_cb: function
-        :type active_cb: function
-        :type feedback_cb: function
+                done_cb=None, active_cb=None, feedback_cb=None):
+        """Execute the provided trajectory asynchronously.
+        trajectory -- An instance of moveit_msgs.msg.RobotTrajectory that
+                      describes the desired trajectory.
         """
         goal = FollowJointTrajectoryGoal(
             trajectory = trajectory,
@@ -149,8 +151,8 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         """
         return self._get_active_follow_client().get_result()
 
-    # FIXME: returns 4 (GoalStatus.ABORTED) after the initial movement on complex
-    #        trajectories like grind (see OW-1090 for more details)
+    # FIXME: returns 4 (GoalStatus.ABORTED) after the initial movement on
+    #        complex trajectories like grind (see OW-1090 for more details)
     def is_active(self):
         return self._get_active_follow_client().get_state() == GoalStatus.ACTIVE
 
