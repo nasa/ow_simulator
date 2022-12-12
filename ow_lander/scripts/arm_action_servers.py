@@ -6,13 +6,13 @@
 
 import rospy
 
-from ow_lander.actions import stop, unstow, stow, grind
+from ow_lander.actions import arm
 
 rospy.init_node('arm_action_servers')
-server_stop = stop.StopServer()
-server_unstow = unstow.UnstowServer()
-server_stow = stow.StowServer()
-server_grind = grind.GrindServer()
+server_stop = arm.StopServer()
+server_unstow = arm.UnstowServer()
+server_stow = arm.StowServer()
+server_grind = arm.GrindServer()
 
 # TODO: other actions go here
 

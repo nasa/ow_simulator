@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.actions import stop
+from ow_lander.actions import arm
 from ow_lander import node_helper
 
 import argparse
@@ -16,5 +16,5 @@ parser = argparse.ArgumentParser(
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-  stop.StopServer, **vars(args)
+  arm.StopServer, **vars(args)
 )
