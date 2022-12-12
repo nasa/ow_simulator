@@ -66,7 +66,7 @@ class ArmToGroupStateMixin(ArmActionMixin, ABC):
       self._set_succeeded("Arm trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
     finally:
-      self._arm.checkin_arm()
+      self._arm.checkin_arm(self.name)
 
 class ArmInterface:
   """Implements an ownership layer over trajectory execution and a stop method.
@@ -88,7 +88,9 @@ class ArmInterface:
     cls._in_use_by = owner
 
   @classmethod
-  def checkin_arm(cls):
+  def checkin_arm(cls, owner):
+    if cls._in_use_by != owner:
+      return # owner has not checked out arm, do nothing
     cls._in_use_by = None
     cls._stopped = False
 

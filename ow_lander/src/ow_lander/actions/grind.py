@@ -34,4 +34,4 @@ class GrindServer(ArmActionMixin, ActionServerBase):
         final=self._arm_tip_monitor.get_link_position())
     finally:
       self._arm.switch_to_arm_controller()
-      self._arm.checkin_arm()
+      self._arm.checkin_arm(self.name)
