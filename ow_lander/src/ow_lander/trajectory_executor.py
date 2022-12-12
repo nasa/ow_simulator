@@ -13,26 +13,25 @@ from owl_msgs.msg import SystemFaultsStatus
 
 from ow_lander.common import Singleton
 
-ARM_EXECUTION_ERROR = 4
+class ArmFaultMonitor(metaclass=Singleton):
+    """Checks whether the arm has faulted."""
 
-class ArmTrajectoryExecutor(metaclass=Singleton):
-    """Invokes the follow_joint_trajectory actions of a given controller to
-    execute a trajectory provided as a moveit_msgs.msg.RobotTrajectory.
-    Execution occurs asynchronously and can be ceased with a method call.
-    """
+    CONTINUE_ARM_IN_FAULT_NAME = 'arm_motion_continues_in_fault'
 
     def __init__(self):
-        """Connect to action server of specified controller and the dynamic
-        reconfigure server.
-        May raise a TimeoutError if a server connection fails.
+        """Subscribes to system_fault_status for arm fault updates and connects
+        to the faults dynamic reconfigure server to retrieve the continue arm in
+        fault flag.
+        May raise TimeoutError if a server connection fails.
         """
-        # subscribe to system_fault_status for any arm faults
         SYSTEM_FAULTS_TOPIC = "/system_faults_status"
         self._sub_system_faults = rospy.Subscriber(
-            SYSTEM_FAULTS_TOPIC, SystemFaultsStatus,
-            self._system_faults_callback)
+            SYSTEM_FAULTS_TOPIC,
+            SystemFaultsStatus,
+            self._system_faults_callback
+        )
+        self._arm_fault = False
 
-        # initialize a dynamic reconfigure client to receive reconfiguration
         DYNRECON_CLIENT_TIMEOUT = 30 # seconds
         DYNRECON_NAME = "faults"
         self._faults_reconfigure_client = dynamic_reconfigure.client.Client(
@@ -48,13 +47,40 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
             )
         rospy.loginfo(
             "Successfully connected to the dynamic reconfigure server.")
-        self.arm_motion_continues_in_fault = config[
-            'arm_motion_continues_in_fault']
+        self._continue_arm_in_fault = config[
+            ArmFaultMonitor.CONTINUE_ARM_IN_FAULT_NAME]
 
+    def _system_faults_callback(self, data):
+        """If system fault occurs and it is an arm failure, mark flag true"""
+        ARM_FAULT = 4
+        self._arm_fault = data.value & ARM_FAULT == ARM_FAULT
+
+    def _dynamic_reconfigure_callback(self, config):
+        """Updates the continue arm flag from dynamic reconfigure server."""
+        self._continue_arm_in_fault = config[
+            ArmFaultMonitor.CONTINUE_ARM_IN_FAULT_NAME]
+        # TODO: could this callback also assign arm_fault?
+
+    def is_arm_faulted(self):
+        return self._arm_fault
+
+    def should_arm_continue_in_fault(self):
+        return self._continue_arm_in_fault
+
+class ArmTrajectoryExecutor(metaclass=Singleton):
+    """Invokes the follow_joint_trajectory actions of arm controllers to
+    execute a trajectory provided as a moveit_msgs.msg.RobotTrajectory.
+    Execution occurs asynchronously and can be ceased with a method call.
+    """
+
+    def __init__(self):
+        """Connect to action server of specified controller.
+        May raise a TimeoutError if a server connection fails.
+        """
         # initialize action client for all required controllers (arm and grinder)
         ACTION_CLIENT_TIMEOUT = 30 # seconds
-        self.active_controller = 'arm_controller'
         self.SUPPORTED_CONTROLLERS = ['arm_controller', 'grinder_controller']
+        self._active_controller = self.SUPPORTED_CONTROLLERS[0]
         self._follow_action_clients = dict()
         for controller in self.SUPPORTED_CONTROLLERS:
             self._follow_action_clients[controller] = actionlib.SimpleActionClient(
@@ -64,8 +90,8 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
             if not self._follow_action_clients[controller].wait_for_server(
                     rospy.Duration(ACTION_CLIENT_TIMEOUT)):
                 raise TimeoutError(
-                  f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for connection " \
-                  f"the {controller} joint trajectory action server."
+                  f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for "\
+                  f"connection the {controller} joint trajectory action server."
                 )
             rospy.loginfo(f"Successfully connected to {controller} joint "\
                           f"trajectory action server.")
@@ -75,24 +101,15 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         rospy.wait_for_service(SWITCH_CONTROLLER_SERVICE, SERVICE_PROXY_TIMEOUT)
         self._switch_controller_srv = rospy.ServiceProxy(
           SWITCH_CONTROLLER_SERVICE, SwitchController)
-        self._stopped = False
 
-    def _dynamic_reconfigure_callback(self, config):
-        """Update the corresponding flag from dynamic reconfigure server.
-        """
-        self.arm_motion_continues_in_fault = config['arm_motion_continues_in_fault']
-        # TODO: couldn't this callback also assign arm_fault?
-
-    def _system_faults_callback(self, data):
-        """If system fault occurs and it is an arm failure, the arm_fault flag
-        is set."""
-        self.arm_fault = data.value & ARM_EXECUTION_ERROR == ARM_EXECUTION_ERROR
+    def _get_active_follow_client(self):
+        return self._follow_action_clients[self._active_controller]
 
     def switch_controllers(self, switch_to, switch_from):
         if not switch_to in self.SUPPORTED_CONTROLLERS:
             rospy.logerr(f"{switch_to} is not a supported controller")
             return False
-        if switch_to == self.active_controller:
+        if switch_to == self._active_controller:
             return False
         success = False
         try:
@@ -103,9 +120,12 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         # This sleep is a workaround for "start point deviates from current
         # robot state" error on dig_circular trajectory execution.
         if success:
-            self.active_controller = switch_to
+            self._active_controller = switch_to
             rospy.sleep(0.2)
         return success
+
+    def get_active_controller(self):
+        return self._active_controller
 
     def execute(self, trajectory, goal_time_tolerance=rospy.Time(0.1),
                 done_cb=None, active_cb=None, feedback_cb=None):
@@ -119,17 +139,6 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         )
         self._get_active_follow_client().send_goal(
             goal, done_cb, active_cb, feedback_cb)
-
-    def stop_arm_if_fault(self, _feedback):
-        """stops arm if arm fault exists during feedback callback"""
-        if self.arm_motion_continues_in_fault is False and self.arm_fault:
-            self.cease_execution()
-
-    def success(self):
-        return not self.arm_fault
-
-    def _get_active_follow_client(self):
-        return self._follow_action_clients[self.active_controller]
 
     # FIXME: May not cancel follow_client if it has failed. See OW-1090
     def cease_execution(self):
@@ -155,6 +164,3 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     #        complex trajectories like grind (see OW-1090 for more details)
     def is_active(self):
         return self._get_active_follow_client().get_state() == GoalStatus.ACTIVE
-
-    def is_preempted(self):
-        return self._get_active_follow_client().get_state() == GoalStatus.PREEMPTED

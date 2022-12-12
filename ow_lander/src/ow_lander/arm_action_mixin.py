@@ -7,7 +7,7 @@ import rospy
 import actionlib
 import moveit_commander
 
-from ow_lander.trajectory_executor import ArmTrajectoryExecutor
+from ow_lander.trajectory_executor import ArmTrajectoryExecutor, ArmFaultMonitor
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkPositionSubscriber
 
@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
-  children class must be placed first in the inheritance statement.
+  children classes must be placed first in the inheritance statement.
   e.g.
   class FooArmActionServer(ArmActionMixin, ActionServerBase):
     ...
@@ -69,15 +69,18 @@ class ArmToGroupStateMixin(ArmActionMixin, ABC):
       self._arm.checkin_arm(self.name)
 
 class ArmInterface:
-  """Implements an ownership layer over trajectory execution and a stop method.
+  """Implements an ownership layer and stop method over trajectory execution.
   Ownership is claimed/relinquished via the check out/in methods.
   """
 
-  # string that identifies what facility is using the arm
-  # if None, arm is not in use
+  """A string that identifies what facility is using the arm. If None, arm is
+  not in use.
+  """
   _in_use_by = None
-  # true if arm is checked out and stop_arm was called
-  # set to false when arm is checked in
+
+  """True if arm is checked out and stop_arm was called. Set to false when arm
+  is checked in.
+  """
   _stopped = False
 
   @classmethod
@@ -109,10 +112,18 @@ class ArmInterface:
   def __init__(self):
     # initialize/reference trajectory execution singleton
     self._executor = ArmTrajectoryExecutor()
+    # initialize/reference fault monitor
+    self._faults = ArmFaultMonitor()
+
+  def _stop_arm_if_fault(self, _feedback=None):
+    """Ticks the stop flag when arm should stop due to a fault."""
+    if not self._faults.should_arm_continue_in_fault() and \
+        self._faults.is_arm_faulted():
+      ArmInterface._stopped = True
 
   def switch_to_grinder_controller(self):
     ArmInterface._assert_arm_is_checked_out()
-    if self._executor.active_controller == 'grinder_controller':
+    if self._executor.get_active_controller() == 'grinder_controller':
       return
     if not self._executor.switch_controllers('grinder_controller',
                                              'arm_controller'):
@@ -120,7 +131,7 @@ class ArmInterface:
 
   def switch_to_arm_controller(self):
     ArmInterface._assert_arm_is_checked_out()
-    if self._executor.active_controller == 'arm_controller':
+    if self._executor.get_active_controller() == 'arm_controller':
       return
     if not self._executor.switch_controllers('arm_controller',
                                              'grinder_controller'):
@@ -142,10 +153,14 @@ class ArmInterface:
     if plan is None:
       raise RuntimeError("Trajectory planning failed")
 
+    # check if fault occurred during planning phase
+    self._stop_arm_if_fault()
+
     if ArmInterface._stopped:
       raise RuntimeError("Stop was called; trajectory will not be executed")
 
-    self._executor.execute(plan.joint_trajectory)
+    self._executor.execute(plan.joint_trajectory,
+      feedback_cb=self._stop_arm_if_fault)
 
     # publish feedback while waiting for trajectory execution completion
     # NOTE : Looping for a timeout like this is prone to errors and results in a
