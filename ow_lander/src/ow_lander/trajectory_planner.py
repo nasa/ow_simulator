@@ -103,16 +103,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    ## DEPRECATED and logic disabled
-    def check_for_stop(self, action_name, server_stop):
-        # TODO: Strongly suspect this is unnecessary. Will have it return false
-        #        and see if that breaks the stop function
-        # if server_stop.get_state():
-        #   rospy.loginfo('%s was stopped.', action_name)
-        #   return True
-        # return False
-        return False
-
     def calculate_joint_state_end_pose_from_plan_arm(self, plan):
         '''
         calculate the end pose (position and orientation), joint states and robot states
@@ -251,9 +241,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         if not parallel:
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
-
             plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
             if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
@@ -268,8 +255,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             self._move_arm.set_start_state(cs)
             self._move_arm.set_pose_target(end_pose)
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
             _, plan_b, _, _ = self._move_arm.plan()
             if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
@@ -278,9 +263,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             # Rotate J_HAND_YAW to correct postion
 
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
-
-            if check_for_stop("dig_circular", server_stop):
-                return False
 
             plan_c = self.change_joint_value(
                 cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
@@ -292,17 +274,11 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             # Once aligned to trench goal, place hand above trench middle point
             z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
-
             plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
             circ_traj = _cascade_plans(circ_traj, plan_d)
 
             # Rotate hand perpendicular to arm direction
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
-
-            if check_for_stop("dig_circular", server_stop):
-                return False
 
             plan_e = self.change_joint_value(
                 cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
@@ -310,18 +286,12 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         else:
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
-
             plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
             if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
                 return False
             # Rotate hand so scoop is in middle point
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 plan_a)
-
-            if check_for_stop("dig_circular", server_stop):
-                return False
 
             plan_b = self.change_joint_value(
                 cs, start_state, constants.J_HAND_YAW, 0.0)
@@ -331,9 +301,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 circ_traj)
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
-
             plan_c = self.change_joint_value(
                 cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
             circ_traj = _cascade_plans(circ_traj, plan_c)
@@ -341,9 +308,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             # Rotate dist so scoop is back
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 circ_traj)
-
-            if check_for_stop("dig_circular", server_stop):
-                return False
 
             plan_d = self.change_joint_value(
                 cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
@@ -354,9 +318,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 circ_traj)
             z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
-            if check_for_stop("dig_circular", server_stop):
-                return False
-
             plan_e = self.go_to_XYZ_coordinate(
                 cs, end_pose, x_start, y_start, z_start)
             circ_traj = _cascade_plans(circ_traj, plan_e)
@@ -365,9 +326,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
                 circ_traj)
             dist_now = start_state[3]
-
-            if check_for_stop("dig_circular", server_stop):
-                return False
 
             plan_f = self.change_joint_value(
                 cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
@@ -506,9 +464,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         length = args.length
         ground_position = args.ground_position
 
-        if check_for_stop("dig_linear", server_stop):
-            return False
-
         plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
         if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
@@ -516,8 +471,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             plan_a)
         #################### Rotate hand yaw to dig in#################################
-        if check_for_stop("dig_linear", server_stop):
-            return False
 
         plan_b = self.change_joint_value(self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
 
@@ -532,9 +485,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             dig_linear_traj)
 
-        if check_for_stop("dig_linear", server_stop):
-            return False
-
         plan_c = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
 
@@ -544,9 +494,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             dig_linear_traj)
-
-        if check_for_stop("dig_linear", server_stop):
-            return False
 
         plan_d = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
@@ -564,9 +511,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             dig_linear_traj)
 
-        if check_for_stop("dig_linear", server_stop):
-            return False
-
         plan_e = self.go_to_Z_coordinate(
             self._move_arm, cs, goal_pose, x_start, y_start, z_start)
 
@@ -576,9 +520,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             robot, dig_linear_traj)
-
-        if check_for_stop("dig_linear", server_stop):
-            return False
 
         plan_f = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
@@ -606,9 +547,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         #  rotate to dig out
         cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
             dig_linear_traj)
-
-        if check_for_stop("dig_linear", server_stop):
-            return False
 
         plan_g = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
@@ -813,9 +751,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         self._move_arm.set_joint_value_target(joint_goal)
 
-        if check_for_stop("guarded_move", server_stop):
-            return False, False
-
         _, plan_a, _, _ = self._move_arm.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
             return False, False
@@ -829,9 +764,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         goal_pose.position.z = targ_z
 
         self._move_arm.set_pose_target(goal_pose)
-
-        if check_for_stop("guarded_move", server_stop):
-            return False, False
 
         _, plan_b, _, _ = self._move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -853,9 +785,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         goal_pose.position.z -= direction_z*search_distance
 
         self._move_arm.set_pose_target(goal_pose)
-
-        if check_for_stop("guarded_move", server_stop):
-            return False, False
 
         _, plan_c, _, _ = self._move_arm.plan()
 
@@ -903,8 +832,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         self._move_arm.set_pose_target(goal_pose)
         self._move_arm.set_planner_id("RRTstar")
-        if check_for_stop("discard_sample", server_stop):
-            return False
         _, plan_a, _, _ = self._move_arm.plan()
 
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -938,8 +865,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
         self._move_arm.set_pose_target(goal_pose)
-        if check_for_stop("discard_sample", server_stop):
-            return False
         _, plan_b, _, _ = self._move_arm.plan()
 
         # If no plan found, send the previous plan only
@@ -970,9 +895,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             self._move_arm.set_planner_id("RRTstar")
             goal = self._move_arm.get_named_target_values(t)
             self._move_arm.set_joint_value_target(goal)
-
-            if check_for_stop("deliver_sample", server_stop):
-                return False
 
             _, plan, _, _ = self._move_arm.plan()
             if len(plan.joint_trajectory.points) == 0:
