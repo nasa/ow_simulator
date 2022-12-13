@@ -6,11 +6,12 @@
 
 import rospy
 from sensor_msgs.msg import JointState
-from owl_msgs.msg import ArmJointPositions, ArmJointTorques, ArmJointVelocities, PanTiltPosition
+from owl_msgs.msg import ArmJointAccelerations, ArmJointPositions, ArmJointTorques, ArmJointVelocities, PanTiltPosition
 
 class StatePublisher(object):
 
   def __init__(self, name):
+    self._joint_acc = ArmJointAccelerations()
     self._joint_pos = ArmJointPositions()
     self._joint_tor = ArmJointTorques()
     self._joint_vel = ArmJointVelocities()
@@ -18,6 +19,8 @@ class StatePublisher(object):
 
     self._subscriber = rospy.Subscriber(
             '/joint_states', JointState, self._handle_joint_states)
+    self._arm_joint_accelerations_pub = rospy.Publisher(
+            '/arm_joint_accelerations', ArmJointAccelerations, queue_size=10)
     self._arm_joint_positions_pub = rospy.Publisher(
             '/arm_joint_positions', ArmJointPositions, queue_size=10)
     self._arm_joint_torques_pub = rospy.Publisher(
@@ -35,6 +38,15 @@ class StatePublisher(object):
     if len(data.position) != len(self._joint_pos.value) + len(self._pan_tilt.value) :
       rospy.logerr_throttle(1, 'StatePublisher: Array size mismatch')
       return
+
+    dur = data.header.stamp - self._joint_acc.header.stamp
+    dur_float = dur.to_sec() + dur.to_nsec() / 1000000000
+    # Only publish accelerations if time is moving forward (this should always happen)
+    if dur_float > 0 :
+      self._joint_acc.header = data.header
+      for i in range(0, len(self._joint_acc.value)):
+        self._joint_acc.value[i] = (data.velocity[i+2] - self._joint_vel.value[i]) / dur_float
+      self._arm_joint_accelerations_pub.publish(self._joint_acc)
 
     self._joint_pos.header = data.header
     self._joint_pos.value = data.position[2 : len(data.position)]
