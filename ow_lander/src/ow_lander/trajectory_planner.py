@@ -647,7 +647,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_a, _, _ = self._move_grinder.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return None
+            return False
 
         # entering terrain
         z_start = ground_position + constants.GRINDER_OFFSET - depth

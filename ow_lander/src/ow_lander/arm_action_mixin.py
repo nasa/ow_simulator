@@ -85,7 +85,7 @@ class ArmInterface:
 
   @classmethod
   def checkout_arm(cls, owner):
-    if cls._in_use_by:
+    if cls._in_use_by is not None:
       raise RuntimeError(
         f"Arm is already checked out by the {cls._in_use_by} action server")
     cls._in_use_by = owner
@@ -105,7 +105,7 @@ class ArmInterface:
 
   @classmethod
   def _assert_arm_is_checked_out(cls):
-    if not cls._in_use_by:
+    if cls._in_use_by is None:
       raise RuntimeError("Arm action did not check-out the arm before " \
                          "attempting to execute a trajectory.")
 
@@ -150,7 +150,8 @@ class ArmInterface:
 
     ArmInterface._assert_arm_is_checked_out()
 
-    if plan is None:
+    if not plan:
+      # trajectory planner returns false when planning has failed
       raise RuntimeError("Trajectory planning failed")
 
     # check if fault occurred during planning phase
@@ -185,7 +186,7 @@ class ArmInterface:
       if ArmInterface._stopped:
         self._executor.cease_execution()
         raise RuntimeError("Stop was called; trajectory execution ceased")
-      if feedback_publish_cb:
+      if feedback_publish_cb is not None:
         feedback_publish_cb()
       rate.sleep()
 
