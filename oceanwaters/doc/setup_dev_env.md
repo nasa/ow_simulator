@@ -25,7 +25,7 @@ required):
     -   The git version control system
 -   [ROS Noetic Ninjemys](http://wiki.ros.org/noetic) distribution, with:
     -   The Catkin build system
--   Gazebo 11.9+
+-   Gazebo 11.12+
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
 - Generic Software Architecture for Prognostics (GSAP) v2.0
 
@@ -189,10 +189,10 @@ In the remainder of this document, we assume that ROS has been installed under `
 
 ### Gazebo
 
-* Install Gazebo 11.9+.
+* Install Gazebo 11.12+.
 
   * First run `gazebo --version` and check the version that is currently installed,
-if you have 11.9 or higher installed then you may skip this Gazebo upgrade.
+if you have 11.12 or higher installed then you may skip this Gazebo upgrade.
 
   * Add OSRF gazebo repositories to your linux enviroment:
 ```
@@ -205,7 +205,7 @@ wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get update
 sudo apt-get upgrade
 ```
-  * Run `gazebo --version` and verify that you have a version of 11.9 or higher.
+  * Run `gazebo --version` and verify that you have a version of 11.12 or higher.
 
   * If you may be using Gazebo/OceanWATERS with a VPN (Virtual Private
     Network) running, it is highly recommended you add the following
