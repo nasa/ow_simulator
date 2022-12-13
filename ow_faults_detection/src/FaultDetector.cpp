@@ -40,8 +40,6 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    &FaultDetector::cameraRawCb, 
                                    this);
   
-  m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
-
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
                                   10,
@@ -92,19 +90,15 @@ void FaultDetector::publishSystemFaultsMessage()
 }
 
 //// Publish Camera Messages
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
+void FaultDetector::cameraPublishFaultMessages(bool is_fault)
 {
   ow_faults_detection::CamFaults camera_faults_msg;
-  auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&  
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
-    diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_bitset &= ~isCamExecutionError;
-  } else {
+  if (is_fault) {
     m_system_faults_bitset |= isCamExecutionError;
     setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_bitset &= ~isCamExecutionError;
   }
-
   publishSystemFaultsMessage();
   m_camera_fault_msg_pub.publish(camera_faults_msg);
 }
@@ -181,8 +175,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   publishSystemFaultsMessage();
 }
 
-
-
 template<typename group_t, typename item_t>
 int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
 {
@@ -218,12 +210,18 @@ void FaultDetector::antPublishFaultMessages()
 //// Camera listeners
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 {
-  m_cam_trigger_time = ros::Time::now();
+  // fault if camera data is still pending when trigger is received
+  if (m_camera_data_pending) {
+    cameraPublishFaultMessages(true);
+  }
+  m_camera_data_pending = true;
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  m_cam_raw_time = ros::Time::now();
+  // exonerate fault when camera_raw data is received
+  cameraPublishFaultMessages(false);
+  m_camera_data_pending = false;
 }
 
 //// Power Topic Listeners
