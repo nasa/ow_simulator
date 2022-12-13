@@ -39,29 +39,32 @@ class StatePublisher(object):
       rospy.logerr_throttle(1, 'StatePublisher: Array size mismatch')
       return
 
+    # Offset to end of pan/tilt data and start of arm data
+    OFFSET = 2
+
     dur = data.header.stamp - self._joint_acc.header.stamp
-    dur_float = dur.to_sec() + dur.to_nsec() / 1000000000
+    dur_float = dur.to_sec()
     # Only publish accelerations if time is moving forward (this should always happen)
     if dur_float > 0 :
       self._joint_acc.header = data.header
       for i in range(0, len(self._joint_acc.value)):
-        self._joint_acc.value[i] = (data.velocity[i+2] - self._joint_vel.value[i]) / dur_float
+        self._joint_acc.value[i] = (data.velocity[i + OFFSET] - self._joint_vel.value[i]) / dur_float
       self._arm_joint_accelerations_pub.publish(self._joint_acc)
 
     self._joint_pos.header = data.header
-    self._joint_pos.value = data.position[2 : len(data.position)]
+    self._joint_pos.value = data.position[OFFSET : len(data.position)]
     self._arm_joint_positions_pub.publish(self._joint_pos)
 
     self._joint_tor.header = data.header
-    self._joint_tor.value = data.effort[2 : len(data.effort)]
+    self._joint_tor.value = data.effort[OFFSET : len(data.effort)]
     self._arm_joint_torques_pub.publish(self._joint_tor)
 
     self._joint_vel.header = data.header
-    self._joint_vel.value = data.velocity[2 : len(data.velocity)]
+    self._joint_vel.value = data.velocity[OFFSET : len(data.velocity)]
     self._arm_joint_velocities_pub.publish(self._joint_vel)
 
     self._pan_tilt.header = data.header
-    self._pan_tilt.value = data.position[0 : 2]
+    self._pan_tilt.value = data.position[0 : OFFSET]
     self._pan_tilt_pub.publish(self._pan_tilt)
 
 if __name__ == '__main__':
