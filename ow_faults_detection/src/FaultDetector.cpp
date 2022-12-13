@@ -21,9 +21,6 @@ constexpr bitset<3> FaultDetector::islowVoltageError;
 constexpr bitset<3> FaultDetector::isCapLossError;
 constexpr bitset<3> FaultDetector::isThermalError;
 
-// Not currently in use, see notes with camera members in FaultDetctor.h
-// const ros::Duration CAMERA_RESPONSE_THRESHOLD = ros::Duration(2);
-
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
@@ -213,9 +210,6 @@ void FaultDetector::antPublishFaultMessages()
 //// Camera listeners
 void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 {
-  // Not currently in use, see notes with member declaration in FaultDetctor.h
-  // m_cam_trigger_time = ros::Time::now();
-
   // fault if camera data is still pending when trigger is received
   if (m_camera_data_pending) {
     cameraPublishFaultMessages(true);
@@ -225,13 +219,7 @@ void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  // Not currently in use, see notes with member declaration in FaultDetctor.h
-  // m_cam_raw_time = ros::Time::now();
-  
-  // fault if camera data took too long to arrive
-  // bool is_camera_data_stale 
-  //   = m_cam_raw_time - m_cam_trigger_time > CAMERA_RESPONSE_THRESHOLD;
-  // cameraPublishFaultMessages(is_camera_data_stale);
+  // exonerate fault when camera_raw data is received
   cameraPublishFaultMessages(false);
   m_camera_data_pending = false;
 }
