@@ -127,7 +127,7 @@ class ArmInterface:
       return
     if not self._executor.switch_controllers('grinder_controller',
                                              'arm_controller'):
-      raise RuntimeError("Failed to grinder_controller")
+      raise RuntimeError("Failed to switch to grinder_controller")
 
   def switch_to_arm_controller(self):
     ArmInterface._assert_arm_is_checked_out()
