@@ -7,10 +7,10 @@ import rospy
 import ow_lander.msg
 from ow_lander.server import ActionServerBase
 
-# for arm actions
+# required for arm actions
 from ow_lander.mixins import *
 
-# for non-arm actions
+# required for non-arm actions
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -33,6 +33,7 @@ class UnstowServer(ArmToGroupStateMixin, ActionServerBase):
   def __init__(self):
     super().__init__()
 
+
 class StowServer(ArmToGroupStateMixin, ActionServerBase):
 
   # UNIFICATION TODO: rename "Stow" to "ArmStow"
@@ -47,6 +48,7 @@ class StowServer(ArmToGroupStateMixin, ActionServerBase):
   def __init__(self):
     super().__init__()
 
+
 class StopServer(ArmActionMixin, ActionServerBase):
 
   name          = 'Stop'
@@ -54,9 +56,6 @@ class StopServer(ArmActionMixin, ActionServerBase):
   goal_type     = ow_lander.msg.StopGoal
   feedback_type = ow_lander.msg.StopFeedback
   result_type   = ow_lander.msg.StopResult
-
-  def __init__(self):
-    super().__init__()
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():
@@ -66,7 +65,8 @@ class StopServer(ArmActionMixin, ActionServerBase):
       self._set_aborted("No arm trajectory to stop",
         final=self._arm_tip_monitor.get_link_position())
 
-class GrindServer(ArmActionMixin, ActionServerBase):
+
+class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
   name          = 'Grind'
   action_type   = ow_lander.msg.GrindAction
@@ -74,15 +74,29 @@ class GrindServer(ArmActionMixin, ActionServerBase):
   feedback_type = ow_lander.msg.GrindFeedback
   result_type   = ow_lander.msg.GrindResult
 
-  def __init__(self):
-    super().__init__()
+  def plan_trajectory(self, goal):
+    return self._planner.grind(goal)
+
+
+class GuardedMoveServer(ArmActionMixin, ActionServerBase):
+
+  name          = 'GuardedMove'
+  action_type   = ow_lander.msg.GuardedMoveAction
+  goal_type     = ow_lander.msg.GuardedMoveGoal
+  feedback_type = ow_lander.msg.GuardedMoveFeedback
+  result_type   = ow_lander.msg.GuardedMoveResult
+
+  def ground_detect_cb(self):
+    pass
 
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
-      self._arm.switch_to_grinder_controller()
-      plan = self._planner.grind(goal)
-      self._arm.execute_arm_trajectory(plan)
+      # TODO: plan = plan function
+      rospy.logerror("GuardedMoveServer STUBBED")
+      plan = False
+      self._arm.execute_arm_trajectory(plan,
+        feedback_publish_cb=self.ground_detect_cb)
     except RuntimeError as err:
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
@@ -90,8 +104,63 @@ class GrindServer(ArmActionMixin, ActionServerBase):
       self._set_succeeded("Arm trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
     finally:
-      self._arm.switch_to_arm_controller()
       self._arm.checkin_arm(self.name)
+
+
+class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'DigCircular'
+  action_type   = ow_lander.msg.DigCircularAction
+  goal_type     = ow_lander.msg.DigCircularGoal
+  feedback_type = ow_lander.msg.DigCircularFeedback
+  result_type   = ow_lander.msg.DigCircularResult
+
+  def plan_trajectory(self, goal):
+    return self._planner.dig_circular(goal)
+
+
+class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'DigLinear'
+  action_type   = ow_lander.msg.DigLinearAction
+  goal_type     = ow_lander.msg.DigLinearGoal
+  feedback_type = ow_lander.msg.DigLinearFeedback
+  result_type   = ow_lander.msg.DigLinearResult
+
+  def plan_trajectory(self, goal):
+    return self._planner.dig_linear(goal)
+
+
+class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'Discard'
+  action_type   = ow_lander.msg.DiscardAction
+  goal_type     = ow_lander.msg.DiscardGoal
+  feedback_type = ow_lander.msg.DiscardFeedback
+  result_type   = ow_lander.msg.DiscardResult
+
+  def plan_trajectory(self, goal):
+    return self._planner.discard_sample(goal)
+
+
+class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'Deliver'
+  action_type   = ow_lander.msg.DeliverAction
+  goal_type     = ow_lander.msg.DeliverGoal
+  feedback_type = ow_lander.msg.DeliverFeedback
+  result_type   = ow_lander.msg.DeliverResult
+
+  def plan_trajectory(self, _goal):
+    return self._planner.deliver_sample()
+
+
+class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
+  pass
+
+
+class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
+  pass
 
 #############################
 ## NON-ARM RELATED ACTIONS

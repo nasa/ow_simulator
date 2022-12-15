@@ -224,7 +224,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, args, server_stop):
+    def dig_circular(self, args):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -265,7 +265,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
             plan_c = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
 
             circ_traj = _cascade_plans(circ_traj, plan_c)
 
@@ -281,7 +281,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
             plan_e = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
             circ_traj = _cascade_plans(circ_traj, plan_e)
 
         else:
@@ -294,7 +294,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 plan_a)
 
             plan_b = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW, 0.0)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
             circ_traj = _cascade_plans(plan_a, plan_b)
 
             # Rotate scoop
@@ -302,7 +302,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 circ_traj)
 
             plan_c = self.change_joint_value(
-                cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
+                self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
             circ_traj = _cascade_plans(circ_traj, plan_c)
 
             # Rotate dist so scoop is back
@@ -310,7 +310,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 circ_traj)
 
             plan_d = self.change_joint_value(
-                cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
+                self._move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
             circ_traj = _cascade_plans(circ_traj, plan_d)
 
             # Once aligned to trench goal, place hand above trench middle point
@@ -328,7 +328,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             dist_now = start_state[3]
 
             plan_f = self.change_joint_value(
-                cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
+                self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
             circ_traj = _cascade_plans(circ_traj, plan_f)
 
         return circ_traj
@@ -454,7 +454,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         return plan
 
-    def dig_linear(self, args, server_stop):
+    def dig_linear(self, args):
         """
         :type args: List[bool, float, int, float, float, float]
         """
@@ -472,7 +472,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             plan_a)
         #################### Rotate hand yaw to dig in#################################
 
-        plan_b = self.change_joint_value(self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
+        plan_b = self.change_joint_value(
+            self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
 
         # If no plan found, send the previous plan only
         if len(plan_b.joint_trajectory.points) == 0:
@@ -519,7 +520,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         # rotate to dig in the ground
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            robot, dig_linear_traj)
+            dig_linear_traj)
 
         plan_f = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
@@ -858,7 +859,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            robot, plan_a, self._move_arm, moveit_fk)
+            plan_a)
 
         self._move_arm.set_start_state(cs)
 
@@ -889,8 +890,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         ]
         for t in targets:
             cs = self._robot.get_current_state() if total_plan is None else \
-                calculate_joint_state_end_pose_from_plan_arm(
-                    robot, total_plan, self._move_arm, moveit_fk)[0]
+                self.calculate_joint_state_end_pose_from_plan_arm(total_plan)[0]
             self._move_arm.set_start_state(cs)
             self._move_arm.set_planner_id("RRTstar")
             goal = self._move_arm.get_named_target_values(t)

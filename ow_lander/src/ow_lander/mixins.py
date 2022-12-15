@@ -39,6 +39,7 @@ class ArmActionMixin:
     """
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
+
 class ArmToGroupStateMixin(ArmActionMixin, ABC):
   """A specialization of an arm action mixin that moves the arm directly to
   a group state, which is a series of joint angles."""
@@ -67,3 +68,57 @@ class ArmToGroupStateMixin(ArmActionMixin, ABC):
         final=self._arm_tip_monitor.get_link_position())
     finally:
       self._arm.checkin_arm(self.name)
+
+
+class ArmTrajectoryMixin(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self.plan_trajectory(goal)
+      self._arm.execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
+    else:
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._arm_tip_monitor.get_link_position())
+    finally:
+      self._arm.checkin_arm(self.name)
+
+
+class GrinderTrajectoryMixin(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      self._arm.switch_to_grinder_controller()
+      plan = self.plan_trajectory(goal)
+      self._arm.execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
+    else:
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._arm_tip_monitor.get_link_position())
+    finally:
+      self._arm.switch_to_arm_controller()
+      self._arm.checkin_arm(self.name)
+
+
+class ModifyJointValuesMixin(ArmActionMixin):
+  pass
