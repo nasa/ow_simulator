@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.actions import camera_capture
+from ow_lander import actions
 from ow_lander import node_helper
 
 import argparse
@@ -21,5 +21,5 @@ parser.add_argument(
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-  camera_capture.CameraCaptureServer, **vars(args)
+  actions.CameraCaptureServer, **vars(args)
 )

@@ -11,11 +11,10 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move arm to its stowed position."
-)
+  description="This action client stops the lander arm if it is planning or "\
+              "executing a trajectory.")
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-  actions.StowServer, **vars(args)
+  actions.StopServer, **vars(args)
 )
-
