@@ -13,6 +13,131 @@ from owl_msgs.msg import SystemFaultsStatus
 
 from ow_lander.common import Singleton
 
+class ArmInterface:
+  """Implements an ownership layer and stop method over trajectory execution.
+  Ownership is claimed/relinquished via the check out/in methods.
+  """
+
+  """A string that identifies what facility is using the arm. If None, arm is
+  not in use.
+  """
+  _in_use_by = None
+
+  """True if arm is checked out and stop_arm was called. Set to false when arm
+  is checked in.
+  """
+  _stopped = False
+
+  @classmethod
+  def checkout_arm(cls, owner):
+    if cls._in_use_by is not None:
+      raise RuntimeError(
+        f"Arm is already checked out by the {cls._in_use_by} action server")
+    cls._in_use_by = owner
+
+  @classmethod
+  def checkin_arm(cls, owner):
+    if cls._in_use_by != owner:
+      return # owner has not checked out arm, do nothing
+    cls._in_use_by = None
+    cls._stopped = False
+
+  @classmethod
+  def stop_arm(cls):
+    if cls._in_use_by:
+      cls._stopped = True
+    return cls._stopped
+
+  @classmethod
+  def _assert_arm_is_checked_out(cls):
+    if cls._in_use_by is None:
+      raise RuntimeError("Arm action did not check-out the arm before " \
+                         "attempting to execute a trajectory.")
+
+  def __init__(self):
+    # initialize/reference trajectory execution singleton
+    self._executor = ArmTrajectoryExecutor()
+    # initialize/reference fault monitor
+    self._faults = ArmFaultMonitor()
+
+  def _stop_arm_if_fault(self, _feedback=None):
+    """Ticks the stop flag when arm should stop due to a fault."""
+    if not self._faults.should_arm_continue_in_fault() and \
+        self._faults.is_arm_faulted():
+      ArmInterface._stopped = True
+
+  def switch_to_grinder_controller(self):
+    ArmInterface._assert_arm_is_checked_out()
+    if self._executor.get_active_controller() == 'grinder_controller':
+      return
+    if not self._executor.switch_controllers('grinder_controller',
+                                             'arm_controller'):
+      raise RuntimeError("Failed to switch to grinder_controller")
+
+  def switch_to_arm_controller(self):
+    ArmInterface._assert_arm_is_checked_out()
+    if self._executor.get_active_controller() == 'arm_controller':
+      return
+    if not self._executor.switch_controllers('arm_controller',
+                                             'grinder_controller'):
+      raise RuntimeError("Failed to switch to arm_controller")
+
+  def execute_arm_trajectory(self, plan, feedback_publish_cb=None):
+    """Executes the provided plan and awaits its completions
+    plan -- An instance of moveit_msgs.msg.RobotTrajectory that describes the
+            arm trajectory to be executed. Can be None, in which case planning
+            is assumed to have failed.
+    feedback_publish_cb -- A function called at 100 Hz during execution of a
+                           trajectory. Exists to publish the action's feedback
+                           message. Handles no arguments.
+    returns True if plan was executed successfully and without preempt.
+    """
+
+    ArmInterface._assert_arm_is_checked_out()
+
+    if not plan:
+      # trajectory planner returns false when planning has failed
+      raise RuntimeError("Trajectory planning failed")
+
+    # check if fault occurred during planning phase
+    self._stop_arm_if_fault()
+
+    if ArmInterface._stopped:
+      raise RuntimeError("Stop was called; trajectory will not be executed")
+
+    self._executor.execute(plan.joint_trajectory,
+      feedback_cb=self._stop_arm_if_fault)
+
+    # publish feedback while waiting for trajectory execution completion
+    # NOTE : Looping for a timeout like this is prone to errors and results in a
+    #        large discontinuity between the final "current" value (in feedback)
+    #        and the "final" value (in result). This is at least partially
+    #        responsible for final positions varying far more than the eye can
+    #        see in the simulation because previously the "final" value was
+    #        assigned to whatever the most recent "current" value was, even if
+    #        timeout caused that "current" value to be grabbed milliseconds
+    #        before the actual completion of the action.
+    #        Ideally this would loop so long as _executor is active, or in other
+    #        words, so long as the active follow_joint_trajectory action client
+    #        in _executor returns a get_state() of 1 (ACTIVE). However, this is
+    #        bugged and an aborted state is commonly returned by this method in
+    #        the middle of a trajectory. See OW-1090 for more details.
+    FEEDBACK_RATE = 100 # hertz
+    rate = rospy.Rate(FEEDBACK_RATE) # hertz
+    timeout = plan.joint_trajectory.points[-1].time_from_start \
+              - plan.joint_trajectory.points[0].time_from_start
+    start_time = rospy.get_time()
+    while rospy.get_time() - start_time < timeout.secs:
+      if ArmInterface._stopped:
+        self._executor.cease_execution()
+        raise RuntimeError("Stop was called; trajectory execution ceased")
+      if feedback_publish_cb is not None:
+        feedback_publish_cb()
+      rate.sleep()
+
+    # wait for action to complete in case it takes longer than the timeout
+    self._executor.wait()
+
 class ArmFaultMonitor(metaclass=Singleton):
     """Checks whether the arm has faulted."""
 

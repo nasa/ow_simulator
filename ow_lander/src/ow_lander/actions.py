@@ -8,7 +8,7 @@ import ow_lander.msg
 from ow_lander.server import ActionServerBase
 
 # for arm actions
-from ow_lander.arm_action_mixin import ArmActionMixin, ArmToGroupStateMixin
+from ow_lander.mixins import *
 
 # for non-arm actions
 from std_msgs.msg import Empty, Float64
