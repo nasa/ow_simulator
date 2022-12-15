@@ -20,7 +20,7 @@ parser.add_argument('y_start', type=float, nargs='?', default=0.0,
 parser.add_argument('depth', type=float, nargs='?', default=0.05,
   help="Desired excavation depth")
 parser.add_argument('length', type=float, nargs='?', default=0.6,
-  help="Desired length")
+  help="Desired trench length")
 parser.add_argument('parallel',
   type=lambda x: eval(x[0].upper() + x[1:].lower()),
   nargs='?', default = True,
@@ -31,6 +31,4 @@ parser.add_argument('ground_position', type=float, nargs='?',
   help='Z-coordinate of ground level in base_link frame')
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(
-  actions.GrindServer, **vars(args)
-)
+node_helper.call_single_use_action_client(actions.GrindServer, **vars(args))
