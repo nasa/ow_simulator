@@ -6,7 +6,7 @@
 
 import argparse
 from ow_lander import node_helper
-from ow_lander.actions import lander
+from ow_lander import actions
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -25,5 +25,5 @@ parser.add_argument(
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-  lander.LightSetIntensityServer, **vars(args)
+  actions.LightSetIntensityServer, **vars(args)
 )
