@@ -19,36 +19,6 @@ from irg_gazebo_plugins.msg import ShaderParamUpdate
 ## ARM ACTIONS
 #####################
 
-class UnstowServer(ArmToGroupStateMixin, ActionServerBase):
-
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Unstow'
-  action_type   = ow_lander.msg.UnstowAction
-  goal_type     = ow_lander.msg.UnstowGoal
-  feedback_type = ow_lander.msg.UnstowFeedback
-  result_type   = ow_lander.msg.UnstowResult
-
-  target_group_state = 'arm_unstowed'
-
-  def __init__(self):
-    super().__init__()
-
-
-class StowServer(ArmToGroupStateMixin, ActionServerBase):
-
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Stow'
-  action_type   = ow_lander.msg.StowAction
-  goal_type     = ow_lander.msg.StowGoal
-  feedback_type = ow_lander.msg.StowFeedback
-  result_type   = ow_lander.msg.StowResult
-
-  target_group_state = 'arm_stowed'
-
-  def __init__(self):
-    super().__init__()
-
-
 class StopServer(ArmActionMixin, ActionServerBase):
 
   name          = 'Stop'
@@ -66,6 +36,32 @@ class StopServer(ArmActionMixin, ActionServerBase):
         final=self._arm_tip_monitor.get_link_position())
 
 
+class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
+
+  # UNIFICATION TODO: rename "Stow" to "ArmStow"
+  name          = 'Unstow'
+  action_type   = ow_lander.msg.UnstowAction
+  goal_type     = ow_lander.msg.UnstowGoal
+  feedback_type = ow_lander.msg.UnstowFeedback
+  result_type   = ow_lander.msg.UnstowResult
+
+  def plan_trajectory(self, _goal):
+    return self._planner.plan_arm_to_target('arm_unstowed')
+
+
+class StowServer(ArmTrajectoryMixin, ActionServerBase):
+
+  # UNIFICATION TODO: rename "Stow" to "ArmStow"
+  name          = 'Stow'
+  action_type   = ow_lander.msg.StowAction
+  goal_type     = ow_lander.msg.StowGoal
+  feedback_type = ow_lander.msg.StowFeedback
+  result_type   = ow_lander.msg.StowResult
+
+  def plan_trajectory(self, _goal):
+    return self._planner.plan_arm_to_target('arm_stowed')
+
+
 class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
   name          = 'Grind'
@@ -76,35 +72,6 @@ class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
   def plan_trajectory(self, goal):
     return self._planner.grind(goal)
-
-
-class GuardedMoveServer(ArmActionMixin, ActionServerBase):
-
-  name          = 'GuardedMove'
-  action_type   = ow_lander.msg.GuardedMoveAction
-  goal_type     = ow_lander.msg.GuardedMoveGoal
-  feedback_type = ow_lander.msg.GuardedMoveFeedback
-  result_type   = ow_lander.msg.GuardedMoveResult
-
-  def ground_detect_cb(self):
-    pass
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      # TODO: plan = plan function
-      rospy.logerror("GuardedMoveServer STUBBED")
-      plan = False
-      self._arm.execute_arm_trajectory(plan,
-        feedback_publish_cb=self.ground_detect_cb)
-    except RuntimeError as err:
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
-    else:
-      self._set_succeeded("Arm trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
-    finally:
-      self._arm.checkin_arm(self.name)
 
 
 class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
@@ -155,12 +122,42 @@ class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.deliver_sample()
 
 
+class GuardedMoveServer(ArmActionMixin, ActionServerBase):
+
+  name          = 'GuardedMove'
+  action_type   = ow_lander.msg.GuardedMoveAction
+  goal_type     = ow_lander.msg.GuardedMoveGoal
+  feedback_type = ow_lander.msg.GuardedMoveFeedback
+  result_type   = ow_lander.msg.GuardedMoveResult
+
+  def ground_detect_cb(self):
+    pass
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      # TODO: plan = plan function
+      rospy.logerror("GuardedMoveServer STUBBED")
+      plan = False
+      self._arm.execute_arm_trajectory(plan,
+        feedback_publish_cb=self.ground_detect_cb)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
+    else:
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._arm_tip_monitor.get_link_position())
+    finally:
+      self._arm.checkin_arm(self.name)
+
+
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
   pass
 
 
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
   pass
+
 
 #############################
 ## NON-ARM RELATED ACTIONS

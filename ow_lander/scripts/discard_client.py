@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.actions import arm
+from ow_lander import actions
 from ow_lander import node_helper
 
 from geometry_msgs.msg import Point
@@ -23,4 +23,5 @@ args = parser.parse_args()
 
 point_arg = Point(args.x_start, args.y_start, args.z_start)
 
-node_helper.call_single_use_action_client(arm.DiscardServer, discard=point_arg)
+node_helper.call_single_use_action_client(actions.DiscardServer,
+  discard=point_arg)

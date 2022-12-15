@@ -4,7 +4,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander.actions import arm
+from ow_lander import actions
 from ow_lander import node_helper
 from ow_lander.constants import DEFAULT_GROUND_HEIGHT
 
@@ -27,4 +27,5 @@ parser.add_argument('ground_position', type=float, nargs='?',
     help='z-coordinate of ground level in base_link frame')
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(arm.DigCircularServer, **vars(args))
+node_helper.call_single_use_action_client(actions.DigCircularServer,
+  **vars(args))
