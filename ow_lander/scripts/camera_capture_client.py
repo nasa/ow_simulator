@@ -20,6 +20,5 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(
-  actions.CameraCaptureServer, **vars(args)
-)
+node_helper.call_single_use_action_client(actions.CameraCaptureServer,
+  **vars(args))

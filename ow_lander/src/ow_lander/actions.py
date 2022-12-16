@@ -18,6 +18,10 @@ from sensor_msgs.msg import PointCloud2
 # required for DockIngestSample
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
+# required for AntennaPanTilt
+from ow_lander import constants
+from ow_lander.common import in_closed_range, radians_equivalent
+from sensor_msgs.msg import JointState
 
 #####################
 ## ARM ACTIONS
@@ -256,10 +260,10 @@ class CameraCaptureServer(ActionServerBase):
     self._pub_trigger.publish()
 
     # await point cloud or action preempt
-    frequency = 10 # Hz
-    time_out = 5   # seconds
-    rate = rospy.Rate(frequency)
-    for i in range(0, int(time_out * frequency)):
+    FREQUENCY = 10 # Hz
+    TIMEOUT = 5   # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
       # TODO: investigate replacing with an optional preempt callback function
       if self._is_preempt_requested():
         self._set_preempted("Action was preempted")
@@ -352,3 +356,89 @@ class DockIngestSampleServer(ActionServerBase):
       message = "Sample ingested" if self._sample_was_ingested else \
                 "No sample was present in dock"
       self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
+
+
+class AntennaPanTiltServer(ActionServerBase):
+
+  name          = 'AntennaPanTiltAction'
+  action_type   = ow_lander.msg.AntennaPanTiltAction
+  goal_type     = ow_lander.msg.AntennaPanTiltGoal
+  feedback_type = ow_lander.msg.AntennaPanTiltFeedback
+  result_type   = ow_lander.msg.AntennaPanTiltResult
+
+  JOINT_STATES_TOPIC = "/joint_states"
+
+  def __init__(self):
+    super(AntennaPanTiltServer, self).__init__()
+    ANTENNA_PAN_POS_TOPIC  = '/ant_pan_position_controller/command'
+    ANTENNA_TILT_POS_TOPIC = '/ant_tilt_position_controller/command'
+    self._pan_pub = rospy.Publisher(
+      ANTENNA_PAN_POS_TOPIC, Float64, queue_size=1)
+    self._tilt_pub = rospy.Publisher(
+      ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
+    self._subscriber = rospy.Subscriber(
+      self.JOINT_STATES_TOPIC, JointState, self._handle_joint_states)
+    self._start_server()
+
+  def _handle_joint_states(self, data):
+    # position of pan and tlt of the lander is obtained from JointStates
+    ANTENNA_PAN_JOINT = "j_ant_pan"
+    ANTENNA_TILT_JOINT = "j_ant_tilt"
+    try:
+      id_pan = data.name.index(ANTENNA_PAN_JOINT)
+      id_tilt = data.name.index(ANTENNA_TILT_JOINT)
+    except ValueError as err:
+      rospy.logerr_throttle(1,
+        f"AntennaPanTiltServer: {err}; joint value missing in "\
+        f"{self.JOINT_STATES_TOPIC} topic")
+      return
+    self._pan_pos = data.position[id_pan]
+    self._tilt_pos = data.position[id_tilt]
+
+  def execute_action(self, goal):
+    # FIXME: tolerance should not be necessary once the float precision
+    #        problem is fixed by command unification (OW-1085)
+    if not in_closed_range(goal.pan,
+        constants.PAN_MIN, constants.PAN_MAX,
+        constants.PAN_TILT_INPUT_TOLERANCE):
+      self._set_aborted(f"Requested pan {goal.pan} is not within allowed " \
+                        f"limits and was rejected.",
+                        pan_position = self._pan_pos,
+                        tilt_position = self._tilt_pos)
+      return
+    if not in_closed_range(goal.tilt,
+        constants.TILT_MIN, constants.TILT_MAX,
+        constants.PAN_TILT_INPUT_TOLERANCE):
+      self._set_aborted(f"Requested tilt {goal.tilt} is not within allowed " \
+                        f"limits and was rejected.",
+                        pan_position = self._pan_pos,
+                        tilt_position = self._tilt_pos)
+      return
+
+    # publish requested values to start pan/tilt trajectory
+    self._pan_pub.publish(goal.pan)
+    self._tilt_pub.publish(goal.tilt)
+
+    # loop until pan/tilt reach their goal values
+    FREQUENCY = 10 # Hz
+    TIMEOUT = 30 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        self._set_preempted("Action was preempted",
+          pan_position = self._pan_pos, tilt_position = self._tilt_pos)
+        return
+      # publish feedback message
+      self._publish_feedback(pan_position = self._pan_pos,
+                             tilt_position = self._tilt_pos)
+      # check if joints have arrived at their goal values
+      if (radians_equivalent(goal.pan, self._pan_pos, constants.PAN_TOLERANCE) and
+          radians_equivalent(goal.tilt, self._tilt_pos, constants.TILT_TOLERANCE)):
+        self._set_succeeded("Reach goal pan/tilt values",
+          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+        return
+      rate.sleep()
+    self._set_aborted(
+      "Timed out waiting for pan/tilt values to reach goal.",
+      pan_position=self._pan_pos, tilt_position=self._tilt_pos
+    )
