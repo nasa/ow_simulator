@@ -10,10 +10,14 @@ from ow_lander.server import ActionServerBase
 # required for arm actions
 from ow_lander.mixins import *
 
-# required for non-arm actions
+# required for LightSetIntensity
+from irg_gazebo_plugins.msg import ShaderParamUpdate
+# required for CameraCapture
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
-from irg_gazebo_plugins.msg import ShaderParamUpdate
+# required for DockIngestSample
+from ow_regolith.srv import RemoveRegolith
+from ow_regolith.msg import Contacts
 
 #####################
 ## ARM ACTIONS
@@ -266,3 +270,85 @@ class CameraCaptureServer(ActionServerBase):
       rate.sleep()
     self._set_aborted("Timed out waiting for point cloud")
 
+
+class DockIngestSampleServer(ActionServerBase):
+
+  name          = 'DockIngestSample'
+  action_type   = ow_lander.msg.DockIngestSampleAction
+  goal_type     = ow_lander.msg.DockIngestSampleGoal
+  feedback_type = ow_lander.msg.DockIngestSampleFeedback
+  result_type   = ow_lander.msg.DockIngestSampleResult
+
+  def __init__(self):
+    super(DockIngestSampleServer, self).__init__()
+    # subscribe to contact sensor to know when sample dock has sample
+    TOPIC_SAMPLE_DOCK_CONTACTS = "/ow_regolith/contacts/sample_dock"
+    self._contacts_sub = rospy.Subscriber(
+      TOPIC_SAMPLE_DOCK_CONTACTS,
+      Contacts,
+      self._on_dock_contacts
+    )
+    self._dock_contacts = list()
+    self._ingesting = False # true when action is active
+    self._last_contact_time = 0.0 # seconds
+    self._remove_lock = False # true when dock contacts are being processed
+    self._start_server()
+
+  def _on_dock_contacts(self, msg):
+    self._dock_contacts = msg.link_names
+    if self._ingesting:
+      # remove contacts if ingestion is active
+      self._remove_dock_contacts()
+      self._update_last_contact_time()
+
+  def _update_last_contact_time(self):
+    self._last_contact_time = rospy.get_time()
+
+  def _remove_dock_contacts(self):
+    # a lock is used to avoid redundant service calls to remove the same links
+    if self._remove_lock:
+      return
+    self._remove_lock = True
+    # do nothing if there are no contacts to remove
+    if not self._dock_contacts:
+      return
+    # call the remove service for all dock contacts
+    REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
+    rospy.wait_for_service(REMOVE_REGOLITH_SERVICE)
+    try:
+      service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
+      result = service(self._dock_contacts)
+    except rospy.ServiceException as e:
+      rospy.logwarn("Service call failed: %s" % e)
+      self._remove_service_failed = True
+      return
+    # mark sample as ingested so long as one dock contact was removed
+    if result.success:
+      self._sample_was_ingested = True
+    else:
+      self._remove_service_failed = True
+    self._remove_lock = False
+
+  def execute_action(self, _goal):
+    self._ingesting = True
+    self._sample_was_ingested = False
+    self._remove_service_failed = False
+    # remove sample already contacting the dock
+    self._remove_dock_contacts()
+    # start the no-sample timeout
+    self._update_last_contact_time()
+    # loop until there has been no sample in the dock for at least 3 seconds
+    NO_CONTACTS_TIMEOUT = 3.0 # seconds
+    loop_rate = rospy.Rate(0.2)
+    while rospy.get_time() - self._last_contact_time < NO_CONTACTS_TIMEOUT:
+      loop_rate.sleep()
+    # cease ingestion and wrap up action
+    self._ingesting = False
+    self._remove_lock = False
+    if self._remove_service_failed:
+      self._set_aborted("Regolith removal service failed",
+        sample_ingested=self._sample_was_ingested)
+    else:
+      message = "Sample ingested" if self._sample_was_ingested else \
+                "No sample was present in dock"
+      self._set_succeeded(message, sample_ingested=self._sample_was_ingested)

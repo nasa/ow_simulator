@@ -99,11 +99,11 @@
     launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
     output="screen"/>
   <node pkg="ow_lander" name="AntennaPanTiltAction"
-    type="antenna_pan_tilt_action_server.py"
+    type="antenna_pan_tilt_server.py"
     launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
     output="screen"/>
    <node pkg="ow_lander" name="DockIngestSampleAction"
-    type="dock_ingest_sample_action_server.py"
+    type="dock_ingest_sample_server.py"
     launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
     output="screen"/>
   <node pkg="ow_lander" name="LightSetIntensity"
