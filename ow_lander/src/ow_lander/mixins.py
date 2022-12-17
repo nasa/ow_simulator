@@ -9,7 +9,9 @@ import moveit_commander
 
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
-from ow_lander.subscribers import LinkPositionSubscriber
+from ow_lander.subscribers import LinkPositionSubscriber, JointAnglesSubscriber
+from ow_lander.common import radians_equivalent
+from ow_lander.constants import ARM_JOINT_TOLERANCE
 
 from abc import ABC, abstractmethod
 
@@ -83,12 +85,61 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
-      self._set_succeeded("Arm trajectory succeeded",
+      self._set_succeeded("Grinder trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
     finally:
       self._arm.switch_to_arm_controller()
       self._arm.checkin_arm(self.name)
 
 
-class ModifyJointValuesMixin(ArmActionMixin):
-  pass
+class ModifyJointValuesMixin(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    ARM_JOINTS = [
+      'j_shou_yaw','j_shou_pitch','j_prox_pitch',
+      'j_dist_pitch','j_hand_yaw', 'j_scoop_yaw'
+    ]
+    super().__init__(*args, **kwargs)
+    self._arm_joints_monitor = JointAnglesSubscriber(ARM_JOINTS)
+
+  # NOTE: these two helper functions are hacky work-arounds necessary because
+  #       ArmMoveJoints.action defines the wrong feedback and result
+  # TODO: These will not be necessary after command unification
+  def __format_result(self, value):
+    return {self.result_type.__slots__[0] : value}
+  def __format_feedback(self, value):
+    return {self.feedback_type.__slots__[0] : value}
+
+  def _decide_success(self, target):
+    actual = self._arm_joints_monitor.get_joint_positions()
+    if all([radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
+        for a, b in zip(actual, target)]):
+      self._set_succeeded("Arm joints moved successfully",
+        **self.__format_result(actual))
+    else:
+      self._set_aborted("Arm joints failed to reach intended target",
+        **self.__format_result(actual))
+
+  @abstractmethod
+  def modify_joint_positions(self, goal):
+    pass
+
+  def publish_action_feedback(self):
+    self._publish_feedback(
+      **self.__format_feedback(self._arm_joints_monitor.get_joint_positions())
+    )
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      new_positions = self.modify_joint_positions(goal)
+      plan = self._planner.plan_arm_to_joint_angles(new_positions)
+      self._arm.execute_arm_trajectory(plan)
+    except (RuntimeError, moveit_commander.exception.MoveItCommanderException) \
+        as err:
+      self._set_aborted(str(err),
+        **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
+    else:
+      self._decide_success(new_positions)
+    finally:
+      self._arm.checkin_arm(self.name)

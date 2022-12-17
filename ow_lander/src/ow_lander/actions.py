@@ -160,11 +160,43 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
-  pass
+
+  name          = 'ArmMoveJoint'
+  action_type   = ow_lander.msg.ArmMoveJointAction
+  goal_type     = ow_lander.msg.ArmMoveJointGoal
+  feedback_type = ow_lander.msg.ArmMoveJointFeedback
+  result_type   = ow_lander.msg.ArmMoveJointResult
+
+  def modify_joint_positions(self, goal):
+    pos = self._arm_joints_monitor.get_joint_positions()
+    if goal.joint < 0 or goal.joint >= len(pos):
+      raise RuntimeError("Provided joint index is not within range")
+    if goal.relative:
+      pos[goal.joint] += goal.angle
+    else:
+      pos[goal.joint] = goal.angle
+    return pos
 
 
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
-  pass
+
+  name          = 'ArmMoveJoints'
+  action_type   = ow_lander.msg.ArmMoveJointsAction
+  goal_type     = ow_lander.msg.ArmMoveJointsGoal
+  feedback_type = ow_lander.msg.ArmMoveJointsFeedback
+  result_type   = ow_lander.msg.ArmMoveJointsResult
+
+  def modify_joint_positions(self, goal):
+    pos = self._arm_joints_monitor.get_joint_positions()
+    if len(goal.angles) != len(pos):
+      raise RuntimeError("Number of angles provided does not much the number " \
+                         "of angles in the arm move group")
+    for i in range(len(pos)):
+      if goal.relative:
+        pos[i] += goal.angles[i]
+      else:
+        pos[i] = goal.angles[i]
+    return pos
 
 
 #############################

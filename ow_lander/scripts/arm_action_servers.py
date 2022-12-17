@@ -19,8 +19,8 @@ server_dig_circular = actions.DigCircularServer()
 server_dig_linear   = actions.DigLinearServer()
 server_discard      = actions.DiscardServer()
 server_deliver      = actions.DeliverServer()
-# server_move_joint   = actions.ArmMoveJointServer()
-# server_move_joints  = actions.ArmMoveJointsServer()
+server_move_joint   = actions.ArmMoveJointServer()
+server_move_joints  = actions.ArmMoveJointsServer()
 
 # TODO: other actions go here
 

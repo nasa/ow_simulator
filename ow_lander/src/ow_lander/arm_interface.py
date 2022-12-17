@@ -95,7 +95,7 @@ class ArmInterface:
 
     ArmInterface._assert_arm_is_checked_out()
 
-    if not plan:
+    if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
       raise RuntimeError("Trajectory planning failed")
 

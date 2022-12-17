@@ -103,6 +103,15 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
+    def plan_arm_to_joint_angles(self, arm_joint_angles):
+        if len(arm_joint_angles) != len(self._move_arm.get_joints()):
+            rospy.log_err("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
+                "incorrect number of joints for arm move group.")
+            return False
+        self._move_arm.set_joint_value_target(arm_joint_angles)
+        _, plan, _, _ = self._move_arm.plan()
+        return plan
+
     def calculate_joint_state_end_pose_from_plan_arm(self, plan):
         '''
         calculate the end pose (position and orientation), joint states and robot states
