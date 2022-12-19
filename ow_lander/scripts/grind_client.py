@@ -10,7 +10,7 @@ from ow_lander import constants
 
 import argparse
 
-from distuils.util import strtobool
+from distutils.util import strtobool
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
