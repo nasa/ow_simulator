@@ -7,6 +7,8 @@
 from ow_lander import actions
 from ow_lander import node_helper
 
+from geometry_msgs.msg import Point
+
 import argparse
 
 parser = argparse.ArgumentParser(
@@ -28,5 +30,8 @@ parser.add_argument('search_distance', type=float, nargs='?', default=0.5,
   help='Total distance end-effector will traverse along the direction.')
 args = parser.parse_args()
 
+start_arg = Point(args.x_start, args.y_start, args.z_start)
+normal_arg = Point(args.direction_x, args.direction_y, args.direction_z)
+
 node_helper.call_single_use_action_client(actions.GuardedMoveServer,
-  **vars(args))
+  start=start_arg, normal=normal_arg, search_distance=args.search_distance)

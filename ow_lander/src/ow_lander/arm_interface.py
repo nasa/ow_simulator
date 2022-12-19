@@ -82,14 +82,14 @@ class ArmInterface:
                                              'grinder_controller'):
       raise RuntimeError("Failed to switch to arm_controller")
 
-  def execute_arm_trajectory(self, plan, feedback_publish_cb=None):
+  def execute_arm_trajectory(self, plan, action_feedback_cb=None):
     """Executes the provided plan and awaits its completions
     plan -- An instance of moveit_msgs.msg.RobotTrajectory that describes the
             arm trajectory to be executed. Can be None, in which case planning
             is assumed to have failed.
-    feedback_publish_cb -- A function called at 100 Hz during execution of a
-                           trajectory. Exists to publish the action's feedback
-                           message. Handles no arguments.
+    action_feedback_cb -- A function called at 100 Hz during execution of a
+                          trajectory. Exists to publish the action's feedback
+                          message. Handles no arguments.
     returns True if plan was executed successfully and without preempt.
     """
 
@@ -97,7 +97,7 @@ class ArmInterface:
 
     if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
-      # some planning functions may simply return an empty plan
+      # other planning functions may simply return an empty plan
       raise RuntimeError("Trajectory planning failed")
 
     # check if fault occurred during planning phase
@@ -124,7 +124,7 @@ class ArmInterface:
     #        bugged and an aborted state is commonly returned by this method in
     #        the middle of a trajectory. See OW-1090 for more details.
     FEEDBACK_RATE = 100 # hertz
-    rate = rospy.Rate(FEEDBACK_RATE) # hertz
+    rate = rospy.Rate(FEEDBACK_RATE)
     timeout = plan.joint_trajectory.points[-1].time_from_start \
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
@@ -132,8 +132,8 @@ class ArmInterface:
       if ArmInterface._stopped:
         self._executor.cease_execution()
         raise RuntimeError("Stop was called; trajectory execution ceased")
-      if feedback_publish_cb is not None:
-        feedback_publish_cb()
+      if action_feedback_cb is not None:
+        action_feedback_cb()
       rate.sleep()
 
     # wait for action to complete in case it takes longer than the timeout

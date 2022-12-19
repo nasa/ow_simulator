@@ -34,7 +34,7 @@ class ArmActionMixin:
     self._arm_tip_monitor = LinkPositionSubscriber('lander::l_scoop_tip')
     self._start_server()
 
-  def publish_action_feedback(self):
+  def publish_feedback_cb(self):
     """Publishes the action's feedback. Most arm actions publish the scoop tip
     position under the name "current" in their feedback, so that is what this
     method does by default, but it can be overridden by the child class.
@@ -47,15 +47,12 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  @abstractmethod
-  def plan_trajectory(self, goal):
-    pass
-
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
       plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
@@ -65,22 +62,23 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     finally:
       self._arm.checkin_arm(self.name)
 
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
+
 
 class GrinderTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  @abstractmethod
-  def plan_trajectory(self, goal):
-    pass
-
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
@@ -90,6 +88,10 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
     finally:
       self._arm.switch_to_arm_controller()
       self._arm.checkin_arm(self.name)
+
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
 
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
@@ -120,7 +122,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
       self._set_aborted("Arm joints failed to reach intended target",
         **self.__format_result(actual))
 
-  def publish_action_feedback(self):
+  def publish_feedback_cb(self):
     self._publish_feedback(
       **self.__format_feedback(self._arm_joints_monitor.get_joint_positions())
     )
@@ -130,7 +132,8 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
       self._arm.checkout_arm(self.name)
       new_positions = self.modify_joint_positions(goal)
       plan = self._planner.plan_arm_to_joint_angles(new_positions)
-      self._arm.execute_arm_trajectory(plan)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.publish_feedback_cb)
     except (RuntimeError, moveit_commander.exception.MoveItCommanderException) \
         as err:
       self._set_aborted(str(err),

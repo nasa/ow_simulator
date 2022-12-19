@@ -43,6 +43,34 @@ class StopServer(ArmActionMixin, ActionServerBase):
       self._set_aborted("No arm trajectory to stop",
         final=self._arm_tip_monitor.get_link_position())
 
+class GuardedMoveServer(ArmActionMixin, ActionServerBase):
+
+  name          = 'GuardedMove'
+  action_type   = ow_lander.msg.GuardedMoveAction
+  goal_type     = ow_lander.msg.GuardedMoveGoal
+  feedback_type = ow_lander.msg.GuardedMoveFeedback
+  result_type   = ow_lander.msg.GuardedMoveResult
+
+  def ground_detect_cb(self):
+    # publish feedback
+    self.publish_feedback_cb()
+    # detect presence of a normal force
+    rospy.logwarn_throttle(1, "Ground detection is stubbed!")
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      plan, _ = self._planner.guarded_move(goal)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.ground_detect_cb)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        final=self._arm_tip_monitor.get_link_position())
+    else:
+      self._set_succeeded("Arm trajectory succeeded",
+        final=self._arm_tip_monitor.get_link_position())
+    finally:
+      self._arm.checkin_arm(self.name)
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
@@ -128,35 +156,6 @@ class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
 
   def plan_trajectory(self, _goal):
     return self._planner.deliver_sample()
-
-
-class GuardedMoveServer(ArmActionMixin, ActionServerBase):
-
-  name          = 'GuardedMove'
-  action_type   = ow_lander.msg.GuardedMoveAction
-  goal_type     = ow_lander.msg.GuardedMoveGoal
-  feedback_type = ow_lander.msg.GuardedMoveFeedback
-  result_type   = ow_lander.msg.GuardedMoveResult
-
-  def ground_detect_cb(self):
-    pass
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      # TODO: plan = plan function
-      rospy.logerror("GuardedMoveServer STUBBED")
-      plan = False
-      self._arm.execute_arm_trajectory(plan,
-        feedback_publish_cb=self.ground_detect_cb)
-    except RuntimeError as err:
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
-    else:
-      self._set_succeeded("Arm trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
-    finally:
-      self._arm.checkin_arm(self.name)
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):

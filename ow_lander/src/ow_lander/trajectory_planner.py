@@ -708,7 +708,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return grind_traj
 
-    def guarded_move_plan(self, args):
+    def guarded_move(self, args):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -806,7 +806,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         It is set at 0.5 after several tests
         '''
 
-        estimated_time_ratio =0.5
+        estimated_time_ratio = 0.5
         return guarded_move_traj, estimated_time_ratio
 
     def discard_sample(self, args):
