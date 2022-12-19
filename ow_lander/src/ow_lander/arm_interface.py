@@ -97,6 +97,7 @@ class ArmInterface:
 
     if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
+      # some planning functions may simply return an empty plan
       raise RuntimeError("Trajectory planning failed")
 
     # check if fault occurred during planning phase

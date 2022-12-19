@@ -189,8 +189,8 @@ class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
     if len(goal.angles) != len(pos):
-      raise RuntimeError("Number of angles provided does not much the number " \
-                         "of angles in the arm move group")
+      raise RuntimeError("Number of angle positions provided does not much " \
+                         "the number of joints in the arm move group")
     for i in range(len(pos)):
       if goal.relative:
         pos[i] += goal.angles[i]
@@ -296,7 +296,7 @@ class CameraCaptureServer(ActionServerBase):
     TIMEOUT = 5   # seconds
     rate = rospy.Rate(FREQUENCY)
     for i in range(0, int(TIMEOUT * FREQUENCY)):
-      # TODO: investigate replacing with an optional preempt callback function
+      # TODO: investigate what preempt's function is here and in other actions
       if self._is_preempt_requested():
         self._set_preempted("Action was preempted")
         return
@@ -466,7 +466,7 @@ class AntennaPanTiltServer(ActionServerBase):
       # check if joints have arrived at their goal values
       if (radians_equivalent(goal.pan, self._pan_pos, constants.PAN_TOLERANCE) and
           radians_equivalent(goal.tilt, self._tilt_pos, constants.TILT_TOLERANCE)):
-        self._set_succeeded("Reach goal pan/tilt values",
+        self._set_succeeded("Reached commanded pan/tilt values",
           pan_position=self._pan_pos, tilt_position=self._tilt_pos)
         return
       rate.sleep()

@@ -32,8 +32,8 @@ parser.add_argument('j_scoop_yaw', type=float, nargs='?', default=0.1,
   help="Scoop yaw joint angle")
 args = parser.parse_args()
 
-angle_arg = [args.j_shou_yaw, args.j_shou_pitch, args.j_prox_pitch,
+angles_arg = [args.j_shou_yaw, args.j_shou_pitch, args.j_prox_pitch,
              args.j_dist_pitch, args.j_hand_yaw, args.j_scoop_yaw]
 
 node_helper.call_single_use_action_client(actions.ArmMoveJointsServer,
-  relative=args.relative, angles=angle_arg)
+  relative=args.relative, angles=angles_arg)

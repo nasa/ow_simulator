@@ -110,7 +110,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
   def __format_feedback(self, value):
     return {self.feedback_type.__slots__[0] : value}
 
-  def _decide_success(self, target):
+  def __check_success(self, target):
     actual = self._arm_joints_monitor.get_joint_positions()
     if all([radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
         for a, b in zip(actual, target)]):
@@ -119,10 +119,6 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     else:
       self._set_aborted("Arm joints failed to reach intended target",
         **self.__format_result(actual))
-
-  @abstractmethod
-  def modify_joint_positions(self, goal):
-    pass
 
   def publish_action_feedback(self):
     self._publish_feedback(
@@ -140,6 +136,10 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
       self._set_aborted(str(err),
         **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
     else:
-      self._decide_success(new_positions)
+      self.__check_success(new_positions)
     finally:
       self._arm.checkin_arm(self.name)
+
+  @abstractmethod
+  def modify_joint_positions(self, goal):
+    pass
