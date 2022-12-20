@@ -15,7 +15,7 @@
 #include <ow_faults_detection/JointStatesFlag.h>
 #include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
-#include "ow_faults_detection/PowerFaults.h"
+#include <owl_msgs/PowerFaultsStatus.h>
 #include "ow_faults_detection/PTFaults.h"
 #include <owl_msgs/CameraFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
@@ -36,10 +36,6 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-  //power
-  static constexpr std::bitset<3> islowVoltageError{ 0b001 };
-  static constexpr std::bitset<3> isCapLossError{    0b010 };
-  static constexpr std::bitset<3> isThermalError{    0b100 };
 
   static constexpr float THERMAL_MAX = 70;
   static constexpr float SOC_MIN = 0.1;
@@ -88,7 +84,7 @@ private:
   ros::Publisher m_arm_faults_msg_pub;
   ros::Publisher m_antenna_fault_msg_pub;
   ros::Publisher m_camera_faults_msg_pub;
-  ros::Publisher m_power_fault_msg_pub;
+  ros::Publisher m_power_faults_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
 
   // Arm and antenna

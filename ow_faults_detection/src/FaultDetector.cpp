@@ -13,10 +13,6 @@ using namespace owl_msgs;
 using std::bitset;
 using std::string;
 
-constexpr bitset<3> FaultDetector::islowVoltageError;
-constexpr bitset<3> FaultDetector::isCapLossError;
-constexpr bitset<3> FaultDetector::isThermalError;
-
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
@@ -50,7 +46,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
   m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
   m_camera_faults_msg_pub = nh.advertise<owl_msgs::CameraFaultsStatus>("/camera_faults_status", 10);
-  m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
+  m_power_faults_msg_pub = nh.advertise<owl_msgs::PowerFaultsStatus>("/power_faults_status", 10);
   m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
 }
@@ -88,7 +84,7 @@ void FaultDetector::cameraPublishFaultMessages(bool is_fault)
 //// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault()
 {
-  ow_faults_detection::PowerFaults power_faults_msg;
+  owl_msgs::PowerFaultsStatus power_faults_msg;
   //update if fault
   if (m_temperature_fault || m_soc_fault) {
     //system
@@ -98,7 +94,7 @@ void FaultDetector::publishPowerSystemFault()
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
   publishSystemFaultsMessage();
-  m_power_fault_msg_pub.publish(power_faults_msg);
+  m_power_faults_msg_pub.publish(power_faults_msg);
 }
 
 // Listeners
