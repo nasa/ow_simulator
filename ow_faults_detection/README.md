@@ -24,7 +24,7 @@ include a system fault message that aggregates the states.
 
 Antenna Faults: `/faults/pt_faults_status`
 Arm Faults: `/arm_faults_status`
-Force-Torque Sensor Faults: `/faults/pt_faults_status`
+Force-Torque Sensor Faults: `/pan_tilt_faults_status`
 Power Faults: `/faults/power_faults_status`
 Camera Faults: `/camera_faults_status`
 System Faults: `/system_faults_status`

@@ -48,7 +48,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
+  m_antenna_fault_msg_pub = nh.advertise<owl_msgs::PanTiltFaultsStatus>("/pan_tilt_faults_status", 10);
   m_camera_faults_msg_pub = nh.advertise<owl_msgs::CameraFaultsStatus>("/camera_faults_status", 10);
   m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
   m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
@@ -179,7 +179,7 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 //// Antenna Listeners
 void FaultDetector::antPublishFaultMessages()
 {
-  ow_faults_detection::PTFaults ant_fault_msg;
+  owl_msgs::PanTiltFaultsStatus ant_fault_msg;
   if (m_pan_fault || m_tilt_fault) {
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }else {

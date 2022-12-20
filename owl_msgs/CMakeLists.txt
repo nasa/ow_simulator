@@ -53,8 +53,9 @@ add_message_files(
   ArmJointPositions.msg
   ArmJointTorques.msg
   ArmJointVelocities.msg
-  PanTiltPosition.msg
   CameraFaultsStatus.msg
+  PanTiltPosition.msg
+  PanTiltFaultsStatus.msg
   SystemFaultsStatus.msg
 )
 
