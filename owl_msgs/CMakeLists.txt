@@ -49,8 +49,13 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   ArmFaultsStatus.msg
-  SystemFaultsStatus.msg
+  ArmJointAccelerations.msg
+  ArmJointPositions.msg
+  ArmJointTorques.msg
+  ArmJointVelocities.msg
+  PanTiltPosition.msg
   CameraFaultsStatus.msg
+  SystemFaultsStatus.msg
 )
 
 ## Generate services in the 'srv' folder
