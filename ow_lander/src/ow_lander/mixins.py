@@ -54,13 +54,13 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
+      self._arm.checkin_arm(self.name)
       self._set_succeeded("Arm trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
-    finally:
-      self._arm.checkin_arm(self.name)
 
   @abstractmethod
   def plan_trajectory(self, goal):
@@ -72,6 +72,10 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+  def _cleanup(self):
+    self._arm.switch_to_arm_controller()
+    self._arm.checkin_arm(self.name)
+
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
@@ -80,14 +84,13 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
+      self._cleanup()
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
+      self._cleanup()
       self._set_succeeded("Grinder trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
-    finally:
-      self._arm.switch_to_arm_controller()
-      self._arm.checkin_arm(self.name)
 
   @abstractmethod
   def plan_trajectory(self, goal):
@@ -114,8 +117,13 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   def __check_success(self, target):
     actual = self._arm_joints_monitor.get_joint_positions()
-    if all([radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
-        for a, b in zip(actual, target)]):
+    success = all(
+      [
+        radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
+          for a, b in zip(actual, target)
+      ]
+    )
+    if success:
       self._set_succeeded("Arm joints moved successfully",
         **self.__format_result(actual))
     else:
@@ -136,12 +144,12 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
         action_feedback_cb=self.publish_feedback_cb)
     except (RuntimeError, moveit_commander.exception.MoveItCommanderException) \
         as err:
+      self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
     else:
-      self.__check_success(new_positions)
-    finally:
       self._arm.checkin_arm(self.name)
+      self.__check_success(new_positions)
 
   @abstractmethod
   def modify_joint_positions(self, goal):

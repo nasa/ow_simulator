@@ -81,9 +81,11 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=ground_detect_cb)
     except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
+      self._arm.checkin_arm(self.name)
       ground_found = detector.ground_detected
       if ground_found:
         self._pub_result.publish(ground_found, 'base_link',
@@ -94,8 +96,6 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         "Ground detected" if ground_found else "No ground detected",
         final=self._arm_tip_monitor.get_link_position(), success=ground_found
       )
-    finally:
-      self._arm.checkin_arm(self.name)
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
