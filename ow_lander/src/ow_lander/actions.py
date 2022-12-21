@@ -475,9 +475,21 @@ class AntennaPanTiltServer(ActionServerBase):
     self._pan_pub.publish(goal.pan)
     self._tilt_pub.publish(goal.tilt)
 
+    # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
+    #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
+    #        the image used to identify a sample location would be slightly to
+    #        the right than the image would have been if the frequency is set to
+    #        1 Hz, which would result in a sample location being selected that
+    #        is about half a meter closer to the lander than otherwise.
+    #        Such a dependency on FREQUENCY should not occur and implies that
+    #        the loop terminates before the antenna mast has completed its
+    #        movement. This breaks the synchronicity of actions, and therefore
+    #        of PLEXIL commands.
+    #        The loop break should instead trigger when both antenna joint
+    #        velocities are near enough to zero.
     # loop until pan/tilt reach their goal values
-    FREQUENCY = 10 # Hz
-    TIMEOUT = 30 # seconds
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
     rate = rospy.Rate(FREQUENCY)
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
