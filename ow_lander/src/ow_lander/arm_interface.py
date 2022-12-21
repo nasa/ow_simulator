@@ -66,6 +66,14 @@ class ArmInterface:
         self._faults.is_arm_faulted():
       ArmInterface._stopped = True
 
+  def stop_trajectory_silently(self):
+    """Will bypass the stop flag and cease trajectory execution directly. This
+    results in no exception being thrown."""
+    # NOTE: Until OW-1090 is fixed, this will stop a trajectory without an
+    #       exception being thrown, but execute_arm_trajectory will continue to
+    #       block for the remainder of the expected trajectory duration.
+    self._executor.cease_execution()
+
   def switch_to_grinder_controller(self):
     ArmInterface._assert_arm_is_checked_out()
     if self._executor.get_active_controller() == 'grinder_controller':

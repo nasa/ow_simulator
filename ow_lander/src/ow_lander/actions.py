@@ -7,8 +7,11 @@ import rospy
 import ow_lander.msg
 from ow_lander.server import ActionServerBase
 
-# required for arm actions
+# required for all arm actions
 from ow_lander.mixins import *
+# required for GuardedMove
+from ow_lander.ground_detector import GroundDetector
+from geometry_msgs.msg import Point
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -51,15 +54,26 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
   feedback_type = ow_lander.msg.GuardedMoveFeedback
   result_type   = ow_lander.msg.GuardedMoveResult
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._pub_result = rospy.Publisher('/guarded_move_result',
+                                       ow_lander.msg.GuardedMoveFinalResult,
+                                       queue_size=1)
+
   def ground_detect_cb(self):
     # publish feedback
     self.publish_feedback_cb()
-    # detect presence of a normal force
-    rospy.logwarn_throttle(1, "Ground detection is stubbed!")
+    # check if ground has been detected
+    if self._detector.ground_detected:
+      self._arm.stop_trajectory_silently()
 
   def execute_action(self, goal):
+    self._detector = GroundDetector()
     try:
       self._arm.checkout_arm(self.name)
+      # TODO: split guarded_move trajectory into 2 parts so that ground
+      #       detection can be started before the second execute_trajectory is
+      #       called
       plan, _ = self._planner.guarded_move(goal)
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.ground_detect_cb)
@@ -67,10 +81,19 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
-      self._set_succeeded("Arm trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
+      ground_found = self._detector.ground_detected
+      if ground_found:
+        self._pub_result.publish(ground_found, 'base_link',
+          self._arm_tip_monitor.get_link_position())
+      else:
+        self._pub_result.publish(ground_found, '', Point())
+      self._set_succeeded(
+        "Ground detected" if ground_found else "No ground detected",
+        final=self._arm_tip_monitor.get_link_position(), success=ground_found
+      )
     finally:
       self._arm.checkin_arm(self.name)
+    del self._detector
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
