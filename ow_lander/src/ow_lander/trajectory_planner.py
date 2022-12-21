@@ -105,7 +105,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     def plan_arm_to_joint_angles(self, arm_joint_angles):
         if len(arm_joint_angles) != len(self._move_arm.get_joints()):
-            rospy.log_err("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
+            rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
                 "incorrect number of joints for arm move group.")
             return False
         self._move_arm.set_joint_value_target(arm_joint_angles)
@@ -799,7 +799,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan_c, _, _ = self._move_arm.plan()
 
         guarded_move_traj = _cascade_plans(pre_guarded_move_traj, plan_c)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         '''
         estimated time ratio is the ratio between the time to complete first two parts of the plan
         to the the entire plan. It is used for ground detection only during the last part of the plan.
@@ -881,7 +881,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return plan_a
 
         discard_sample_traj = _cascade_plans(plan_a, plan_b)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         return discard_sample_traj
 
     def deliver_sample(self):
@@ -909,5 +909,5 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 return False
             total_plan = plan if total_plan is None else \
                 _cascade_plans(total_plan, plan)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         return total_plan
