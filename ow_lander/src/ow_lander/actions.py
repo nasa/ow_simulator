@@ -56,32 +56,35 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+    # TODO: would it make sense to latch this?
     self._pub_result = rospy.Publisher('/guarded_move_result',
                                        ow_lander.msg.GuardedMoveFinalResult,
                                        queue_size=1)
 
-  def ground_detect_cb(self):
-    # publish feedback
-    self.publish_feedback_cb()
-    # check if ground has been detected
-    if self._detector.ground_detected:
-      self._arm.stop_trajectory_silently()
-
   def execute_action(self, goal):
-    self._detector = GroundDetector()
+    detector = GroundDetector()
+
+    # define the callback here to avoid making detector a member variable
+    def ground_detect_cb():
+      # publish feedback
+      self.publish_feedback_cb()
+      # check if ground has been detected
+      if detector.ground_detected:
+        self._arm.stop_trajectory_silently()
+
     try:
       self._arm.checkout_arm(self.name)
       # TODO: split guarded_move trajectory into 2 parts so that ground
       #       detection can be started before the second execute_trajectory is
       #       called
-      plan, _ = self._planner.guarded_move(goal)
+      plan = self._planner.guarded_move(goal)
       self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.ground_detect_cb)
+        action_feedback_cb=ground_detect_cb)
     except RuntimeError as err:
       self._set_aborted(str(err),
         final=self._arm_tip_monitor.get_link_position())
     else:
-      ground_found = self._detector.ground_detected
+      ground_found = detector.ground_detected
       if ground_found:
         self._pub_result.publish(ground_found, 'base_link',
           self._arm_tip_monitor.get_link_position())
@@ -93,7 +96,6 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
       )
     finally:
       self._arm.checkin_arm(self.name)
-    del self._detector
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 

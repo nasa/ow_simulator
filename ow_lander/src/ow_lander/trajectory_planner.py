@@ -755,7 +755,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         # If out of joint range, abort
         if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False, False
+            return False
 
         joint_goal[constants.J_SCOOP_YAW] = 0
 
@@ -763,7 +763,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_a, _, _ = self._move_arm.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False, False
+            return False
 
         # Once aligned to move goal and offset, place scoop tip at surface target offset
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
@@ -777,7 +777,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_b, _, _ = self._move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False, False
+            return False
         pre_guarded_move_traj = _cascade_plans(plan_a, plan_b)
 
         ### pre-guarded move ends here ###
@@ -806,8 +806,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         It is set at 0.5 after several tests
         '''
 
-        estimated_time_ratio = 0.5
-        return guarded_move_traj, estimated_time_ratio
+        return guarded_move_traj
 
     def discard_sample(self, args):
         """
