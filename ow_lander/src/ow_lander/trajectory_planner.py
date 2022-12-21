@@ -80,9 +80,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         self._robot = moveit_commander.RobotCommander()
         self._move_arm = moveit_commander.MoveGroupCommander('arm')
         self._move_grinder = moveit_commander.MoveGroupCommander('grinder')
-        # NOTE: never used
-        # self._move_limbs = moveit_commander.MoveGroupCommander('limbs')
-
         # enable forward kinematic calculations
         SERVICE_TIMEOUT = 30 # seconds
         rospy.wait_for_service('compute_fk', SERVICE_TIMEOUT)
@@ -98,6 +95,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         return goal_pose_stamped.pose_stamped[0].pose
 
     def plan_arm_to_target(self, target_name):
+        self._move_arm.set_start_state(self._robot.get_current_state())
         target_joints = self._move_arm.get_named_target_values(target_name)
         self._move_arm.set_joint_value_target(target_joints)
         _, plan, _, _ = self._move_arm.plan()
@@ -108,6 +106,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
                 "incorrect number of joints for arm move group.")
             return False
+        self._move_arm.set_start_state(self._robot.get_current_state())
         self._move_arm.set_joint_value_target(arm_joint_angles)
         _, plan, _, _ = self._move_arm.plan()
         return plan
