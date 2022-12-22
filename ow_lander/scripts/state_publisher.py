@@ -87,7 +87,7 @@ class StatePublisher(object):
     try:
       trans = self._tf_buffer.lookup_transform('base_link', 'l_scoop',  rospy.Time(0))
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-      rospy.logwarn("StatePublisher: tf2 raised an exception: %s" % e)
+      rospy.logerr("StatePublisher: tf2 raised an exception: %s" % e)
       return
 
     self._arm_pose.header = trans.header
