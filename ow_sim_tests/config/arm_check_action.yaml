@@ -18,21 +18,21 @@ test_action_statistics:
       std: 0.0003092861049850434
   test_02_guarded_move:
     duration:
-      mean: 59.20125
+      mean: 59.23725
       samples: 20
-      std: 0.009230242056470966
+      std: 0.12482066082352372
     final_x:
-      mean: 2.030265
+      mean: 2.031695
       samples: 20
-      std: 0.000696060342211815
+      std: 0.0007783078811721563
     final_y:
-      mean: -0.117305
+      mean: -0.1011
       samples: 20
-      std: 8.870412083230423e-05
+      std: 0.00010760551736979239
     final_z:
-      mean: -7.35419
+      mean: -0.1594
       samples: 20
-      std: 0.0001209610637659567
+      std: 0.00014509525002200045
   test_03_grind:
     duration:
       mean: 34.491625
