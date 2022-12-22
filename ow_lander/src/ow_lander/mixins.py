@@ -2,6 +2,12 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines action server mixin classes. If there is need for 2 or more action
+servers that perform similar operations, define a shared mixin class for them
+here. Presently only arm mixin classes exist in this module, but it can also
+define non-arm mixins.
+"""
+
 import sys
 import rospy
 import actionlib

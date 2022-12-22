@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point, WrenchStamped
 
 class GroundDetector:
   """GroundDetector uses readings of the force torque sensor to detect when the
-  arm has reached the ground (or any downward blocker in general).
+  arm has reached the ground (or any downward blocker in general). 
   """
   def __init__(self, reference_frame, poker_link):
     self._detected = False

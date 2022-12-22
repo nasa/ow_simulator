@@ -2,6 +2,11 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines a trajectory execution interface to the OceanWATERS arm. Integrates
+with the OceanWATERS fault system to enable arm fault awareness and enables the
+ability to stop the arm mid-trajectory.
+"""
+
 import rospy
 import actionlib
 import dynamic_reconfigure.client

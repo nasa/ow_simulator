@@ -2,6 +2,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Define constants required by multiple modules within the package"""
+
 ## GLOBAL VARS ##
 J_SCOOP_YAW = 5
 J_HAND_YAW = 4

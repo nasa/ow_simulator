@@ -2,6 +2,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines helper functions for creating server and client nodes from a
+particular ActionServerBase child class
+"""
+
 import rospy
 import actionlib
 

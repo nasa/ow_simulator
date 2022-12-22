@@ -2,6 +2,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines all OceanWATERS arm trajectories. Computes parameterized trajectories
+based on action goal parameters.
+"""
+
 import rospy
 import math
 import copy

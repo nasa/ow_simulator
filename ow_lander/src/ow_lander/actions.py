@@ -2,6 +2,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines all lander actions"""
+
 import rospy
 
 import ow_lander.msg
