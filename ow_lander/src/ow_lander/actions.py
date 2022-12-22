@@ -48,6 +48,10 @@ class StopServer(ArmActionMixin, ActionServerBase):
 
 class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
+  # NOTE: The "final" in GuardedMove's result is not in the same frame as the
+  #       other arm action's finals, which seems misleading from a user
+  #       standpoint.
+
   name          = 'GuardedMove'
   action_type   = ow_lander.msg.GuardedMoveAction
   goal_type     = ow_lander.msg.GuardedMoveGoal
@@ -57,19 +61,23 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     # TODO: would it make sense to latch this?
+    # TODO: is this publisher necessary?
     self._pub_result = rospy.Publisher('/guarded_move_result',
                                        ow_lander.msg.GuardedMoveFinalResult,
                                        queue_size=1)
 
   def execute_action(self, goal):
-    detector = GroundDetector()
+    GROUND_REFERENCE_FRAME = 'base_link'
+    GROUND_POKER_LINK = 'l_scoop_tip'
 
-    # define the callback here to avoid making detector a member variable
+    detector = GroundDetector(GROUND_REFERENCE_FRAME, GROUND_POKER_LINK)
+
+    # define the callback locally to avoid making detector a member variable
     def ground_detect_cb():
       # publish feedback
       self.publish_feedback_cb()
       # check if ground has been detected
-      if detector.ground_detected:
+      if detector.was_ground_detected():
         self._arm.stop_trajectory_silently()
 
     try:
@@ -82,20 +90,16 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         action_feedback_cb=ground_detect_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_aborted(str(err), final=Point())
     else:
       self._arm.checkin_arm(self.name)
-      ground_found = detector.ground_detected
-      if ground_found:
-        self._pub_result.publish(ground_found, 'base_link',
-          self._arm_tip_monitor.get_link_position())
+      if detector.was_ground_detected():
+        ground_pos = detector.get_ground_position()
+        self._pub_result.publish(True, GROUND_REFERENCE_FRAME, ground_pos)
+        self._set_succeeded("Ground detected", final=ground_pos, success=True)
       else:
-        self._pub_result.publish(ground_found, '', Point())
-      self._set_succeeded(
-        "Ground detected" if ground_found else "No ground detected",
-        final=self._arm_tip_monitor.get_link_position(), success=ground_found
-      )
+        self._pub_result.publish(False, '', Point())
+        self._set_succeeded("No ground detected", final=Point(), success=False)
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
