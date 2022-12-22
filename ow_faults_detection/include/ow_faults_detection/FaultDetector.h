@@ -86,7 +86,7 @@ private:
   
   // faults topic publishers
   ros::Publisher m_arm_faults_msg_pub;
-  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_antenna_faults_msg_pub;
   ros::Publisher m_camera_faults_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
