@@ -95,23 +95,7 @@
   
   <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />  
-  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-  <node pkg="ow_lander" name="AntennaPanTiltAction"
-    type="antenna_pan_tilt_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-   <node pkg="ow_lander" name="DockIngestSampleAction"
-    type="dock_ingest_sample_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-  <node pkg="ow_lander" name="LightSetIntensity"
-    type="light_set_intensity_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-  <node pkg="ow_lander" name="CameraCapture"
-    type="camera_capture_server.py"
+  <node pkg="ow_lander" name="lander_action_servers" type="lander_action_servers.py"
     launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
     output="screen"/>
 
