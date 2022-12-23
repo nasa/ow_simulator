@@ -114,8 +114,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     self._arm_joints_monitor = JointAnglesSubscriber(ARM_JOINTS)
 
   # NOTE: these two helper functions are hacky work-arounds necessary because
-  #       ArmMoveJoints.action defines the wrong feedback and result
-  # TODO: These will not be necessary after command unification
+  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-1096)
   def __format_result(self, value):
     return {self.result_type.__slots__[0] : value}
   def __format_feedback(self, value):

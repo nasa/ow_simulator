@@ -4,9 +4,7 @@ int64 joint
 float64 angle
 ---
 # result
-# FIXME: this should be final_angles
 float64[] final_angle    # joint final positions
 ---
 # feedback
-# FIXME: this should be angles
 float64[] angle    # joint current position
