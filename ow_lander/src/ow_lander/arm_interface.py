@@ -2,6 +2,11 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines a trajectory execution interface to the OceanWATERS arm. Integrates
+with the OceanWATERS fault system to enable arm fault awareness and enables the
+ability to stop the arm mid-trajectory.
+"""
+
 import rospy
 import actionlib
 import dynamic_reconfigure.client
@@ -66,6 +71,14 @@ class ArmInterface:
         self._faults.is_arm_faulted():
       ArmInterface._stopped = True
 
+  def stop_trajectory_silently(self):
+    """Will bypass the stop flag and cease trajectory execution directly. This
+    results in no exception being thrown."""
+    # NOTE: Until OW-1090 is fixed, this will stop a trajectory without an
+    #       exception being thrown, but execute_arm_trajectory will continue to
+    #       block for the remainder of the expected trajectory duration.
+    self._executor.cease_execution()
+
   def switch_to_grinder_controller(self):
     ArmInterface._assert_arm_is_checked_out()
     if self._executor.get_active_controller() == 'grinder_controller':
@@ -82,21 +95,22 @@ class ArmInterface:
                                              'grinder_controller'):
       raise RuntimeError("Failed to switch to arm_controller")
 
-  def execute_arm_trajectory(self, plan, feedback_publish_cb=None):
+  def execute_arm_trajectory(self, plan, action_feedback_cb=None):
     """Executes the provided plan and awaits its completions
     plan -- An instance of moveit_msgs.msg.RobotTrajectory that describes the
             arm trajectory to be executed. Can be None, in which case planning
             is assumed to have failed.
-    feedback_publish_cb -- A function called at 100 Hz during execution of a
-                           trajectory. Exists to publish the action's feedback
-                           message. Handles no arguments.
+    action_feedback_cb -- A function called at 100 Hz during execution of a
+                          trajectory. Exists to publish the action's feedback
+                          message. Handles no arguments.
     returns True if plan was executed successfully and without preempt.
     """
 
     ArmInterface._assert_arm_is_checked_out()
 
-    if not plan:
+    if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
+      # other planning functions may simply return an empty plan
       raise RuntimeError("Trajectory planning failed")
 
     # check if fault occurred during planning phase
@@ -123,7 +137,7 @@ class ArmInterface:
     #        bugged and an aborted state is commonly returned by this method in
     #        the middle of a trajectory. See OW-1090 for more details.
     FEEDBACK_RATE = 100 # hertz
-    rate = rospy.Rate(FEEDBACK_RATE) # hertz
+    rate = rospy.Rate(FEEDBACK_RATE)
     timeout = plan.joint_trajectory.points[-1].time_from_start \
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
@@ -131,8 +145,8 @@ class ArmInterface:
       if ArmInterface._stopped:
         self._executor.cease_execution()
         raise RuntimeError("Stop was called; trajectory execution ceased")
-      if feedback_publish_cb is not None:
-        feedback_publish_cb()
+      if action_feedback_cb is not None:
+        action_feedback_cb()
       rate.sleep()
 
     # wait for action to complete in case it takes longer than the timeout

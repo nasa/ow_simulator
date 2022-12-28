@@ -2,6 +2,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines classes for processing messages from certain ROS Topics"""
+
 import rospy
 from gazebo_msgs.msg import LinkStates
 from sensor_msgs.msg import JointState
@@ -9,7 +11,8 @@ from sensor_msgs.msg import JointState
 # UNIFICATION TODO: This will provide the full pose instead of just position
 class LinkPositionSubscriber:
   """Subscribes to /gazebo/link_states and returns the position of a specified
-  link."""
+  link
+  """
 
   _message_buffer = None
   _subscriber = None
@@ -45,7 +48,7 @@ class LinkPositionSubscriber:
 
 class JointAnglesSubscriber:
   """Subscribes to /joint_states and returns the angle positions of a provided
-  list of joints.
+  list of joints
   """
 
   _message_buffer = None

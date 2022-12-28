@@ -10,6 +10,8 @@ from ow_lander import constants
 
 import argparse
 
+from distutils.util import strtobool
+
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   description="A grinder is used excavate the terrain.")
@@ -20,17 +22,13 @@ parser.add_argument('y_start', type=float, nargs='?', default=0.0,
 parser.add_argument('depth', type=float, nargs='?', default=0.05,
   help="Desired excavation depth")
 parser.add_argument('length', type=float, nargs='?', default=0.6,
-  help="Desired length")
-parser.add_argument('parallel',
-  type=lambda x: eval(x[0].upper() + x[1:].lower()),
-  nargs='?', default = True,
+  help="Desired trench length")
+parser.add_argument('parallel', type=strtobool, nargs='?', default = True,
   help="If True, resulting trench is parallel to arm. If False, " \
   "perpendicular to arm")
 parser.add_argument('ground_position', type=float, nargs='?',
   default=constants.DEFAULT_GROUND_HEIGHT,
-  help='Z-coordinate of ground level in base_link frame')
+  help="Z-coordinate of ground level in base_link frame")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(
-  actions.GrindServer, **vars(args)
-)
+node_helper.call_single_use_action_client(actions.GrindServer, **vars(args))

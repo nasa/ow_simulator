@@ -2,6 +2,8 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines functions required by multiple modules within the package"""
+
 from math import pi, tau
 from ow_lander import constants
 # import roslib; roslib.load_manifest('urdfdom_py')
@@ -38,7 +40,7 @@ def _normalize_radians(angle):
   # Note: tau = 2 * pi
   return (angle + pi) % tau - pi
 
-def radians_equivalent (angle1, angle2, tolerance) :
+def radians_equivalent(angle1, angle2, tolerance) :
   return abs(_normalize_radians(angle1 - angle2)) <= tolerance
 
 def in_closed_range(val, lo, hi, tolerance):

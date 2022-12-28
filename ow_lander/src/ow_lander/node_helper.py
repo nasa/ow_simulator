@@ -2,20 +2,15 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines helper functions for creating server and client nodes from a
+particular ActionServerBase child class
+"""
+
 import rospy
 import actionlib
 
 def camel_to_snake_case(s):
   return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
-
-def spin_action_server(action_server_type):
-  """Creates an action server node from the provided action server class type.
-  action_server_type -- A class that inherits from ActionServerBase
-  """
-  node_name = camel_to_snake_case(action_server_type.name) + '_server'
-  rospy.init_node(node_name)
-  server = action_server_type()
-  rospy.spin()
 
 def call_single_use_action_client(action_server_type, **kwargs):
   """Creates an anonymous action client node so a single call to the action

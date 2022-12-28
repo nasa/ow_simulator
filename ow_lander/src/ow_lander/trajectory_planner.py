@@ -2,6 +2,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+"""Defines all OceanWATERS arm trajectories. Computes parameterized trajectories
+based on action goal parameters.
+"""
+
 import rospy
 import math
 import copy
@@ -80,9 +84,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         self._robot = moveit_commander.RobotCommander()
         self._move_arm = moveit_commander.MoveGroupCommander('arm')
         self._move_grinder = moveit_commander.MoveGroupCommander('grinder')
-        # NOTE: never used
-        # self._move_limbs = moveit_commander.MoveGroupCommander('limbs')
-
         # enable forward kinematic calculations
         SERVICE_TIMEOUT = 30 # seconds
         rospy.wait_for_service('compute_fk', SERVICE_TIMEOUT)
@@ -98,8 +99,19 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         return goal_pose_stamped.pose_stamped[0].pose
 
     def plan_arm_to_target(self, target_name):
+        self._move_arm.set_start_state(self._robot.get_current_state())
         target_joints = self._move_arm.get_named_target_values(target_name)
         self._move_arm.set_joint_value_target(target_joints)
+        _, plan, _, _ = self._move_arm.plan()
+        return plan
+
+    def plan_arm_to_joint_angles(self, arm_joint_angles):
+        if len(arm_joint_angles) != len(self._move_arm.get_joints()):
+            rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
+                "incorrect number of joints for arm move group.")
+            return False
+        self._move_arm.set_start_state(self._robot.get_current_state())
+        self._move_arm.set_joint_value_target(arm_joint_angles)
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
@@ -224,7 +236,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, args, server_stop):
+    def dig_circular(self, args):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -265,7 +277,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
             plan_c = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
 
             circ_traj = _cascade_plans(circ_traj, plan_c)
 
@@ -281,7 +293,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
 
             plan_e = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
             circ_traj = _cascade_plans(circ_traj, plan_e)
 
         else:
@@ -294,7 +306,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 plan_a)
 
             plan_b = self.change_joint_value(
-                cs, start_state, constants.J_HAND_YAW, 0.0)
+                self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
             circ_traj = _cascade_plans(plan_a, plan_b)
 
             # Rotate scoop
@@ -302,7 +314,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 circ_traj)
 
             plan_c = self.change_joint_value(
-                cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
+                self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
             circ_traj = _cascade_plans(circ_traj, plan_c)
 
             # Rotate dist so scoop is back
@@ -310,7 +322,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 circ_traj)
 
             plan_d = self.change_joint_value(
-                cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
+                self._move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
             circ_traj = _cascade_plans(circ_traj, plan_d)
 
             # Once aligned to trench goal, place hand above trench middle point
@@ -328,7 +340,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             dist_now = start_state[3]
 
             plan_f = self.change_joint_value(
-                cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
+                self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
             circ_traj = _cascade_plans(circ_traj, plan_f)
 
         return circ_traj
@@ -454,7 +466,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         return plan
 
-    def dig_linear(self, args, server_stop):
+    def dig_linear(self, args):
         """
         :type args: List[bool, float, int, float, float, float]
         """
@@ -472,7 +484,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             plan_a)
         #################### Rotate hand yaw to dig in#################################
 
-        plan_b = self.change_joint_value(self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
+        plan_b = self.change_joint_value(
+            self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
 
         # If no plan found, send the previous plan only
         if len(plan_b.joint_trajectory.points) == 0:
@@ -519,7 +532,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         # rotate to dig in the ground
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            robot, dig_linear_traj)
+            dig_linear_traj)
 
         plan_f = self.change_joint_value(
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
@@ -698,7 +711,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return grind_traj
 
-    def guarded_move_plan(self, args):
+    def guarded_move(self, args):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -745,7 +758,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         # If out of joint range, abort
         if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False, False
+            return False
 
         joint_goal[constants.J_SCOOP_YAW] = 0
 
@@ -753,7 +766,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_a, _, _ = self._move_arm.plan()
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False, False
+            return False
 
         # Once aligned to move goal and offset, place scoop tip at surface target offset
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
@@ -767,7 +780,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_b, _, _ = self._move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False, False
+            return False
         pre_guarded_move_traj = _cascade_plans(plan_a, plan_b)
 
         ### pre-guarded move ends here ###
@@ -789,15 +802,14 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan_c, _, _ = self._move_arm.plan()
 
         guarded_move_traj = _cascade_plans(pre_guarded_move_traj, plan_c)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         '''
         estimated time ratio is the ratio between the time to complete first two parts of the plan
         to the the entire plan. It is used for ground detection only during the last part of the plan.
         It is set at 0.5 after several tests
         '''
 
-        estimated_time_ratio =0.5
-        return guarded_move_traj, estimated_time_ratio
+        return guarded_move_traj
 
     def discard_sample(self, args):
         """
@@ -858,7 +870,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
 
         cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            robot, plan_a, self._move_arm, moveit_fk)
+            plan_a)
 
         self._move_arm.set_start_state(cs)
 
@@ -872,7 +884,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return plan_a
 
         discard_sample_traj = _cascade_plans(plan_a, plan_b)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         return discard_sample_traj
 
     def deliver_sample(self):
@@ -889,8 +901,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         ]
         for t in targets:
             cs = self._robot.get_current_state() if total_plan is None else \
-                calculate_joint_state_end_pose_from_plan_arm(
-                    robot, total_plan, self._move_arm, moveit_fk)[0]
+                self.calculate_joint_state_end_pose_from_plan_arm(total_plan)[0]
             self._move_arm.set_start_state(cs)
             self._move_arm.set_planner_id("RRTstar")
             goal = self._move_arm.get_named_target_values(t)
@@ -901,5 +912,5 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 return False
             total_plan = plan if total_plan is None else \
                 _cascade_plans(total_plan, plan)
-        self._move_arm.set_planner_id("RRTconnect")
+        self._move_arm.set_planner_id("RRTConnect")
         return total_plan

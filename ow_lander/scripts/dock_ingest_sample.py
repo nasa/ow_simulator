@@ -11,15 +11,9 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Trigger both mast camera to capture a photograph."
-)
-parser.add_argument(
-  'exposure', type=float, nargs='?', default=-1,
-  help="Camera exposure in seconds. If <= 0 the previous exposure setting " \
-       "will be used."
+  description="Ingest material present in the sample dock."
 )
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(
-  actions.CameraCaptureServer, **vars(args)
-)
+node_helper.call_single_use_action_client(actions.DockIngestSampleServer,
+  **vars(args))
