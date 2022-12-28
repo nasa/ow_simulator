@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   roslaunch
+  tf2_ros
   message_generation
   std_msgs
   geometry_msgs
