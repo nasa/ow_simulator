@@ -47,6 +47,7 @@ class ArmActionMixin:
     """
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
+
 class ArmTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):

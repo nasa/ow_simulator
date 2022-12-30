@@ -33,7 +33,7 @@ parser.add_argument('qy', type=float, nargs='?', default=0,
   help="Second scalar of the quaternion")
 parser.add_argument('qz', type=float, nargs='?', default=0,
   help="Third scalar of the quaternion")
-parser.add_argument('qw', type=float, nargs='?', default=0,
+parser.add_argument('qw', type=float, nargs='?', default=1,
   help="Fourth scalar of the quaternion")
 args = parser.parse_args()
 

@@ -76,7 +76,7 @@ def _cascade_plans(plan1, plan2):
     return new_traj
 
 def _create_present_header(frame_id):
-    return Header(0, rospy.Time.now(), frame_id)
+    return Header(0, rospy.Time(0), frame_id)
 
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
