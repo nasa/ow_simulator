@@ -13,13 +13,14 @@ import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, PoseStamped
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
 from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander.transforms import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
     """Joins two robot motion plans into one
@@ -74,6 +75,9 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
+def _create_present_header(frame_id):
+    return Header(0, rospy.Time.now(), frame_id)
+
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -92,11 +96,14 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            Header(0, rospy.Time.now(), 'base_link'),
+            _create_present_header('base_link'),
             [fk_target_link],
             robot_state
         )
         return goal_pose_stamped.pose_stamped[0].pose
+
+    def get_end_effector_pose(self, end_effector, frame_id = None):
+        return self._planner._move_arm.get_current_pose(end_effector)
 
     def plan_arm_to_target(self, target_name):
         self._move_arm.set_start_state(self._robot.get_current_state())
@@ -112,6 +119,24 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         self._move_arm.set_start_state(self._robot.get_current_state())
         self._move_arm.set_joint_value_target(arm_joint_angles)
+        _, plan, _, _ = self._move_arm.plan()
+        return plan
+
+    def plan_arm_to_pose(self, pose, frame_id, end_effector):
+        # transform desired pose from user's desired frame to arm's pose frame
+        arm_frame = self._move_arm.get_pose_reference_frame()
+        stamped = PoseStamped(
+            header = _create_present_header(frame_id),
+            pose = pose
+        )
+        ## DEBUG CODE
+        print("DEBUG: stamped = ", stamped)
+        pose_t = FrameTransformer().transform(stamped, arm_frame)
+        if pose_t is None:
+            return False
+        # plan trajectory to pose in the arm's pose frame
+        self._move_arm.set_start_state_to_current_state()
+        self._move_arm.set_pose_target(pose_t, end_effector)
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
@@ -139,7 +164,10 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         :param approximate: use an approximate solution. default True
         :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type x_start: float
+        :type x_start: floa
+def
+
+
         :type y_start: float
         :type z_start: float
         :type approximate: bool
@@ -610,7 +638,10 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         :type self._move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
-        :type moveit_fk: class moveit_msgs/GetPositionFK
+        :type moveit_fk: class moveit_msgs/GetPosi
+        ion
+def
+        FK
         :type args: List[bool, float, float, float, float, bool, float, bool]
         """
 

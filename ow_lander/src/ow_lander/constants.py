@@ -13,6 +13,11 @@ J_SHOU_PITCH = 1
 J_SHOU_YAW = 0
 J_GRINDER = 5
 
+FRAME_ID_MAP = {
+  0: 'base_link', # "Base" frame in JPL's testbed
+  1: 'l_scoop_tip' # "Tool" frame in JPL's testbed
+}
+
 ARM_JOINT_TOLERANCE = 0.05
 
 X_SHOU = 0.79

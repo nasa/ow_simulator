@@ -7,6 +7,7 @@
 import rospy
 
 import ow_lander.msg
+import owl_msgs.msg
 from ow_lander.server import ActionServerBase
 
 # required for all arm actions
@@ -14,6 +15,9 @@ from ow_lander.mixins import *
 # required for GuardedMove
 from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
+# required for ArmMoveCartesian
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Header
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -103,6 +107,7 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
 
+
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
   # UNIFICATION TODO: rename "Stow" to "ArmStow"
@@ -187,6 +192,57 @@ class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
 
   def plan_trajectory(self, _goal):
     return self._planner.deliver_sample()
+
+
+class ArmMoveCartesianServer(ArmActionMixin, ActionServerBase):
+
+  name          = 'ArmMoveCartesian'
+  action_type   = owl_msgs.msg.ArmMoveCartesianAction
+  goal_type     = owl_msgs.msg.ArmMoveCartesianGoal
+  feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
+  result_type   = owl_msgs.msg.ArmMoveCartesianResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
+
+  def execute_action(self, goal):
+    ARM_END_EFFECTOR = 'l_scoop_tip'
+
+    # print("pose ref frame = ", self._planner._move_arm.get_pose_reference_frame())
+    # print("planning frame = ", self._planner._move_arm.get_planning_frame())
+    # print("pose = ", self._planner._move_arm.get_current_pose(ARM_END_EFFECTOR))
+
+    # self._planner._move_arm.set_pose_reference_frame('base_link')
+
+    # print("pose ref frame = ", self._planner._move_arm.get_pose_reference_frame())
+    # print("planning frame = ", self._planner._move_arm.get_planning_frame())
+    # print("pose = ", self._planner._move_arm.get_current_pose(ARM_END_EFFECTOR))
+
+    if goal.frame not in constants.FRAME_ID_MAP:
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
+      return
+    frame_id = constants.FRAME_ID_MAP[goal.frame]
+
+    pose = goal.pose
+    if goal.relative:
+      # current = self._planner.get_end_effector_pose(ARM_END_EFFECTOR)
+      # pose =
+      rospy.logwarn("Relative flag is STUBBED")
+      return False
+
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self._planner.plan_arm_to_pose(pose, frame_id, ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.publish_feedback_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose())
+    else:
+      self._arm.checkin_arm(self.name)
+      self._set_succeeded(f"{self.name} trajectory succeeded",
+        final_pose=self._arm_tip_monitor.get_link_pose())
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
