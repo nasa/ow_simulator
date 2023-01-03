@@ -5,12 +5,15 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   roslaunch
+  tf2_ros
   message_generation
   std_msgs
   geometry_msgs
   actionlib_msgs
   sensor_msgs
 )
+
+catkin_python_setup()
 
 add_service_files(
   FILES

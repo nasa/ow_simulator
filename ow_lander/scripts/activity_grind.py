@@ -4,10 +4,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import constants
+from ow_lander import constants
 import math
 import copy
-from utils import is_shou_yaw_goal_in_range
+from ow_lander.common import is_shou_yaw_goal_in_range
 from activity_full_digging_traj import go_to_Z_coordinate, change_joint_value
 
 def arg_parsing(req):     
