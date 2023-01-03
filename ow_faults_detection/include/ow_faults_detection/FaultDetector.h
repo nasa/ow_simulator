@@ -14,10 +14,10 @@
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include "ow_faults_detection/ArmFaults.h"
+#include <owl_msgs/ArmFaultsStatus.h>
 #include "ow_faults_detection/PowerFaults.h"
-#include "ow_faults_detection/PanTiltFaultsStatus.h"
-#include "ow_faults_detection/CamFaults.h"
+#include <owl_msgs/PanTiltFaultsStatus.h>
+#include <owl_msgs/CameraFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -35,18 +35,6 @@ public:
   
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
-
-  enum class ComponentFaults : uint {
-    Hardware = 1, 
-    JointLimit = 2,
-    TrajectoryGeneration = 2,
-    Collision = 3, 
-    Estop = 4, 
-    PositionLimit = 5, 
-    TorqueLimit = 6, 
-    VelocityLimit = 7, 
-    NoForceData = 8
-    };
 
   //power
   static constexpr std::bitset<3> islowVoltageError{ 0b001 };
@@ -84,9 +72,9 @@ private:
   void antPublishFaultMessages();
   
   // Camera
-  void camerTriggerCb(const std_msgs::Empty& msg);
+  void cameraTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
-  void cameraTriggerPublishCb(const ros::TimerEvent& t);
+  void cameraPublishFaultMessages(bool is_fault);
 
   // Power
   void publishPowerSystemFault();
@@ -97,16 +85,13 @@ private:
   void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  template<typename fault_msg>
-  void setComponentFaultsMessage(fault_msg& msg, ComponentFaults value);
-
 
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
-  ros::Publisher m_arm_fault_msg_pub;
-  ros::Publisher m_antenna_fault_msg_pub;
-  ros::Publisher m_camera_fault_msg_pub;
+  ros::Publisher m_arm_faults_msg_pub;
+  ros::Publisher m_antenna_faults_msg_pub;
+  ros::Publisher m_camera_faults_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
 
@@ -114,7 +99,6 @@ private:
   ros::Subscriber m_joint_states_sub;
 
   // Camera
-  ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
 
@@ -134,8 +118,7 @@ private:
   std::bitset<2> m_pan_tilt_faults_bitset{};
   
   // Camera
-  ros::Time m_cam_raw_time;
-  ros::Time m_cam_trigger_time;
+  bool m_camera_data_pending = false;
   
   // Power
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();

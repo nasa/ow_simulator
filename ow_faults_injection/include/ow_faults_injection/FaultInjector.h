@@ -65,7 +65,7 @@ private:
 
   // Camera functions
   void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
-  void checkCamFaults();
+  void checkCameraFaults();
 
   // Publishers and subscribers
 
@@ -93,7 +93,7 @@ private:
   std::bitset<10> m_system_faults_bitset{};
 
   // General component faults
-  bool m_cam_fault = false;
+  bool m_camera_fault = false;
 
   // Arm joint faults
   ow_faults_injection::FaultsConfig m_faults;

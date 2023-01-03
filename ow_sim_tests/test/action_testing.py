@@ -101,16 +101,23 @@ def test_action_noyaml(test_object, action_name, action, goal, max_duration,
   client.send_goal(goal)
   # monitor for failed conditions during action execution
   start = rospy.get_time()
-  elapsed = 0.0
+  condition_failure = None
   while not is_action_done(client):
-    condition_check()
     rospy.sleep(condition_check_interval)
-    elapsed = rospy.get_time() - start
-    if elapsed > max_duration:
-      break
+    # catch the first failure only
+    if condition_failure is None:
+      try:
+        condition_check()
+      except AssertionError as failure:
+        condition_failure = failure
+
+  elapsed = rospy.get_time() - start
+  # only fail the test when the action has completed or timed out
+  if not condition_failure is None:
+    raise condition_failure
   test_object.assertLess(
     elapsed, max_duration,
-    "Timeout reached waiting for %s action to finish!" % action_name
+    "Action %s took longer than expected to finish!" % action_name
   )
   return client.get_result(), elapsed
 

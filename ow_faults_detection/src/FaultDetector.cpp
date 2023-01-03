@@ -39,8 +39,6 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    &FaultDetector::cameraRawCb,
                                    this);
 
-  m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
-
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
                                   10,
@@ -68,13 +66,6 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
   msg.header.frame_id = "world";
 }
 
-template<typename fault_msg>
-void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value)
-{
-  setFaultsMessageHeader(msg);
-  msg.value = static_cast<uint>(value);
-}
-
 // publish system messages
 void FaultDetector::publishSystemFaultsMessage()
 {
@@ -85,21 +76,16 @@ void FaultDetector::publishSystemFaultsMessage()
 }
 
 //// Publish Camera Messages
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
+void FaultDetector::cameraPublishFaultMessages(bool is_fault)
 {
-  ow_faults_detection::CamFaults camera_faults_msg;
-  auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) ||
-    diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
-  } else {
+  owl_msgs::CameraFaultsStatus camera_faults_msg;
+  if (is_fault) {
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+  } else {
+    m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
   }
-
   publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
+  m_camera_faults_msg_pub.publish(camera_faults_msg);
 }
 
 //// Publish Power Faults Messages
@@ -111,7 +97,6 @@ void FaultDetector::publishPowerSystemFault()
     //system
     m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
     //power
-    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
@@ -162,15 +147,17 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
     armFault = armFault || isFlagSet( name, msg->flags);
   }
 
-  ow_faults_detection::ArmFaults arm_faults_msg;
+  owl_msgs::ArmFaultsStatus arm_faults_msg;
   if (armFault){
     m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-    setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
+    arm_faults_msg.value |= ArmFaultsStatus::HARDWARE;
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    arm_faults_msg.value &= ~ArmFaultsStatus::HARDWARE;
   }
 
-  m_arm_fault_msg_pub.publish(arm_faults_msg);
+  setFaultsMessageHeader(arm_faults_msg);
+  m_arm_faults_msg_pub.publish(arm_faults_msg);
   publishSystemFaultsMessage();
 }
 
@@ -195,51 +182,45 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
 //// Antenna Listeners
 void FaultDetector::antPublishFaultMessages()
 {
-  ow_faults_detection::PanTiltFaultsStatus pan_tilt_fault_msg;
+  owl_msgs::PanTiltFaultsStatus ant_faults_msg;
   if (m_pan_fault || m_tilt_fault) {
-
-    /* This was added in OW-779 but will no longer compile because
-       these members have been removed.  This needs some rework.
-
-    m_system_faults_bitset |= isPanTiltExecutionError;
-
-    if (m_pan_fault && m_tilt_fault) {
-      m_pan_tilt_faults_bitset |= isPanLockedError;
-      m_pan_tilt_faults_bitset |= isTiltLockedError;
-    }
-    else if (m_pan_fault) {
-      m_pan_tilt_faults_bitset |= isPanLockedError;
-      m_pan_tilt_faults_bitset &= ~isTiltLockedError;
-    }
-    else if (m_tilt_fault) {
-      m_pan_tilt_faults_bitset |= isTiltLockedError;
-      m_pan_tilt_faults_bitset &= ~isPanLockedError;
-    }
-  } else {
-    m_system_faults_bitset &= ~isPanTiltExecutionError;
-    m_pan_tilt_faults_bitset &= ~isPanLockedError;
-    m_pan_tilt_faults_bitset &= ~isTiltLockedError;
-
-    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
+    // assign system fault and determine/assign individual pan_tilt faults
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
+    if (m_pan_fault) {
+      ant_faults_msg.value |= PanTiltFaultsStatus::PAN_JOINT_LOCKED;
+    } else {
+      ant_faults_msg.value &= ~PanTiltFaultsStatus::PAN_JOINT_LOCKED;
+    }
+    if (m_tilt_fault) {
+      ant_faults_msg.value |= PanTiltFaultsStatus::TILT_JOINT_LOCKED;
+    } else {
+      ant_faults_msg.value &= ~PanTiltFaultsStatus::TILT_JOINT_LOCKED;
+    }
   }else {
+    // exonerate system and pan_tilt faults
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
-  setBitsetFaultsMessage(pan_tilt_fault_msg, m_pan_tilt_faults_bitset);
-*/
+    ant_faults_msg.value = PanTiltFaultsStatus::NONE;
   }
   publishSystemFaultsMessage();
-  m_antenna_fault_msg_pub.publish(pan_tilt_fault_msg);
+  setFaultsMessageHeader(ant_faults_msg);
+  m_antenna_faults_msg_pub.publish(ant_faults_msg);
 }
 
 //// Camera listeners
-void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
+void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
 {
-  m_cam_trigger_time = ros::Time::now();
+  // fault if camera data is still pending when trigger is received
+  if (m_camera_data_pending) {
+    cameraPublishFaultMessages(true);
+  }
+  m_camera_data_pending = true;
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  m_cam_raw_time = ros::Time::now();
+  // exonerate fault when camera_raw data is received
+  cameraPublishFaultMessages(false);
+  m_camera_data_pending = false;
 }
 
 //// Power Topic Listeners
