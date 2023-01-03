@@ -16,7 +16,7 @@
 #include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include "ow_faults_detection/PowerFaults.h"
-#include "ow_faults_detection/PTFaults.h"
+#include <owl_msgs/PanTiltFaultsStatus.h>
 #include <owl_msgs/CameraFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -86,7 +86,7 @@ private:
   
   // faults topic publishers
   ros::Publisher m_arm_faults_msg_pub;
-  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_antenna_faults_msg_pub;
   ros::Publisher m_camera_faults_msg_pub;
   ros::Publisher m_power_fault_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
