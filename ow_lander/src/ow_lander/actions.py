@@ -29,7 +29,7 @@ from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 # required for AntennaPanTilt
 from ow_lander import constants
-from ow_lander.common import in_closed_range, radians_equivalent
+from ow_lander.common import in_closed_range, radians_equivalent, poses_equivalent
 from sensor_msgs.msg import JointState
 
 #####################
@@ -207,29 +207,20 @@ class ArmMoveCartesianServer(ArmActionMixin, ActionServerBase):
 
   def execute_action(self, goal):
     ARM_END_EFFECTOR = 'l_scoop_tip'
-
-    # print("pose ref frame = ", self._planner._move_arm.get_pose_reference_frame())
-    # print("planning frame = ", self._planner._move_arm.get_planning_frame())
-    # print("pose = ", self._planner._move_arm.get_current_pose(ARM_END_EFFECTOR))
-
-    # self._planner._move_arm.set_pose_reference_frame('base_link')
-
-    # print("pose ref frame = ", self._planner._move_arm.get_pose_reference_frame())
-    # print("planning frame = ", self._planner._move_arm.get_planning_frame())
-    # print("pose = ", self._planner._move_arm.get_current_pose(ARM_END_EFFECTOR))
-
+    # process goal parameters
+    # NOTE: this all processes fast enough that there is no need to check-out
+    #       the arm first
     if goal.frame not in constants.FRAME_ID_MAP:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
-    frame_id = constants.FRAME_ID_MAP[goal.frame]
-
     pose = goal.pose
+    frame_id = constants.FRAME_ID_MAP[goal.frame]
     if goal.relative:
-      # current = self._planner.get_end_effector_pose(ARM_END_EFFECTOR)
-      # pose =
-      rospy.logwarn("Relative flag is STUBBED")
-      return False
+      # selecting relative is the same as selecting the Tool frame, so we only
+      # need to override the frame being used
+      frame_id = constants.FRAME_ID_MAP[goal_type.TOOL]
 
+    # perform action
     try:
       self._arm.checkout_arm(self.name)
       plan = self._planner.plan_arm_to_pose(pose, frame_id, ARM_END_EFFECTOR)
@@ -240,9 +231,19 @@ class ArmMoveCartesianServer(ArmActionMixin, ActionServerBase):
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
     else:
+      final_pose = self._planner.get_end_effector_pose(ARM_END_EFFECTOR,
+                                                       frame_id=frame_id)
       self._arm.checkin_arm(self.name)
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final_pose=self._arm_tip_monitor.get_link_pose())
+      # check if requested pose was achieved
+      if final_pose is None:
+        self._set_aborted("Failed to verify final pose",
+          final_pose=self._arm_tip_monitor.get_link_pose())
+      if not poses_equivalent(pose, final_pose):
+        self._set_aborted("Failed to reach commanded pose",
+          final_pose=self._arm_tip_monitor.get_link_pose())
+      else:
+        self._set_succeeded(f"{self.name} trajectory succeeded",
+          final_pose=self._arm_tip_monitor.get_link_pose())
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):

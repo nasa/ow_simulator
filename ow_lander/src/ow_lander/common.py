@@ -4,10 +4,11 @@
 
 """Defines functions required by multiple modules within the package"""
 
-from math import pi, tau
+from math import pi, tau, isclose
 from ow_lander import constants
 # import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
+from tf.transformations import euler_from_quaternion
 
 class Singleton(type):
   """When passed to the metaclass parameter in the class definition, the class
@@ -49,3 +50,22 @@ def in_closed_range(val, lo, hi, tolerance):
   :return: (bool)
   """
   return val >= lo-tolerance and val <= hi+tolerance
+
+def poses_equivalent(pose1, pose2, \
+    meter_tolerance=constants.ARM_POSE_METER_TOLERANCE, \
+    radian_tolerance=constants.ARM_POSE_RADIAN_TOLERANCE):
+  p1 = pose1.position
+  p2 = pose2.position
+  if isclose(p1.x, p2.x, abs_tol=meter_tolerance) \
+      and isclose(p1.y, p2.y, abs_tol=meter_tolerance) \
+      and isclose(p1.z, p2.z, abs_tol=meter_tolerance):
+    o1 = pose1.orientation
+    o2 = pose2.orientation
+    # quaternions are degenerate, we must instead compare Euler angles
+    r1, p1, y1 = euler_from_quaternion([o1.x, o1.y, o1.z, o1.w])
+    r2, p2, y2 = euler_from_quaternion([o2.x, o2.y, o2.z, o2.w])
+    if isclose(r1, r2, abs_tol=radian_tolerance) \
+        and isclose(p1, p2, abs_tol=radian_tolerance) \
+        and isclose(y1, y2, abs_tol=radian_tolerance):
+      return True
+  return False

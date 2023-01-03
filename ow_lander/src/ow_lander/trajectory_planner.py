@@ -103,7 +103,12 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         return goal_pose_stamped.pose_stamped[0].pose
 
     def get_end_effector_pose(self, end_effector, frame_id = None):
-        return self._planner._move_arm.get_current_pose(end_effector)
+        pose = self._move_arm.get_current_pose(end_effector)
+        if frame_id is None \
+                or frame_id == self._move_arm.get_pose_reference_frame():
+            return pose.pose
+        else:
+            return FrameTransformer().transform(pose, frame_id).pose
 
     def plan_arm_to_target(self, target_name):
         self._move_arm.set_start_state(self._robot.get_current_state())
@@ -129,8 +134,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             header = _create_present_header(frame_id),
             pose = pose
         )
-        ## DEBUG CODE
-        print("DEBUG: stamped = ", stamped)
         pose_t = FrameTransformer().transform(stamped, arm_frame)
         if pose_t is None:
             return False

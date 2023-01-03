@@ -7,7 +7,8 @@ import tf2_ros
 
 from ow_lander.common import Singleton
 
-# NOTE: These imports are not used, but they fix the bug discussed here
+# NOTE: These imports are not directly used, but importing them works around a
+#       bug discussed here
 # https://answers.ros.org/question/249433/tf2_ros-buffer-transform-pointstamped/
 from tf2_geometry_msgs import *
 from geometry_msgs.msg import *
@@ -24,7 +25,7 @@ class FrameTransformer(metaclass = Singleton):
   def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0.1)):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
-    target_frame -- ROS identifier string of the frame to be transformed into
+    target_frame -- ROS identifier string for the frame to be transformed into
     returns a stamped object of the same type only transformed into target_frame
     or None if the tf2_ros lookup call fails
     """

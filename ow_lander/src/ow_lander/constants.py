@@ -4,6 +4,8 @@
 
 """Define constants required by multiple modules within the package"""
 
+from owl_msgs.msg import ArmMoveCartesianGoal
+
 ## GLOBAL VARS ##
 J_SCOOP_YAW = 5
 J_HAND_YAW = 4
@@ -13,12 +15,16 @@ J_SHOU_PITCH = 1
 J_SHOU_YAW = 0
 J_GRINDER = 5
 
+# maps frame enumerate to the corresponding gazebo frame ID
 FRAME_ID_MAP = {
-  0: 'base_link', # "Base" frame in JPL's testbed
-  1: 'l_scoop_tip' # "Tool" frame in JPL's testbed
+  ArmMoveCartesianGoal.BASE: 'base_link',
+  ArmMoveCartesianGoal.TOOL: 'l_scoop_tip'
 }
 
-ARM_JOINT_TOLERANCE = 0.05
+ARM_JOINT_TOLERANCE = 0.05 # radians
+
+ARM_POSE_METER_TOLERANCE = 0.01
+ARM_POSE_RADIAN_TOLERANCE = 0.1
 
 X_SHOU = 0.79
 Y_SHOU = 0.175
