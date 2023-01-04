@@ -11,7 +11,6 @@ from ow_lander.common import Singleton
 #       bug discussed here
 # https://answers.ros.org/question/249433/tf2_ros-buffer-transform-pointstamped/
 from tf2_geometry_msgs import *
-from geometry_msgs.msg import *
 
 class FrameTransformer(metaclass = Singleton):
   """Wraps the tf2_ros interface for looking up transforms and performing
@@ -36,7 +35,7 @@ class FrameTransformer(metaclass = Singleton):
       return None
 
   def lookup_transform(self, target_frame, source_frame,
-                       timestamp=None, timeout=rospy.Duration(0.1)):
+                       timestamp=rospy.Time(0), timeout=rospy.Duration(0.1)):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
@@ -44,8 +43,6 @@ class FrameTransformer(metaclass = Singleton):
                     the past will through an error. Defaults to most recent.
     returns a transform or None if lookup_transform call fails
     """
-    if timestamp is None:
-      timestamp = rospy.Time(0)
     try:
       return self._buffer.lookup_transform(target_frame, source_frame,
                                            timestamp, timeout)
