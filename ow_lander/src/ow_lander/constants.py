@@ -21,10 +21,12 @@ FRAME_ID_MAP = {
   ArmMoveCartesianGoal.TOOL: 'l_scoop_tip'
 }
 
+# allowed deviation from commanded joint values
 ARM_JOINT_TOLERANCE = 0.05 # radians
 
+# allowed deviations from commanded pose values
 ARM_POSE_METER_TOLERANCE = 0.01
-ARM_POSE_RADIAN_TOLERANCE = 0.1
+ARM_POSE_RADIAN_TOLERANCE = 0.05
 
 X_SHOU = 0.79
 Y_SHOU = 0.175

@@ -27,7 +27,7 @@ class FrameTransformer(metaclass = Singleton):
     stamped_type -- A stamped geometry_msgs object
     target_frame -- ROS identifier string for the frame to be transformed into
     returns a stamped object of the same type only transformed into target_frame
-    or None if the tf2_ros lookup call fails
+    or None if transform call fails
     """
     try:
       return self._buffer.transform(stamped_type, target_frame, timeout)
@@ -35,16 +35,20 @@ class FrameTransformer(metaclass = Singleton):
       rospy.logerr(f"FrameTransfomer.transform failure: {str(err)}")
       return None
 
-  def lookup_transform(self, source_frame, target_frame,
-      timeout=rospy.Duration(0.1)):
+  def lookup_transform(self, target_frame, source_frame,
+                       timestamp=None, timeout=rospy.Duration(0.1)):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
-    returns a transform or None if the tf2_ros lookup_transform call fails
+    timestamp    -- Time on the ROS clock to look up frame transform. Too far in
+                    the past will through an error. Defaults to most recent.
+    returns a transform or None if lookup_transform call fails
     """
+    if timestamp is None:
+      timestamp = rospy.Time(0)
     try:
-      return self._buffer.lookup_transform(source_frame, target_frame,
-                                           rospy.Time(), timeout)
+      return self._buffer.lookup_transform(target_frame, source_frame,
+                                           timestamp, timeout)
     except tf2_ros.TransformException as err:
       rospy.logerr(f"FrameTransfomer.lookup_transform failure: {str(err)}")
       return None

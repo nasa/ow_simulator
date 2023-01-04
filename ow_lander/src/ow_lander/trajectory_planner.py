@@ -75,7 +75,7 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
-def _create_present_header(frame_id):
+def _create_most_recent_header(frame_id):
     return Header(0, rospy.Time(0), frame_id)
 
 class ArmTrajectoryPlanner(metaclass = Singleton):
@@ -96,7 +96,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            _create_present_header('base_link'),
+            _create_most_recent_header('base_link'),
             [fk_target_link],
             robot_state
         )
@@ -106,13 +106,15 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         pose = self._move_arm.get_current_pose(end_effector)
         if frame_id is None \
                 or frame_id == self._move_arm.get_pose_reference_frame():
-            return pose.pose
+            return pose
         else:
-            return FrameTransformer().transform(pose, frame_id).pose
+            # ensures the most recent transform is used
+            pose.header.stamp = rospy.Time(0)
+            return FrameTransformer().transform(pose, frame_id)
 
     def plan_arm_to_target(self, target_name):
-        self._move_arm.set_start_state(self._robot.get_current_state())
         target_joints = self._move_arm.get_named_target_values(target_name)
+        self._move_arm.set_start_state_to_current_state()
         self._move_arm.set_joint_value_target(target_joints)
         _, plan, _, _ = self._move_arm.plan()
         return plan
@@ -122,18 +124,18 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
                 "incorrect number of joints for arm move group.")
             return False
-        self._move_arm.set_start_state(self._robot.get_current_state())
+        self._move_arm.set_start_state_to_current_state()
         self._move_arm.set_joint_value_target(arm_joint_angles)
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
     def plan_arm_to_pose(self, pose, frame_id, end_effector):
         # transform desired pose from user's desired frame to arm's pose frame
-        arm_frame = self._move_arm.get_pose_reference_frame()
         stamped = PoseStamped(
-            header = _create_present_header(frame_id),
+            header = _create_most_recent_header(frame_id),
             pose = pose
         )
+        arm_frame = self._move_arm.get_pose_reference_frame()
         pose_t = FrameTransformer().transform(stamped, arm_frame)
         if pose_t is None:
             return False
