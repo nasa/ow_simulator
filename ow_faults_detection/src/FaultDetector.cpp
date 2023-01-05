@@ -86,12 +86,23 @@ void FaultDetector::publishPowerSystemFault()
 {
   owl_msgs::PowerFaultsStatus power_faults_msg;
   //update if fault
-  if (m_temperature_fault || m_soc_fault) {
+  if (m_temperature_fault || m_low_soc_fault) {
     //system
     m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
     //power
+    if (m_temperature_fault) {
+      power_faults_msg.value |= PowerFaultsStatus::THERMAL_FAULT;
+    } else {
+      power_faults_msg.value &= ~PowerFaultsStatus::THERMAL_FAULT;
+    }
+    if (m_low_soc_fault) {
+      power_faults_msg.value |= PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+    } else {
+      power_faults_msg.value &= ~PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+    }
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
+    power_faults_msg.value = PowerFaultsStatus::NONE;
   }
   publishSystemFaultsMessage();
   m_power_faults_msg_pub.publish(power_faults_msg);
@@ -205,19 +216,18 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 //// Power Topic Listeners
 void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  m_temperature_fault = msg.data > THERMAL_MAX;
+  m_temperature_fault = msg.data > POWER_THERMAL_MAX;
   publishPowerSystemFault();
 }
  
 void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
 {
-  float newSOC = msg.data;
-  if (isnan(m_last_SOC)){
-    m_last_SOC = newSOC;
+  float current_soc = msg.data;
+  if (isnan(m_last_soc)){
+    m_last_soc = current_soc;
   }
-  m_soc_fault = ((newSOC <= SOC_MIN)  ||
-                (!isnan(m_last_SOC) &&
-                ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+  m_low_soc_fault = current_soc <= POWER_SOC_MIN;
+  m_instant_capacity_fault = (abs(m_last_soc - current_soc) / m_last_soc) >= POWER_SOC_MAX_DIFF;
   publishPowerSystemFault();
-  m_last_SOC = newSOC;
+  m_last_soc = current_soc;
 }

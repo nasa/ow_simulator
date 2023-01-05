@@ -36,17 +36,13 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-
-  static constexpr float THERMAL_MAX = 70;
-  static constexpr float SOC_MIN = 0.1;
-  static constexpr float SOC_MAX_DIFF = 0.05;
+  static constexpr float POWER_THERMAL_MAX = 70;
+  static constexpr float POWER_SOC_MIN = 0.1;
+  static constexpr float POWER_SOC_MAX_DIFF = 0.05;
   
-  //arm
-  static constexpr float FAULT_ZERO_TELEMETRY = 0.0;
-
 private:
   // COMPONENT FUNCTIONS
-  
+
   // Arm
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
@@ -112,8 +108,9 @@ private:
   bool m_camera_data_pending = false;
   
   // Power
-  float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
-  bool m_soc_fault = false;
+  float m_last_soc = std::numeric_limits<float>::quiet_NaN();
+  bool m_low_soc_fault = false;
+  bool m_instant_capacity_fault = false;
   bool m_temperature_fault = false;
 };
 
