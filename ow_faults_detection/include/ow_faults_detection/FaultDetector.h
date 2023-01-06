@@ -108,6 +108,7 @@ private:
   bool m_camera_data_pending = false;
   
   // Power
+  uint64_t m_power_faults_flags = 0;
   float m_last_soc = std::numeric_limits<float>::quiet_NaN();
   bool m_low_soc_fault = false;
   bool m_instant_capacity_fault = false;

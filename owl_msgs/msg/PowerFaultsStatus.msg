@@ -7,10 +7,10 @@
 # little endian format.
 
 Header header
-uint32 value
+uint64 value
 
 # Constant bitset of error types/flags to set as value
-uint32 NONE                        = 0
-uint32 LOW_STATE_OF_CHARGE         = 1
-uint32 INSTANTANEOUS_CAPACITY_LOSS = 2
-uint32 THERMAL_FAULT               = 4
+uint64 NONE                        = 0
+uint64 LOW_STATE_OF_CHARGE         = 1
+uint64 INSTANTANEOUS_CAPACITY_LOSS = 2
+uint64 THERMAL_FAULT               = 4
