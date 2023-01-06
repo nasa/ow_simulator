@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Header
 from ow_lander.common import poses_approx_equivalent
-from ow_lander.transforms import FrameTransformer
+from ow_lander.frame_transformer import FrameTransformer
 from tf2_geometry_msgs import do_transform_pose
 
 # required for LightSetIntensity
