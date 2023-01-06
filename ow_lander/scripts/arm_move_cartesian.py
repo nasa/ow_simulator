@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
   help="The frame index corresponding to the frame that orientation and "\
-       " position relative to.")
+       " position are relative to. " + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="If True, pose will be interpreted as relative to the current pose.")
 parser.add_argument('-x', type=float, default=0,

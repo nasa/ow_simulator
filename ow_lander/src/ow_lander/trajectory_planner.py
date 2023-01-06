@@ -169,10 +169,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         :param approximate: use an approximate solution. default True
         :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type x_start: floa
-def
-
-
+        :type x_start: float
         :type y_start: float
         :type z_start: float
         :type approximate: bool
