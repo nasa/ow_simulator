@@ -8,7 +8,6 @@ from math import pi, tau, acos, sqrt
 from ow_lander import constants
 # import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
-from tf.transformations import euler_from_quaternion
 
 class Singleton(type):
   """When passed to the metaclass parameter in the class definition, the class
