@@ -16,7 +16,7 @@
 #include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include <owl_msgs/PowerFaultsStatus.h>
-#include "ow_faults_detection/PTFaults.h"
+#include <owl_msgs/PanTiltFaultsStatus.h>
 #include <owl_msgs/CameraFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -36,13 +36,13 @@ public:
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
 
-  static constexpr float POWER_THERMAL_MAX = 70;
+  static constexpr float POWER_THERMAL_MAX = 70.0;
   static constexpr float POWER_SOC_MIN = 0.1;
   static constexpr float POWER_SOC_MAX_DIFF = 0.05;
   
 private:
   // COMPONENT FUNCTIONS
-
+  
   // Arm
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
@@ -78,7 +78,7 @@ private:
   
   // faults topic publishers
   ros::Publisher m_arm_faults_msg_pub;
-  ros::Publisher m_antenna_fault_msg_pub;
+  ros::Publisher m_antenna_faults_msg_pub;
   ros::Publisher m_camera_faults_msg_pub;
   ros::Publisher m_power_faults_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
@@ -110,9 +110,6 @@ private:
   // Power
   uint64_t m_power_faults_flags = 0;
   float m_last_soc = std::numeric_limits<float>::quiet_NaN();
-  bool m_low_soc_fault = false;
-  bool m_instant_capacity_fault = false;
-  bool m_temperature_fault = false;
 };
 
 #endif
