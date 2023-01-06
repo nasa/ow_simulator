@@ -59,6 +59,7 @@ add_message_files(
   PanTiltFaultsStatus.msg
   PanTiltPosition.msg
   SystemFaultsStatus.msg
+  PowerFaultsStatus.msg
 )
 
 ## Generate services in the 'srv' folder

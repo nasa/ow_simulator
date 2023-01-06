@@ -13,10 +13,6 @@ using namespace owl_msgs;
 using std::bitset;
 using std::string;
 
-constexpr bitset<3> FaultDetector::islowVoltageError;
-constexpr bitset<3> FaultDetector::isCapLossError;
-constexpr bitset<3> FaultDetector::isThermalError;
-
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
@@ -50,7 +46,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
   m_antenna_faults_msg_pub = nh.advertise<owl_msgs::PanTiltFaultsStatus>("/pan_tilt_faults_status", 10);
   m_camera_faults_msg_pub = nh.advertise<owl_msgs::CameraFaultsStatus>("/camera_faults_status", 10);
-  m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
+  m_power_faults_msg_pub = nh.advertise<owl_msgs::PowerFaultsStatus>("/power_faults_status", 10);
   m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
 
 }
@@ -88,17 +84,20 @@ void FaultDetector::cameraPublishFaultMessages(bool is_fault)
 //// Publish Power Faults Messages
 void FaultDetector::publishPowerSystemFault()
 {
-  ow_faults_detection::PowerFaults power_faults_msg;
-  //update if fault
-  if (m_temperature_fault || m_soc_fault) {
-    //system
-    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
-    //power
-  } else {
+  // @TODO redundant with system faults publish method,
+  //   make generic fault publishing method to handle all fault message types
+  owl_msgs::PowerFaultsStatus power_faults_msg;
+  setFaultsMessageHeader(power_faults_msg);
+  power_faults_msg.value = m_power_faults_flags;
+  m_power_faults_msg_pub.publish(power_faults_msg);
+
+  // set/exonerate related system faults and publish
+  if (PowerFaultsStatus::NONE == m_power_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
+  } else {
+    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
   }
   publishSystemFaultsMessage();
-  m_power_fault_msg_pub.publish(power_faults_msg);
 }
 
 // Listeners
@@ -223,19 +222,36 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 //// Power Topic Listeners
 void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
 {
-  m_temperature_fault = msg.data > THERMAL_MAX;
+  // check for excessive battery temperature
+  if (msg.data > POWER_THERMAL_MAX) {
+    m_power_faults_flags |= PowerFaultsStatus::THERMAL_FAULT;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;
+  }
   publishPowerSystemFault();
 }
  
 void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
 {
-  float newSOC = msg.data;
-  if (isnan(m_last_SOC)){
-    m_last_SOC = newSOC;
+  // set initial state of charge
+  float current_soc = msg.data;
+  if (isnan(m_last_soc)){
+    m_last_soc = current_soc;
   }
-  m_soc_fault = ((newSOC <= SOC_MIN)  ||
-                (!isnan(m_last_SOC) &&
-                ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
+
+  // check for low state of charge
+  if (current_soc <= POWER_SOC_MIN) {
+    m_power_faults_flags |= PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+  }
+
+  // check for excessive instant capacity loss
+  if ((abs(m_last_soc - current_soc) / m_last_soc) >= POWER_SOC_MAX_DIFF) {
+    m_power_faults_flags |= PowerFaultsStatus::INSTANTANEOUS_CAPACITY_LOSS;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::INSTANTANEOUS_CAPACITY_LOSS;
+  }
+  m_last_soc = current_soc;
   publishPowerSystemFault();
-  m_last_SOC = newSOC;
 }
