@@ -58,7 +58,7 @@ ROT_RADIUS = 0.36
 # Distance between wrist center of mass and scoop center of mass
 # Component parallel to ground
 WRIST_SCOOP_PARAL = 0.2
-# Component perperdicular to ground
+# Component perpendicular to ground
 WRIST_SCOOP_PERP = 0.3
 
 # Radii in dig_circular

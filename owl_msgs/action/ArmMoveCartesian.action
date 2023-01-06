@@ -2,9 +2,6 @@
 int32 frame
 bool relative
 geometry_msgs/Pose pose
-# enumerated frames
-int32 BASE = 0
-int32 TOOL = 1
 ---
 # result
 geometry_msgs/Pose final_pose

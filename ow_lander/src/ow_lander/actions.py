@@ -221,8 +221,8 @@ class ArmMoveCartesianServer(ArmActionMixin, ActionServerBase):
       return
     pose = goal.pose
     # selecting relative is the same as selecting the Tool frame and vice versa
-    relative = goal.relative or goal.frame == goal.TOOL
-    frame_id = constants.FRAME_ID_MAP[goal.TOOL] if relative \
+    relative = goal.relative or goal.frame == constants.FRAME_TOOL
+    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative \
                else constants.FRAME_ID_MAP[goal.frame]
 
     # save tool transform now so the old transform can be used for comparison
