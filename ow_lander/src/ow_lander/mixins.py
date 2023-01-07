@@ -17,7 +17,8 @@ from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.common import radians_equivalent
-from ow_lander.constants import ARM_JOINT_TOLERANCE
+from ow_lander.frame_transformer import FrameTransformer
+from ow_lander import constants
 
 from abc import ABC, abstractmethod
 
@@ -102,6 +103,34 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
   def plan_trajectory(self, goal):
     pass
 
+class ArmCartesianMoveMixin(ArmActionMixin, ABC):
+
+  # name of the end-effector that is posed
+  ARM_END_EFFECTOR = 'l_scoop_tip'
+  # a stationary frame for the final pose to be verified in
+  COMPARISON_FRAME = 'world'
+
+  def interpret_frame(self, goal):
+    # handle goal parameters
+    # NOTE: this all processes fast enough that there is no need to check-out
+    #       the arm first
+    if goal.frame not in constants.FRAME_ID_MAP:
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
+      return None, None
+    # selecting relative is the same as selecting the Tool frame and vice versa
+    relative = goal.relative or goal.frame == constants.FRAME_TOOL
+    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative \
+               else constants.FRAME_ID_MAP[goal.frame]
+
+    # save tool transform now so the old transform can be used for comparison
+    self.premovement_tool_transform = None
+    if relative:
+      self.premovement_tool_transform = FrameTransformer().lookup_transform(
+        self.COMPARISON_FRAME, frame_id)
+      if self.premovement_tool_transform is None:
+        self._set_aborted("Failed to lookup frame transform")
+        return None, None
+    return frame_id, relative
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
@@ -124,7 +153,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     actual = self._arm_joints_monitor.get_joint_positions()
     success = all(
       [
-        radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
+        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
           for a, b in zip(actual, target)
       ]
     )
