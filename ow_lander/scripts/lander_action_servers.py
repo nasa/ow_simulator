@@ -22,6 +22,7 @@ server_discard      = actions.DiscardServer()
 server_deliver      = actions.DeliverServer()
 server_move_joint   = actions.ArmMoveJointServer()
 server_move_joints  = actions.ArmMoveJointsServer()
+server_arm_set_tool = actions.ArmSetTool()
 
 # other non-arm lander actions
 server_light_set_intensity = actions.LightSetIntensityServer()

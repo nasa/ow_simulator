@@ -207,6 +207,14 @@ class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
       pos[goal.joint] = goal.angle
     return pos
 
+class ArmSetToolServer(ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'ArmSetTool'
+  action_type   = ow_lander.msg.ArmSetToolAction
+  goal_type     = ow_lander.msg.ArmSetToolGoal
+  feedback_type = ow_lander.msg.ArmSetToolFeedback
+  result_type   = ow_lander.msg.ArmSetToolResult
+
 
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
 
