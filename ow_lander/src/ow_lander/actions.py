@@ -8,6 +8,7 @@ import rospy
 
 import ow_lander.msg
 from ow_lander.server import ActionServerBase
+from owl_msgs.msg import *
 
 # required for all arm actions
 from ow_lander.mixins import *
@@ -207,14 +208,18 @@ class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
       pos[goal.joint] = goal.angle
     return pos
 
-class ArmSetToolServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmSetToolServer(ActionServerBase):
 
   name          = 'ArmSetTool'
-  action_type   = ow_lander.msg.ArmSetToolAction
-  goal_type     = ow_lander.msg.ArmSetToolGoal
-  feedback_type = ow_lander.msg.ArmSetToolFeedback
-  result_type   = ow_lander.msg.ArmSetToolResult
+  action_type   = owl_msgs.msg.ArmSetToolAction
+  goal_type     = owl_msgs.msg.ArmSetToolGoal
+  feedback_type = owl_msgs.msg.ArmSetToolFeedback
+  result_type   = owl_msgs.msg.ArmSetToolResult
 
+  def execute_action(self, goal):
+    msg = f"{self.name} is not yet supported in OceanWATERS."
+    rospy.logwarn(msg)
+    self._set_succeeded(msg, success=True, message=msg)
 
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
 

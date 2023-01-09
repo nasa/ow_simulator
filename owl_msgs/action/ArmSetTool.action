@@ -1,8 +1,8 @@
 # goal
-int tool
+int32 tool
 ---
 # result
-int previous_tool
+int32 previous_tool
 ---
 # no feedback
 
