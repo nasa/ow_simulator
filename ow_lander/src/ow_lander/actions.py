@@ -219,7 +219,7 @@ class ArmSetToolServer(ActionServerBase):
   def execute_action(self, goal):
     msg = f"{self.name} is not yet supported in OceanWATERS."
     rospy.logwarn(msg)
-    self._set_succeeded(msg, success=True, message=msg)
+    self._set_succeeded(msg, previous_tool = 0)
 
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
 
