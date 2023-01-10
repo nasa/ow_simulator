@@ -111,27 +111,27 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         self._set_succeeded("No ground detected", final=Point(), success=False)
 
 
-class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Unstow'
-  action_type   = owl_msgs.msg.UnstowAction
-  goal_type     = owl_msgs.msg.UnstowGoal
-  feedback_type = owl_msgs.msg.UnstowFeedback
-  result_type   = owl_msgs.msg.UnstowResult
+  # UNIFICATION TODO: rename "ArmStow" to "ArmArmStow"
+  name          = 'ArmUnstow'
+  action_type   = owl_msgs.msg.ArmUnstowAction
+  goal_type     = owl_msgs.msg.ArmUnstowGoal
+  feedback_type = owl_msgs.msg.ArmUnstowFeedback
+  result_type   = owl_msgs.msg.ArmUnstowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_unstowed')
 
 
-class StowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Stow'
-  action_type   = owl_msgs.msg.StowAction
-  goal_type     = owl_msgs.msg.StowGoal
-  feedback_type = owl_msgs.msg.StowFeedback
-  result_type   = owl_msgs.msg.StowResult
+  # UNIFICATION TODO: rename "ArmStow" to "ArmArmStow"
+  name          = 'ArmStow'
+  action_type   = owl_msgs.msg.ArmStowAction
+  goal_type     = owl_msgs.msg.ArmStowGoal
+  feedback_type = owl_msgs.msg.ArmStowFeedback
+  result_type   = owl_msgs.msg.ArmStowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_stowed')
