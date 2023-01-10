@@ -220,10 +220,10 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 }
 
 //// Power Topic Listeners
-void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
+void FaultDetector::powerTemperatureListener(const owl_msgs::BatteryTemperature& msg)
 {
   // check for excessive battery temperature
-  if (msg.data > POWER_THERMAL_MAX) {
+  if (msg.value > POWER_THERMAL_MAX) {
     m_power_faults_flags |= PowerFaultsStatus::THERMAL_FAULT;
   } else {
     m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;
@@ -231,10 +231,10 @@ void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
   publishPowerSystemFault();
 }
  
-void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
+void FaultDetector::powerSOCListener(const owl_msgs::StateOfCharge& msg)
 {
   // set initial state of charge
-  float current_soc = msg.data;
+  float current_soc = msg.value;
   if (isnan(m_last_soc)){
     m_last_soc = current_soc;
   }

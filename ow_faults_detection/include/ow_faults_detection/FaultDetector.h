@@ -13,11 +13,13 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
-#include <owl_msgs/SystemFaultsStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
-#include <owl_msgs/PowerFaultsStatus.h>
-#include <owl_msgs/PanTiltFaultsStatus.h>
+#include <owl_msgs/BatteryTemperature.h>
 #include <owl_msgs/CameraFaultsStatus.h>
+#include <owl_msgs/PanTiltFaultsStatus.h>
+#include <owl_msgs/PowerFaultsStatus.h>
+#include <owl_msgs/StateOfCharge.h>
+#include <owl_msgs/SystemFaultsStatus.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
@@ -66,8 +68,8 @@ private:
 
   // Power
   void publishPowerSystemFault();
-  void powerSOCListener(const std_msgs::Float64& msg);
-  void powerTemperatureListener(const std_msgs::Float64& msg);
+  void powerSOCListener(const owl_msgs::StateOfCharge& msg);
+  void powerTemperatureListener(const owl_msgs::BatteryTemperature& msg);
 
   // OWLAT MESSAGE FUNCTIONS AND PUBLISHERS
   void publishSystemFaultsMessage();
