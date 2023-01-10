@@ -195,9 +195,9 @@ bool PowerSystemNode::initTopics()
   // Construct the PowerSystemNode publishers
   m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
   m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<Float64>("owl_msgs/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<Int16>("owl_msgs/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<Float64>("owl_msgs/battery_temperature", 1);
+  m_state_of_charge_pub = m_nh.advertise<owl_msgs::StateOfCharge>("/state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<owl_msgs::RemainingUsefulLife>("/remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
   return true;
