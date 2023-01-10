@@ -84,7 +84,6 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
-  owl_msgs
 )
 
 ################################################
@@ -119,7 +118,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES owl_msgs
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs owl_msgs
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 

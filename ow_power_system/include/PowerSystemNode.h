@@ -7,7 +7,11 @@
 #include <random>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
+#include <owl_msgs/BatteryTemperature.h>
+#include <owl_msgs/RemainingUsefulLife.h>
+#include <owl_msgs/StateOfCharge.h>
 #include <PrognoserFactory.h>
+
 
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
@@ -44,9 +48,9 @@ private:
                                     double voltage,
                                     double temperature);
   void parseEoD_Event(const ProgEvent& eod_event,
-                      std_msgs::Float64& soc_msg,
-                      std_msgs::Int16& rul_msg,
-                      std_msgs::Float64& battery_temperature_msg);
+                      owl_msgs::StateOfCharge& soc_msg,
+                      owl_msgs::RemainingUsefulLife& rul_msg,
+                      owl_msgs::BatteryTemperature& battery_temperature_msg);
   void runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
