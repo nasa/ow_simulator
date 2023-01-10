@@ -216,6 +216,10 @@ class ArmSetToolServer(ActionServerBase):
   feedback_type = owl_msgs.msg.ArmSetToolFeedback
   result_type   = owl_msgs.msg.ArmSetToolResult
 
+  def __init__(self, *args, **kwargs):
+    super(ArmSetToolServer, self).__init__()
+    self._start_server()
+    
   def execute_action(self, goal):
     msg = f"{self.name} is not yet supported in OceanWATERS."
     rospy.logwarn(msg)
