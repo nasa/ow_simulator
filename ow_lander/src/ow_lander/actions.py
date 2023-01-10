@@ -149,7 +149,7 @@ class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
     return self._planner.grind(goal)
 
 
-class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
+class DigCircularServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'DigCircular'
   action_type   = ow_lander.msg.DigCircularAction
@@ -161,7 +161,7 @@ class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_circular(goal)
 
 
-class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
+class DigLinearServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'DigLinear'
   action_type   = ow_lander.msg.DigLinearAction
@@ -173,7 +173,7 @@ class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_linear(goal)
 
 
-class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
+class DiscardServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'Discard'
   action_type   = ow_lander.msg.DiscardAction
@@ -185,7 +185,7 @@ class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.discard_sample(goal)
 
 
-class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
+class DeliverServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'Deliver'
   action_type   = ow_lander.msg.DeliverAction
