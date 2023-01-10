@@ -5,7 +5,7 @@ this repository.
 # ow_power_system
 
 It creates a node called power_system_node, which monitors power consumption
-(mainly based of mechanical power at the current time), publishes the messages 
+(mainly based off mechanical power at the current time), publishes the messages 
 from the owl_msgs package that individually describe the estimated
 _state of charge (SOC)_, estimated _remaining useful life (RUL)_ in seconds and
 also publishes the estimated _battery temperature_ in degrees Celsius. To
