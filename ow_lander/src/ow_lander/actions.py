@@ -115,10 +115,10 @@ class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
   # UNIFICATION TODO: rename "Stow" to "ArmStow"
   name          = 'Unstow'
-  action_type   = ow_lander.msg.UnstowAction
-  goal_type     = ow_lander.msg.UnstowGoal
-  feedback_type = ow_lander.msg.UnstowFeedback
-  result_type   = ow_lander.msg.UnstowResult
+  action_type   = owl_msgs.msg.UnstowAction
+  goal_type     = owl_msgs.msg.UnstowGoal
+  feedback_type = owl_msgs.msg.UnstowFeedback
+  result_type   = owl_msgs.msg.UnstowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_unstowed')
@@ -128,10 +128,10 @@ class StowServer(ArmTrajectoryMixin, ActionServerBase):
 
   # UNIFICATION TODO: rename "Stow" to "ArmStow"
   name          = 'Stow'
-  action_type   = ow_lander.msg.StowAction
-  goal_type     = ow_lander.msg.StowGoal
-  feedback_type = ow_lander.msg.StowFeedback
-  result_type   = ow_lander.msg.StowResult
+  action_type   = owl_msgs.msg.StowAction
+  goal_type     = owl_msgs.msg.StowGoal
+  feedback_type = owl_msgs.msg.StowFeedback
+  result_type   = owl_msgs.msg.StowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_stowed')
