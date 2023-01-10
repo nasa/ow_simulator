@@ -55,11 +55,14 @@ add_message_files(
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  BatteryTemperature.msg
   CameraFaultsStatus.msg
   PanTiltFaultsStatus.msg
   PanTiltPosition.msg
-  SystemFaultsStatus.msg
   PowerFaultsStatus.msg
+  RemainingUsefulLife.msg
+  StateOfCharge.msg
+  SystemFaultsStatus.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -81,6 +84,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  owl_msgs
 )
 
 ################################################
@@ -115,7 +119,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES owl_msgs
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs owl_msgs
 #  DEPENDS system_lib
 )
 
