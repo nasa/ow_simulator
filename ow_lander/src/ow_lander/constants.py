@@ -13,7 +13,21 @@ J_SHOU_PITCH = 1
 J_SHOU_YAW = 0
 J_GRINDER = 5
 
-ARM_JOINT_TOLERANCE = 0.05
+# these constants will eventually exist in a Frame message type in owl_msgs
+FRAME_BASE = 0
+FRAME_TOOL = 1
+# maps frame enumerate to the corresponding gazebo frame ID
+FRAME_ID_MAP = {
+  FRAME_BASE: 'base_link',
+  FRAME_TOOL: 'l_scoop_tip'
+}
+
+# allowed deviation from commanded joint values
+ARM_JOINT_TOLERANCE = 0.05 # radians
+
+# allowed deviations from commanded pose values
+ARM_POSE_METER_TOLERANCE = 0.01
+ARM_POSE_RADIAN_TOLERANCE = 0.05
 
 X_SHOU = 0.79
 Y_SHOU = 0.175
@@ -44,7 +58,7 @@ ROT_RADIUS = 0.36
 # Distance between wrist center of mass and scoop center of mass
 # Component parallel to ground
 WRIST_SCOOP_PARAL = 0.2
-# Component perperdicular to ground
+# Component perpendicular to ground
 WRIST_SCOOP_PERP = 0.3
 
 # Radii in dig_circular

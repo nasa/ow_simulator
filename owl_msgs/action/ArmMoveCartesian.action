@@ -1,0 +1,10 @@
+# goal definition
+int32 frame
+bool relative
+geometry_msgs/Pose pose
+---
+# result
+geometry_msgs/Pose final_pose
+---
+# feedback
+geometry_msgs/Pose pose
