@@ -8,12 +8,13 @@ import rospy
 from gazebo_msgs.msg import LinkStates
 from sensor_msgs.msg import JointState
 
-# UNIFICATION TODO: This will provide the full pose instead of just position
-class LinkPositionSubscriber:
-  """Subscribes to /gazebo/link_states and returns the position of a specified
-  link
+class LinkStateSubscriber:
+  """Subscribes to /gazebo/link_states and returns the pose/position of a
+  specified link
   """
 
+  # The subscriber and message buffer will be shared by all instances
+  # of this class within the same process
   _message_buffer = None
   _subscriber = None
 
@@ -24,27 +25,28 @@ class LinkPositionSubscriber:
 
   def __init__(self, name):
     self._link_name = name
-    # The subscriber and message buffer will be shared by all instances
-    # of this class within the same thread
-    if not LinkPositionSubscriber._subscriber:
+    if not LinkStateSubscriber._subscriber:
       # subscribe to link states only once
-      LinkPositionSubscriber._subscriber = rospy.Subscriber(
+      LinkStateSubscriber._subscriber = rospy.Subscriber(
         "/gazebo/link_states", LinkStates,
-        LinkPositionSubscriber._on_link_states_msg
+        LinkStateSubscriber._on_link_states_msg
       )
     # TODO: block until first message is received
 
-  def get_link_position(self):
-    if not LinkPositionSubscriber._message_buffer:
+  def get_link_pose(self):
+    if not LinkStateSubscriber._message_buffer:
       rospy.logerr(
         "Link position queried before /gazebo/link_states message received.")
       return
     try:
-      idx = LinkPositionSubscriber._message_buffer.name.index(self._link_name)
+      idx = LinkStateSubscriber._message_buffer.name.index(self._link_name)
     except ValueError:
       rospy.logerr_once(f"{self._link_name} not found in link_states")
       return
-    return LinkPositionSubscriber._message_buffer.pose[idx].position
+    return LinkStateSubscriber._message_buffer.pose[idx]
+
+  def get_link_position(self):
+    return self.get_link_pose().position
 
 class JointAnglesSubscriber:
   """Subscribes to /joint_states and returns the angle positions of a provided

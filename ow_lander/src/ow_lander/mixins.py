@@ -15,7 +15,7 @@ import moveit_commander
 
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
-from ow_lander.subscribers import LinkPositionSubscriber, JointAnglesSubscriber
+from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.common import radians_equivalent
 from ow_lander.constants import ARM_JOINT_TOLERANCE
 
@@ -37,7 +37,7 @@ class ArmActionMixin:
     # initialize/reference
     self._arm = ArmInterface()
     # initialize interface for querying scoop tip position
-    self._arm_tip_monitor = LinkPositionSubscriber('lander::l_scoop_tip')
+    self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()
 
   def publish_feedback_cb(self):
@@ -65,7 +65,7 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
         final=self._arm_tip_monitor.get_link_position())
     else:
       self._arm.checkin_arm(self.name)
-      self._set_succeeded("Arm trajectory succeeded",
+      self._set_succeeded(f"{self.name} trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
 
   @abstractmethod
@@ -95,7 +95,7 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
         final=self._arm_tip_monitor.get_link_position())
     else:
       self._cleanup()
-      self._set_succeeded("Grinder trajectory succeeded",
+      self._set_succeeded(f"{self.name} trajectory succeeded",
         final=self._arm_tip_monitor.get_link_position())
 
   @abstractmethod

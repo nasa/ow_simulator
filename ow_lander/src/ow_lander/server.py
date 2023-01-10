@@ -109,8 +109,8 @@ class ActionServerBase(ABC):
 
   def __on_action_called(self, goal):
     if not isinstance(goal, self.goal_type):
-      rospy.logfatal("Action server passed an unexpected action goal type." \
-                     "This should never happen!")
+      rospy.logerr("Action server passed an unexpected action goal type." \
+                   "This should never happen!")
       return
     rospy.loginfo(f"{self.name} action started")
     self.execute_action(goal)
