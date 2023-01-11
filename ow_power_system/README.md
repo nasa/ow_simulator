@@ -12,8 +12,8 @@ also publishes the estimated _battery temperature_ in degrees Celsius. To
 monitor any of these values simply subscribe to their respective topics:
 
 ```bash
-rostopic echo /state_of_charge
-rostopic echo /remaining_useful_life
+rostopic echo /battery_state_of_charge
+rostopic echo /battery_remaining_useful_life
 rostopic echo /battery_temperature
 ```
 
