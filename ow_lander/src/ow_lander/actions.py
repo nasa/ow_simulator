@@ -38,6 +38,36 @@ from ow_lander.common import in_closed_range, radians_equivalent
 from sensor_msgs.msg import JointState
 
 #####################
+## ACTION HELPERS
+#####################
+
+def _resolve_frame(goal):
+  """Determines the correct frame_id and whether the provided frame makes this
+  movement relative.
+  """
+  if goal.frame not in constants.FRAME_ID_MAP:
+    return None, None
+  # selecting relative is the same as selecting the Tool frame and vice versa
+  relative = goal.relative or goal.frame == constants.FRAME_TOOL
+  frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative \
+             else constants.FRAME_ID_MAP[goal.frame]
+  return relative, frame_id
+
+def _format_guarded_movement_message(action_name, monitor):
+  if monitor.threshold_breached():
+    msg = f"{action_name} trajectory stopped by "
+    if monitor.force_threshold_breached():
+      msg += f"a force of {monitor.get_force()} N"
+    if monitor.torque_threshold_breached():
+      msg += " and " if monitor.force_threshold_breached() else ""
+      msg += f"a torque of {monitor.get_torque()} Nm"
+    return msg
+  else:
+    return f"{action_name} trajectory completed without breaking force or " \
+           f"torque thresholds."
+
+
+#####################
 ## ARM ACTIONS
 #####################
 
@@ -199,7 +229,7 @@ class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.deliver_sample()
 
 
-class ArmMoveCartesianServer(ArmCartesianMoveMixin, ActionServerBase):
+class ArmMoveCartesianServer(ArmActionMixin, ActionServerBase):
 
   name          = 'ArmMoveCartesian'
   action_type   = owl_msgs.msg.ArmMoveCartesianAction
@@ -211,13 +241,28 @@ class ArmMoveCartesianServer(ArmCartesianMoveMixin, ActionServerBase):
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    frame_id, relative = self.interpret_frame(goal)
+    ARM_END_EFFECTOR = 'l_scoop_tip'
+    COMPARISON_FRAME = 'world'
+    # handle goal parameters
+    # NOTE: this all processes fast enough that there is no need to check-out
+    #       the arm first
+    relative, frame_id = _resolve_frame(goal)
+    if frame_id is None:
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
+      return
     pose = goal.pose
+    # save tool transform now so the old transform can be used for comparison
+    old_tool_transform = None
+    if relative:
+      old_tool_transform = FrameTransformer().lookup_transform(COMPARISON_FRAME,
+                                                               frame_id)
+      if old_tool_transform is None:
+        self._set_aborted("Failed to lookup frame transform")
+        return
     # perform action
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, frame_id,
-        self.ARM_END_EFFECTOR)
+      plan = self._planner.plan_arm_to_pose(pose, frame_id, ARM_END_EFFECTOR)
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -225,24 +270,20 @@ class ArmMoveCartesianServer(ArmCartesianMoveMixin, ActionServerBase):
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
     else:
-      # FIXME: follow trajectory action sometimes returns an early result; this
-      #        sleep provides a buffer in time in case that happens (OW-1097)
-      rospy.sleep(2.0)
       self._arm.checkin_arm(self.name)
       # check if requested pose agrees with commanded pose in comparison frame
-      final = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR,
-        frame_id=self.COMPARISON_FRAME)
+      final = self._planner.get_end_effector_pose(ARM_END_EFFECTOR,
+        frame_id=COMPARISON_FRAME)
       # the transform before tool movement must be used because the Tool frame
       # moves with the tool
       expected = None
       if relative:
         # this function ignores the header
-        expected = do_transform_pose(PoseStamped(pose=pose),
-          self.premovement_tool_transform)
+        expected = do_transform_pose(PoseStamped(pose=pose), old_tool_transform)
       else:
         expected = FrameTransformer().transform(
           PoseStamped(header=Header(0, rospy.Time(0), frame_id), pose=pose),
-          self.COMPARISON_FRAME
+          COMPARISON_FRAME
         )
       if final is None or expected is None:
         self._set_aborted(
@@ -257,7 +298,8 @@ class ArmMoveCartesianServer(ArmCartesianMoveMixin, ActionServerBase):
       self._set_succeeded(f"{self.name} trajectory succeeded",
         final_pose=self._arm_tip_monitor.get_link_pose())
 
-class ArmMoveCartesianGuardedServer(ArmCartesianMoveMixin, ActionServerBase):
+
+class ArmMoveCartesianGuardedServer(ArmActionMixin, ActionServerBase):
 
   name          = 'ArmMoveCartesianGuarded'
   action_type   = owl_msgs.msg.ArmMoveCartesianGuardedAction
@@ -265,14 +307,14 @@ class ArmMoveCartesianGuardedServer(ArmCartesianMoveMixin, ActionServerBase):
   feedback_type = owl_msgs.msg.ArmMoveCartesianGuardedFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
 
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
   def execute_action(self, goal):
+    ARM_END_EFFECTOR = 'l_scoop_tip'
     pose = goal.pose
-    frame_id, relative = self.interpret_frame(goal)
+    _, frame_id = _resolve_frame(goal)
     if frame_id is None:
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(goal.force_threshold,
                                        goal.torque_threshold)
     def guarded_cb():
@@ -281,44 +323,28 @@ class ArmMoveCartesianGuardedServer(ArmCartesianMoveMixin, ActionServerBase):
         force=monitor.get_force(),
         torque=monitor.get_torque()
       )
-      if monitor.threshold_reached():
+      if monitor.threshold_breached():
         self._arm.stop_trajectory_silently()
 
     # perform action
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, frame_id,
-        self.ARM_END_EFFECTOR)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=guarded_cb)
+      plan = self._planner.plan_arm_to_pose(pose, frame_id, ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
-        final_pose=self._arm_tip_monitor.get_link_pose())
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
     else:
-      # FIXME: follow trajectory action sometimes returns an early result; this
-      #        sleep provides a buffer in time in case that happens (OW-1097)
-      rospy.sleep(2.0)
       self._arm.checkin_arm(self.name)
-      if monitor.threshold_reached():
-        msg = f"{self.name} trajectory stopped by "
-        if monitor.force_threshold_reached():
-          msg += f"a force of {monitor.get_force()} N"
-        if monitor.torque_threshold_reached():
-          msg += " and " if monitor.force_threshold_reached() else ""
-          msg += f"a torque of {monitor.get_torque()} Nm"
-        self._set_succeeded(msg,
-          final_pose=self._arm_tip_monitor.get_link_pose(),
-          final_force=monitor.get_force(),
-          final_torque=monitor.get_torque())
-      else:
-        self._set_succeeded(
-          f"{self.name} trajectory completed without breaking force or torque" \
-          f"thresholds.",
-          final_pose=self._arm_tip_monitor.get_link_pose(),
-          final_force=monitor.get_force(),
-          final_torque=monitor.get_torque()
-        )
+      self._set_succeeded(_format_guarded_movement_message(self.name, monitor),
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque()
+      )
+
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 

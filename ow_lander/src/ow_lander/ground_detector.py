@@ -8,9 +8,47 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Point, WrenchStamped
 
+def _magnitude(vec):
+  return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z)
+
+class FTSensorThresholdMonitor:
+
+  def __init__(self, force_threshold, torque_threshold):
+    self._ft_sensor_sub = rospy.Subscriber('/ft_sensor_dist_pitch',
+                                           WrenchStamped,
+                                           self._ft_sensor_cb)
+    self._force_threshold = force_threshold
+    self._torque_threshold = torque_threshold
+    self._force = 0
+    self._torque = 0
+
+  def _ft_sensor_cb(self, msg):
+    wrench = msg.wrench
+    self._force = _magnitude(wrench.force)
+    self._torque = _magnitude(wrench.torque)
+    if self.threshold_breached():
+      self._ft_sensor_sub.unregister()
+
+  def force_threshold_breached(self):
+    return self._force >= self._force_threshold
+
+  def torque_threshold_breached(self):
+    return self._torque >= self._torque_threshold
+
+  def threshold_breached(self):
+    return self.force_threshold_breached() or self.torque_threshold_breached()
+
+  def get_force(self):
+    return self._force
+
+  def get_torque(self):
+    return self._torque
+
+
+# DEPRECATED: Only supports GuardedMove, which is itself deprecated
 class GroundDetector:
   """GroundDetector uses readings of the force torque sensor to detect when the
-  arm has reached the ground (or any downward blocker in general). 
+  arm has reached the ground (or any downward blocker in general).
   """
   def __init__(self, reference_frame, poker_link):
     self._detected = False
@@ -50,39 +88,3 @@ class GroundDetector:
       t.transform.translation.y,
       t.transform.translation.z
     )
-
-def magnitude(vec):
-  return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z)
-
-class FTSensorThresholdMonitor:
-
-  def __init__(self, force_threshold, torque_threshold):
-    self._ft_sensor_sub = rospy.Subscriber('/ft_sensor_dist_pitch',
-                                           WrenchStamped,
-                                           self._ft_sensor_cb)
-    self._force_threshold = force_threshold
-    self._torque_threshold = torque_threshold
-    self._force = 0
-    self._torque = 0
-
-  def _ft_sensor_cb(self, msg):
-    wrench = msg.wrench
-    self._force = magnitude(wrench.force)
-    self._torque = magnitude(wrench.torque)
-    if self.threshold_reached():
-      self._ft_sensor_sub.unregister()
-
-  def force_threshold_reached(self):
-    return self._force >= self._force_threshold
-
-  def torque_threshold_reached(self):
-    return self._torque >= self._torque_threshold
-
-  def threshold_reached(self):
-    return self.force_threshold_reached() or self.torque_threshold_reached()
-
-  def get_force(self):
-    return self._force
-
-  def get_torque(self):
-    return self._torque
