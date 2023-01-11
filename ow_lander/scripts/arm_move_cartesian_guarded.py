@@ -37,7 +37,7 @@ rot_parse.add_argument('--quaternion', '-q', type=float, nargs=4,
   default=[0, 0, 0, 1], metavar=('X', 'Y', 'Z', 'W'),
   help="Orientation in quaternion form. Takes 4 scalars, the first 3 are the" \
        " imaginary parts, and the 4th is the real part.")
-parser.add_argument('--force', type=float, default=100,
+parser.add_argument('--force', type=float, default=200,
   help="Arm will stop when F/T sensor encounters a force above this value in " \
        " Newtons")
 parser.add_argument('--torque', type=float, default=100,

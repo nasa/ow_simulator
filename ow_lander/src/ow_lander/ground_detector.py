@@ -13,7 +13,7 @@ def _magnitude(vec):
 
 class FTSensorThresholdMonitor:
 
-  def __init__(self, force_threshold, torque_threshold):
+  def __init__(self, force_threshold=None, torque_threshold=None):
     self._ft_sensor_sub = rospy.Subscriber('/ft_sensor_dist_pitch',
                                            WrenchStamped,
                                            self._ft_sensor_cb)
@@ -24,25 +24,31 @@ class FTSensorThresholdMonitor:
 
   def _ft_sensor_cb(self, msg):
     wrench = msg.wrench
-    self._force = _magnitude(wrench.force)
-    self._torque = _magnitude(wrench.torque)
+    if self.is_force_monitor(): self._force = _magnitude(wrench.force)
+    if self.is_torque_monitor(): self._torque = _magnitude(wrench.torque)
     if self.threshold_breached():
       self._ft_sensor_sub.unregister()
 
+  def is_force_monitor(self):
+    return self._force_threshold is not None
+
+  def is_torque_monitor(self):
+    return self._torque_threshold is not None
+
   def force_threshold_breached(self):
-    return self._force >= self._force_threshold
+    return self.is_force_monitor() and self._force >= self._force_threshold
 
   def torque_threshold_breached(self):
-    return self._torque >= self._torque_threshold
+    return self.is_torque_monitor() and self._torque >= self._torque_threshold
 
   def threshold_breached(self):
     return self.force_threshold_breached() or self.torque_threshold_breached()
 
   def get_force(self):
-    return self._force
+    return self._force if self.is_force_monitor() else None
 
   def get_torque(self):
-    return self._torque
+    return self._torque if self.is_torque_monitor() else None
 
 
 # DEPRECATED: Only supports GuardedMove, which is itself deprecated

@@ -315,8 +315,8 @@ class ArmMoveCartesianGuardedServer(ArmActionMixin, ActionServerBase):
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
     # monitor F/T sensor and define a callback to check its status
-    monitor = FTSensorThresholdMonitor(goal.force_threshold,
-                                       goal.torque_threshold)
+    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                       torque_threshold=goal.torque_threshold)
     def guarded_cb():
       self._publish_feedback(
         pose=self._arm_tip_monitor.get_link_pose(),
