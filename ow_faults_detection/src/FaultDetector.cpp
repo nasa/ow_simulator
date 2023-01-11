@@ -33,7 +33,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                    this);
   
   //  power fault publishers and subs
-  m_power_soc_sub = nh.subscribe( "/state_of_charge",
+  m_power_soc_sub = nh.subscribe( "/battery_state_of_charge",
                                   10,
                                   &FaultDetector::powerSOCListener,
                                   this);
