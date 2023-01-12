@@ -29,6 +29,17 @@ ARM_JOINT_TOLERANCE = 0.05 # radians
 ARM_POSE_METER_TOLERANCE = 0.01
 ARM_POSE_RADIAN_TOLERANCE = 0.05
 
+# all arm joint names
+ARM_JOINTS = [ 'j_shou_yaw','j_shou_pitch','j_prox_pitch',
+               'j_dist_pitch','j_hand_yaw', 'j_scoop_yaw' ]
+
+# all antenna joints
+ANTENNA_JOINTS = ['j_ant_pan', 'j_ant_tilt']
+
+# joint names mapped to their index in /joint_states (alphabetized by name)
+_all_joints = ARM_JOINTS + ANTENNA_JOINTS + ['j_grinder']
+JOINT_STATES_MAP = dict(zip(sorted(_all_joints), range(len(_all_joints))))
+
 X_SHOU = 0.79
 Y_SHOU = 0.175
 HAND_Y_OFFSET = 0.0249979319838
