@@ -434,7 +434,6 @@ class CameraSetExposureServer(ActionServerBase):
 
   def execute_action(self, goal):
     if goal.automatic:
-      rospy.logerr(f'{self.name} action does not support autoexposure.')
       self._set_aborted(f'{self.name} action does not support autoexposure.')
       return
 
