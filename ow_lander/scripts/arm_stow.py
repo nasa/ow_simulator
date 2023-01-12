@@ -11,10 +11,11 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move arm to its unstowed position."
+  description="Move arm to its stowed position."
 )
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(
-  actions.UnstowServer, **vars(args)
+  actions.ArmStowServer, **vars(args)
 )
+

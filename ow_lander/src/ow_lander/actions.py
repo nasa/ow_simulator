@@ -111,27 +111,25 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         self._set_succeeded("No ground detected", final=Point(), success=False)
 
 
-class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Unstow'
-  action_type   = ow_lander.msg.UnstowAction
-  goal_type     = ow_lander.msg.UnstowGoal
-  feedback_type = ow_lander.msg.UnstowFeedback
-  result_type   = ow_lander.msg.UnstowResult
+  name          = 'ArmUnstow'
+  action_type   = owl_msgs.msg.ArmUnstowAction
+  goal_type     = owl_msgs.msg.ArmUnstowGoal
+  feedback_type = owl_msgs.msg.ArmUnstowFeedback
+  result_type   = owl_msgs.msg.ArmUnstowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_unstowed')
 
 
-class StowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "Stow" to "ArmStow"
-  name          = 'Stow'
-  action_type   = ow_lander.msg.StowAction
-  goal_type     = ow_lander.msg.StowGoal
-  feedback_type = ow_lander.msg.StowFeedback
-  result_type   = ow_lander.msg.StowResult
+  name          = 'ArmStow'
+  action_type   = owl_msgs.msg.ArmStowAction
+  goal_type     = owl_msgs.msg.ArmStowGoal
+  feedback_type = owl_msgs.msg.ArmStowFeedback
+  result_type   = owl_msgs.msg.ArmStowResult
 
   def plan_trajectory(self, _goal):
     return self._planner.plan_arm_to_target('arm_stowed')
@@ -149,7 +147,7 @@ class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
     return self._planner.grind(goal)
 
 
-class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
+class DigCircularServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'DigCircular'
   action_type   = ow_lander.msg.DigCircularAction
@@ -161,7 +159,7 @@ class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_circular(goal)
 
 
-class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
+class DigLinearServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'DigLinear'
   action_type   = ow_lander.msg.DigLinearAction
@@ -173,7 +171,7 @@ class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_linear(goal)
 
 
-class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
+class DiscardServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'Discard'
   action_type   = ow_lander.msg.DiscardAction
@@ -185,7 +183,7 @@ class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.discard_sample(goal)
 
 
-class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
+class DeliverServer(ArmTrajectoryMixinOld, ActionServerBase):
 
   name          = 'Deliver'
   action_type   = ow_lander.msg.DeliverAction
