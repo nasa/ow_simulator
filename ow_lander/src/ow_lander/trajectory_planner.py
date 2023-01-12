@@ -129,14 +129,13 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def plan_arm_to_pose(self, pose, frame_id, end_effector):
-        # transform desired pose from user's desired frame to arm's pose frame
-        stamped = PoseStamped(
-            header = _create_most_recent_header(frame_id),
-            pose = pose
-        )
+    def plan_arm_to_pose(self, pose, end_effector):
+        """Plan a trajectory from arm's current pose to a new pose
+        pose         -- Stamped pose plan will place end effector at
+        end_effector -- Name of end_effector
+        """
         arm_frame = self._move_arm.get_pose_reference_frame()
-        pose_t = FrameTransformer().transform(stamped, arm_frame)
+        pose_t = FrameTransformer().transform(pose, arm_frame)
         if pose_t is None:
             return False
         # plan trajectory to pose in the arm's pose frame

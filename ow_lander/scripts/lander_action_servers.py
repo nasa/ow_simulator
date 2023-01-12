@@ -23,6 +23,7 @@ server_deliver        = actions.DeliverServer()
 server_move_joint     = actions.ArmMoveJointServer()
 server_move_joints    = actions.ArmMoveJointsServer()
 server_move_cartesian = actions.ArmMoveCartesianServer()
+server_move_cartesian_guarded = actions.ArmMoveCartesianGuardedServer()
 
 # other non-arm lander actions
 server_light_set_intensity = actions.LightSetIntensityServer()
