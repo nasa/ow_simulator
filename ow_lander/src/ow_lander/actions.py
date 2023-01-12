@@ -113,7 +113,6 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
 class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "ArmStow" to "ArmArmStow"
   name          = 'ArmUnstow'
   action_type   = owl_msgs.msg.ArmUnstowAction
   goal_type     = owl_msgs.msg.ArmUnstowGoal
@@ -126,7 +125,6 @@ class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
 class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
 
-  # UNIFICATION TODO: rename "ArmStow" to "ArmArmStow"
   name          = 'ArmStow'
   action_type   = owl_msgs.msg.ArmStowAction
   goal_type     = owl_msgs.msg.ArmStowGoal
