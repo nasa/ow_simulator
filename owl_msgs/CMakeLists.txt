@@ -55,11 +55,14 @@ add_message_files(
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  BatteryTemperature.msg
   CameraFaultsStatus.msg
   PanTiltFaultsStatus.msg
   PanTiltPosition.msg
-  SystemFaultsStatus.msg
   PowerFaultsStatus.msg
+  RemainingUsefulLife.msg
+  StateOfCharge.msg
+  SystemFaultsStatus.msg
 )
 
 ## Generate services in the 'srv' folder
