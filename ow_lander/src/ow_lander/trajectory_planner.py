@@ -19,7 +19,8 @@ from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander.common import (Singleton, is_shou_yaw_goal_in_range,
+                              create_most_recent_header)
 from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
@@ -75,9 +76,6 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
-def _create_most_recent_header(frame_id):
-    return Header(0, rospy.Time(0), frame_id)
-
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -96,7 +94,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            _create_most_recent_header('base_link'),
+            create_most_recent_header('base_link'),
             [fk_target_link],
             robot_state
         )

@@ -10,13 +10,13 @@ from ow_lander import constants
 
 import argparse
 
-from geometry_msgs.msg import Pose, Point, Quaternion
-from tf.transformations import quaternion_from_euler
+from geometry_msgs.msg import Point, Vector3
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move end-effector by Cartesian coordinates/translation and " \
-              "stop the movement if resistance is encountered.")
+  description="Determine the position of a surface by moving the arm's " \
+              "end-effector towards surface until sufficient resistance is " \
+              "encountered.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
   help="The frame index corresponding to the frame that orientation and "\
@@ -29,15 +29,16 @@ parser.add_argument('-y', type=float, default=0,
   help="Y-coordinate or the change in the Y-coordinate")
 parser.add_argument('-z', type=float, default=0,
   help="Z-coordinate or the change in the Z-coordinate")
-# accept either Euler angles or quaternions as input for orientation
-rot_parse = parser.add_mutually_exclusive_group()
-rot_parse.add_argument('--euler', '-e', type=float, nargs=3,
-  default=[0, 0, 0], metavar=('X', 'Y', 'Z'),
-  help="Orientation in Euler angle form. Takes 3 radian values.")
-rot_parse.add_argument('--quaternion', '-q', type=float, nargs=4,
-  default=[0, 0, 0, 1], metavar=('X', 'Y', 'Z', 'W'),
-  help="Orientation in quaternion form. Takes 4 scalars, the first 3 are the " \
-       "imaginary parts, and the 4th is the real part.")
+parser.add_argument('--normal', '-n', type=float, nargs=3,
+  default=[0, 0, -1], metavar=('Nx', 'Ny', 'Nz'),
+  help="Normal vector in which arm will move a distance + overdrive in until" \
+       "either the force or torque thresholds are breached")
+parser.add_argument('--distance', '-d', type=float, default=0.1,
+  help="Distance away from the estimated surface position that the " \
+       "end-effector start its trajectory.")
+parser.add_argument('--overdrive', '-o', type=float, default=0.05,
+  help="Distance beyond the estimated surface position through which the "\
+       "end-effector will keep pushing.")
 parser.add_argument('--force', type=float, default=200,
   help="Arm will stop when F/T sensor encounters a force above this value in " \
        "Newtons")
@@ -47,14 +48,10 @@ parser.add_argument('--torque', type=float, default=100,
 
 args = parser.parse_args()
 
-quat = quaternion_from_euler(*args.euler) if args.euler != [0, 0, 0] \
-       else args.quaternion
+position_arg = Point(args.x, args.y, args.z)
+normal_arg = Vector3(args.normal[0], args.normal[1], args.normal[2])
 
-pose_arg = Pose(
-  position=Point(args.x, args.y, args.z),
-  orientation=Quaternion(*quat)
-)
-
-node_helper.call_single_use_action_client(actions.ArmMoveCartesianGuardedServer,
-  frame=args.frame, relative=args.relative, pose=pose_arg,
+node_helper.call_single_use_action_client(actions.ArmFindSurfaceServer,
+  frame=args.frame, relative=args.relative, position=position_arg,
+  normal=normal_arg, distance=args.distance, overdrive=args.overdrive,
   force_threshold=args.force, torque_threshold=args.torque)

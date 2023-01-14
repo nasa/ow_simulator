@@ -15,8 +15,11 @@ from ow_lander.mixins import *
 # required for GuardedMove
 from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
-# require for ArmMoveCartesianGuarded
+# required for ArmMoveCartesianGuarded
 from ow_lander.ground_detector import FTSensorThresholdMonitor
+# required for ArmFindSurface
+from geometry_msgs.msg import Vector3, Quaternion, PoseStamped, Pose
+from ow_lander import math3d
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -28,7 +31,8 @@ from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 # required for AntennaPanTilt
 from ow_lander import constants
-from ow_lander.common import in_closed_range, radians_equivalent
+from ow_lander.common import (in_closed_range, radians_equivalent,
+                              create_most_recent_header)
 from sensor_msgs.msg import JointState
 
 #####################
@@ -223,9 +227,13 @@ class ArmMoveCartesianServer(ModifyPoseMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    pose = self.handle_pose_goal(goal)
-    if pose is None:
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
       self._set_aborted(self.abort_message)
+    pose = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=goal.pose
+    )
     # perform action
     try:
       self._arm.checkout_arm(self.name)
@@ -256,9 +264,13 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
 
   def execute_action(self, goal):
-    pose = self.handle_pose_goal(goal)
-    if pose is None:
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
       self._set_aborted(self.abort_message)
+    pose = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=goal.pose
+    )
     # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
@@ -296,14 +308,22 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
-        return
-      self._set_succeeded(
-        _format_guarded_move_success_message(self.name, monitor),
-        final_pose=self._arm_tip_monitor.get_link_pose(),
-        final_force=monitor.get_force(),
-        final_torque=monitor.get_torque()
-      )
-
+      elif not monitor.threshold_breached():
+        self._set_succeeded(
+          "No surface was found",
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+      else:
+        msg = _format_guarded_move_success_message(self.name, monitor)
+        msg += ". Surface found."
+        self._set_succeeded(
+          msg,
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 
@@ -344,6 +364,84 @@ class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
         pos[i] = goal.angles[i]
     return pos
 
+class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
+
+  name          = 'ArmFindSurface'
+  action_type   = owl_msgs.msg.ArmFindSurfaceAction
+  goal_type     = owl_msgs.msg.ArmFindSurfaceGoal
+  feedback_type = owl_msgs.msg.ArmFindSurfaceFeedback
+  result_type   = owl_msgs.msg.ArmFindSurfaceResult
+
+  def execute_action(self, goal):
+    # the direction the scoop's bottom faces in its frame
+    SCOOP_DOWNWARD = Vector3(0, 0, 1)
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
+      self._set_aborted(self.abort_message)
+    v = goal.normal
+    # orient scoop so that the bottom points in the opposite direction of the
+    # normal, and select a scoop yaw that faces radially away from the lander
+    pose = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=Pose(
+        position=goal.position,
+        orientation=math3d.quaternion_rotation_between(SCOOP_DOWNWARD, v)
+      )
+    )
+    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                       torque_threshold=goal.torque_threshold)
+    start = goal.position
+    max_distance = goal.distance + goal.overdrive
+    displacement = math3d.scalar_multiply(max_distance, goal.normal)
+    end = math3d.add(goal.position, displacement)
+
+    def compute_distance():
+      d = math3d.subtract(self._arm_tip_monitor.get_link_position(), start)
+      return math3d.norm(d)
+
+    def guarded_cb():
+      self._publish_feedback(
+        pose=self._arm_tip_monitor.get_link_pose(),
+        distance=compute_distance(),
+        force=monitor.get_force(),
+        torque=monitor.get_torque()
+      )
+      if monitor.threshold_breached():
+        self._arm.stop_trajectory_silently()
+
+    # perform actions
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        pose=self._arm_tip_monitor.get_link_pose(),
+        distance=compute_distance(),
+        force=monitor.get_force(),
+        torque=monitor.get_torque()
+      )
+    else:
+      self._arm.checkin_arm(self.name)
+      if not monitor.threshold_breached() and not self.pose_reached(pose):
+        self._set_aborted(
+          "Arm failed to reach pose despite neither force nor torque " \
+          "thresholds being breached. Likely the thresholds were set too " \
+          "high or a planning error occurred. Try a lower threshold.",
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+      else:
+        self._set_succeeded(
+          _format_guarded_move_success_message(self.name, monitor),
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
 
 #############################
 ## NON-ARM RELATED ACTIONS

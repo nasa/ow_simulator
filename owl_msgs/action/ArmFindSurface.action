@@ -1,0 +1,21 @@
+# goal definition
+int32 frame
+bool relative
+geometry_msgs/Point position  # estimated position of the surface in world frame
+geometry_msgs/Vector3 normal  # normal that points out of the surface
+float64 distance
+float64 overdrive
+float64 force_threshold
+float64 torque_threshold
+---
+# result
+geometry_msgs/Pose final_pose
+float64 final_distance
+float64 final_force
+float64 final_torque
+---
+# feedback
+geometry_msgs/Pose pose
+float64 distance
+float64 force
+float64 torque

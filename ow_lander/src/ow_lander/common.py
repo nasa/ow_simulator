@@ -6,6 +6,8 @@
 
 from math import pi, tau, acos, sqrt
 from ow_lander import constants
+from std_msgs.msg import Header
+from rospy import Time
 # import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
 
@@ -64,3 +66,6 @@ def poses_approx_equivalent(pose1, pose2, \
     if acos(2*dp*dp-1) <= radian_tolerance:
       return True
   return False
+
+def create_most_recent_header(frame_id):
+  return Header(0, Time(0), frame_id)

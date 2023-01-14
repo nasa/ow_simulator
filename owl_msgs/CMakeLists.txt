@@ -73,6 +73,7 @@ add_action_files(
   ArmUnstow.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
+  ArmFindSurface.action
 )
 
 ## Generate added messages and services with any dependencies listed here

@@ -15,9 +15,6 @@ import actionlib
 import moveit_commander
 from tf2_geometry_msgs import do_transform_pose
 
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Header
-
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
@@ -141,7 +138,7 @@ class ModifyPoseMixin:
     self.abort_message = ""
     self.old_tool_transform = None
 
-  def handle_pose_goal(self, goal):
+  def handle_frame_goal(self, goal):
     self.abort_message = ""
     if goal.frame not in constants.FRAME_ID_MAP:
       self.abort_message = f"Unrecognized frame {goal.frame}"
@@ -158,8 +155,7 @@ class ModifyPoseMixin:
       if self.old_tool_transform is None:
         self.abort_message = "Failed to lookup TOOL frame transform"
         return None
-    return PoseStamped(header = Header(0, rospy.Time(0), frame_id),
-                       pose = goal.pose)
+    return frame_id
 
   def pose_reached(self, pose):
     # check if requested pose agrees with commanded pose in comparison frame
