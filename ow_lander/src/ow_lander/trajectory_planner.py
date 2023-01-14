@@ -13,13 +13,14 @@ import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, PoseStamped
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
 from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
     """Joins two robot motion plans into one
@@ -74,6 +75,9 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
+def _create_most_recent_header(frame_id):
+    return Header(0, rospy.Time(0), frame_id)
+
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -92,15 +96,25 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            Header(0, rospy.Time.now(), 'base_link'),
+            _create_most_recent_header('base_link'),
             [fk_target_link],
             robot_state
         )
         return goal_pose_stamped.pose_stamped[0].pose
 
+    def get_end_effector_pose(self, end_effector, frame_id = None):
+        pose = self._move_arm.get_current_pose(end_effector)
+        if frame_id is None \
+                or frame_id == self._move_arm.get_pose_reference_frame():
+            return pose
+        else:
+            # ensures the most recent transform is used
+            pose.header.stamp = rospy.Time(0)
+            return FrameTransformer().transform(pose, frame_id)
+
     def plan_arm_to_target(self, target_name):
-        self._move_arm.set_start_state(self._robot.get_current_state())
         target_joints = self._move_arm.get_named_target_values(target_name)
+        self._move_arm.set_start_state_to_current_state()
         self._move_arm.set_joint_value_target(target_joints)
         _, plan, _, _ = self._move_arm.plan()
         return plan
@@ -110,9 +124,26 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
                 "incorrect number of joints for arm move group.")
             return False
-        self._move_arm.set_start_state(self._robot.get_current_state())
+        self._move_arm.set_start_state_to_current_state()
         self._move_arm.set_joint_value_target(arm_joint_angles)
         _, plan, _, _ = self._move_arm.plan()
+        return plan
+
+    def plan_arm_to_pose(self, pose, frame_id, end_effector):
+        # transform desired pose from user's desired frame to arm's pose frame
+        stamped = PoseStamped(
+            header = _create_most_recent_header(frame_id),
+            pose = pose
+        )
+        arm_frame = self._move_arm.get_pose_reference_frame()
+        pose_t = FrameTransformer().transform(stamped, arm_frame)
+        if pose_t is None:
+            return False
+        # plan trajectory to pose in the arm's pose frame
+        self._move_arm.set_start_state_to_current_state()
+        self._move_arm.set_pose_target(pose_t, end_effector)
+        _, plan, _, _ = self._move_arm.plan()
+        self._move_arm.clear_pose_target(end_effector)
         return plan
 
     def calculate_joint_state_end_pose_from_plan_arm(self, plan):
@@ -268,7 +299,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             self._move_arm.set_pose_target(end_pose)
 
             _, plan_b, _, _ = self._move_arm.plan()
+
             if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
+                self._move_arm.clear_pose_targets()
                 return False
             circ_traj = _cascade_plans(plan_a, plan_b)
 
@@ -342,6 +375,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             plan_f = self.change_joint_value(
                 self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
             circ_traj = _cascade_plans(circ_traj, plan_f)
+
+        self._move_arm.clear_pose_targets()
 
         return circ_traj
 
@@ -462,6 +497,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         else:
             move_group.set_pose_target(goal_pose)
         _, plan, _, _ = move_group.plan()
+
         if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
             return False
         return plan
@@ -565,6 +601,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             self._move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
         dig_linear_traj = _cascade_plans(dig_linear_traj, plan_g)
 
+        self._move_arm.clear_pose_targets()
+
         return dig_linear_traj
 
     # FIXME: is this ever used?
@@ -608,9 +646,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     def grind(self, args):
         """
-        :type self._move_grinder: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type robot: class 'moveit_commander.RobotCommander'
-        :type moveit_fk: class moveit_msgs/GetPositionFK
         :type args: List[bool, float, float, float, float, bool, float, bool]
         """
 
@@ -659,7 +694,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         self._move_grinder.set_pose_target(goal_pose)
 
         _, plan_a, _, _ = self._move_grinder.plan()
+
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            self._move_grinder.clear_pose_targets()
             return False
 
         # entering terrain
@@ -708,6 +745,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         plan_d = self.go_to_Z_coordinate(
             self._move_grinder, cs, joint_goal, x_start, y_start, 0.22, False)
         grind_traj = _cascade_plans(grind_traj, plan_d)
+
+        self._move_grinder.clear_pose_targets()
 
         return grind_traj
 
@@ -780,6 +819,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         _, plan_b, _, _ = self._move_arm.plan()
         if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
+            self._move_arm.clear_pose_targets()
             return False
         pre_guarded_move_traj = _cascade_plans(plan_a, plan_b)
 
@@ -808,6 +848,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         to the the entire plan. It is used for ground detection only during the last part of the plan.
         It is set at 0.5 after several tests
         '''
+
+        self._move_arm.clear_pose_targets()
 
         return guarded_move_traj
 
@@ -847,6 +889,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan_a, _, _ = self._move_arm.plan()
 
         if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            self._move_arm.clear_pose_targets()
             return False
 
         # adding position constraint on the solution so that the tip does not
@@ -878,6 +921,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         self._move_arm.set_pose_target(goal_pose)
         _, plan_b, _, _ = self._move_arm.plan()
+
+        self._move_arm.clear_pose_targets()
 
         # If no plan found, send the previous plan only
         if len(plan_b.joint_trajectory.points) == 0:

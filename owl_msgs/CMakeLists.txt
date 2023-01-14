@@ -68,7 +68,9 @@ add_message_files(
 
 add_action_files(
   DIRECTORY action
-  FILES ArmSetTool.action
+  FILES
+  ArmSetTool.action
+  ArmMoveCartesian.action
 )
 
 ## Generate added messages and services with any dependencies listed here

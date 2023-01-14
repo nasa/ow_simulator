@@ -48,5 +48,3 @@ class GroundDetector:
       t.transform.translation.y,
       t.transform.translation.z
     )
-
-
