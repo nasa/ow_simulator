@@ -372,48 +372,62 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
   feedback_type = owl_msgs.msg.ArmFindSurfaceFeedback
   result_type   = owl_msgs.msg.ArmFindSurfaceResult
 
+  def publish_feedback_cb(self):
+    self._publish_feedback(
+      pose=self._arm_tip_monitor.get_link_pose(),
+      distance=0,
+      force=0,
+      torque=0
+    )
+
   def execute_action(self, goal):
     # the direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     frame_id = self.handle_frame_goal(goal)
     if frame_id is None:
       self._set_aborted(self.abort_message)
-    v = goal.normal
+    start = goal.position
     # orient scoop so that the bottom points in the opposite direction of the
     # normal, and select a scoop yaw that faces radially away from the lander
-    pose = PoseStamped(
+    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, goal.normal)
+    pose1 = PoseStamped(
       header=create_most_recent_header(frame_id),
       pose=Pose(
         position=goal.position,
-        orientation=math3d.quaternion_rotation_between(SCOOP_DOWNWARD, v)
+        orientation=orientation
       )
     )
-    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
-                                       torque_threshold=goal.torque_threshold)
-    start = goal.position
     max_distance = goal.distance + goal.overdrive
     displacement = math3d.scalar_multiply(max_distance, goal.normal)
     end = math3d.add(goal.position, displacement)
-
+    pose2 = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=Pose(
+        position=end,
+        orientation=orientation
+      )
+    )
     def compute_distance():
       d = math3d.subtract(self._arm_tip_monitor.get_link_position(), start)
       return math3d.norm(d)
 
-    def guarded_cb():
-      self._publish_feedback(
-        pose=self._arm_tip_monitor.get_link_pose(),
-        distance=compute_distance(),
-        force=monitor.get_force(),
-        torque=monitor.get_torque()
-      )
-      if monitor.threshold_breached():
-        self._arm.stop_trajectory_silently()
-
     # perform actions
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
-      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
+      # setup phase
+      plan1 = self._planner.plan_arm_to_pose(pose1, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan1,
+        action_feedback_cb=self.publish_feedback_cb)
+      # setup F/T monitor and its callback
+      monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                         torque_threshold=goal.torque_threshold)
+      def guarded_cb():
+        self.publish_feedback_cb()
+        if monitor.threshold_breached():
+          self._arm.stop_trajectory_silently()
+      # surface finding phase
+      plan2 = self._planner.plan_arm_to_pose(pose2, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan2, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
