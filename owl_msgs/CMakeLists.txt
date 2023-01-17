@@ -55,6 +55,7 @@ add_message_files(
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  ArmTool.msg
   BatteryTemperature.msg
   CameraFaultsStatus.msg
   PanTiltFaultsStatus.msg
