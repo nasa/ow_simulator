@@ -1,8 +1,14 @@
+# Values for 'tool'
+int32 NONE = 0
+int32 PRESSURE_SINKAGE_PLATE = 1
+int32 SHEAR_BEVAMETER = 2
+int32 SCOOP = 3
+int32 CONE_PENETROMETER = 4
+
 # goal
 int32 tool
 ---
-# result
-int32 previous_tool
+# no result
 ---
 # no feedback
 

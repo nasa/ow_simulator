@@ -15,7 +15,9 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument(
   'tool', type=int, nargs='?', default=0,
-  help="Tool choice (0 = Scoop, 1 = Drill)"
+  help= "Tool choice: 0 = None, 1 = Pressure Sinkage Plate,"
+    "2 = Shear Bevameter, 3 = Scoop, 4 = Cone Penetrometer"
+    
 )
 args = parser.parse_args()
 
