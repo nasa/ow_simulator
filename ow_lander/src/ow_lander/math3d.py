@@ -112,8 +112,7 @@ def orthogonal(v):
   return cross(normalized, basis)
 
 def quaternion_rotation_between(a, b):
-  """Returns a quaternion that represents the rotation required to get from
-  vector a to vector b.
+  """Computes the quaternion rotation between the vectors a and b.
   a -- geometry_msgs Vector3 or Point
   b -- geometry_msgs Vector3 or Point
   returns a quaternion that represents a rotation from a to b
