@@ -13,7 +13,9 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move arm slowly in a direction until a surface is detected.")
+  description="Move arm slowly in a direction until a surface is detected. " \
+              "DEPRECATED: ArmFindSurface should be used in place of " \
+              "GuardedMove")
 parser.add_argument('x_start', type=float, nargs='?', default=2.0,
   help='x-coordinates of guarded move starting point')
 parser.add_argument('y_start', type=float, nargs='?', default=0.0,
