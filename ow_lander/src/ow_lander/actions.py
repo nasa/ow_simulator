@@ -18,8 +18,7 @@ from geometry_msgs.msg import Point
 # required for ArmMoveCartesianGuarded
 from ow_lander.ground_detector import FTSensorThresholdMonitor
 # required for ArmFindSurface
-from geometry_msgs.msg import (Vector3, Quaternion, QuaternionStamped,
-                               PoseStamped, Pose)
+from geometry_msgs.msg import Vector3, PoseStamped, Pose
 from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 
@@ -75,6 +74,7 @@ class StopServer(ArmActionMixin, ActionServerBase):
       self._set_aborted("No arm trajectory to stop",
         final=self._arm_tip_monitor.get_link_position())
 
+### DEPRECATED: ArmFindSurface should be used in place of GuardedMove
 class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
   # NOTE: The "final" in GuardedMove's result is not in the same frame as the

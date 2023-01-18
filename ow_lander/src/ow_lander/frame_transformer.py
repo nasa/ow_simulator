@@ -40,7 +40,7 @@ class FrameTransformer(metaclass = Singleton):
     if isinstance(geometry, Point):
       stamped = PointStamped(
         header=create_most_recent_header(source_frame), point=geometry)
-    elif isinstance(geometry, Point):
+    elif isinstance(geometry, Pose):
       stamped = PoseStamped(
         header=create_most_recent_header(source_frame), pose=geometry)
     elif isinstance(geometry, Vector3):

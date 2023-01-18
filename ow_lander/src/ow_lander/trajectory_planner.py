@@ -13,9 +13,8 @@ import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion, PoseStamped
+from geometry_msgs.msg import Quaternion
 from shape_msgs.msg import SolidPrimitive
-from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
@@ -129,7 +128,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     def plan_arm_to_pose(self, pose, end_effector):
         """Plan a trajectory from arm's current pose to a new pose
-        pose         -- Stamped pose plan will place end effector at
+        pose         -- Stamped pose plan will place end-effector at
         end_effector -- Name of end_effector
         """
         arm_frame = self._move_arm.get_pose_reference_frame()

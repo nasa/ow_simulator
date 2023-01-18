@@ -18,7 +18,8 @@ from tf2_geometry_msgs import do_transform_pose
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent, poses_approx_equivalent
+from ow_lander.common import radians_equivalent
+from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
 
@@ -180,7 +181,8 @@ class ModifyPoseMixin:
       self.abort_message = "Failed to perform necessary transforms to verify " \
                            "final pose"
       return False
-    if poses_approx_equivalent(expected.pose, final.pose):
+    if math3d.poses_approx_equivalent(expected.pose, final.pose,
+        constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_METER_TOLERANCE):
       return True
     else:
       self.abort_message = "Failed to reach commanded pose"
