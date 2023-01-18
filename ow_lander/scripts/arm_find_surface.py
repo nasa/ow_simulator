@@ -31,8 +31,9 @@ parser.add_argument('-z', type=float, default=0,
   help="Z-coordinate or the change in the Z-coordinate")
 parser.add_argument('--normal', '-n', type=float, nargs=3,
   default=[0, 0, -1], metavar=('Nx', 'Ny', 'Nz'),
-  help="Normal vector in which arm will move a distance + overdrive in until" \
-       "either the force or torque thresholds are breached")
+  help="Normal vector in which arm will move a distance + overdrive in until " \
+       "either the force or torque thresholds are breached. This will always " \
+       "be interpreted in the base_link frame.")
 parser.add_argument('--distance', '-d', type=float, default=0.1,
   help="Distance away from the estimated surface position that the " \
        "end-effector start its trajectory.")
