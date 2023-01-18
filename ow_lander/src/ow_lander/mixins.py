@@ -9,17 +9,21 @@ define non-arm mixins.
 """
 
 import sys
+from abc import ABC, abstractmethod
 import rospy
 import actionlib
 import moveit_commander
+from tf2_geometry_msgs import do_transform_pose
+
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Header
 
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent
-from ow_lander.constants import ARM_JOINT_TOLERANCE
-
-from abc import ABC, abstractmethod
+from ow_lander.common import radians_equivalent, poses_approx_equivalent
+from ow_lander.frame_transformer import FrameTransformer
+from ow_lander import constants
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
@@ -57,6 +61,28 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     try:
       self._arm.checkout_arm(self.name)
       plan = self.plan_trajectory(goal)
+      self._arm.execute_arm_trajectory(plan)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err))
+    else:
+      self._arm.checkin_arm(self.name)
+      self._set_succeeded("Arm trajectory succeeded")
+
+
+# DEPRECTATED: This version that provides current and final positions will be
+#              removed as a result of command unification. For new or
+#              transitioned arm trajectory actions, use ArmTrajectoryMixin
+#              instead
+class ArmTrajectoryMixinOld(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -71,7 +97,6 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
   @abstractmethod
   def plan_trajectory(self, goal):
     pass
-
 
 class GrinderTrajectoryMixin(ArmActionMixin, ABC):
 
@@ -102,16 +127,68 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
   def plan_trajectory(self, goal):
     pass
 
+class ModifyPoseMixin:
+  """Can be inherited by ArmMoveActions that modify pose. DOES NOT implement an
+  arm interface, and so must be inherited along with ArmActionMixin or one of
+  its children.
+  """
+
+  ARM_END_EFFECTOR = 'l_scoop_tip'
+  COMPARISON_FRAME = 'world'
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.abort_message = ""
+    self.old_tool_transform = None
+
+  def handle_pose_goal(self, goal):
+    self.abort_message = ""
+    if goal.frame not in constants.FRAME_ID_MAP:
+      self.abort_message = f"Unrecognized frame {goal.frame}"
+      return None
+    # selecting relative is the same as selecting the Tool frame and vice versa
+    relative = goal.relative or goal.frame == constants.FRAME_TOOL
+    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative \
+               else constants.FRAME_ID_MAP[goal.frame]
+
+    # save tool transform now so the old transform can be used for comparison
+    if relative:
+      self.old_tool_transform = FrameTransformer() \
+        .lookup_transform(self.COMPARISON_FRAME, frame_id)
+      if self.old_tool_transform is None:
+        self.abort_message = "Failed to lookup TOOL frame transform"
+        return None
+    return PoseStamped(header = Header(0, rospy.Time(0), frame_id),
+                       pose = goal.pose)
+
+  def pose_reached(self, pose):
+    # check if requested pose agrees with commanded pose in comparison frame
+    final = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR,
+      frame_id=self.COMPARISON_FRAME)
+    # the transform before tool movement must be used because the Tool frame
+    # moves with the tool
+    expected = None
+    if self.old_tool_transform is not None: # if movement was relative
+      # this function ignores the header
+      expected = do_transform_pose(pose,
+        self.old_tool_transform)
+      self.old_tool_transform = None
+    else:
+      expected = FrameTransformer().transform(pose, self.COMPARISON_FRAME)
+    if final is None or expected is None:
+      self.abort_message = "Failed to perform necessary transforms to verify " \
+                           "final pose"
+      return False
+    if poses_approx_equivalent(expected.pose, final.pose):
+      return True
+    else:
+      self.abort_message = "Failed to reach commanded pose"
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
-    ARM_JOINTS = [
-      'j_shou_yaw','j_shou_pitch','j_prox_pitch',
-      'j_dist_pitch','j_hand_yaw', 'j_scoop_yaw'
-    ]
     super().__init__(*args, **kwargs)
-    self._arm_joints_monitor = JointAnglesSubscriber(ARM_JOINTS)
+    self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
 
   # NOTE: these two helper functions are hacky work-arounds necessary because
   #       ArmMoveJoints.action uses wrong names in feedback and result (OW-1096)
@@ -124,7 +201,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     actual = self._arm_joints_monitor.get_joint_positions()
     success = all(
       [
-        radians_equivalent(a, b, ARM_JOINT_TOLERANCE)
+        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
           for a, b in zip(actual, target)
       ]
     )

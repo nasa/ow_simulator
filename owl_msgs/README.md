@@ -5,7 +5,7 @@ root directory of this repository.
 owl_msgs
 ===================
 
-This package contains OceanWATERS and OWLAT telemetry. The messages
-defined here are currently used for fault detection. The detection 
-is relayed through a series of rostopics.
-
+This package defines a unified command and telemetry interface for the
+OceanWATERS and OWLAT testbeds.  It contains their shared telemetry
+and ROS action definitions, in the `msg` and `action` directories,
+respectively.
