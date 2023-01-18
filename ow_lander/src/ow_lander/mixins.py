@@ -66,6 +66,10 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
       self._arm.checkin_arm(self.name)
       self._set_succeeded("Arm trajectory succeeded")
 
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
+
 
 # DEPRECTATED: This version that provides current and final positions will be
 #              removed as a result of command unification. For new or
@@ -140,6 +144,7 @@ class ModifyPoseMixin:
 
   def handle_frame_goal(self, goal):
     self.abort_message = ""
+    self.old_tool_transform = None
     if goal.frame not in constants.FRAME_ID_MAP:
       self.abort_message = f"Unrecognized frame {goal.frame}"
       return None

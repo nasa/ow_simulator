@@ -2,7 +2,7 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from math import sqrt
+from math import sqrt, isclose
 from geometry_msgs.msg import Quaternion
 
 def _types_match(a, b):
@@ -25,15 +25,15 @@ def dot(a, b):
     dot += a.w * b.w
   return dot
 
+def cross(a, b):
+  assert(_types_match(a, b))
+  return type(a)(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
+
 def norm_squared(a):
   return dot(a,a)
 
 def norm(a):
   return sqrt(norm_squared(a))
-
-def cross(a, b):
-  assert(_types_match(a, b))
-  return type(a)(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
 
 def normalize(v):
   n = norm(v)
@@ -51,7 +51,7 @@ def orthogonal(v):
   x = abs(normalized.x)
   y = abs(normalized.y)
   z = abs(normalized.z)
-  basis = None # z-axis
+  basis = None
   if x < y:
     basis = t(1, 0, 0) if x < z else t(0, 0, 1)
   else:
@@ -65,10 +65,10 @@ def quaternion_rotation_between(a, b):
   a = normalize(a)
   b = normalize(b)
   k = dot(a, b)
-  uv_norm = sqrt(norm_squared(a) * norm_squared(b))
-  if k / uv_norm == -1: # special case of a = -b
-    ortho = normalize(orthogonal(a))
-    return Quaternion(ortho.x, ortho.y, ortho.z, 0)
-  w = k + uv_norm
-  axis = cross(a, b)
-  return normalize(Quaternion(axis.x, axis.y, axis.z, w))
+  ab_norm = sqrt(norm_squared(a) * norm_squared(b))
+  if isclose(k / ab_norm, -1): # special case of a = -b
+    o = normalize(orthogonal(a))
+    return Quaternion(o.x, o.y, o.z, 0)
+  w = k + ab_norm
+  v = cross(a, b)
+  return normalize(Quaternion(v.x, v.y, v.z, w))
