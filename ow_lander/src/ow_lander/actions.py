@@ -405,10 +405,7 @@ class CameraCaptureServer(ActionServerBase):
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
-    # set up interface for capturing a photograph witht he camera
-    self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
-                                         Float64,
-                                         queue_size=10)
+    # set up interface for capturing a photograph with the camera
     self._pub_trigger = rospy.Publisher('/StereoCamera/left/image_trigger',
                                         Empty,
                                         queue_size=10)
@@ -430,12 +427,6 @@ class CameraCaptureServer(ActionServerBase):
 
   def execute_action(self, goal):
     self.point_cloud_created = False
-    # Set exposure if it is specified
-    if goal.exposure > 0:
-      self._pub_exposure.publish(goal.exposure)
-      # There is no guarantee that exposure is set before the image is triggered
-      # Pause to make it highly likely that exposure is received first.
-      rospy.sleep(1)
 
     self._pub_trigger.publish()
 
@@ -453,6 +444,38 @@ class CameraCaptureServer(ActionServerBase):
         return
       rate.sleep()
     self._set_aborted("Timed out waiting for point cloud")
+
+
+class CameraSetExposureServer(ActionServerBase):
+
+  name          = 'CameraSetExposure'
+  action_type   = ow_lander.msg.CameraSetExposureAction
+  goal_type     = ow_lander.msg.CameraSetExposureGoal
+  feedback_type = ow_lander.msg.CameraSetExposureFeedback
+  result_type   = ow_lander.msg.CameraSetExposureResult
+
+  def __init__(self):
+    super(CameraSetExposureServer, self).__init__()
+    # set up interface for setting camera exposure
+    self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
+                                         Float64,
+                                         queue_size=10)
+    self._start_server()
+
+  def execute_action(self, goal):
+    if goal.automatic:
+      self._set_aborted(f'{self.name} action does not support autoexposure.')
+      return
+
+    # Set exposure if it is specified
+    if goal.exposure > 0:
+      self._pub_exposure.publish(goal.exposure)
+      # There is no guarantee that exposure is set before the image is triggered
+      # Pause to make it highly likely that exposure is received first.
+      rospy.sleep(1)
+      self._set_succeeded(f'Exposure set to {goal.exposure}')
+    else:
+      self._set_succeeded('Exposure not changed')
 
 
 class DockIngestSampleServer(ActionServerBase):

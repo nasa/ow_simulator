@@ -1,0 +1,7 @@
+# goal
+bool automatic
+float64 exposure  # (seconds) Must be greater than 0 or previous exposure will be used
+---
+# result
+---
+# feedback

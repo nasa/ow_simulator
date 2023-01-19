@@ -14,4 +14,4 @@ parser = argparse.ArgumentParser(
   description="Transfers contents of the scoop to the Sample Transfer Dock.")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(actions.DeliverServer, **vars(args))
+node_helper.call_single_use_action_client(actions.DeliverServer)
