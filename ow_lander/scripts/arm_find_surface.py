@@ -36,7 +36,7 @@ parser.add_argument('--normal', '-n', type=float, nargs=3,
        "be interpreted in the base_link frame.")
 parser.add_argument('--distance', '-d', type=float, default=0.1,
   help="Distance away from the estimated surface position that the "
-       "end-effector start its trajectory.")
+       "end-effector starts its trajectory.")
 parser.add_argument('--overdrive', '-o', type=float, default=0.05,
   help="Distance beyond the estimated surface position through which the "
        "end-effector will keep pushing.")
