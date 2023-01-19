@@ -83,6 +83,7 @@ void FaultInjector::ArmEndEffectorForceTorqueSensorCb(const geometry_msgs::Wrenc
   }
 
   owl_msgs::ArmEndEffectorForceTorque out_msg;
+  out_msg.header = msg.header;
 
   if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
     out_msg.value = {0.0};
