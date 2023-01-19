@@ -31,5 +31,6 @@ server_light_set_intensity = actions.LightSetIntensityServer()
 server_camera_capture      = actions.CameraCaptureServer()
 server_dock_ingest_sample  = actions.DockIngestSampleServer()
 server_antenna_pan_tilt    = actions.AntennaPanTiltServer()
+server_pan_tilt_move_cartesian = actions.PanTiltMoveCartesianServer()
 
 rospy.spin()

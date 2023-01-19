@@ -17,6 +17,7 @@ from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
 # required for ArmMoveCartesianGuarded
 from ow_lander.ground_detector import FTSensorThresholdMonitor
+from ow_lander.common import create_most_recent_header
 # required for ArmFindSurface
 from geometry_msgs.msg import Vector3, PoseStamped, Pose
 from ow_lander import math3d
@@ -32,9 +33,6 @@ from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 # required for AntennaPanTilt
 from ow_lander import constants
-from ow_lander.common import (in_closed_range, radians_equivalent,
-                              create_most_recent_header)
-from sensor_msgs.msg import JointState
 
 #####################
 ## ACTION HELPERS
@@ -683,7 +681,7 @@ class DockIngestSampleServer(ActionServerBase):
       self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
 
 
-class AntennaPanTiltServer(ActionServerBase):
+class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
 
   name          = 'AntennaPanTiltAction'
   action_type   = ow_lander.msg.AntennaPanTiltAction
@@ -691,91 +689,50 @@ class AntennaPanTiltServer(ActionServerBase):
   feedback_type = ow_lander.msg.AntennaPanTiltFeedback
   result_type   = ow_lander.msg.AntennaPanTiltResult
 
-  JOINT_STATES_TOPIC = "/joint_states"
-
-  def __init__(self):
-    super(AntennaPanTiltServer, self).__init__()
-    ANTENNA_PAN_POS_TOPIC  = '/ant_pan_position_controller/command'
-    ANTENNA_TILT_POS_TOPIC = '/ant_tilt_position_controller/command'
-    self._pan_pub = rospy.Publisher(
-      ANTENNA_PAN_POS_TOPIC, Float64, queue_size=1)
-    self._tilt_pub = rospy.Publisher(
-      ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
-    self._subscriber = rospy.Subscriber(
-      self.JOINT_STATES_TOPIC, JointState, self._handle_joint_states)
-    self._start_server()
-
-  def _handle_joint_states(self, data):
-    # position of pan and tlt of the lander is obtained from JointStates
-    ANTENNA_PAN_JOINT = "j_ant_pan"
-    ANTENNA_TILT_JOINT = "j_ant_tilt"
-    try:
-      id_pan = data.name.index(ANTENNA_PAN_JOINT)
-      id_tilt = data.name.index(ANTENNA_TILT_JOINT)
-    except ValueError as err:
-      rospy.logerr_throttle(1,
-        f"AntennaPanTiltServer: {err}; joint value missing in "\
-        f"{self.JOINT_STATES_TOPIC} topic")
-      return
-    self._pan_pos = data.position[id_pan]
-    self._tilt_pos = data.position[id_tilt]
+  def publish_feedback_cb(self):
+    self._publish_feedback(pan_position = self._pan_pos,
+                           tilt_position = self._tilt_pos)
 
   def execute_action(self, goal):
-    # FIXME: tolerance should not be necessary once the float precision
-    #        problem is fixed by command unification (OW-1085)
-    if not in_closed_range(goal.pan,
-        constants.PAN_MIN, constants.PAN_MAX,
-        constants.PAN_TILT_INPUT_TOLERANCE):
-      self._set_aborted(f"Requested pan {goal.pan} is not within allowed " \
-                        f"limits and was rejected.",
-                        pan_position = self._pan_pos,
-                        tilt_position = self._tilt_pos)
+    try:
+      not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        pan_position = self._pan_pos, tilt_position = self._tilt_pos)
       return
-    if not in_closed_range(goal.tilt,
-        constants.TILT_MIN, constants.TILT_MAX,
-        constants.PAN_TILT_INPUT_TOLERANCE):
-      self._set_aborted(f"Requested tilt {goal.tilt} is not within allowed " \
-                        f"limits and was rejected.",
-                        pan_position = self._pan_pos,
-                        tilt_position = self._tilt_pos)
-      return
-
-    # publish requested values to start pan/tilt trajectory
-    self._pan_pub.publish(goal.pan)
-    self._tilt_pub.publish(goal.tilt)
-
-    # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
-    #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
-    #        the image used to identify a sample location would be slightly to
-    #        the right than the image would have been if the frequency is set to
-    #        1 Hz, which would result in a sample location being selected that
-    #        is about half a meter closer to the lander than otherwise.
-    #        Such a dependency on FREQUENCY should not occur and implies that
-    #        the loop terminates before the antenna mast has completed its
-    #        movement. This breaks the synchronicity of actions, and therefore
-    #        of PLEXIL commands.
-    #        The loop break should instead trigger when both antenna joint
-    #        velocities are near enough to zero.
-    # loop until pan/tilt reach their goal values
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
-    rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
-      if self._is_preempt_requested():
-        self._set_preempted("Action was preempted",
-          pan_position = self._pan_pos, tilt_position = self._tilt_pos)
-        return
-      # publish feedback message
-      self._publish_feedback(pan_position = self._pan_pos,
-                             tilt_position = self._tilt_pos)
-      # check if joints have arrived at their goal values
-      if (radians_equivalent(goal.pan, self._pan_pos, constants.PAN_TOLERANCE) and
-          radians_equivalent(goal.tilt, self._tilt_pos, constants.TILT_TOLERANCE)):
+    else:
+      if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values",
           pan_position=self._pan_pos, tilt_position=self._tilt_pos)
-        return
-      rate.sleep()
-    self._set_aborted(
-      "Timed out waiting for pan/tilt values to reach goal.",
-      pan_position=self._pan_pos, tilt_position=self._tilt_pos
-    )
+      else:
+        self._set_preempted("Action was preempted",
+          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+
+class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
+
+  name          = 'PanTiltMoveCartesian'
+  action_type   = owl_msgs.msg.PanTiltMoveCartesianAction
+  goal_type     = owl_msgs.msg.PanTiltMoveCartesianGoal
+  feedback_type = owl_msgs.msg.PanTiltMoveCartesianFeedback
+  result_type   = owl_msgs.msg.PanTiltMoveCartesianResult
+
+  def execute_action(self, goal):
+
+    # fancy maths go here
+
+    pan = 0
+    tilt = 0
+
+    try:
+      not_preempted = self.move_pan_and_tilt(pan, tilt)
+    except RuntimeError as err:
+      self._set_aborted(str(err),
+        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+      return
+    else:
+      if not_preempted:
+        self._set_succeeded("Reached commanded pan/tilt values",
+          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+      else:
+        self._set_preempted("Action was preempted",
+          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
