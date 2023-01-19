@@ -26,7 +26,7 @@ class FrameTransformer(metaclass = Singleton):
   def transform_present(self, geometry, source_frame, target_frame, \
       timeout=rospy.Duration(0.1)):
     """Performs a transform on a supported geometry_msgs object. Transform is
-    performed in the present; use the transform for past transforms.
+    performed in the present; use the transform method for past transforms.
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
     source_frame -- ROS identifier string from the frame being transformed from
     target_frame -- ROS identifier string for the frame to be transformed into
@@ -65,6 +65,10 @@ class FrameTransformer(metaclass = Singleton):
     else:
       return None
 
+  # NOTE: Calling this function can sometimes result in the following error
+  # > "world" passed to lookupTransform argument target_frame does not exist.
+  # This example occurred when transforming to the "world" frame, which should
+  # exist, but it may occur when transforming into other frames as well.
   def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0.1)):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object

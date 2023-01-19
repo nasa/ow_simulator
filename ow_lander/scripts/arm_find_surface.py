@@ -14,12 +14,12 @@ from geometry_msgs.msg import Point, Vector3
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Determine the position of a surface by moving the arm's " \
-              "end-effector towards surface until sufficient resistance is " \
+  description="Determine the position of a surface by moving the arm's "
+              "end-effector towards surface until sufficient resistance is "
               "encountered.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
-  help="The frame index corresponding to the frame that orientation and "\
+  help="The frame index corresponding to the frame that orientation and "
        "position are relative to. " + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="If True, pose will be interpreted as relative to the current pose.")
@@ -31,20 +31,20 @@ parser.add_argument('-z', type=float, default=0,
   help="Z-coordinate or the change in the Z-coordinate")
 parser.add_argument('--normal', '-n', type=float, nargs=3,
   default=[0, 0, -1], metavar=('Nx', 'Ny', 'Nz'),
-  help="Normal vector in which arm will move a distance + overdrive in until " \
-       "either the force or torque thresholds are breached. This will always " \
+  help="Normal vector in which arm will move a distance + overdrive in until "
+       "either the force or torque thresholds are breached. This will always "
        "be interpreted in the base_link frame.")
 parser.add_argument('--distance', '-d', type=float, default=0.1,
-  help="Distance away from the estimated surface position that the " \
+  help="Distance away from the estimated surface position that the "
        "end-effector start its trajectory.")
 parser.add_argument('--overdrive', '-o', type=float, default=0.05,
-  help="Distance beyond the estimated surface position through which the "\
+  help="Distance beyond the estimated surface position through which the "
        "end-effector will keep pushing.")
 parser.add_argument('--force', type=float, default=200,
-  help="Arm will stop when F/T sensor encounters a force above this value in " \
+  help="Arm will stop when F/T sensor encounters a force above this value in "
        "Newtons")
 parser.add_argument('--torque', type=float, default=100,
-  help="Arm will stop when F/T sensor encounters a torque above this value " \
+  help="Arm will stop when F/T sensor encounters a torque above this value "
        "in Newton*meters")
 
 args = parser.parse_args()

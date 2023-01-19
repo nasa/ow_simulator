@@ -129,6 +129,15 @@ def quaternion_rotation_between(a, b):
   return normalize(Quaternion(v.x, v.y, v.z, w))
 
 def poses_approx_equivalent(pose1, pose2, linear_tolerance, angular_tolerance):
+  """Checks if two poses are nearly the same position and orientation.
+  pose1 -- geometry_msgs Pose
+  pose2 -- geometry_msgs Pose to be checked against pose1
+  linear_tolerance  -- The maximal distance positions can differ by (meters)
+  angular_tolerance -- The maximal spherical distance orientations can differ by
+                       (radians)
+  returns True if the difference between pose1 and pose2's position and
+  orientations are below their respective tolerances. False otherwise.
+  """
   p1 = pose1.position
   p2 = pose2.position
   if distance(p1, p2) <= linear_tolerance:
