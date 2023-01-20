@@ -34,7 +34,7 @@ parser.add_argument('--normal', '-n', type=float, nargs=3,
   help="Normal vector in which arm will move a distance + overdrive in until "
        "either the force or torque thresholds are breached. This will always "
        "be interpreted in the base_link frame.")
-parser.add_argument('--distance', '-d', type=float, default=0.1,
+parser.add_argument('--distance', '-d', type=float, default=0.2,
   help="Distance away from the estimated surface position that the "
        "end-effector starts its trajectory.")
 parser.add_argument('--overdrive', '-o', type=float, default=0.05,
