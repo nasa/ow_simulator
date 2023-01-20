@@ -13,13 +13,13 @@ import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion, PoseStamped
+from geometry_msgs.msg import Quaternion
 from shape_msgs.msg import SolidPrimitive
-from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander.common import (Singleton, is_shou_yaw_goal_in_range,
+                              create_most_recent_header)
 from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
@@ -75,9 +75,6 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
-def _create_most_recent_header(frame_id):
-    return Header(0, rospy.Time(0), frame_id)
-
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -96,7 +93,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            _create_most_recent_header('base_link'),
+            create_most_recent_header('base_link'),
             [fk_target_link],
             robot_state
         )
@@ -131,7 +128,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
     def plan_arm_to_pose(self, pose, end_effector):
         """Plan a trajectory from arm's current pose to a new pose
-        pose         -- Stamped pose plan will place end effector at
+        pose         -- Stamped pose plan will place end-effector at
         end_effector -- Name of end_effector
         """
         arm_frame = self._move_arm.get_pose_reference_frame()

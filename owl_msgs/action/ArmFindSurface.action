@@ -1,0 +1,21 @@
+# goal definition
+int32 frame
+bool relative
+geometry_msgs/Point position  # estimated position of surface in requested frame
+geometry_msgs/Vector3 normal  # normal of surface in base_link frame
+float64 distance   # away from surface approach trajectory will start
+float64 overdrive  # distance past surface approach trajectory will continue
+float64 force_threshold
+float64 torque_threshold
+---
+# result
+geometry_msgs/Pose final_pose
+float64 final_distance
+float64 final_force
+float64 final_torque
+---
+# feedback
+geometry_msgs/Pose pose
+float64 distance
+float64 force
+float64 torque

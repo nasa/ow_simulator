@@ -15,13 +15,11 @@ import actionlib
 import moveit_commander
 from tf2_geometry_msgs import do_transform_pose
 
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Header
-
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent, poses_approx_equivalent
+from ow_lander.common import radians_equivalent
+from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
 
@@ -68,6 +66,10 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     else:
       self._arm.checkin_arm(self.name)
       self._set_succeeded("Arm trajectory succeeded")
+
+  @abstractmethod
+  def plan_trajectory(self, goal):
+    pass
 
 
 # DEPRECTATED: This version that provides current and final positions will be
@@ -141,8 +143,9 @@ class ModifyPoseMixin:
     self.abort_message = ""
     self.old_tool_transform = None
 
-  def handle_pose_goal(self, goal):
+  def handle_frame_goal(self, goal):
     self.abort_message = ""
+    self.old_tool_transform = None
     if goal.frame not in constants.FRAME_ID_MAP:
       self.abort_message = f"Unrecognized frame {goal.frame}"
       return None
@@ -158,8 +161,7 @@ class ModifyPoseMixin:
       if self.old_tool_transform is None:
         self.abort_message = "Failed to lookup TOOL frame transform"
         return None
-    return PoseStamped(header = Header(0, rospy.Time(0), frame_id),
-                       pose = goal.pose)
+    return frame_id
 
   def pose_reached(self, pose):
     # check if requested pose agrees with commanded pose in comparison frame
@@ -179,7 +181,8 @@ class ModifyPoseMixin:
       self.abort_message = "Failed to perform necessary transforms to verify " \
                            "final pose"
       return False
-    if poses_approx_equivalent(expected.pose, final.pose):
+    if math3d.poses_approx_equivalent(expected.pose, final.pose,
+        constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_METER_TOLERANCE):
       return True
     else:
       self.abort_message = "Failed to reach commanded pose"

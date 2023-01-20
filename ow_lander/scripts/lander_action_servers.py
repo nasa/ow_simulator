@@ -24,6 +24,7 @@ server_move_joint     = actions.ArmMoveJointServer()
 server_move_joints    = actions.ArmMoveJointsServer()
 server_move_cartesian = actions.ArmMoveCartesianServer()
 server_move_cartesian_guarded = actions.ArmMoveCartesianGuardedServer()
+server_find_surface   = actions.ArmFindSurfaceServer()
 
 # other non-arm lander actions
 server_light_set_intensity = actions.LightSetIntensityServer()

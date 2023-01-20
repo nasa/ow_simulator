@@ -15,11 +15,12 @@ from tf.transformations import quaternion_from_euler
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move end-effector by Cartesian coordinates/translation.")
+  description="Move end-effector by Cartesian coordinates/translation and " \
+              "stop the movement if resistance is encountered.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
   help="The frame index corresponding to the frame that orientation and "\
-       " position are relative to. " + str(constants.FRAME_ID_MAP))
+       "position are relative to. " + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="If True, pose will be interpreted as relative to the current pose.")
 parser.add_argument('-x', type=float, default=0,
@@ -35,14 +36,14 @@ rot_parse.add_argument('--euler', '-e', type=float, nargs=3,
   help="Orientation in Euler angle form. Takes 3 radian values.")
 rot_parse.add_argument('--quaternion', '-q', type=float, nargs=4,
   default=[0, 0, 0, 1], metavar=('X', 'Y', 'Z', 'W'),
-  help="Orientation in quaternion form. Takes 4 scalars, the first 3 are the" \
-       " imaginary parts, and the 4th is the real part.")
+  help="Orientation in quaternion form. Takes 4 scalars, the first 3 are the " \
+       "imaginary parts, and the 4th is the real part.")
 parser.add_argument('--force', type=float, default=200,
   help="Arm will stop when F/T sensor encounters a force above this value in " \
-       " Newtons")
+       "Newtons")
 parser.add_argument('--torque', type=float, default=100,
   help="Arm will stop when F/T sensor encounters a torque above this value " \
-       " in Newton*meters")
+       "in Newton*meters")
 
 args = parser.parse_args()
 

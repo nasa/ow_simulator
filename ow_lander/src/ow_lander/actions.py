@@ -15,8 +15,12 @@ from ow_lander.mixins import *
 # required for GuardedMove
 from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
-# require for ArmMoveCartesianGuarded
+# required for ArmMoveCartesianGuarded
 from ow_lander.ground_detector import FTSensorThresholdMonitor
+# required for ArmFindSurface
+from geometry_msgs.msg import Vector3, PoseStamped, Pose
+from ow_lander import math3d
+from ow_lander.frame_transformer import FrameTransformer
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -28,7 +32,8 @@ from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 # required for AntennaPanTilt
 from ow_lander import constants
-from ow_lander.common import in_closed_range, radians_equivalent
+from ow_lander.common import (in_closed_range, radians_equivalent,
+                              create_most_recent_header)
 from sensor_msgs.msg import JointState
 
 #####################
@@ -69,6 +74,7 @@ class StopServer(ArmActionMixin, ActionServerBase):
       self._set_aborted("No arm trajectory to stop",
         final=self._arm_tip_monitor.get_link_position())
 
+### DEPRECATED: ArmFindSurface should be used in place of GuardedMove
 class GuardedMoveServer(ArmActionMixin, ActionServerBase):
 
   # NOTE: The "final" in GuardedMove's result is not in the same frame as the
@@ -223,9 +229,13 @@ class ArmMoveCartesianServer(ModifyPoseMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    pose = self.handle_pose_goal(goal)
-    if pose is None:
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
       self._set_aborted(self.abort_message)
+    pose = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=goal.pose
+    )
     # perform action
     try:
       self._arm.checkout_arm(self.name)
@@ -241,6 +251,7 @@ class ArmMoveCartesianServer(ModifyPoseMixin,
       if not self.pose_reached(pose):
         self._set_aborted(self.abort_message,
           final_pose=self._arm_tip_monitor.get_link_pose())
+        return
       self._set_succeeded(f"{self.name} trajectory succeeded",
         final_pose=self._arm_tip_monitor.get_link_pose())
 
@@ -256,9 +267,13 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
 
   def execute_action(self, goal):
-    pose = self.handle_pose_goal(goal)
-    if pose is None:
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
       self._set_aborted(self.abort_message)
+    pose = PoseStamped(
+      header=create_most_recent_header(frame_id),
+      pose=goal.pose
+    )
     # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
@@ -303,6 +318,138 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
       )
+
+
+class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
+
+  name          = 'ArmFindSurface'
+  action_type   = owl_msgs.msg.ArmFindSurfaceAction
+  goal_type     = owl_msgs.msg.ArmFindSurfaceGoal
+  feedback_type = owl_msgs.msg.ArmFindSurfaceFeedback
+  result_type   = owl_msgs.msg.ArmFindSurfaceResult
+
+  def publish_feedback_cb(self, distance=0, force=0, torque=0):
+    self._publish_feedback(
+      pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+      distance=distance,
+      force=force,
+      torque=torque
+    )
+
+  def execute_action(self, goal):
+    # the normal vector direction the scoop's bottom faces in its frame
+    SCOOP_DOWNWARD = Vector3(0, 0, 1)
+    frame_id = self.handle_frame_goal(goal)
+    if frame_id is None:
+      self._set_aborted(self.abort_message)
+      return
+    # orient scoop so that the bottom points in the opposite to the normal
+    # NOTE: regardless of frame parameter orientation is in the base_link frame
+    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD,
+                                                     goal.normal)
+    start = goal.position
+    if frame_id == constants.FRAME_ID_TOOL:
+      start = FrameTransformer().transform_present(start,
+        constants.FRAME_ID_TOOL, constants.FRAME_ID_BASE)
+      if start is None:
+        self._set_aborted("Failed to perform necessary frame transforms for " \
+                          "trajectory planning.")
+        return
+    max_distance = goal.distance + goal.overdrive
+    displacement = math3d.scalar_multiply(max_distance, goal.normal)
+    end = math3d.add(start, displacement)
+    # pose before end-effector is driven towards surface
+    pose1 = PoseStamped(
+      header=create_most_recent_header(constants.FRAME_ID_BASE),
+      pose=Pose(
+        position=start,
+        orientation=orientation
+      )
+    )
+    # pose after end-effector has driven its maximum distance towards surface
+    # if there is no surface, the end-effector will reach this pose
+    pose2 = PoseStamped(
+      header=create_most_recent_header(constants.FRAME_ID_BASE),
+      pose=Pose(
+        position=end,
+        orientation=orientation
+      )
+    )
+    # move to setup pose prior to surface approach
+    try:
+      self._arm.checkout_arm(self.name)
+      plan1 = self._planner.plan_arm_to_pose(pose1, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan1,
+        action_feedback_cb=self.publish_feedback_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err) + " - Setup trajectory failed",
+        final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+        final_distance=0, final_force=0, final_torque=0)
+      return
+    # TODO: pose1 should be verified here, but self.pose_reached does more than
+    #       its name lets one, and should be redesigned. Left as future work
+    # local function to compute progress of the action during surface approach
+    def compute_distance():
+      pose = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose
+      d = math3d.subtract(pose.position, start)
+      return math3d.norm(d)
+    # setup F/T monitor and its callback
+    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                       torque_threshold=goal.torque_threshold)
+    def guarded_cb():
+      self.publish_feedback_cb(
+        compute_distance(), monitor.get_force(), monitor.get_torque())
+      if monitor.threshold_breached():
+        self._arm.stop_trajectory_silently()
+    # move towards surface until F/T is breached or overdrive distance reached
+    try:
+      plan2 = self._planner.plan_arm_to_pose(pose2, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan2, action_feedback_cb=guarded_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err) + " - Surface approach trajectory failed",
+        final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+        final_distance=compute_distance(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque()
+      )
+    else:
+      self._arm.checkin_arm(self.name)
+      if not monitor.threshold_breached() and not self.pose_reached(pose2):
+        # pose was not reached due to planning/monitor error
+        # FIXME: this does not handle case where the pose check failed, better
+        #        error handling is required
+        self._set_aborted(
+          "Arm failed to reach pose despite neither force nor torque " \
+          "thresholds being breached. Likely the thresholds were set too " \
+          "high or a planning error occurred. Try a lower threshold.",
+          final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+      elif not monitor.threshold_breached():
+        self._set_succeeded(
+          "No surface was found",
+          final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+      else:
+        msg = _format_guarded_move_success_message(self.name, monitor)
+        pose = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose
+        msg += f". Surface found at ({pose.position.x:0.3f}, "
+        msg +=                     f"{pose.position.y:0.3f}, "
+        msg +=                     f"{pose.position.z:0.3f})"
+        self._set_succeeded(
+          msg,
+          final_pose=pose,
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
