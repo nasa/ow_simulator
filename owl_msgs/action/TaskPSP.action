@@ -1,0 +1,14 @@
+# goal
+int32 frame
+bool relative
+float64[3] point
+float64[3] normal
+float64 max_depth
+float64 max_force
+---
+# no result
+---
+# feedback
+float64 force
+float64 depth
+
