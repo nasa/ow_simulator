@@ -70,7 +70,10 @@ add_action_files(
   DIRECTORY action
   FILES
   ArmSetTool.action
+  ArmStow.action
+  ArmUnstow.action
   ArmMoveCartesian.action
+  ArmMoveCartesianGuarded.action
 )
 
 ## Generate added messages and services with any dependencies listed here

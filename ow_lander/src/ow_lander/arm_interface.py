@@ -152,6 +152,10 @@ class ArmInterface:
     # wait for action to complete in case it takes longer than the timeout
     self._executor.wait()
 
+    # FIXME: follow trajectory action sometimes returns an early result; this
+    #        sleep provides a buffer in time in case that happens (OW-1097)
+    rospy.sleep(2.0)
+
 class ArmFaultMonitor(metaclass=Singleton):
     """Checks whether the arm has faulted."""
 
