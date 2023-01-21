@@ -14,16 +14,16 @@ from geometry_msgs.msg import Point
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Moves the antenna mast to look at the provided position.")
+  description="Moves the antenna mast to look position in space.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
-  help="The frame index of the provided Point. " + str(constants.FRAME_ID_MAP))
+  help="The frame index of the position. " + str(constants.FRAME_ID_MAP))
 parser.add_argument('-x', type=float, default=0,
-  help="X-coordinate of the point looked at")
+  help="X-coordinate of the position looked at")
 parser.add_argument('-y', type=float, default=0,
-  help="Y-coordinate of the point looked at")
+  help="Y-coordinate of the position looked at")
 parser.add_argument('-z', type=float, default=0,
-  help="Z-coordinate of the point looked at")
+  help="Z-coordinate of the position looked at")
 args = parser.parse_args()
 
 point_arg = Point(args.x, args.y, args.z)
