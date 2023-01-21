@@ -17,7 +17,7 @@ from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
 # required for ArmMoveCartesianGuarded
 from ow_lander.ground_detector import FTSensorThresholdMonitor
-from ow_lander.common import create_most_recent_header
+from ow_lander.common import create_most_recent_header, normalize_radians
 # required for ArmFindSurface
 from geometry_msgs.msg import Vector3, PoseStamped, Pose
 from ow_lander import math3d
@@ -33,6 +33,8 @@ from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 # required for AntennaPanTilt
 from ow_lander import constants
+# required for PanTiltCartesianMove
+import math
 
 #####################
 ## ACTION HELPERS
@@ -348,7 +350,7 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
     start = goal.position
     if frame_id == constants.FRAME_ID_TOOL:
       start = FrameTransformer().transform_present(start,
-        constants.FRAME_ID_TOOL, constants.FRAME_ID_BASE)
+        constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
       if start is None:
         self._set_aborted("Failed to perform necessary frame transforms for " \
                           "trajectory planning.")
@@ -699,7 +701,6 @@ class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
     except RuntimeError as err:
       self._set_aborted(str(err),
         pan_position = self._pan_pos, tilt_position = self._tilt_pos)
-      return
     else:
       if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values",
@@ -717,22 +718,55 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
   result_type   = owl_msgs.msg.PanTiltMoveCartesianResult
 
   def execute_action(self, goal):
+    cam_center = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
+                                                    'StereoCameraCenter_link')
+    til_joint = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
+                                                    'l_ant_panel')
+    lookat = goal.point if goal.frame == constants.FRAME_BASE \
+              else FrameTransformer().transform_present(
+                goal.point,
+                constants.FRAME_ID_BASE,
+                constants.FRAME_ID_MAP[goal.frame]
+              )
+    if cam_center is None or til_joint is None or lookat is None:
+      self._set_aborted("Failed to perform necessary transforms to compute "
+                        "appropriate pan and tilt values.")
+      return
 
-    # fancy maths go here
+    # The following computations make the approximation that the camera center
+    # link lies directly above the tilt axis when tilt = 0. The error caused by
+    # this assumption is small enough to be ignored.
 
-    pan = 0
-    tilt = 0
-
+    # compute the vector from the tilt joint to the lookat position
+    tilt_to_lookat = math3d.subtract(lookat, til_joint.transform.translation)
+    # pan is the +Z Euler angle of tilt_to_lookat
+    # pi/2 must be added because pan's zero position faces in the -y direction
+    pan_raw = math.atan2(tilt_to_lookat.y, tilt_to_lookat.x) + (math.pi / 2)
+    pan = normalize_radians(pan_raw)
+    # compute length of the lever arm between tilt joint and camera center
+    l = math3d.norm(math3d.subtract(cam_center.transform.translation,
+                                    til_joint.transform.translation))
+    # Imagine the camera is already pointed at the lookat position and that
+    # there is a vector that extends from the camera to the lookat position.
+    # The angle between tilt_to_lookat and that vector can be computed from the
+    # length of of the lever arm and the length of tilt_to_lookat
+    a = math.acos(l / math3d.norm(tilt_to_lookat))
+    # compute the angle between tilt_to_lookat and the horizontal plane (X-Y)
+    b = math.atan2(tilt_to_lookat.z,
+                   math.sqrt(tilt_to_lookat.x**2 + tilt_to_lookat.y**2))
+    # The sum of a and b gives the angle between the desired vector that extends
+    # from the camera center to lookat and the x-y plane
+    # Antenna tilt is measured from the +z axis, so a pi/2 is subtracted.
+    # Finally, tilt rotates in reverse of the unit circle, so we multiple the
+    # the result by zero.
+    tilt_raw = -(a + b - (math.pi / 2))
+    tilt = normalize_radians(tilt_raw)
     try:
       not_preempted = self.move_pan_and_tilt(pan, tilt)
     except RuntimeError as err:
-      self._set_aborted(str(err),
-        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
-      return
+      self._set_aborted(str(err))
     else:
       if not_preempted:
-        self._set_succeeded("Reached commanded pan/tilt values",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+        self._set_succeeded("Reached commanded pan/tilt values")
       else:
-        self._set_preempted("Action was preempted",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+        self._set_preempted("Action was preempted")

@@ -3,7 +3,7 @@
 # this repository.
 
 from math import sqrt, isclose, acos
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Vector3
 
 def _types_match(a, b):
   return type(a) == type(b)
@@ -14,7 +14,7 @@ def add(a, b):
   b -- geometry_msgs Vector3 or Point
   returns a vector that represents a + b
   """
-  return type(a)(a.x + b.x, a.y + b.y, a.z + b.z)
+  return Vector3(a.x + b.x, a.y + b.y, a.z + b.z)
 
 def subtract(a, b):
   """Subtracts two vectors
@@ -22,8 +22,7 @@ def subtract(a, b):
   b -- geometry_msgs Vector3 or Point
   returns a vector that represents a - b
   """
-  assert(_types_match(a, b))
-  return type(a)(a.x - b.x, a.y - b.y, a.z - b.z)
+  return Vector3(a.x - b.x, a.y - b.y, a.z - b.z)
 
 def scalar_multiply(a, b):
   """Computes the multiplication of the scalar a to the vector b
