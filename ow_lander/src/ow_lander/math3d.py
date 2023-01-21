@@ -12,7 +12,7 @@ def add(a, b):
   """Adds two vectors
   a -- geometry_msgs Vector3 or Point
   b -- geometry_msgs Vector3 or Point
-  returns a vector that represents a + b
+  returns a Vector3 that represents a + b
   """
   return Vector3(a.x + b.x, a.y + b.y, a.z + b.z)
 
@@ -20,7 +20,7 @@ def subtract(a, b):
   """Subtracts two vectors
   a -- geometry_msgs Vector3 or Point
   b -- geometry_msgs Vector3 or Point
-  returns a vector that represents a - b
+  returns a Vector3 that represents a - b
   """
   return Vector3(a.x - b.x, a.y - b.y, a.z - b.z)
 
