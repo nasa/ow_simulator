@@ -746,16 +746,18 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
     # compute length of the lever arm between tilt joint and camera center
     l = math3d.norm(math3d.subtract(cam_center.transform.translation,
                                     til_joint.transform.translation))
-    # Imagine the camera is already pointed at the lookat position and that
-    # there is a vector that extends from the camera to the lookat position.
-    # The angle between tilt_to_lookat and that vector can be computed from the
-    # length of of the lever arm and the length of tilt_to_lookat
+    # Imagine the cameras are already pointed at the lookat position and that a
+    # vector extends out from their midpoint to the lookat position. If we
+    # approximate the angle between that vector and the camera lever arm to be
+    # pi/2 then the vector, tilt_to_lookat, and the camera lever arm form a
+    # right triangle. Therefore, the angle between tilt_to_lookat and the camera
+    # lever arm can be approximated from only their lengths.
     a = math.acos(l / math3d.norm(tilt_to_lookat))
-    # compute the angle between tilt_to_lookat and the horizontal plane (X-Y)
+    # compute the angle between tilt_to_lookat and the X-Y plane
     b = math.atan2(tilt_to_lookat.z,
                    math.sqrt(tilt_to_lookat.x**2 + tilt_to_lookat.y**2))
-    # The sum of a and b gives the angle between the desired vector that extends
-    # from the camera center to lookat and the x-y plane
+    # The sum of a and b gives the angle between the desired camera lever arm
+    # vector and the x-y plane.
     # Antenna tilt is measured from the +z axis, so a pi/2 is subtracted.
     # Finally, tilt rotates in reverse of the unit circle, so we multiple the
     # the result by zero.
