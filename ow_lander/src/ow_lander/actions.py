@@ -723,7 +723,7 @@ class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
     except RuntimeError as err:
       self._set_aborted(str(err),
-        pan_position = self._pan_pos, tilt_position = self._tilt_pos)
+        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
     else:
       if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values",
@@ -742,16 +742,16 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     cam_center = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
-                                                    'StereoCameraCenter_link')
-    til_joint = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
-                                                    'l_ant_panel')
+                                                     'StereoCameraCenter_link')
+    tilt_joint = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
+                                                     'l_ant_panel')
     lookat = goal.point if goal.frame == constants.FRAME_BASE \
               else FrameTransformer().transform_present(
                 goal.point,
                 constants.FRAME_ID_BASE,
                 constants.FRAME_ID_MAP[goal.frame]
               )
-    if cam_center is None or til_joint is None or lookat is None:
+    if cam_center is None or tilt_joint is None or lookat is None:
       self._set_aborted("Failed to perform necessary transforms to compute "
                         "appropriate pan and tilt values.")
       return
@@ -761,14 +761,14 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
     # this assumption is small enough to be ignored.
 
     # compute the vector from the tilt joint to the lookat position
-    tilt_to_lookat = math3d.subtract(lookat, til_joint.transform.translation)
+    tilt_to_lookat = math3d.subtract(lookat, tilt_joint.transform.translation)
     # pan is the +Z Euler angle of tilt_to_lookat
     # pi/2 must be added because pan's zero position faces in the -y direction
     pan_raw = math.atan2(tilt_to_lookat.y, tilt_to_lookat.x) + (math.pi / 2)
     pan = normalize_radians(pan_raw)
     # compute length of the lever arm between tilt joint and camera center
     l = math3d.norm(math3d.subtract(cam_center.transform.translation,
-                                    til_joint.transform.translation))
+                                    tilt_joint.transform.translation))
     # Imagine the cameras are already pointed at the lookat position and that a
     # vector extends out from their midpoint to the lookat position. If we
     # approximate the angle between that vector and the camera lever arm to be
