@@ -11,8 +11,11 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="This action client stops the lander arm if it is planning or "\
-              "executing a trajectory.")
+  description="Set exposure on both mast cameras."
+)
+parser.add_argument('exposure', type=float, nargs='?', default=-1,
+  help="Camera exposure in seconds. If <= 0 the exposure will not change.")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(actions.StopServer)
+node_helper.call_single_use_action_client(actions.CameraSetExposureServer,
+  **vars(args))

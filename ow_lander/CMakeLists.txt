@@ -44,6 +44,7 @@ add_action_files(
   FILES ArmMoveJoints.action
   FILES LightSetIntensity.action
   FILES CameraCapture.action
+  FILES CameraSetExposure.action
 )
 
 add_message_files(
