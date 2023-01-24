@@ -4,7 +4,7 @@
 
 """Defines functions required by multiple modules within the package"""
 
-from math import pi, tau
+from math import pi, tau, acos, sqrt
 from ow_lander import constants
 # import roslib; roslib.load_manifest('urdfdom_py')
 from urdf_parser_py.urdf import URDF
@@ -49,3 +49,18 @@ def in_closed_range(val, lo, hi, tolerance):
   :return: (bool)
   """
   return val >= lo-tolerance and val <= hi+tolerance
+
+def poses_approx_equivalent(pose1, pose2, \
+    meter_tolerance=constants.ARM_POSE_METER_TOLERANCE, \
+    radian_tolerance=constants.ARM_POSE_RADIAN_TOLERANCE):
+  p1 = pose1.position
+  p2 = pose2.position
+  distance = sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
+  if distance <= meter_tolerance:
+    o1 = pose1.orientation
+    o2 = pose2.orientation
+    # check that the geodesic norm between the 2 quaternions is below tolerance
+    dp = o1.x * o2.x + o1.y * o2.y + o1.z * o2.z + o1.w * o2.w
+    if acos(2*dp*dp-1) <= radian_tolerance:
+      return True
+  return False

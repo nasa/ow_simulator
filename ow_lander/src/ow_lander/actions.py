@@ -7,6 +7,7 @@
 import rospy
 
 import ow_lander.msg
+import owl_msgs.msg
 from ow_lander.server import ActionServerBase
 
 # required for all arm actions
@@ -14,6 +15,8 @@ from ow_lander.mixins import *
 # required for GuardedMove
 from ow_lander.ground_detector import GroundDetector
 from geometry_msgs.msg import Point
+# require for ArmMoveCartesianGuarded
+from ow_lander.ground_detector import FTSensorThresholdMonitor
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -27,6 +30,24 @@ from ow_regolith.msg import Contacts
 from ow_lander import constants
 from ow_lander.common import in_closed_range, radians_equivalent
 from sensor_msgs.msg import JointState
+
+#####################
+## ACTION HELPERS
+#####################
+
+def _format_guarded_move_success_message(action_name, monitor):
+  if monitor.threshold_breached():
+    msg = f"{action_name} trajectory stopped by "
+    if monitor.force_threshold_breached():
+      msg += f"a force of {monitor.get_force():.2f} N"
+    if monitor.torque_threshold_breached():
+      msg += " and " if monitor.force_threshold_breached() else ""
+      msg += f"a torque of {monitor.get_torque():.2f} Nm"
+    return msg
+  else:
+    return f"{action_name} trajectory completed without breaching force or " \
+           f"torque thresholds"
+
 
 #####################
 ## ARM ACTIONS
@@ -102,6 +123,7 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
       else:
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
+
 
 class UnstowServer(ArmTrajectoryMixin, ActionServerBase):
 
@@ -187,6 +209,102 @@ class DeliverServer(ArmTrajectoryMixin, ActionServerBase):
 
   def plan_trajectory(self, _goal):
     return self._planner.deliver_sample()
+
+
+class ArmMoveCartesianServer(ModifyPoseMixin,
+                             ArmActionMixin,
+                             ActionServerBase):
+
+  name          = 'ArmMoveCartesian'
+  action_type   = owl_msgs.msg.ArmMoveCartesianAction
+  goal_type     = owl_msgs.msg.ArmMoveCartesianGoal
+  feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
+  result_type   = owl_msgs.msg.ArmMoveCartesianResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
+
+  def execute_action(self, goal):
+    pose = self.handle_pose_goal(goal)
+    if pose is None:
+      self._set_aborted(self.abort_message)
+    # perform action
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb=self.publish_feedback_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose())
+    else:
+      self._arm.checkin_arm(self.name)
+      if not self.pose_reached(pose):
+        self._set_aborted(self.abort_message,
+          final_pose=self._arm_tip_monitor.get_link_pose())
+      self._set_succeeded(f"{self.name} trajectory succeeded",
+        final_pose=self._arm_tip_monitor.get_link_pose())
+
+
+class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
+                                    ArmActionMixin,
+                                    ActionServerBase):
+
+  name          = 'ArmMoveCartesianGuarded'
+  action_type   = owl_msgs.msg.ArmMoveCartesianGuardedAction
+  goal_type     = owl_msgs.msg.ArmMoveCartesianGuardedGoal
+  feedback_type = owl_msgs.msg.ArmMoveCartesianGuardedFeedback
+  result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
+
+  def execute_action(self, goal):
+    pose = self.handle_pose_goal(goal)
+    if pose is None:
+      self._set_aborted(self.abort_message)
+    # monitor F/T sensor and define a callback to check its status
+    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                       torque_threshold=goal.torque_threshold)
+    def guarded_cb():
+      self._publish_feedback(
+        pose=self._arm_tip_monitor.get_link_pose(),
+        force=monitor.get_force(),
+        torque=monitor.get_torque()
+      )
+      if monitor.threshold_breached():
+        self._arm.stop_trajectory_silently()
+
+    # perform action
+    try:
+      self._arm.checkout_arm(self.name)
+      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
+      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+    else:
+      self._arm.checkin_arm(self.name)
+      if not monitor.threshold_breached() and not self.pose_reached(pose):
+        # pose was not reached due to planning/monitor error
+        # FIXME: this does not handle case where the pose check failed, better
+        #        error handling is required
+        self._set_aborted(
+          "Arm failed to reach pose despite neither force nor torque " \
+          "thresholds being breached. Likely the thresholds were set too " \
+          "high or a planning error occurred. Try a lower threshold.",
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+        return
+      self._set_succeeded(
+        _format_guarded_move_success_message(self.name, monitor),
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque()
+      )
 
 
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
