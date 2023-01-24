@@ -294,6 +294,7 @@ class PanTiltMoveMixin:
     #        of PLEXIL commands.
     #        The loop break should instead trigger when both antenna joint
     #        velocities are near enough to zero.
+    #         This issue is captured by OW-1105
     # loop until pan/tilt reach their goal values
     FREQUENCY = 1 # Hz
     TIMEOUT = 60 # seconds
