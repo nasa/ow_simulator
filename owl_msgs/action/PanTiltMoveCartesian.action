@@ -1,0 +1,7 @@
+# goal definition
+int32 frame
+geometry_msgs/Point point   # position in space antenna mast will look at
+---
+# result
+---
+# feedback
