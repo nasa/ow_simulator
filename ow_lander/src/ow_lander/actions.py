@@ -783,7 +783,7 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
     # vector and the x-y plane.
     # Antenna tilt is measured from the +z axis, so a pi/2 is subtracted.
     # Finally, tilt rotates in reverse of the unit circle, so we multiple the
-    # the result by zero.
+    # the result by -1.
     tilt_raw = -(a + b - (math.pi / 2))
     tilt = normalize_radians(tilt_raw)
     try:
