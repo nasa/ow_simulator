@@ -86,14 +86,14 @@ void FaultInjector::ArmEndEffectorForceTorqueSensorCb(const geometry_msgs::Wrenc
   out_msg.header = msg.header;
 
   if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
-    out_msg.value = {0.0};
+    out_msg.value = geometry_msgs::Wrench();
   } else {
-    out_msg.value[0] = msg.wrench.force.x;
-    out_msg.value[1] = msg.wrench.force.y;
-    out_msg.value[2] = msg.wrench.force.z;
-    out_msg.value[3] = msg.wrench.torque.x;
-    out_msg.value[4] = msg.wrench.torque.y;
-    out_msg.value[5] = msg.wrench.torque.z;
+    out_msg.value.force.x = msg.wrench.force.x;
+    out_msg.value.force.y = msg.wrench.force.y;
+    out_msg.value.force.z = msg.wrench.force.z;
+    out_msg.value.torque.x = msg.wrench.torque.x;
+    out_msg.value.torque.y = msg.wrench.torque.y;
+    out_msg.value.torque.z = msg.wrench.torque.z;
   }
 
   auto mean = m_faults.groups.ft_sensor_faults.signal_bias_failure;
@@ -101,12 +101,12 @@ void FaultInjector::ArmEndEffectorForceTorqueSensorCb(const geometry_msgs::Wrenc
   // TODO: consider optimizing this by re-creating the distribution only when
   // mean and stddev values change
   auto normal_dist = std::normal_distribution<float>(mean, stddev);
-  out_msg.value[0] += normal_dist(m_random_generator);
-  out_msg.value[1] += normal_dist(m_random_generator);
-  out_msg.value[2] += normal_dist(m_random_generator);
-  out_msg.value[3] += normal_dist(m_random_generator);
-  out_msg.value[4] += normal_dist(m_random_generator);
-  out_msg.value[5] += normal_dist(m_random_generator);
+  out_msg.value.force.x += normal_dist(m_random_generator);
+  out_msg.value.force.y += normal_dist(m_random_generator);
+  out_msg.value.force.z += normal_dist(m_random_generator);
+  out_msg.value.torque.x += normal_dist(m_random_generator);
+  out_msg.value.torque.y += normal_dist(m_random_generator);
+  out_msg.value.torque.z += normal_dist(m_random_generator);
 
   m_arm_end_effector_force_torque_sensor_pub.publish(out_msg);
 }

@@ -23,13 +23,13 @@ class GroundDetector:
 
   def _ft_sensor_cb(self, msg):
     """Checks if force threshold has been reached
-    msg -- Instance of ArmEndEffectorForceTorque.msg.value, a float64[6]
-             where indices [0-2] are the force vector
+    msg -- Instance of ArmEndEffectorForceTorque.msg.value, a geometry_msgs/Wrench
+            datatype with child datatypes Vector3 force and Vector3 torque
     """
     # TODO: could this be made more robust by looking at force magnitude instead
     #       of just the x-component?
     FORCE_X_THRESHOLD = -100.0
-    if msg.value[0] < FORCE_X_THRESHOLD:
+    if msg.value.force.x < FORCE_X_THRESHOLD:
       self._detected = True
 
   def was_ground_detected(self):

@@ -1,4 +1,7 @@
-# Arm force-torque sensor force and torque
+# Message: Arm force-torque sensor force (N) and torque (N-m)
 
+# ROS msg header with timestamp and frame_id
 Header header
-float64[6] value # force(N) [0-2], torque(N-m) [3-5], end effector frame
+
+# value contains: Vector3 force and Vector3 torque, each with xyz components
+geometry_msgs/Wrench value
