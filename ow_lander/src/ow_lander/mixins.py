@@ -11,14 +11,15 @@ define non-arm mixins.
 import sys
 from abc import ABC, abstractmethod
 import rospy
-import actionlib
 import moveit_commander
 from tf2_geometry_msgs import do_transform_pose
+from std_msgs.msg import Float64
+from sensor_msgs.msg import JointState
 
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent
+from ow_lander.common import radians_equivalent, in_closed_range
 from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
@@ -239,3 +240,78 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
   @abstractmethod
   def modify_joint_positions(self, goal):
     pass
+
+class PanTiltMoveMixin:
+
+  JOINT_STATES_TOPIC = "/joint_states"
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    ANTENNA_PAN_POS_TOPIC  = '/ant_pan_position_controller/command'
+    ANTENNA_TILT_POS_TOPIC = '/ant_tilt_position_controller/command'
+    self._pan_pub = rospy.Publisher(
+      ANTENNA_PAN_POS_TOPIC, Float64, queue_size=1)
+    self._tilt_pub = rospy.Publisher(
+      ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
+    self._subscriber = rospy.Subscriber(
+      self.JOINT_STATES_TOPIC, JointState, self._handle_joint_states)
+    self._start_server()
+
+  def _handle_joint_states(self, data):
+    # position of pan and tilt of the lander is obtained from JointStates
+    try:
+      self._pan_pos = data.position[constants.JOINT_STATES_MAP["j_ant_pan"]]
+      self._tilt_pos = data.position[constants.JOINT_STATES_MAP["j_ant_tilt"]]
+    except KeyError as err:
+      rospy.logerr_throttle(1,
+        f"PanTiltMoveMixin: {err}; joint value missing in "\
+        f"{self.JOINT_STATES_TOPIC} topic")
+      return
+
+  def move_pan_and_tilt(self, pan, tilt):
+    # FIXME: tolerance should not be necessary once the float precision
+    #        problem is fixed by command unification (OW-1085)
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
+                           constants.PAN_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
+                           constants.PAN_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+
+    # publish requested values to start pan/tilt trajectory
+    self._pan_pub.publish(pan)
+    self._tilt_pub.publish(tilt)
+
+    # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
+    #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
+    #        the image used to identify a sample location would be slightly to
+    #        the right than the image would have been if the frequency is set to
+    #        1 Hz, which would result in a sample location being selected that
+    #        is about half a meter closer to the lander than otherwise.
+    #        Such a dependency on FREQUENCY should not occur and implies that
+    #        the loop terminates before the antenna mast has completed its
+    #        movement. This breaks the synchronicity of actions, and therefore
+    #        of PLEXIL commands.
+    #        The loop break should instead trigger when both antenna joint
+    #        velocities are near enough to zero.
+    #         This issue is captured by OW-1105
+    # loop until pan/tilt reach their goal values
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        return False
+      # publish feedback message
+      self.publish_feedback_cb()
+      # check if joints have arrived at their goal values
+      if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE) and \
+          radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
+        return True
+      rate.sleep()
+    raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
+
+  def publish_feedback_cb(self):
+    """overrideable"""
+    pass
+

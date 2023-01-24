@@ -74,6 +74,7 @@ add_action_files(
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
   ArmFindSurface.action
+  PanTiltMoveCartesian.action
 )
 
 ## Generate added messages and services with any dependencies listed here

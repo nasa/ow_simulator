@@ -34,7 +34,7 @@ def is_shou_yaw_goal_in_range(joint_goal):
   else:
     return True
 
-def _normalize_radians(angle):
+def normalize_radians(angle):
   """
   :param angle: (float)
   :return: (float) the angle in [-pi, pi)
@@ -43,7 +43,7 @@ def _normalize_radians(angle):
   return (angle + pi) % tau - pi
 
 def radians_equivalent(angle1, angle2, tolerance) :
-  return abs(_normalize_radians(angle1 - angle2)) <= tolerance
+  return abs(normalize_radians(angle1 - angle2)) <= tolerance
 
 def in_closed_range(val, lo, hi, tolerance):
   """
