@@ -782,7 +782,7 @@ class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
     # The sum of a and b gives the angle between the desired camera lever arm
     # vector and the x-y plane.
     # Antenna tilt is measured from the +z axis, so a pi/2 is subtracted.
-    # Finally, tilt rotates in reverse of the unit circle, so we multiple the
+    # Finally, tilt rotates in reverse of the unit circle, so we multiply the
     # the result by -1.
     tilt_raw = -(a + b - (math.pi / 2))
     tilt = normalize_radians(tilt_raw)
