@@ -340,7 +340,7 @@ class PanTiltMoveMixin:
 
   def move_tilt(self, tilt):
     if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
-                           constants.TILT_TILT_INPUT_TOLERANCE):
+                           constants.PAN_TILT_INPUT_TOLERANCE):
       raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start tilt trajectory

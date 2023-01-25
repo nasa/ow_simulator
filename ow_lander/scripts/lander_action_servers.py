@@ -33,7 +33,7 @@ server_camera_set_exposure = actions.CameraSetExposureServer()
 server_dock_ingest_sample  = actions.DockIngestSampleServer()
 server_antenna_pan_tilt    = actions.AntennaPanTiltServer()
 server_antenna_pan         = actions.PanServer()
-server_antenna_tilt        = actions.PanServer()
+server_antenna_tilt        = actions.TiltServer()
 server_pan_tilt_move_cartesian = actions.PanTiltMoveCartesianServer()
 
 rospy.spin()
