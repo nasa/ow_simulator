@@ -1,12 +1,11 @@
 #goal definition
-float32  x_start
-float32  y_start
-float32  depth
-bool parallel
-float32  ground_position
+int32 frame
+bool relative
+geometry_msgs/Point point
+geometry_msgs/Vector3 normal
+float64 depth
+float64 scoop_angle
 ---
 # result
-geometry_msgs/Point final     # arm final position
 ---
 # feedback
-geometry_msgs/Point current   # arm current position
