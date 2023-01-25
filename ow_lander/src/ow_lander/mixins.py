@@ -311,7 +311,55 @@ class PanTiltMoveMixin:
       rate.sleep()
     raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
 
+# NOTE: the following move_pan and move_tilt functions have been
+# dumbly factored out of the previous function.  The FIXME comments
+# above have been omitted but apply.  A more refined refactoring is
+# left to a future iteration.
+
+  def move_pan(self, pan):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
+                           constants.PAN_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+
+    # publish requested values to start pan trajectory
+    self._pan_pub.publish(pan)
+
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        return False
+      # publish feedback message
+      self.publish_feedback_cb()
+      # check if joints have arrived at their goal values
+      if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE):
+        return True
+      rate.sleep()
+    raise RuntimeError("Timed out waiting for pan value to reach goal.")
+
+  def move_tilt(self, tilt):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
+                           constants.TILT_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+
+    # publish requested values to start tilt trajectory
+    self._tilt_pub.publish(tilt)
+
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        return False
+      # publish feedback message
+      self.publish_feedback_cb()
+      # check if joints have arrived at their goal values
+      if radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
+        return True
+      rate.sleep()
+    raise RuntimeError("Timed out waiting for tilt value to reach goal.")
+
   def publish_feedback_cb(self):
     """overrideable"""
     pass
-
