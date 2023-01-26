@@ -11,20 +11,22 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move all arm joints to either absolute or relative positions "
-              "and stop movement if resistance is encountered.")
+  description="Move all arm joints to either absolute or relative positions. "
+              "Movement will cease if the distal pitch force/torque sensor "
+              "detects a force/torque larger than the provided values. Torque "
+              "of individual arm joints will not cause movement to stop.")
 parser.add_argument('shoulder_yaw', type=float,
-  help="Shoulder yaw joint position/translation in radians")
+  help="Shoulder yaw joint position/rotation in radians")
 parser.add_argument('shoulder_pitch', type=float,
-  help="Shoulder pitch joint position/translation in radians")
+  help="Shoulder pitch joint position/rotation in radians")
 parser.add_argument('proximal_pitch', type=float,
-  help="Proximal pitch joint position/translation in radians")
+  help="Proximal pitch joint position/rotation in radians")
 parser.add_argument('distal_pitch', type=float,
-  help="Distal pitch joint position/translation in radians")
+  help="Distal pitch joint position/rotation in radians")
 parser.add_argument('hand_yaw', type=float,
-  help="Hand yaw joint position/translation in radians")
+  help="Hand yaw joint position/rotation in radians")
 parser.add_argument('scoop_yaw', type=float,
-  help="Scoop yaw joint position/translation in radians")
+  help="Scoop yaw joint position/rotation in radians")
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="If true, joints will be moved to their current position plus the "
        "value provided. If false, joints will move to absolute positions "

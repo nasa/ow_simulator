@@ -15,8 +15,10 @@ from tf.transformations import quaternion_from_euler
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  description="Move end-effector by Cartesian coordinates/translation and " \
-              "stop the movement if resistance is encountered.")
+  description="Move end-effector by Cartesian coordinates/translation. "
+              "Movement will cease if the distal pitch force/torque sensor "
+              "detects a force/torque larger than the provided values. Torque "
+              "of individual arm joints will not cause movement to stop.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
   help="The frame index corresponding to the frame that orientation and "\
