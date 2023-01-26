@@ -31,7 +31,6 @@ add_service_files(
 
 add_action_files(
   DIRECTORY action
-  FILES Deliver.action
   FILES DigLinear.action
   FILES DigCircular.action
   FILES DockIngestSample.action

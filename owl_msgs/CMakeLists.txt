@@ -75,6 +75,7 @@ add_action_files(
   ArmMoveCartesianGuarded.action
   ArmFindSurface.action
   PanTiltMoveCartesian.action
+  TaskDeliverSample.action
 )
 
 ## Generate added messages and services with any dependencies listed here
