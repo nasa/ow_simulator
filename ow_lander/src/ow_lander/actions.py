@@ -203,7 +203,7 @@ class DiscardServer(ArmTrajectoryMixinOld, ActionServerBase):
     return self._planner.discard_sample(goal)
 
 
-class TaskDeliverSampleServer(ArmTrajectoryMixinOld, ActionServerBase):
+class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
 
   name          = 'TaskDeliverSample'
   action_type   = owl_msgs.msg.TaskDeliverSampleAction
