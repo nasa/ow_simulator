@@ -18,9 +18,9 @@ def arg_parsing(req):
   """
   if req.use_defaults:
     # Default trenching values
-    x_delivery = 0.55
-    y_delivery = -0.3
-    z_delivery = 0.82  # was .78
+    x_delivery = rospy.get_param("deliver/x_delivery")
+    y_delivery = rospy.get_param("deliver/y_delivery")
+    z_delivery = rospy.get_param("deliver/z_delivery")  # was .78
   else:
     x_delivery = req.x
     y_delivery = req.y
