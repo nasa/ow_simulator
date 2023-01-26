@@ -1,4 +1,4 @@
-#goal definition
+# goal definition
 int32 frame
 bool relative
 geometry_msgs/Point point
@@ -7,7 +7,5 @@ float64 depth
 float64 length
 ---
 # result
-geometry_msgs/Point final     # arm final position
 ---
 # feedback
-geometry_msgs/Point current   # arm current position

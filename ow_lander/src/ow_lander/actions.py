@@ -167,37 +167,37 @@ class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
     return self._planner.grind(goal)
 
 
-class DigCircularServer(ArmTrajectoryMixin, ActionServerBase):
+class TaskScoopCircularServer(ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'DigCircular'
-  action_type   = ow_lander.msg.DigCircularAction
-  goal_type     = ow_lander.msg.DigCircularGoal
-  feedback_type = ow_lander.msg.DigCircularFeedback
-  result_type   = ow_lander.msg.DigCircularResult
+  name          = 'TaskScoopCircular'
+  action_type   = owl_msgs.msg.TaskScoopCircularAction
+  goal_type     = owl_msgs.msg.TaskScoopCircularGoal
+  feedback_type = owl_msgs.msg.TaskScoopCircularFeedback
+  result_type   = owl_msgs.msg.TaskScoopCircularResult
 
   def plan_trajectory(self, goal):
     return self._planner.dig_circular(goal)
 
 
-class DigLinearServer(ArmTrajectoryMixin, ActionServerBase):
+class TaskScoopLinearServer(ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'DigLinear'
-  action_type   = ow_lander.msg.DigLinearAction
-  goal_type     = ow_lander.msg.DigLinearGoal
-  feedback_type = ow_lander.msg.DigLinearFeedback
-  result_type   = ow_lander.msg.DigLinearResult
+  name          = 'TaskScoopLinear'
+  action_type   = owl_msgs.msg.TaskScoopLinearAction
+  goal_type     = owl_msgs.msg.TaskScoopLinearGoal
+  feedback_type = owl_msgs.msg.TaskScoopLinearFeedback
+  result_type   = owl_msgs.msg.TaskScoopLinearResult
 
   def plan_trajectory(self, goal):
     return self._planner.dig_linear(goal)
 
 
-class DiscardServer(ArmTrajectoryMixin, ActionServerBase):
+class TaskDiscardSampleServer(ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'Discard'
-  action_type   = ow_lander.msg.DiscardAction
-  goal_type     = ow_lander.msg.DiscardGoal
-  feedback_type = ow_lander.msg.DiscardFeedback
-  result_type   = ow_lander.msg.DiscardResult
+  name          = 'TaskDiscardSample'
+  action_type   = owl_msgs.msg.TaskDiscardSampleAction
+  goal_type     = owl_msgs.msg.TaskDiscardSampleGoal
+  feedback_type = owl_msgs.msg.TaskDiscardSampleFeedback
+  result_type   = owl_msgs.msg.TaskDiscardSampleResult
 
   def plan_trajectory(self, goal):
     return self._planner.discard_sample(goal)
