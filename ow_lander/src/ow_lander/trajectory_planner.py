@@ -263,7 +263,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, args):
+    def dig_circular(self, goal):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -272,16 +272,18 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         circ_traj = None
         circ_traj = RobotTrajectory()
 
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        parallel = args.parallel
-        ground_position = args.ground_position
+        x_start = goal.point.x
+        y_start = goal.point.y
+        depth = goal.depth # TODO: reactivate depth where it has been commented out
+        parallel = True
+        ground_position = goal.point.z
+        # TOOD: add scoop_angle
 
         if not parallel:
 
             plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
-            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            if not plan_a or len(plan_a.joint_trajectory.points) == 0:
+                # If no plan found, abort
                 return False
             # Once aligned to move goal and offset, place scoop tip at surface target offset
 
