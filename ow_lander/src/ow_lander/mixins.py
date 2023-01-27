@@ -153,7 +153,7 @@ class FrameMixin:
   @classmethod
   def get_tool_transform(cls):
     tool_transform = FrameTransformer().lookup_transform(
-      cls.COMPARISON_FRAME, constants.TOOL_FRAME_ID)
+      cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
     if tool_transform is None:
       raise RuntimeError("Failed to lookup TOOL frame transform")
     return tool_transform
@@ -164,9 +164,9 @@ class FrameMixin:
       constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_RADIAN_TOLERANCE)
 
   @classmethod
-  def get_intended_end_effector_pose(self, pose, transform=None):
+  def get_intended_end_effector_pose(cls, pose, transform=None):
     if transform is None:
-      return FrameTransformer().transform(pose, self.COMPARISON_FRAME)
+      return FrameTransformer().transform(pose, cls.COMPARISON_FRAME)
     else:
       return do_transform_pose(pose, transform)
 
