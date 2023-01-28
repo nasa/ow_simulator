@@ -8,7 +8,7 @@ from ow_lander import actions
 from ow_lander import constants
 from ow_lander import node_helper
 
-from geometry_msgs import Point, Vector3
+from geometry_msgs.msg import Point, Vector3
 
 import argparse
 

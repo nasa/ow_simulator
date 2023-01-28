@@ -263,7 +263,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, goal):
+    def dig_circular(self, point, depth, scoop_angle, parallel):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -272,12 +272,13 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         circ_traj = None
         circ_traj = RobotTrajectory()
 
-        x_start = goal.point.x
-        y_start = goal.point.y
-        depth = goal.depth # TODO: reactivate depth where it has been commented out
-        parallel = True
-        ground_position = goal.point.z
-        # TOOD: add scoop_angle
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. use normal
+        #  2. use scoop_angle
 
         if not parallel:
 
@@ -500,15 +501,16 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         return plan
 
-    def dig_linear(self, args):
+    def dig_linear(self, point, depth, length):
         """
         :type args: List[bool, float, int, float, float, float]
         """
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        length = args.length
-        ground_position = args.ground_position
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. use normal
 
         plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
         if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort

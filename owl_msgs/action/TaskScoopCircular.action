@@ -2,9 +2,10 @@
 int32 frame
 bool relative
 geometry_msgs/Point point
-geometry_msgs/Vector3 normal
+geometry_msgs/Vector3 normal   # NOTE: Has no affect for OW
 float64 depth
 float64 scoop_angle
+bool parallel
 ---
 # result
 ---
