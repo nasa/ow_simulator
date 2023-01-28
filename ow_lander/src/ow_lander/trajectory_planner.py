@@ -851,7 +851,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return guarded_move_traj
 
-    def discard_sample(self, args):
+    def discard_sample(self, point, height):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -860,9 +860,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
-        x_discard = args.discard.x
-        y_discard = args.discard.y
-        z_discard = args.discard.z
 
         # after sample collect
         mypi = 3.14159
@@ -871,9 +868,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         goal_pose = self._move_arm.get_current_pose().pose
         # position was found from rviz tool
-        goal_pose.position.x = x_discard
-        goal_pose.position.y = y_discard
-        goal_pose.position.z = z_discard
+        goal_pose.position.x = point.x
+        goal_pose.position.y = point.y
+        goal_pose.position.z = point.z + height
 
         r = -179
         p = -20

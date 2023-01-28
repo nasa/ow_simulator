@@ -14,7 +14,7 @@ import argparse
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-  help="Discard sample")
+  description="Discard sample some height above a position on the terrain.")
 parser.add_argument('--frame', '-f', type=int, default=0,
   choices=constants.FRAME_ID_MAP.keys(),
   help="The index of the frame position will be interpreted in "
@@ -27,11 +27,11 @@ parser.add_argument('-y', type=float, default=0.8,
   help="Y-coordinate on surface where sample will be discarded")
 parser.add_argument('-z', type=float, default=constants.DEFAULT_GROUND_HEIGHT,
   help="Z-coordinate on surface where sample will be discarded")
-parser.add_argument('--height', '-h', type=float, default=0.4,
+parser.add_argument('--height', type=float, default=0.7,
   help="Height above position where sample will be dumped")
 args = parser.parse_args()
 
-point_arg = Point(args.x_start, args.y_start, args.z_start)
+point_arg = Point(args.x, args.y, args.z)
 
 node_helper.call_single_use_action_client(actions.TaskDiscardSampleServer,
   frame=args.frame, relative=args.relative, point=point_arg, height=args.height)
