@@ -80,7 +80,7 @@ class ActionServerBase(ABC):
     kwargs -- Keyword arguments that match fields in result_type. Leave empty
               if result type is empty.
     """
-    rospy.loginfo(self.__format_result_msg(f"{self.name}: Succeded", msg))
+    rospy.loginfo(self.__format_result_msg(f"{self.name}: Succeeded", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_succeeded(result, msg)
 

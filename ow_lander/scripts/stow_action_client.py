@@ -15,7 +15,4 @@ parser = argparse.ArgumentParser(
 )
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(
-  actions.StowServer, **vars(args)
-)
-
+node_helper.call_single_use_action_client(actions.StowServer)
