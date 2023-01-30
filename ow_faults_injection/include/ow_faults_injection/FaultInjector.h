@@ -13,6 +13,7 @@
 #include <std_msgs/Float64.h>
 #include <ow_faults_injection/FaultsConfig.h>
 #include <ow_faults_detection/JointStatesFlag.h>
+#include <owl_msgs/ArmEndEffectorForceTorque.h>
 #include <std_msgs/Empty.h>
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
@@ -52,7 +53,7 @@ private:
   
   // Output /faults/joint_states, a modified version of /joint_states, injecting
   // simple message faults that don't need to be simulated at their source.
-  void distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg);
+  void ArmEndEffectorForceTorqueSensorCb(const geometry_msgs::WrenchStamped& msg);
   
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -74,8 +75,8 @@ private:
   ros::Publisher m_joint_state_remapped_pub;
 
   // Force/Torque sensor
-  ros::Subscriber m_dist_pitch_ft_sensor_sub;
-  ros::Publisher m_dist_pitch_ft_sensor_pub;
+  ros::Subscriber m_arm_end_effector_force_torque_sensor_sub;
+  ros::Publisher m_arm_end_effector_force_torque_sensor_pub;
 
   // Camera
   ros::Subscriber m_camera_raw_sub;
