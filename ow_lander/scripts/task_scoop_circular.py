@@ -36,6 +36,10 @@ parser.add_argument('--depth', '-d', type=float, default=0.01,
   help="Desired scooping depth")
 parser.add_argument('--angle', '-a', type=float, default=pi/2.2,
   help="The angle of the arc in radians that the scoop follows as it digs")
+parser.add_argument('--perpendicular', '-p', action='store_true', default=False,
+  help="Dig a trench that is perpendicular to the vector that extends from "
+       "the arm's base to the end-effector. By default the trench will be "
+       "aligned parallel with this vector.")
 args = parser.parse_args()
 
 point_arg = Point(args.x, args.y, args.z)
@@ -43,4 +47,5 @@ normal_arg = Vector3(args.normal[0], args.normal[1], args.normal[2])
 
 node_helper.call_single_use_action_client(actions.TaskScoopCircularServer,
   frame=args.frame, relative=args.relative, point=point_arg,
-  normal=normal_arg, depth=args.depth, scoop_angle=args.angle)
+  normal=normal_arg, depth=args.depth, scoop_angle=args.angle,
+  parallel=not args.perpendicular)

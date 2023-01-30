@@ -289,7 +289,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             # Once aligned to move goal and offset, place scoop tip at surface target offset
 
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(plan_a)
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
             end_pose.position.x = x_start
             end_pose.position.y = y_start
             end_pose.position.z = z_start
@@ -316,7 +316,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
             # if not parallel:
             # Once aligned to trench goal, place hand above trench middle point
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
             plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
             circ_traj = _cascade_plans(circ_traj, plan_d)
