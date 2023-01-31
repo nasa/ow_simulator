@@ -7,9 +7,9 @@
 #include <random>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
+#include <owl_msgs/BatteryRemainingUsefulLife.h>
+#include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
-#include <owl_msgs/RemainingUsefulLife.h>
-#include <owl_msgs/StateOfCharge.h>
 #include <PrognoserFactory.h>
 
 
@@ -48,8 +48,8 @@ private:
                                     double voltage,
                                     double temperature);
   void parseEoD_Event(const ProgEvent& eod_event,
-                      owl_msgs::StateOfCharge& soc_msg,
-                      owl_msgs::RemainingUsefulLife& rul_msg,
+                      owl_msgs::BatteryStateOfCharge& battery_soc_msg,
+                      owl_msgs::BatteryRemainingUsefulLife& battery_rul_msg,
                       owl_msgs::BatteryTemperature& battery_temperature_msg);
   void runPrognoser(double electrical_power);
 

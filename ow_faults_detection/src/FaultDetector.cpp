@@ -231,7 +231,7 @@ void FaultDetector::powerTemperatureListener(const owl_msgs::BatteryTemperature&
   publishPowerSystemFault();
 }
  
-void FaultDetector::powerSOCListener(const owl_msgs::StateOfCharge& msg)
+void FaultDetector::powerSOCListener(const owl_msgs::BatteryStateOfCharge& msg)
 {
   // set initial state of charge
   float current_soc = msg.value;
