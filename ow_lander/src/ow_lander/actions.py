@@ -183,18 +183,15 @@ class TaskScoopCircularServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.TaskScoopCircularResult
 
   def plan_trajectory(self, goal):
-    # NOTE: the normal parameter is intentionally ignored here because our
-    #       dynamic terrain model does not support non-vertically oriented digs
-    frame_id, relative = self.interpret_frame_goal(goal)
+    frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    point = FrameTransformer().transform_present(goal.point,
-      self.END_EFFECTOR_FRAME, frame_id)
+    # NOTE: the dig_circular method computes trajectory in the world frame
+    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
                          f"to the end-effector frame")
-    return self._planner.dig_circular(point, goal.depth, goal.scoop_angle,
-                                      goal.parallel)
+    return self._planner.dig_circular(point, goal.depth, goal.parallel)
 
 
 class TaskScoopLinearServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
@@ -206,13 +203,11 @@ class TaskScoopLinearServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.TaskScoopLinearResult
 
   def plan_trajectory(self, goal):
-    # NOTE: the normal parameter is intentionally ignored here because our
-    #       dynamic terrain model does not support non-vertically oriented digs
-    frame_id, relative = self.interpret_frame_goal(goal)
+    frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    point = FrameTransformer().transform_present(goal.point,
-      self.END_EFFECTOR_FRAME, frame_id)
+    # NOTE: the dig_linear method computes trajectory in the world frame
+    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
                          f"to the end-effector frame")
@@ -231,24 +226,12 @@ class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     frame_id, relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    # point = FrameTransformer().transform_present(goal.point,
-    #   self.END_EFFECTOR_FRAME, frame_id)
-    point = goal.point
-    if relative:
-      t = FrameTransformer().lookup_transform(self.END_EFFECTOR_FRAME, frame_id)
-      # interpret relative to the point on terrain, not relative to scoop
-      # NOTE: this assumes scoop is goal.height above terrain
-      t.transform.translation.z -= goal.height
-      stamped = PointStamped(
-        header=create_most_recent_header(frame_id),
-        point = goal.point
-      )
-      point = do_transform_point(stamped, t).point
+    point = FrameTransformer().transform_present(goal.point,
+      self.END_EFFECTOR_FRAME, frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
                          f"to the end-effector frame")
     return self._planner.discard_sample(point, goal.height)
-    # TODO: Does not verify check pose after trajectory execution
 
 
 class DeliverServer(ArmTrajectoryMixinOld, ActionServerBase):

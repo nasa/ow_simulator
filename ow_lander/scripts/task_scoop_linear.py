@@ -8,7 +8,7 @@ from ow_lander import actions
 from ow_lander import constants
 from ow_lander import node_helper
 
-from geometry_msgs.msg import Point, Vector3
+from geometry_msgs.msg import Point
 
 import argparse
 
@@ -28,9 +28,6 @@ parser.add_argument('-y', type=float, default=0,
   help="Y-coordinate on surface where trench starts")
 parser.add_argument('-z', type=float, default=constants.DEFAULT_GROUND_HEIGHT,
   help="Z-coordinate on surface where trench starts")
-parser.add_argument('--normal', '-n', type=float, nargs=3,
-  default=[0, 0, -1], metavar=('Nx', 'Ny', 'Nz'),
-  help="The normal vector of the trenching plane")
 parser.add_argument('--depth', '-d', type=float, default=0.01,
   help="Desired scooping depth")
 parser.add_argument('--length', '-l', type=float, default=0.1,
@@ -38,8 +35,7 @@ parser.add_argument('--length', '-l', type=float, default=0.1,
 args = parser.parse_args()
 
 point_arg = Point(args.x, args.y, args.z)
-normal_arg = Vector3(args.normal[0], args.normal[1], args.normal[2])
 
 node_helper.call_single_use_action_client(actions.TaskScoopLinearServer,
   frame=args.frame, relative=args.relative, point=point_arg,
-  normal=normal_arg, depth=args.depth, length=args.length)
+  depth=args.depth, length=args.length)

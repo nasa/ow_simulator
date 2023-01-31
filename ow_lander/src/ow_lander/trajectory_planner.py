@@ -263,7 +263,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, point, depth, scoop_angle, parallel):
+    def dig_circular(self, point, depth, parallel):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -277,8 +277,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         ground_position = point.z
 
         # TODO:
-        #  1. use normal
-        #  2. use scoop_angle
+        #  1. implement normal parameter
+        #  2. implement scoop_angle parameter
 
         if not parallel:
 
@@ -390,7 +390,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
 
-    # Compute shoulder yaw angle to trench
+        # Compute shoulder yaw angle to trench
         alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
         h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
                         pow(x_start-constants.X_SHOU, 2))
@@ -505,12 +505,15 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         :type args: List[bool, float, int, float, float, float]
         """
+
+        # NOTE: point must be in world coordinates
+
         x_start = point.x
         y_start = point.y
         ground_position = point.z
 
         # TODO:
-        #  1. use normal
+        #  1. implement normal parameter
 
         plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
         if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
