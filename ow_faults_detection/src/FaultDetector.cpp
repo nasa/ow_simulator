@@ -74,8 +74,10 @@ void FaultDetector::cameraPublishFaultMessages(bool is_fault)
   owl_msgs::CameraFaultsStatus camera_faults_msg;
   if (is_fault) {
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
+    camera_faults_msg.value = CameraFaultsStatus::NO_IMAGE;
   } else {
     m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
+    camera_faults_msg.value = CameraFaultsStatus::NONE;
   }
   publishSystemFaultsMessage();
   m_camera_faults_msg_pub.publish(camera_faults_msg);
