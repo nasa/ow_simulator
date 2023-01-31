@@ -856,6 +856,55 @@ class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
         self._set_preempted("Action was preempted",
           pan_position=self._pan_pos, tilt_position=self._tilt_pos)
 
+
+class PanServer(PanTiltMoveMixin, ActionServerBase):
+
+  name          = 'PanAction'
+  action_type   = owl_msgs.msg.PanAction
+  goal_type     = owl_msgs.msg.PanGoal
+  feedback_type = owl_msgs.msg.PanFeedback
+  result_type   = owl_msgs.msg.PanResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(pan_position = self._pan_pos)
+
+  def execute_action(self, goal):
+    try:
+      not_preempted = self.move_pan(goal.pan)
+    except RuntimeError as err:
+      self._set_aborted(str(err), pan_position=self._pan_pos)
+    else:
+      if not_preempted:
+        self._set_succeeded("Reached commanded pan value",
+                            pan_position=self._pan_pos)
+      else:
+        self._set_preempted("Action was preempted",
+                            pan_position=self._pan_pos)
+
+class TiltServer(PanTiltMoveMixin, ActionServerBase):
+
+  name          = 'TiltAction'
+  action_type   = owl_msgs.msg.TiltAction
+  goal_type     = owl_msgs.msg.TiltGoal
+  feedback_type = owl_msgs.msg.TiltFeedback
+  result_type   = owl_msgs.msg.TiltResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(tilt_position = self._tilt_pos)
+
+  def execute_action(self, goal):
+    try:
+      not_preempted = self.move_tilt(goal.tilt)
+    except RuntimeError as err:
+      self._set_aborted(str(err), tilt_position=self._tilt_pos)
+    else:
+      if not_preempted:
+        self._set_succeeded("Reached commanded tilt value",
+                            tilt_position=self._tilt_pos)
+      else:
+        self._set_preempted("Action was preempted",
+                            tilt_position=self._tilt_pos)
+
 class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveCartesian'
