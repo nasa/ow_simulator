@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
-#include <std_msgs/Int16.h>
 #include <ow_lander/lander_joints.h>
 #include "PowerSystemNode.h"
 
@@ -195,9 +194,9 @@ bool PowerSystemNode::initTopics()
   // Construct the PowerSystemNode publishers
   m_mechanical_power_raw_pub = m_nh.advertise<Float64>("mechanical_power/raw", 1);
   m_mechanical_power_avg_pub = m_nh.advertise<Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<Float64>("power_system_node/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<Int16>("power_system_node/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<Float64>("power_system_node/battery_temperature", 1);
+  m_battery_state_of_charge_pub = m_nh.advertise<owl_msgs::StateOfCharge>("/battery_state_of_charge", 1);
+  m_battery_remaining_useful_life_pub = m_nh.advertise<owl_msgs::RemainingUsefulLife>("/battery_remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
   return true;
@@ -422,9 +421,9 @@ PowerSystemNode::composePrognoserData(double power,
 }
 
 void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
-				     Float64& soc_msg,
-				     Int16& rul_msg,
-				     Float64& battery_temperature_msg)
+				     owl_msgs::StateOfCharge& soc_msg,
+				     owl_msgs::RemainingUsefulLife& rul_msg,
+				     owl_msgs::BatteryTemperature& battery_temperature_msg)
 {
   // The time of event is a `UData` structure, which represents a data
   // point while maintaining uncertainty. For the MonteCarlo predictor
@@ -446,14 +445,14 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
   auto now = MessageClock::now();
   auto now_s = duration_cast<chrono::seconds>(now.time_since_epoch());
   double rul_median = eod_median - now_s.count();
-  rul_msg.data = rul_median;
+  rul_msg.value = rul_median;
 
   // Determine the median SOC.
   UData currentSOC = eod_event.getState()[0];
   auto samplesSOC = currentSOC.getVec();
   sort(samplesSOC.begin(), samplesSOC.end());
   double soc_median = samplesSOC.at(samplesSOC.size() / 2);
-  soc_msg.data = soc_median;
+  soc_msg.value = soc_median;
 
   // Determine the Battery Temperature
   auto stateSamples = eod_event.getSystemState()[0];
@@ -463,7 +462,7 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
 
   auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
-  battery_temperature_msg.data = model_output[TEMPERATURE_INDEX];
+  battery_temperature_msg.value = model_output[TEMPERATURE_INDEX];
 }
 
 void PowerSystemNode::runPrognoser(double electrical_power)
@@ -487,9 +486,9 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   auto prediction = m_prognoser->step(current_data);
 
   // Individual msgs to be published
-  Float64 soc_msg;
-  Int16 rul_msg;
-  Float64 battery_temperature_msg;
+  owl_msgs::StateOfCharge soc_msg;
+  owl_msgs::RemainingUsefulLife rul_msg;
+  owl_msgs::BatteryTemperature battery_temperature_msg;
 
   auto& eod_events = prediction.getEvents();
   if (!eod_events.empty())
@@ -499,8 +498,8 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   }
 
   // publish current SOC, RUL, and battery temperature
-  m_state_of_charge_pub.publish(soc_msg);
-  m_remaining_useful_life_pub.publish(rul_msg);
+  m_battery_state_of_charge_pub.publish(soc_msg);
+  m_battery_remaining_useful_life_pub.publish(rul_msg);
   m_battery_temperature_pub.publish(battery_temperature_msg);
 }
 

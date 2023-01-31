@@ -8,8 +8,9 @@ import sys
 import rospy
 import roslib
 import unittest
-from geometry_msgs.msg import Point, WrenchStamped
+from geometry_msgs.msg import Point, Wrench, Vector3
 from ow_lander.srv import *
+from owl_msgs.msg import ArmEndEffectorForceTorque
 import moveit_commander
 import numpy as np
 
@@ -20,26 +21,29 @@ roslib.load_manifest(PKG)
 # a class that monitors minimum reported frame rate by a gazebo simulation
 class FT_Sensor_Check(unittest.TestCase):
 
+  # expected values for testing ft sensor against [force vector[3], torque vector[3]]
+  _FT_TARGET_STOW   = Wrench(Vector3(-4.25, -14.74, -0.15), Vector3(-0.13, 0.16, -1.70))
+  _FT_TARGET_UNSTOW = Wrench(Vector3(15.20, 0.31, -1.47), Vector3(0.08, 0.15, -1.11))
+
   def __init__(self, *args, **kwargs):
     unittest.TestCase.__init__(self, *args, **kwargs)
     rospy.init_node("ft_sensor_check", anonymous=True)
     self._test_duration = rospy.get_param("/ft_sensor_check/test_duration")
-    self._wrench_msg = None
-    self._dist_pitch_ft_sensor_sub = rospy.Subscriber(
-      "/ft_sensor_dist_pitch", WrenchStamped, self._ft_sensor_dist_pitch_callback)
+    self._ft_wrench_msg = None
+    self._arm_end_effector_force_torque_sensor_sub = rospy.Subscriber(
+      "/arm_end_effector_force_torque", ArmEndEffectorForceTorque, self._arm_end_effector_force_torque_callback)
     moveit_commander.roscpp_initialize(sys.argv)
     self._robot = moveit_commander.RobotCommander()
     self._joint_names = self._robot.get_joint_names("arm")
     self._arm_move_group = moveit_commander.MoveGroupCommander(
         "arm", wait_for_servers=20.0)
 
-
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
-  def _ft_sensor_dist_pitch_callback(self, msg):
-    self._wrench_msg = msg.wrench
+  def _arm_end_effector_force_torque_callback(self, msg):
+    self._ft_wrench_msg = msg.value
 
   def test_01_check_ft_sensor_stowed(self):
 
@@ -49,13 +53,13 @@ class FT_Sensor_Check(unittest.TestCase):
       elapsed = rospy.get_time() - test_start_time
       rospy.sleep(0.1)
 
-    self.assertIsNotNone(self._wrench_msg, "no ft sensor message was received")
-    self.assertAlmostEqual(self._wrench_msg.force.x, -4.25, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.force.y, -14.74, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.force.z, -0.15, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.x, -0.13, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.y, 0.16, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.z, -1.70, delta=1.0)
+    self.assertIsNotNone(self._ft_wrench_msg, "no ft sensor message was received")
+    self.assertAlmostEqual(self._ft_wrench_msg.force.x, self._FT_TARGET_STOW.force.x, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.force.y, self._FT_TARGET_STOW.force.y, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.force.z, self._FT_TARGET_STOW.force.z, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.x, self._FT_TARGET_STOW.torque.x, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.y, self._FT_TARGET_STOW.torque.y, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.z, self._FT_TARGET_STOW.torque.z, delta=1.0)
 
   def _map_named_joint_target_to_list(self, joints_target):
     return [joints_target[n] for n in self._joint_names]
@@ -150,13 +154,13 @@ class FT_Sensor_Check(unittest.TestCase):
       elapsed = rospy.get_time() - test_start_time
       rospy.sleep(0.1)
 
-    self.assertIsNotNone(self._wrench_msg, "no ft sensor message was received")
-    self.assertAlmostEqual(self._wrench_msg.force.x, 15.20, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.force.y, 0.31, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.force.z, -1.47, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.x, 0.08, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.y, 0.15, delta=1.0)
-    self.assertAlmostEqual(self._wrench_msg.torque.z, -1.11, delta=1.0)
+    self.assertIsNotNone(self._ft_wrench_msg, "no ft sensor message was received")
+    self.assertAlmostEqual(self._ft_wrench_msg.force.x, self._FT_TARGET_UNSTOW.force.x, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.force.y, self._FT_TARGET_UNSTOW.force.y, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.force.z, self._FT_TARGET_UNSTOW.force.z, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.x, self._FT_TARGET_UNSTOW.torque.x, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.y, self._FT_TARGET_UNSTOW.torque.y, delta=1.0)
+    self.assertAlmostEqual(self._ft_wrench_msg.torque.z, self._FT_TARGET_UNSTOW.torque.z, delta=1.0)
 
 if __name__ == '__main__':
   import rostest

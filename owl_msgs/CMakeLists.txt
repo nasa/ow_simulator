@@ -50,12 +50,20 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  ArmEndEffectorForceTorque.msg
+  ArmFaultsStatus.msg
   ArmJointAccelerations.msg
   ArmJointPositions.msg
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  BatteryTemperature.msg
+  CameraFaultsStatus.msg
+  PanTiltFaultsStatus.msg
   PanTiltPosition.msg
+  PowerFaultsStatus.msg
+  RemainingUsefulLife.msg
+  StateOfCharge.msg
   SystemFaultsStatus.msg
 )
 
