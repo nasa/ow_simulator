@@ -223,7 +223,7 @@ class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.TaskDiscardSampleResult
 
   def plan_trajectory(self, goal):
-    frame_id, relative = self.interpret_frame_goal(goal)
+    frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     point = FrameTransformer().transform_present(goal.point,
@@ -348,7 +348,6 @@ class ArmMoveCartesianGuardedServer(FrameMixin, ArmActionMixin,
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
           final_pose=self._arm_tip_monitor.get_link_pose(),
-          final_distance=guarded_cb(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
