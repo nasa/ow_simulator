@@ -15,33 +15,20 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
-add_service_files(
-  FILES
-  DeliverSample.srv
-  DigCircular.srv
-  DigLinear.srv
-  Grind.srv
-  GuardedMove.srv
-  Light.srv
-  PublishTrajectory.srv
-  Stop.srv
-  Stow.srv
-  Unstow.srv
-)
-
 add_action_files(
   DIRECTORY action
-  FILES Deliver.action
-  FILES DockIngestSample.action
-  FILES Grind.action
-  FILES GuardedMove.action
-  FILES AntennaPanTilt.action
-  FILES Stop.action
-  FILES ArmMoveJoint.action
-  FILES ArmMoveJoints.action
-  FILES LightSetIntensity.action
-  FILES CameraCapture.action
-  FILES CameraSetExposure.action
+  FILES
+  Deliver.action
+  DockIngestSample.action
+  Grind.action
+  GuardedMove.action
+  AntennaPanTilt.action
+  Stop.action
+  ArmMoveJoint.action
+  ArmMoveJoints.action
+  LightSetIntensity.action
+  CameraCapture.action
+  CameraSetExposure.action
 )
 
 add_message_files(
