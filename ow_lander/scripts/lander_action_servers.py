@@ -25,6 +25,7 @@ server_move_joints    = actions.ArmMoveJointsServer()
 server_move_cartesian = actions.ArmMoveCartesianServer()
 server_move_cartesian_guarded = actions.ArmMoveCartesianGuardedServer()
 server_find_surface   = actions.ArmFindSurfaceServer()
+server_move_joint_guarded = actions.ArmMoveJointsGuardedServer()
 
 # other non-arm lander actions
 server_light_set_intensity = actions.LightSetIntensityServer()
@@ -32,6 +33,8 @@ server_camera_capture      = actions.CameraCaptureServer()
 server_camera_set_exposure = actions.CameraSetExposureServer()
 server_dock_ingest_sample  = actions.DockIngestSampleServer()
 server_antenna_pan_tilt    = actions.AntennaPanTiltServer()
+server_antenna_pan         = actions.PanServer()
+server_antenna_tilt        = actions.TiltServer()
 server_pan_tilt_move_cartesian = actions.PanTiltMoveCartesianServer()
 
 rospy.spin()

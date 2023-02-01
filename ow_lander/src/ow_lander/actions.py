@@ -36,6 +36,12 @@ from ow_lander import constants
 # required for PanTiltCartesianMove
 import math
 
+# This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
+NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
+                              "force nor torque thresholds being breached. " \
+                              "Likely the thresholds were set too high or a " \
+                              "planning error occurred. Try a lower threshold."
+
 #####################
 ## ACTION HELPERS
 #####################
@@ -52,7 +58,6 @@ def _format_guarded_move_success_message(action_name, monitor):
   else:
     return f"{action_name} trajectory completed without breaching force or " \
            f"torque thresholds"
-
 
 #####################
 ## ARM ACTIONS
@@ -304,9 +309,7 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
         # FIXME: this does not handle case where the pose check failed, better
         #        error handling is required
         self._set_aborted(
-          "Arm failed to reach pose despite neither force nor torque " \
-          "thresholds being breached. Likely the thresholds were set too " \
-          "high or a planning error occurred. Try a lower threshold.",
+          NO_THRESHOLD_BREACH_MESSAGE,
           final_pose=self._arm_tip_monitor.get_link_pose(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
@@ -421,9 +424,7 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
         # FIXME: this does not handle case where the pose check failed, better
         #        error handling is required
         self._set_aborted(
-          "Arm failed to reach pose despite neither force nor torque " \
-          "thresholds being breached. Likely the thresholds were set too " \
-          "high or a planning error occurred. Try a lower threshold.",
+          NO_THRESHOLD_BREACH_MESSAGE,
           final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
@@ -490,6 +491,58 @@ class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
       else:
         pos[i] = goal.angles[i]
     return pos
+
+
+# inherit from ArmMoveJoints since lots of code can be reused
+class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
+
+  name          = 'ArmMoveJointsGuarded'
+  action_type   = owl_msgs.msg.ArmMoveJointsGuardedAction
+  goal_type     = owl_msgs.msg.ArmMoveJointsGuardedGoal
+  feedback_type = owl_msgs.msg.ArmMoveJointsGuardedFeedback
+  result_type   = owl_msgs.msg.ArmMoveJointsGuardedResult
+
+  # redefine execute_action to enable FT monitor
+  def execute_action(self, goal):
+    monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
+                                       torque_threshold=goal.torque_threshold)
+    def guarded_cb():
+      self._publish_feedback(
+        angles=self._arm_joints_monitor.get_joint_positions(),
+        force=monitor.get_force(),
+        torque=monitor.get_torque()
+      )
+      if monitor.threshold_breached():
+        self._arm.stop_trajectory_silently()
+    try:
+      self._arm.checkout_arm(self.name)
+      new_positions = self.modify_joint_positions(goal)
+      plan = self._planner.plan_arm_to_joint_angles(new_positions)
+      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
+    except RuntimeError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        angles=self._arm_joints_monitor.get_joint_positions(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+    else:
+      self._arm.checkin_arm(self.name)
+      if not monitor.threshold_breached() \
+          and not self.angles_reached(new_positions):
+        # angles were not reached due to planning/monitor error
+        self._set_aborted(
+          NO_THRESHOLD_BREACH_MESSAGE,
+          final_angles=self._arm_joints_monitor.get_joint_positions(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+        return
+      self._set_succeeded(
+        _format_guarded_move_success_message(self.name, monitor),
+        final_angles=self._arm_joints_monitor.get_joint_positions(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque()
+      )
 
 
 #############################
@@ -731,6 +784,55 @@ class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
       else:
         self._set_preempted("Action was preempted",
           pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+
+
+class PanServer(PanTiltMoveMixin, ActionServerBase):
+
+  name          = 'PanAction'
+  action_type   = owl_msgs.msg.PanAction
+  goal_type     = owl_msgs.msg.PanGoal
+  feedback_type = owl_msgs.msg.PanFeedback
+  result_type   = owl_msgs.msg.PanResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(pan_position = self._pan_pos)
+
+  def execute_action(self, goal):
+    try:
+      not_preempted = self.move_pan(goal.pan)
+    except RuntimeError as err:
+      self._set_aborted(str(err), pan_position=self._pan_pos)
+    else:
+      if not_preempted:
+        self._set_succeeded("Reached commanded pan value",
+                            pan_position=self._pan_pos)
+      else:
+        self._set_preempted("Action was preempted",
+                            pan_position=self._pan_pos)
+
+class TiltServer(PanTiltMoveMixin, ActionServerBase):
+
+  name          = 'TiltAction'
+  action_type   = owl_msgs.msg.TiltAction
+  goal_type     = owl_msgs.msg.TiltGoal
+  feedback_type = owl_msgs.msg.TiltFeedback
+  result_type   = owl_msgs.msg.TiltResult
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(tilt_position = self._tilt_pos)
+
+  def execute_action(self, goal):
+    try:
+      not_preempted = self.move_tilt(goal.tilt)
+    except RuntimeError as err:
+      self._set_aborted(str(err), tilt_position=self._tilt_pos)
+    else:
+      if not_preempted:
+        self._set_succeeded("Reached commanded tilt value",
+                            tilt_position=self._tilt_pos)
+      else:
+        self._set_preempted("Action was preempted",
+                            tilt_position=self._tilt_pos)
 
 class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
 

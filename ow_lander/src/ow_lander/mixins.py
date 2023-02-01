@@ -196,30 +196,24 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   # NOTE: these two helper functions are hacky work-arounds necessary because
   #       ArmMoveJoints.action uses wrong names in feedback and result (OW-1096)
-  def __format_result(self, value):
-    return {self.result_type.__slots__[0] : value}
-  def __format_feedback(self, value):
-    return {self.feedback_type.__slots__[0] : value}
+  def __format_result(self):
+    return {self.result_type.__slots__[0] : self._arm_joints_monitor
+      .get_joint_positions()}
+  def __format_feedback(self):
+    return {self.feedback_type.__slots__[0] : self._arm_joints_monitor
+      .get_joint_positions()}
 
-  def __check_success(self, target):
+  def angles_reached(self, target_angles):
     actual = self._arm_joints_monitor.get_joint_positions()
-    success = all(
+    return all(
       [
         radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
-          for a, b in zip(actual, target)
+          for a, b in zip(actual, target_angles)
       ]
     )
-    if success:
-      self._set_succeeded("Arm joints moved successfully",
-        **self.__format_result(actual))
-    else:
-      self._set_aborted("Arm joints failed to reach intended target",
-        **self.__format_result(actual))
 
   def publish_feedback_cb(self):
-    self._publish_feedback(
-      **self.__format_feedback(self._arm_joints_monitor.get_joint_positions())
-    )
+    self._publish_feedback(**self.__format_feedback())
 
   def execute_action(self, goal):
     try:
@@ -235,7 +229,12 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
         **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
     else:
       self._arm.checkin_arm(self.name)
-      self.__check_success(new_positions)
+      if self.angles_reached(new_positions):
+        self._set_succeeded("Arm joints moved successfully",
+          **self.__format_result())
+      else:
+        self._set_aborted("Arm joints failed to reach intended target angles",
+          **self.__format_result())
 
   @abstractmethod
   def modify_joint_positions(self, goal):
@@ -311,7 +310,55 @@ class PanTiltMoveMixin:
       rate.sleep()
     raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
 
+# NOTE: the following move_pan and move_tilt functions have been
+# dumbly factored out of the previous function.  The FIXME comments
+# above have been omitted but apply.  A more refined refactoring is
+# left to a future iteration.
+
+  def move_pan(self, pan):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
+                           constants.PAN_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+
+    # publish requested values to start pan trajectory
+    self._pan_pub.publish(pan)
+
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        return False
+      # publish feedback message
+      self.publish_feedback_cb()
+      # check if joints have arrived at their goal values
+      if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE):
+        return True
+      rate.sleep()
+    raise RuntimeError("Timed out waiting for pan value to reach goal.")
+
+  def move_tilt(self, tilt):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
+                           constants.PAN_TILT_INPUT_TOLERANCE):
+      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+
+    # publish requested values to start tilt trajectory
+    self._tilt_pub.publish(tilt)
+
+    FREQUENCY = 1 # Hz
+    TIMEOUT = 60 # seconds
+    rate = rospy.Rate(FREQUENCY)
+    for i in range(0, int(TIMEOUT * FREQUENCY)):
+      if self._is_preempt_requested():
+        return False
+      # publish feedback message
+      self.publish_feedback_cb()
+      # check if joints have arrived at their goal values
+      if radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
+        return True
+      rate.sleep()
+    raise RuntimeError("Timed out waiting for tilt value to reach goal.")
+
   def publish_feedback_cb(self):
     """overrideable"""
     pass
-

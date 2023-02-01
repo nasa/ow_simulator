@@ -71,11 +71,14 @@ add_action_files(
   FILES
   ArmStow.action
   ArmUnstow.action
+  ArmMoveJointsGuarded.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
   ArmFindSurface.action
+  Pan.action
   PanTiltMoveCartesian.action
   TaskDeliverSample.action
+  Tilt.action
 )
 
 ## Generate added messages and services with any dependencies listed here
