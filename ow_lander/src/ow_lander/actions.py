@@ -234,13 +234,13 @@ class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     return self._planner.discard_sample(point, goal.height)
 
 
-class DeliverServer(ArmTrajectoryMixinOld, ActionServerBase):
+class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'Deliver'
-  action_type   = ow_lander.msg.DeliverAction
-  goal_type     = ow_lander.msg.DeliverGoal
-  feedback_type = ow_lander.msg.DeliverFeedback
-  result_type   = ow_lander.msg.DeliverResult
+  name          = 'TaskDeliverSample'
+  action_type   = owl_msgs.msg.TaskDeliverSampleAction
+  goal_type     = owl_msgs.msg.TaskDeliverSampleGoal
+  feedback_type = owl_msgs.msg.TaskDeliverSampleFeedback
+  result_type   = owl_msgs.msg.TaskDeliverSampleResult
 
   def plan_trajectory(self, _goal):
     return self._planner.deliver_sample()

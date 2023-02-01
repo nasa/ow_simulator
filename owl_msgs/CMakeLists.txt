@@ -78,6 +78,7 @@ add_action_files(
   Pan.action
   Tilt.action
   PanTiltMoveCartesian.action
+  TaskDeliverSample.action
   TaskDiscardSample.action
   TaskScoopCircular.action
   TaskScoopLinear.action
