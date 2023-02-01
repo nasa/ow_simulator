@@ -77,6 +77,7 @@ add_action_files(
   ArmFindSurface.action
   Pan.action
   PanTiltMoveCartesian.action
+  TaskDeliverSample.action
   Tilt.action
 )
 
