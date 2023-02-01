@@ -1,5 +1,0 @@
-bool use_latest            # Set to true to use the latest trajectory
-string trajectory_filename # The filename of the trajectory to run
----
-bool success
-string message

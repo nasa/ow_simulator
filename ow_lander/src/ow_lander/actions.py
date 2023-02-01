@@ -19,9 +19,10 @@ from geometry_msgs.msg import Point
 from ow_lander.ground_detector import FTSensorThresholdMonitor
 from ow_lander.common import create_most_recent_header, normalize_radians
 # required for ArmFindSurface
-from geometry_msgs.msg import Vector3, PoseStamped, Pose
+from geometry_msgs.msg import Vector3, PoseStamped, Pose, PointStamped
 from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
+from tf2_geometry_msgs import do_transform_point
 
 # required for LightSetIntensity
 from irg_gazebo_plugins.msg import ShaderParamUpdate
@@ -58,6 +59,7 @@ def _format_guarded_move_success_message(action_name, monitor):
   else:
     return f"{action_name} trajectory completed without breaching force or " \
            f"torque thresholds"
+
 
 #####################
 ## ARM ACTIONS
@@ -172,40 +174,64 @@ class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
     return self._planner.grind(goal)
 
 
-class DigCircularServer(ArmTrajectoryMixinOld, ActionServerBase):
+class TaskScoopCircularServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'DigCircular'
-  action_type   = ow_lander.msg.DigCircularAction
-  goal_type     = ow_lander.msg.DigCircularGoal
-  feedback_type = ow_lander.msg.DigCircularFeedback
-  result_type   = ow_lander.msg.DigCircularResult
-
-  def plan_trajectory(self, goal):
-    return self._planner.dig_circular(goal)
-
-
-class DigLinearServer(ArmTrajectoryMixinOld, ActionServerBase):
-
-  name          = 'DigLinear'
-  action_type   = ow_lander.msg.DigLinearAction
-  goal_type     = ow_lander.msg.DigLinearGoal
-  feedback_type = ow_lander.msg.DigLinearFeedback
-  result_type   = ow_lander.msg.DigLinearResult
+  name          = 'TaskScoopCircular'
+  action_type   = owl_msgs.msg.TaskScoopCircularAction
+  goal_type     = owl_msgs.msg.TaskScoopCircularGoal
+  feedback_type = owl_msgs.msg.TaskScoopCircularFeedback
+  result_type   = owl_msgs.msg.TaskScoopCircularResult
 
   def plan_trajectory(self, goal):
-    return self._planner.dig_linear(goal)
+    frame_id, _relative = self.interpret_frame_goal(goal)
+    if frame_id is None:
+      raise RuntimeError(f"Unrecognized frame {goal.frame}")
+    # NOTE: the dig_circular method computes trajectory in the world frame
+    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
+    if point is None:
+      raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
+                         f"to the end-effector frame")
+    return self._planner.dig_circular(point, goal.depth, goal.parallel)
 
 
-class DiscardServer(ArmTrajectoryMixinOld, ActionServerBase):
+class TaskScoopLinearServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
 
-  name          = 'Discard'
-  action_type   = ow_lander.msg.DiscardAction
-  goal_type     = ow_lander.msg.DiscardGoal
-  feedback_type = ow_lander.msg.DiscardFeedback
-  result_type   = ow_lander.msg.DiscardResult
+  name          = 'TaskScoopLinear'
+  action_type   = owl_msgs.msg.TaskScoopLinearAction
+  goal_type     = owl_msgs.msg.TaskScoopLinearGoal
+  feedback_type = owl_msgs.msg.TaskScoopLinearFeedback
+  result_type   = owl_msgs.msg.TaskScoopLinearResult
 
   def plan_trajectory(self, goal):
-    return self._planner.discard_sample(goal)
+    frame_id, _relative = self.interpret_frame_goal(goal)
+    if frame_id is None:
+      raise RuntimeError(f"Unrecognized frame {goal.frame}")
+    # NOTE: the dig_linear method computes trajectory in the world frame
+    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
+    if point is None:
+      raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
+                         f"to the end-effector frame")
+    return self._planner.dig_linear(point, goal.depth, goal.length)
+
+
+class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
+
+  name          = 'TaskDiscardSample'
+  action_type   = owl_msgs.msg.TaskDiscardSampleAction
+  goal_type     = owl_msgs.msg.TaskDiscardSampleGoal
+  feedback_type = owl_msgs.msg.TaskDiscardSampleFeedback
+  result_type   = owl_msgs.msg.TaskDiscardSampleResult
+
+  def plan_trajectory(self, goal):
+    frame_id, _relative = self.interpret_frame_goal(goal)
+    if frame_id is None:
+      raise RuntimeError(f"Unrecognized frame {goal.frame}")
+    point = FrameTransformer().transform_present(goal.point,
+      self.END_EFFECTOR_FRAME, frame_id)
+    if point is None:
+      raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
+                         f"to the end-effector frame")
+    return self._planner.discard_sample(point, goal.height)
 
 
 class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
@@ -220,9 +246,7 @@ class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.deliver_sample()
 
 
-class ArmMoveCartesianServer(ModifyPoseMixin,
-                             ArmActionMixin,
-                             ActionServerBase):
+class ArmMoveCartesianServer(FrameMixin, ArmActionMixin, ActionServerBase):
 
   name          = 'ArmMoveCartesian'
   action_type   = owl_msgs.msg.ArmMoveCartesianAction
@@ -234,35 +258,45 @@ class ArmMoveCartesianServer(ModifyPoseMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    frame_id = self.handle_frame_goal(goal)
+    frame_id, relative = self.interpret_frame_goal(goal)
     if frame_id is None:
-      self._set_aborted(self.abort_message)
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
       pose=goal.pose
     )
-    # perform action
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
+      plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
+      # save current tool transform before executing movement
+      old_tool_transform = self.get_tool_transform() if relative else None
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
+      return
     else:
       self._arm.checkin_arm(self.name)
-      if not self.pose_reached(pose):
-        self._set_aborted(self.abort_message,
+      final = self.get_end_effector_pose()
+      expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
+      if final is None or expected is None:
+        self._set_aborted(
+          "Failed to perform necessary transforms to verify final pose",
+          final_pose=self._arm_tip_monitor.get_link_pose()
+        )
+        return
+      if not self.poses_equivalent(final.pose, expected.pose):
+        self._set_aborted("Failed to reach intended pose",
           final_pose=self._arm_tip_monitor.get_link_pose())
         return
       self._set_succeeded(f"{self.name} trajectory succeeded",
         final_pose=self._arm_tip_monitor.get_link_pose())
 
 
-class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
-                                    ArmActionMixin,
+class ArmMoveCartesianGuardedServer(FrameMixin, ArmActionMixin,
                                     ActionServerBase):
 
   name          = 'ArmMoveCartesianGuarded'
@@ -272,9 +306,10 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
 
   def execute_action(self, goal):
-    frame_id = self.handle_frame_goal(goal)
+    frame_id, relative = self.interpret_frame_goal(goal)
     if frame_id is None:
-      self._set_aborted(self.abort_message)
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
       pose=goal.pose
@@ -290,11 +325,12 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
       )
       if monitor.threshold_breached():
         self._arm.stop_trajectory_silently()
-
     # perform action
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, self.ARM_END_EFFECTOR)
+      plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
+      # save current tool transform before executing movement
+      old_tool_transform = self.get_tool_transform() if relative else None
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
@@ -302,18 +338,27 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
+      return
     else:
       self._arm.checkin_arm(self.name)
-      if not monitor.threshold_breached() and not self.pose_reached(pose):
-        # pose was not reached due to planning/monitor error
-        # FIXME: this does not handle case where the pose check failed, better
-        #        error handling is required
+      # check if requested pose agrees with commanded pose in comparison frame
+      final = self.get_end_effector_pose()
+      expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
+      if final is None or expected is None:
         self._set_aborted(
-          NO_THRESHOLD_BREACH_MESSAGE,
+          "Failed to perform necessary transforms to verify final pose",
           final_pose=self._arm_tip_monitor.get_link_pose(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
+        return
+      if not monitor.threshold_breached() and \
+          not self.poses_equivalent(final.pose, expected.pose):
+        # pose was not reached due to planning/monitor error
+        self._set_aborted(NO_THRESHOLD_BREACH_MESSAGE,
+          final_pose=self._arm_tip_monitor.get_link_pose(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque())
         return
       self._set_succeeded(
         _format_guarded_move_success_message(self.name, monitor),
@@ -323,7 +368,7 @@ class ArmMoveCartesianGuardedServer(ModifyPoseMixin,
       )
 
 
-class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
+class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
 
   name          = 'ArmFindSurface'
   action_type   = owl_msgs.msg.ArmFindSurfaceAction
@@ -333,7 +378,7 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
 
   def publish_feedback_cb(self, distance=0, force=0, torque=0):
     self._publish_feedback(
-      pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+      pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
       distance=distance,
       force=force,
       torque=torque
@@ -342,16 +387,16 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
   def execute_action(self, goal):
     # the normal vector direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
-    frame_id = self.handle_frame_goal(goal)
+    frame_id, relative = self.interpret_frame_goal(goal)
     if frame_id is None:
-      self._set_aborted(self.abort_message)
+      self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
     # orient scoop so that the bottom points in the opposite to the normal
     # NOTE: regardless of frame parameter orientation is in the base_link frame
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD,
                                                      goal.normal)
     start = goal.position
-    if frame_id == constants.FRAME_ID_TOOL:
+    if relative:
       start = FrameTransformer().transform_present(start,
         constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
       if start is None:
@@ -381,20 +426,34 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
     # move to setup pose prior to surface approach
     try:
       self._arm.checkout_arm(self.name)
-      plan1 = self._planner.plan_arm_to_pose(pose1, self.ARM_END_EFFECTOR)
+      plan1 = self._planner.plan_arm_to_pose(pose1, self.END_EFFECTOR)
       self._arm.execute_arm_trajectory(plan1,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
-        final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+        final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
         final_distance=0, final_force=0, final_torque=0)
       return
-    # TODO: pose1 should be verified here, but self.pose_reached does more than
-    #       its name lets one, and should be redesigned. Left as future work
+    else:
+      self._arm.checkin_arm(self.name)
+      final = self.get_end_effector_pose()
+      expected = self.get_intended_end_effector_pose(pose1)
+      if final is None or expected is None:
+        self._set_aborted(
+          "Failed to perform necessary transforms to verify final pose",
+          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_distance=0, final_force=0, final_torque=0
+        )
+        return
+      if not self.poses_equivalent(final.pose, expected.pose):
+        self._set_aborted("Failed to reach setup pose.",
+          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_distance=0, final_force=0, final_torque=0)
+        return
     # local function to compute progress of the action during surface approach
     def compute_distance():
-      pose = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose
+      pose = self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose
       d = math3d.subtract(pose.position, start)
       return math3d.norm(d)
     # setup F/T monitor and its callback
@@ -407,25 +466,37 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
         self._arm.stop_trajectory_silently()
     # move towards surface until F/T is breached or overdrive distance reached
     try:
-      plan2 = self._planner.plan_arm_to_pose(pose2, self.ARM_END_EFFECTOR)
+      self._arm.checkout_arm(self.name)
+      plan2 = self._planner.plan_arm_to_pose(pose2, self.END_EFFECTOR)
       self._arm.execute_arm_trajectory(plan2, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
-        final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+        final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
         final_distance=compute_distance(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
       )
     else:
       self._arm.checkin_arm(self.name)
-      if not monitor.threshold_breached() and not self.pose_reached(pose2):
+      # check if requested pose agrees with commanded pose in comparison frame
+      final = self.get_end_effector_pose()
+      expected = self.get_intended_end_effector_pose(pose2)
+      if final is None or expected is None:
+        self._set_aborted(
+          "Failed to perform necessary transforms to verify final pose",
+          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_distance=compute_distance(),
+          final_force=monitor.get_force(),
+          final_torque=monitor.get_torque()
+        )
+        return
+      if not monitor.threshold_breached() and \
+          not self.poses_equivalent(final.pose, expected.pose):
         # pose was not reached due to planning/monitor error
-        # FIXME: this does not handle case where the pose check failed, better
-        #        error handling is required
         self._set_aborted(
           NO_THRESHOLD_BREACH_MESSAGE,
-          final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
@@ -433,14 +504,14 @@ class ArmFindSurfaceServer(ModifyPoseMixin, ArmActionMixin, ActionServerBase):
       elif not monitor.threshold_breached():
         self._set_succeeded(
           "No surface was found",
-          final_pose=self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose,
+          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
       else:
         msg = _format_guarded_move_success_message(self.name, monitor)
-        pose = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR).pose
+        pose = self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose
         msg += f". Surface found at ({pose.position.x:0.3f}, "
         msg +=                     f"{pose.position.y:0.3f}, "
         msg +=                     f"{pose.position.z:0.3f})"

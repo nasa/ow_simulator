@@ -1,9 +1,0 @@
-bool use_defaults       # Set to true to use the default trench location
-float32 x               # Trench starting point - X coordinate
-float32 y               # Trench starting point - Y coordinate
-float32 depth           # Desired depth
-bool parallel           # If True, resulting trench is parallel to arm. If False, perpendicular to arm
-float32 ground_position # Z coordinate of ground level in base_link frame
----
-bool success
-string message

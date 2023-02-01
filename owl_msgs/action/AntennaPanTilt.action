@@ -1,0 +1,11 @@
+# goal
+float64 pan
+float64 tilt
+---
+# result
+float64 pan_position
+float64 tilt_position
+---
+# feedback
+float64 pan_position
+float64 tilt_position
