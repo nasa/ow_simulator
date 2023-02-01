@@ -31,19 +31,18 @@ add_service_files(
 
 add_action_files(
   DIRECTORY action
-  FILES DigLinear.action
+  FILES ArmMoveJoint.action
+  FILES ArmMoveJoints.action
+  FILES CameraCapture.action
+  FILES CameraSetExposure.action
   FILES DigCircular.action
+  FILES DigLinear.action
+  FILES Discard.action
   FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
-  FILES AntennaPanTilt.action
-  FILES Discard.action
-  FILES Stop.action
-  FILES ArmMoveJoint.action
-  FILES ArmMoveJoints.action
   FILES LightSetIntensity.action
-  FILES CameraCapture.action
-  FILES CameraSetExposure.action
+  FILES Stop.action
 )
 
 add_message_files(

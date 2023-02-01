@@ -69,12 +69,13 @@ add_message_files(
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  ArmStow.action
-  ArmUnstow.action
-  ArmMoveJointsGuarded.action
+  AntennaPanTilt.action
+  ArmFindSurface.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
-  ArmFindSurface.action
+  ArmMoveJointsGuarded.action
+  ArmStow.action
+  ArmUnstow.action
   Pan.action
   PanTiltMoveCartesian.action
   TaskDeliverSample.action
