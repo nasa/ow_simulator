@@ -162,7 +162,7 @@ class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.plan_arm_to_target('arm_stowed')
 
 
-class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
+class TaskGrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
   name          = 'TaskGrind'
   action_type   = ow_lander.msg.TaskGrindAction
