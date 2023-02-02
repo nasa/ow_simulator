@@ -18,7 +18,7 @@ catkin_python_setup()
 add_action_files(
   DIRECTORY action
   FILES DockIngestSample.action
-  FILES Grind.action
+  FILES TaskGrind.action
   FILES GuardedMove.action
   FILES Pan.action
   FILES Tilt.action
