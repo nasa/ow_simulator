@@ -59,17 +59,9 @@ add_message_files(
   SystemFaultsStatus.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  AntennaPanTilt.action
   ArmFindSurface.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
@@ -78,6 +70,7 @@ add_action_files(
   ArmUnstow.action
   Pan.action
   PanTiltMoveCartesian.action
+  PanTiltMoveJoints.action
   TaskDeliverSample.action
   TaskDiscardSample.action
   TaskScoopCircular.action

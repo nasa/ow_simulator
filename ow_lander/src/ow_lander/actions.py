@@ -32,7 +32,7 @@ from sensor_msgs.msg import PointCloud2
 # required for DockIngestSample
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
-# required for AntennaPanTilt
+# required for PanTiltMoveJoints
 from ow_lander import constants
 # required for PanTiltCartesianMove
 import math
@@ -830,13 +830,13 @@ class DockIngestSampleServer(ActionServerBase):
       self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
 
 
-class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
+class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'AntennaPanTiltAction'
-  action_type   = ow_lander.msg.AntennaPanTiltAction
-  goal_type     = ow_lander.msg.AntennaPanTiltGoal
-  feedback_type = ow_lander.msg.AntennaPanTiltFeedback
-  result_type   = ow_lander.msg.AntennaPanTiltResult
+  name          = 'PanTiltMoveJointsAction'
+  action_type   = owl_msgs.msg.PanTiltMoveJointsAction
+  goal_type     = owl_msgs.msg.PanTiltMoveJointsGoal
+  feedback_type = owl_msgs.msg.PanTiltMoveJointsFeedback
+  result_type   = owl_msgs.msg.PanTiltMoveJointsResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos,
