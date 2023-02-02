@@ -65,6 +65,8 @@ add_action_files(
   ArmFindSurface.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
+  ArmMoveJoint.action
+  ArmMoveJoints.action
   ArmMoveJointsGuarded.action
   ArmStow.action
   ArmUnstow.action

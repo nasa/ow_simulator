@@ -527,10 +527,10 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoint'
-  action_type   = ow_lander.msg.ArmMoveJointAction
-  goal_type     = ow_lander.msg.ArmMoveJointGoal
-  feedback_type = ow_lander.msg.ArmMoveJointFeedback
-  result_type   = ow_lander.msg.ArmMoveJointResult
+  action_type   = owl_msgs.msg.ArmMoveJointAction
+  goal_type     = owl_msgs.msg.ArmMoveJointGoal
+  feedback_type = owl_msgs.msg.ArmMoveJointFeedback
+  result_type   = owl_msgs.msg.ArmMoveJointResult
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -546,10 +546,10 @@ class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoints'
-  action_type   = ow_lander.msg.ArmMoveJointsAction
-  goal_type     = ow_lander.msg.ArmMoveJointsGoal
-  feedback_type = ow_lander.msg.ArmMoveJointsFeedback
-  result_type   = ow_lander.msg.ArmMoveJointsResult
+  action_type   = owl_msgs.msg.ArmMoveJointsAction
+  goal_type     = owl_msgs.msg.ArmMoveJointsGoal
+  feedback_type = owl_msgs.msg.ArmMoveJointsFeedback
+  result_type   = owl_msgs.msg.ArmMoveJointsResult
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
