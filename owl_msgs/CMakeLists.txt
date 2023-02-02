@@ -70,6 +70,8 @@ add_action_files(
   ArmMoveJointsGuarded.action
   ArmStow.action
   ArmUnstow.action
+  CameraCapture.action
+  CameraSetExposure.action
   Pan.action
   PanTiltMoveCartesian.action
   PanTiltMoveJoints.action

@@ -667,10 +667,10 @@ class LightSetIntensityServer(ActionServerBase):
 class CameraCaptureServer(ActionServerBase):
 
   name          = 'CameraCapture'
-  action_type   = ow_lander.msg.CameraCaptureAction
-  goal_type     = ow_lander.msg.CameraCaptureGoal
-  feedback_type = ow_lander.msg.CameraCaptureFeedback
-  result_type   = ow_lander.msg.CameraCaptureResult
+  action_type   = owl_msgs.msg.CameraCaptureAction
+  goal_type     = owl_msgs.msg.CameraCaptureGoal
+  feedback_type = owl_msgs.msg.CameraCaptureFeedback
+  result_type   = owl_msgs.msg.CameraCaptureResult
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
@@ -718,10 +718,10 @@ class CameraCaptureServer(ActionServerBase):
 class CameraSetExposureServer(ActionServerBase):
 
   name          = 'CameraSetExposure'
-  action_type   = ow_lander.msg.CameraSetExposureAction
-  goal_type     = ow_lander.msg.CameraSetExposureGoal
-  feedback_type = ow_lander.msg.CameraSetExposureFeedback
-  result_type   = ow_lander.msg.CameraSetExposureResult
+  action_type   = owl_msgs.msg.CameraSetExposureAction
+  goal_type     = owl_msgs.msg.CameraSetExposureGoal
+  feedback_type = owl_msgs.msg.CameraSetExposureFeedback
+  result_type   = owl_msgs.msg.CameraSetExposureResult
 
   def __init__(self):
     super(CameraSetExposureServer, self).__init__()

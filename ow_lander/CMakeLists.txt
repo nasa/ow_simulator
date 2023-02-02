@@ -17,8 +17,6 @@ catkin_python_setup()
 
 add_action_files(
   DIRECTORY action
-  FILES CameraCapture.action
-  FILES CameraSetExposure.action
   FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
