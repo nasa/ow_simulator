@@ -11,7 +11,7 @@ from ow_lander import actions
 rospy.init_node('arm_action_servers')
 
 # arm actions
-server_stop           = actions.StopServer()
+server_stop           = actions.ArmStopServer()
 server_guarded_move   = actions.GuardedMoveServer()
 server_unstow         = actions.ArmUnstowServer()
 server_stow           = actions.ArmStowServer()

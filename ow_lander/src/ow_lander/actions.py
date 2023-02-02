@@ -65,13 +65,13 @@ def _format_guarded_move_success_message(action_name, monitor):
 ## ARM ACTIONS
 #####################
 
-class StopServer(ArmActionMixin, ActionServerBase):
+class ArmStopServer(ArmActionMixin, ActionServerBase):
 
-  name          = 'Stop'
-  action_type   = ow_lander.msg.StopAction
-  goal_type     = ow_lander.msg.StopGoal
-  feedback_type = ow_lander.msg.StopFeedback
-  result_type   = ow_lander.msg.StopResult
+  name          = 'ArmStop'
+  action_type   = owl_msgs.msg.StopAction
+  goal_type     = owl_msgs.msg.StopGoal
+  feedback_type = owl_msgs.msg.StopFeedback
+  result_type   = owl_msgs.msg.StopResult
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():
@@ -623,10 +623,10 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
 class LightSetIntensityServer(ActionServerBase):
 
   name          = 'LightSetIntensity'
-  action_type   = ow_lander.msg.LightSetIntensityAction
-  goal_type     = ow_lander.msg.LightSetIntensityGoal
-  feedback_type = ow_lander.msg.LightSetIntensityFeedback
-  result_type   = ow_lander.msg.LightSetIntensityResult
+  action_type   = owl_msgs.msg.LightSetIntensityAction
+  goal_type     = owl_msgs.msg.LightSetIntensityGoal
+  feedback_type = owl_msgs.msg.LightSetIntensityFeedback
+  result_type   = owl_msgs.msg.LightSetIntensityResult
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__()

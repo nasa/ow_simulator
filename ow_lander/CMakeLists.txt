@@ -20,8 +20,6 @@ add_action_files(
   FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
-  FILES Stop.action
-  FILES LightSetIntensity.action
 )
 
 add_message_files(
