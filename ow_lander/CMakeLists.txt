@@ -20,6 +20,8 @@ add_action_files(
   FILES DockIngestSample.action
   FILES Grind.action
   FILES GuardedMove.action
+  FILES Pan.action
+  FILES Tilt.action
 )
 
 add_message_files(

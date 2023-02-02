@@ -860,10 +860,10 @@ class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
 class PanServer(PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanAction'
-  action_type   = owl_msgs.msg.PanAction
-  goal_type     = owl_msgs.msg.PanGoal
-  feedback_type = owl_msgs.msg.PanFeedback
-  result_type   = owl_msgs.msg.PanResult
+  action_type   = ow_lander.msg.PanAction
+  goal_type     = ow_lander.msg.PanGoal
+  feedback_type = ow_lander.msg.PanFeedback
+  result_type   = ow_lander.msg.PanResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos)
@@ -884,10 +884,10 @@ class PanServer(PanTiltMoveMixin, ActionServerBase):
 class TiltServer(PanTiltMoveMixin, ActionServerBase):
 
   name          = 'TiltAction'
-  action_type   = owl_msgs.msg.TiltAction
-  goal_type     = owl_msgs.msg.TiltGoal
-  feedback_type = owl_msgs.msg.TiltFeedback
-  result_type   = owl_msgs.msg.TiltResult
+  action_type   = ow_lander.msg.TiltAction
+  goal_type     = ow_lander.msg.TiltGoal
+  feedback_type = ow_lander.msg.TiltFeedback
+  result_type   = ow_lander.msg.TiltResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(tilt_position = self._tilt_pos)

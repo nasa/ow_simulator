@@ -74,14 +74,12 @@ add_action_files(
   CameraCapture.action
   CameraSetExposure.action
   LightSetIntensity.action
-  Pan.action
   PanTiltMoveCartesian.action
   PanTiltMoveJoints.action
   TaskDeliverSample.action
   TaskDiscardSample.action
   TaskScoopCircular.action
   TaskScoopLinear.action
-  Tilt.action
 )
 
 ## Generate added messages and services with any dependencies listed here
