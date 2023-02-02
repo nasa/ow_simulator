@@ -68,10 +68,10 @@ def _format_guarded_move_success_message(action_name, monitor):
 class ArmStopServer(ArmActionMixin, ActionServerBase):
 
   name          = 'ArmStop'
-  action_type   = owl_msgs.msg.StopAction
-  goal_type     = owl_msgs.msg.StopGoal
-  feedback_type = owl_msgs.msg.StopFeedback
-  result_type   = owl_msgs.msg.StopResult
+  action_type   = owl_msgs.msg.ArmStopAction
+  goal_type     = owl_msgs.msg.ArmStopGoal
+  feedback_type = owl_msgs.msg.ArmStopFeedback
+  result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():
