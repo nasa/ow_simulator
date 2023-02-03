@@ -57,24 +57,20 @@ private:
   // Get index from m_joint_index_map. If found, modify out_index and return
   // true. Otherwise, return false.
   bool findJointIndex(const unsigned int joint, unsigned int& out_index);
-
-  // Antenna
-  void antPublishFaultMessages();
   
   // Camera
   void cameraTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
-  void cameraPublishFaultMessages(bool is_fault);
 
   // Power
-  void publishPowerSystemFault();
   void powerSOCListener(const owl_msgs::BatteryStateOfCharge& msg);
   void powerTemperatureListener(const owl_msgs::BatteryTemperature& msg);
 
   // OWLAT MESSAGE FUNCTIONS AND PUBLISHERS
-  void publishSystemFaultsMessage();
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
+  template<typename faults_msg_pub_t, typename faults_msg_t, typename faults_flags_t>
+  void publishFaultsMessage(faults_msg_pub_t& faults_msg_pub, faults_msg_t& faults_msg, faults_flags_t faults_flags);
 
   // PUBLISHERS AND SUBSCRIBERS
   
@@ -85,32 +81,23 @@ private:
   ros::Publisher m_power_faults_msg_pub;
   ros::Publisher m_system_faults_msg_pub;
 
-  // Arm and antenna
-  ros::Subscriber m_joint_states_sub;
-
-  // Camera
+  // faults topic subscribers;
+  ros::Subscriber m_joint_states_sub; // for arm and antenna
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
-
-  // Power
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
 
-  // VARIABLES
-  
-  // System 
-  uint64_t m_system_faults_flags = 0;
+  // faults bitflags
+  uint64_t m_arm_faults_flags     = owl_msgs::ArmFaultsStatus::NONE;
+  uint64_t m_antenna_faults_flags = owl_msgs::PanTiltFaultsStatus::NONE;
+  uint64_t m_camera_faults_flags  = owl_msgs::CameraFaultsStatus::NONE;
+  uint64_t m_power_faults_flags   = owl_msgs::PowerFaultsStatus::NONE;
+  uint64_t m_system_faults_flags  = owl_msgs::SystemFaultsStatus::NONE;
+
+  // component variables
   std::vector<unsigned int> m_joint_state_indices;
-  
-  // Antenna
-  bool m_pan_fault;
-  bool m_tilt_fault;
-  
-  // Camera
   bool m_camera_data_pending = false;
-  
-  // Power
-  uint64_t m_power_faults_flags = 0;
   float m_last_soc = std::numeric_limits<float>::quiet_NaN();
 };
 
