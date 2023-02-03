@@ -177,14 +177,15 @@ void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
   if (m_camera_data_pending) {
     m_camera_faults_flags |= CameraFaultsStatus::NO_IMAGE;
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
+
+    // publish updated faults messages
+    owl_msgs::CameraFaultsStatus camera_faults_msg;
+    publishFaultsMessage(m_camera_faults_msg_pub, camera_faults_msg, m_camera_faults_flags);
+    owl_msgs::SystemFaultsStatus system_faults_msg;
+    publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
+    // exonerated faults will get published in the camera raw callback
   }
   m_camera_data_pending = true;
-
-  // publish updated faults messages
-  owl_msgs::CameraFaultsStatus camera_faults_msg;
-  publishFaultsMessage(m_camera_faults_msg_pub, camera_faults_msg, m_camera_faults_flags);
-  owl_msgs::SystemFaultsStatus system_faults_msg;
-  publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
