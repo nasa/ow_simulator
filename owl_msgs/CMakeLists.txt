@@ -67,25 +67,27 @@ add_message_files(
   SystemFaultsStatus.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  ArmStow.action
-  ArmUnstow.action
-  ArmMoveJointsGuarded.action
+  ArmFindSurface.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
-  ArmFindSurface.action
-  Pan.action
+  ArmMoveJoint.action
+  ArmMoveJoints.action
+  ArmMoveJointsGuarded.action
+  ArmStop.action
+  ArmStow.action
+  ArmUnstow.action
+  CameraCapture.action
+  CameraSetExposure.action
+  LightSetIntensity.action
   PanTiltMoveCartesian.action
-  Tilt.action
+  PanTiltMoveJoints.action
+  TaskDeliverSample.action
+  TaskDiscardSample.action
+  TaskScoopCircular.action
+  TaskScoopLinear.action
 )
 
 ## Generate added messages and services with any dependencies listed here

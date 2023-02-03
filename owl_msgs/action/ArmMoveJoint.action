@@ -1,0 +1,11 @@
+# goal definition
+bool relative
+int32 joint
+float64 angle
+---
+# result
+float64[] final_angles
+---
+# feedback
+float64[] angles
+

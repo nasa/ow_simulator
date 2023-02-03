@@ -130,63 +130,52 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
   def plan_trajectory(self, goal):
     pass
 
-class ModifyPoseMixin:
+
+class FrameMixin:
   """Can be inherited by ArmMoveActions that modify pose. DOES NOT implement an
   arm interface, and so must be inherited along with ArmActionMixin or one of
   its children.
   """
 
-  ARM_END_EFFECTOR = 'l_scoop_tip'
   COMPARISON_FRAME = 'world'
+  END_EFFECTOR = 'l_scoop_tip'
+  END_EFFECTOR_FRAME = 'base_link'
+
+  @classmethod
+  def interpret_frame_goal(cls, goal):
+    if goal.frame not in constants.FRAME_ID_MAP:
+      return None, None
+    # selecting relative is the same as selecting the Tool frame and vice versa
+    relative = goal.relative or goal.frame == constants.FRAME_TOOL
+    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative else \
+               constants.FRAME_ID_MAP[goal.frame]
+    return frame_id, relative
+
+  @classmethod
+  def get_tool_transform(cls):
+    tool_transform = FrameTransformer().lookup_transform(
+      cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
+    if tool_transform is None:
+      raise RuntimeError("Failed to lookup TOOL frame transform")
+    return tool_transform
+
+  @classmethod
+  def poses_equivalent(cls, pose1, pose2):
+    return math3d.poses_approx_equivalent(pose1, pose2,
+      constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_RADIAN_TOLERANCE)
+
+  @classmethod
+  def get_intended_end_effector_pose(cls, pose, transform=None):
+    if transform is None:
+      return FrameTransformer().transform(pose, cls.COMPARISON_FRAME)
+    else:
+      return do_transform_pose(pose, transform)
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.abort_message = ""
-    self.old_tool_transform = None
 
-  def handle_frame_goal(self, goal):
-    self.abort_message = ""
-    self.old_tool_transform = None
-    if goal.frame not in constants.FRAME_ID_MAP:
-      self.abort_message = f"Unrecognized frame {goal.frame}"
-      return None
-    # selecting relative is the same as selecting the Tool frame and vice versa
-    relative = goal.relative or goal.frame == constants.FRAME_TOOL
-    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative \
-               else constants.FRAME_ID_MAP[goal.frame]
-
-    # save tool transform now so the old transform can be used for comparison
-    if relative:
-      self.old_tool_transform = FrameTransformer() \
-        .lookup_transform(self.COMPARISON_FRAME, frame_id)
-      if self.old_tool_transform is None:
-        self.abort_message = "Failed to lookup TOOL frame transform"
-        return None
-    return frame_id
-
-  def pose_reached(self, pose):
-    # check if requested pose agrees with commanded pose in comparison frame
-    final = self._planner.get_end_effector_pose(self.ARM_END_EFFECTOR,
-      frame_id=self.COMPARISON_FRAME)
-    # the transform before tool movement must be used because the Tool frame
-    # moves with the tool
-    expected = None
-    if self.old_tool_transform is not None: # if movement was relative
-      # this function ignores the header
-      expected = do_transform_pose(pose,
-        self.old_tool_transform)
-      self.old_tool_transform = None
-    else:
-      expected = FrameTransformer().transform(pose, self.COMPARISON_FRAME)
-    if final is None or expected is None:
-      self.abort_message = "Failed to perform necessary transforms to verify " \
-                           "final pose"
-      return False
-    if math3d.poses_approx_equivalent(expected.pose, final.pose,
-        constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_METER_TOLERANCE):
-      return True
-    else:
-      self.abort_message = "Failed to reach commanded pose"
+  def get_end_effector_pose(self, frame_id='world'):
+    return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
@@ -195,7 +184,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
 
   # NOTE: these two helper functions are hacky work-arounds necessary because
-  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-1096)
+  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-950)
   def __format_result(self):
     return {self.result_type.__slots__[0] : self._arm_joints_monitor
       .get_joint_positions()}

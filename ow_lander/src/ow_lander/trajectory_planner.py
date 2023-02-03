@@ -263,7 +263,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, args):
+    def dig_circular(self, point, depth, parallel):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -272,21 +272,24 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         circ_traj = None
         circ_traj = RobotTrajectory()
 
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        parallel = args.parallel
-        ground_position = args.ground_position
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. implement normal parameter
+        #  2. implement scoop_angle parameter
 
         if not parallel:
 
             plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
-            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            if not plan_a or len(plan_a.joint_trajectory.points) == 0:
+                # If no plan found, abort
                 return False
             # Once aligned to move goal and offset, place scoop tip at surface target offset
 
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(plan_a)
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
             end_pose.position.x = x_start
             end_pose.position.y = y_start
             end_pose.position.z = z_start
@@ -313,7 +316,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
             # if not parallel:
             # Once aligned to trench goal, place hand above trench middle point
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
             plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
             circ_traj = _cascade_plans(circ_traj, plan_d)
@@ -387,7 +390,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
 
-    # Compute shoulder yaw angle to trench
+        # Compute shoulder yaw angle to trench
         alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
         h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
                         pow(x_start-constants.X_SHOU, 2))
@@ -498,15 +501,19 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         return plan
 
-    def dig_linear(self, args):
+    def dig_linear(self, point, depth, length):
         """
         :type args: List[bool, float, int, float, float, float]
         """
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        length = args.length
-        ground_position = args.ground_position
+
+        # NOTE: point must be in world coordinates
+
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. implement normal parameter
 
         plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
         if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -849,7 +856,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return guarded_move_traj
 
-    def discard_sample(self, args):
+    def discard_sample(self, point, height):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -858,9 +865,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
-        x_discard = args.discard.x
-        y_discard = args.discard.y
-        z_discard = args.discard.z
 
         # after sample collect
         mypi = 3.14159
@@ -869,9 +873,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         goal_pose = self._move_arm.get_current_pose().pose
         # position was found from rviz tool
-        goal_pose.position.x = x_discard
-        goal_pose.position.y = y_discard
-        goal_pose.position.z = z_discard
+        goal_pose.position.x = point.x
+        goal_pose.position.y = point.y
+        goal_pose.position.z = point.z + height
 
         r = -179
         p = -20
