@@ -20,7 +20,7 @@ parser.add_argument('--frame', '-f', type=int, default=0,
   help="The index of the frame position will be interpreted in "
        + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
-  help="If True, position will be interpreted in the tool's frame")
+  help="Position will be interpreted in the tool's frame")
 parser.add_argument('-x', type=float, default=1.5,
   help="X-coordinate on surface where sample will be discarded")
 parser.add_argument('-y', type=float, default=0.8,

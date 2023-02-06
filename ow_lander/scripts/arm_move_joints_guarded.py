@@ -28,9 +28,8 @@ parser.add_argument('hand_yaw', type=float,
 parser.add_argument('scoop_yaw', type=float,
   help="Scoop yaw joint position/rotation in radians")
 parser.add_argument('--relative', '-r', action='store_true', default=False,
-  help="If true, joints will be moved to their current position plus the "
-       "value provided. If false, joints will move to absolute positions "
-       "indicated by the provided values.")
+  help="Joints will move to the provided positions relative to their current "
+       "positions.")
 parser.add_argument('--force', type=float, default=200,
   help="Arm will stop when F/T sensor encounters a force above this value in "
        "Newtons")
