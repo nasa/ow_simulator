@@ -33,7 +33,7 @@ class FaultDetector
 {
 public:
   FaultDetector(ros::NodeHandle& nh);
-  ~FaultDetector(){}
+  ~FaultDetector() = default;
   
   FaultDetector (const FaultDetector&) = delete;
   FaultDetector& operator= (const FaultDetector&) = delete;
@@ -69,8 +69,8 @@ private:
   // OWLAT MESSAGE FUNCTIONS AND PUBLISHERS
   template<typename fault_msg>
   void setFaultsMessageHeader(fault_msg& msg);
-  template<typename faults_msg_pub_t, typename faults_msg_t, typename faults_flags_t>
-  void publishFaultsMessage(faults_msg_pub_t& faults_msg_pub, faults_msg_t& faults_msg, faults_flags_t faults_flags);
+  template<typename pub_t, typename msg_t, typename flags_t>
+  void publishFaultsMessage(pub_t& faults_pub, msg_t faults_msg, flags_t faults_flags);
 
   // PUBLISHERS AND SUBSCRIBERS
   

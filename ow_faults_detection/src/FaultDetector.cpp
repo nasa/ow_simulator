@@ -43,11 +43,11 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
-  m_arm_faults_msg_pub = nh.advertise<owl_msgs::ArmFaultsStatus>("/arm_faults_status", 10);
-  m_antenna_faults_msg_pub = nh.advertise<owl_msgs::PanTiltFaultsStatus>("/pan_tilt_faults_status", 10);
-  m_camera_faults_msg_pub = nh.advertise<owl_msgs::CameraFaultsStatus>("/camera_faults_status", 10);
-  m_power_faults_msg_pub = nh.advertise<owl_msgs::PowerFaultsStatus>("/power_faults_status", 10);
-  m_system_faults_msg_pub = nh.advertise<owl_msgs::SystemFaultsStatus>("/system_faults_status", 10);
+  m_arm_faults_msg_pub = nh.advertise<ArmFaultsStatus>("/arm_faults_status", 10);
+  m_antenna_faults_msg_pub = nh.advertise<PanTiltFaultsStatus>("/pan_tilt_faults_status", 10);
+  m_camera_faults_msg_pub = nh.advertise<CameraFaultsStatus>("/camera_faults_status", 10);
+  m_power_faults_msg_pub = nh.advertise<PowerFaultsStatus>("/power_faults_status", 10);
+  m_system_faults_msg_pub = nh.advertise<SystemFaultsStatus>("/system_faults_status", 10);
 
 }
 
@@ -59,16 +59,16 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
   msg.header.frame_id = "world";
 }
 
-template<typename faults_msg_pub_t, typename faults_msg_t, typename faults_flags_t>
-void FaultDetector::publishFaultsMessage(faults_msg_pub_t& faults_msg_pub, faults_msg_t& faults_msg, faults_flags_t faults_flags)
+template<typename pub_t, typename msg_t, typename flags_t>
+void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flags_t fault_flags)
 {
-  setFaultsMessageHeader(faults_msg);
-  if (faults_flags) {
-    faults_msg.value |= faults_flags;
+  setFaultsMessageHeader(fault_msg);
+  if (fault_flags) {
+    fault_msg.value |= fault_flags;
   } else {
-    faults_msg.value &= ~faults_flags;
+    fault_msg.value &= ~fault_flags;
   }
-  faults_msg_pub.publish(faults_msg);
+  fault_pub.publish(fault_msg);
 }
 
 // Listeners
@@ -144,12 +144,9 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // publish updated faults messages
-  owl_msgs::ArmFaultsStatus arm_faults_msg;
-  publishFaultsMessage(m_arm_faults_msg_pub, arm_faults_msg, m_arm_faults_flags);
-  owl_msgs::PanTiltFaultsStatus antenna_faults_msg;
-  publishFaultsMessage(m_antenna_faults_msg_pub, antenna_faults_msg, m_antenna_faults_flags);
-  owl_msgs::SystemFaultsStatus system_faults_msg;
-  publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
+  publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
+  publishFaultsMessage(m_antenna_faults_msg_pub, PanTiltFaultsStatus(), m_antenna_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
 
 template<typename group_t, typename item_t>
@@ -178,12 +175,9 @@ void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
     m_camera_faults_flags |= CameraFaultsStatus::NO_IMAGE;
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
 
-    // publish updated faults messages
-    owl_msgs::CameraFaultsStatus camera_faults_msg;
-    publishFaultsMessage(m_camera_faults_msg_pub, camera_faults_msg, m_camera_faults_flags);
-    owl_msgs::SystemFaultsStatus system_faults_msg;
-    publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
-    // exonerated faults will get published in the camera raw callback
+    // publish updated faults messages (exonerated faults published in cameraRawCb)
+    publishFaultsMessage(m_camera_faults_msg_pub, CameraFaultsStatus(), m_camera_faults_flags);
+    publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
   }
   m_camera_data_pending = true;
 }
@@ -196,14 +190,12 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
   m_camera_data_pending = false;
 
   // publish updated faults messages
-  owl_msgs::CameraFaultsStatus camera_faults_msg;
-  publishFaultsMessage(m_camera_faults_msg_pub, camera_faults_msg, m_camera_faults_flags);
-  owl_msgs::SystemFaultsStatus system_faults_msg;
-  publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
+  publishFaultsMessage(m_camera_faults_msg_pub, CameraFaultsStatus(), m_camera_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
 
 //// Power Topic Listeners
-void FaultDetector::powerTemperatureListener(const owl_msgs::BatteryTemperature& msg)
+void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
 {
   // check for excessive battery temperature
   if (msg.value > POWER_THERMAL_MAX) {
@@ -220,13 +212,11 @@ void FaultDetector::powerTemperatureListener(const owl_msgs::BatteryTemperature&
   }
 
   // publish updated faults messages
-  owl_msgs::PowerFaultsStatus power_faults_msg;
-  publishFaultsMessage(m_power_faults_msg_pub, power_faults_msg, m_power_faults_flags);
-  owl_msgs::SystemFaultsStatus system_faults_msg;
-  publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
+  publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
  
-void FaultDetector::powerSOCListener(const owl_msgs::BatteryStateOfCharge& msg)
+void FaultDetector::powerSOCListener(const BatteryStateOfCharge& msg)
 {
   // set initial state of charge
   float current_soc = msg.value;
@@ -257,10 +247,8 @@ void FaultDetector::powerSOCListener(const owl_msgs::BatteryStateOfCharge& msg)
   }
 
   // publish updated faults messages
-  owl_msgs::PowerFaultsStatus power_faults_msg;
-  publishFaultsMessage(m_power_faults_msg_pub, power_faults_msg, m_power_faults_flags);
-  owl_msgs::SystemFaultsStatus system_faults_msg;
-  publishFaultsMessage(m_system_faults_msg_pub, system_faults_msg, m_system_faults_flags);
+  publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
 
 
