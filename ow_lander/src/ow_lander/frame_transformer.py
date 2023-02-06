@@ -69,6 +69,7 @@ class FrameTransformer(metaclass = Singleton):
   # > "world" passed to lookupTransform argument target_frame does not exist.
   # This example occurred when transforming to the "world" frame, which should
   # exist, but it may occur when transforming into other frames as well.
+  # See Jira OW-1115
   def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0.1)):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
