@@ -21,7 +21,7 @@ parser.add_argument('--frame', '-f', type=int, default=0,
   help="The index of the frame surface position will be interpreted in "
        + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
-  help="If relative, position will be interpreted in the tool's frame")
+  help="Position will be interpreted in the tool's frame")
 parser.add_argument('-x', type=float, default=1.46,
   help="X-coordinate on surface where trench starts")
 parser.add_argument('-y', type=float, default=0,

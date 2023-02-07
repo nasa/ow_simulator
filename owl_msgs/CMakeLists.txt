@@ -84,7 +84,9 @@ add_action_files(
   LightSetIntensity.action
   PanTiltMoveCartesian.action
   PanTiltMoveJoints.action
+  PanTiltMoveCartesian.action
   TaskDeliverSample.action
+  TaskGrind.action
   TaskDiscardSample.action
   TaskScoopCircular.action
   TaskScoopLinear.action
