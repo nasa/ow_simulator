@@ -78,6 +78,7 @@ add_action_files(
   PanTiltMoveJoints.action
   PanTiltMoveCartesian.action
   TaskDeliverSample.action
+  TaskGrind.action
   TaskDiscardSample.action
   TaskScoopCircular.action
   TaskScoopLinear.action

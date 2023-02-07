@@ -165,10 +165,10 @@ class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
 class TaskGrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
   name          = 'TaskGrind'
-  action_type   = ow_lander.msg.TaskGrindAction
-  goal_type     = ow_lander.msg.TaskGrindGoal
-  feedback_type = ow_lander.msg.TaskGrindFeedback
-  result_type   = ow_lander.msg.TaskGrindResult
+  action_type   = owl_msgs.msg.TaskGrindAction
+  goal_type     = owl_msgs.msg.TaskGrindGoal
+  feedback_type = owl_msgs.msg.TaskGrindFeedback
+  result_type   = owl_msgs.msg.TaskGrindResult
 
   def plan_trajectory(self, goal):
     return self._planner.grind(goal)
