@@ -57,13 +57,13 @@ add_message_files(
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  BatteryRemainingUsefulLife.msg
+  BatteryStateOfCharge.msg
   BatteryTemperature.msg
   CameraFaultsStatus.msg
   PanTiltFaultsStatus.msg
   PanTiltPosition.msg
   PowerFaultsStatus.msg
-  RemainingUsefulLife.msg
-  StateOfCharge.msg
   SystemFaultsStatus.msg
 )
 
