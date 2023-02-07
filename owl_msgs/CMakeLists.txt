@@ -76,9 +76,12 @@ add_action_files(
   ArmMoveCartesianGuarded.action
   ArmFindSurface.action
   Pan.action
+  Tilt.action
   PanTiltMoveCartesian.action
   TaskDeliverSample.action
-  Tilt.action
+  TaskDiscardSample.action
+  TaskScoopCircular.action
+  TaskScoopLinear.action
 )
 
 ## Generate added messages and services with any dependencies listed here
