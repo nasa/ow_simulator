@@ -139,7 +139,6 @@ class FrameMixin:
 
   COMPARISON_FRAME = 'world'
   END_EFFECTOR = 'l_scoop_tip'
-  END_EFFECTOR_FRAME = 'base_link'
 
   @classmethod
   def interpret_frame_goal(cls, goal):
@@ -174,7 +173,7 @@ class FrameMixin:
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def get_end_effector_pose(self, frame_id='world'):
+  def get_end_effector_pose(self, frame_id='base_link'):
     return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):

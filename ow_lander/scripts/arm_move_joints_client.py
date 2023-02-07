@@ -15,9 +15,8 @@ parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   description="Move all arm joints to either absolute or relative positions.")
 parser.add_argument('relative', type=strtobool, nargs='?', default='False',
-  help="If true, joints will be moved to its current position plus its " \
-       "corresponding value in angles. If false, joints will move to " \
-       "absolute positions indicated by angles.")
+  help="Joints will move to the provided positions relative to their current "
+       "positions.")
 parser.add_argument('j_shou_yaw', type=float, nargs='?', default=0.1,
   help="Shoulder yaw joint angle")
 parser.add_argument('j_shou_pitch', type=float, nargs='?', default=0.1,

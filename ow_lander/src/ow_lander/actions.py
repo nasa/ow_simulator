@@ -226,8 +226,8 @@ class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    point = FrameTransformer().transform_present(goal.point,
-      self.END_EFFECTOR_FRAME, frame_id)
+    point = FrameTransformer().transform_present(
+      goal.point, 'base_link', frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
                          f"to the end-effector frame")
@@ -280,7 +280,7 @@ class ArmMoveCartesianServer(FrameMixin, ArmActionMixin, ActionServerBase):
       return
     else:
       self._arm.checkin_arm(self.name)
-      final = self.get_end_effector_pose()
+      final = self.get_end_effector_pose('world')
       expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
       if final is None or expected is None:
         self._set_aborted(
@@ -342,7 +342,7 @@ class ArmMoveCartesianGuardedServer(FrameMixin, ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       # check if requested pose agrees with commanded pose in comparison frame
-      final = self.get_end_effector_pose()
+      final = self.get_end_effector_pose('world')
       expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
       if final is None or expected is None:
         self._set_aborted(
@@ -378,7 +378,7 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
 
   def publish_feedback_cb(self, distance=0, force=0, torque=0):
     self._publish_feedback(
-      pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+      pose=self.get_end_effector_pose().pose,
       distance=distance,
       force=force,
       torque=torque
@@ -432,28 +432,28 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
-        final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+        final_pose=self.get_end_effector_pose().pose,
         final_distance=0, final_force=0, final_torque=0)
       return
     else:
       self._arm.checkin_arm(self.name)
-      final = self.get_end_effector_pose()
+      final = self.get_end_effector_pose('world')
       expected = self.get_intended_end_effector_pose(pose1)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
-          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_pose=self.get_end_effector_pose().pose,
           final_distance=0, final_force=0, final_torque=0
         )
         return
       if not self.poses_equivalent(final.pose, expected.pose):
         self._set_aborted("Failed to reach setup pose.",
-          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_pose=self.get_end_effector_pose().pose,
           final_distance=0, final_force=0, final_torque=0)
         return
     # local function to compute progress of the action during surface approach
     def compute_distance():
-      pose = self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose
+      pose = self.get_end_effector_pose().pose
       d = math3d.subtract(pose.position, start)
       return math3d.norm(d)
     # setup F/T monitor and its callback
@@ -472,7 +472,7 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
-        final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+        final_pose=self.get_end_effector_pose().pose,
         final_distance=compute_distance(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
@@ -480,12 +480,12 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
     else:
       self._arm.checkin_arm(self.name)
       # check if requested pose agrees with commanded pose in comparison frame
-      final = self.get_end_effector_pose()
+      final = self.get_end_effector_pose('world')
       expected = self.get_intended_end_effector_pose(pose2)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
-          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_pose=self.get_end_effector_pose().pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
@@ -496,7 +496,7 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
         # pose was not reached due to planning/monitor error
         self._set_aborted(
           NO_THRESHOLD_BREACH_MESSAGE,
-          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_pose=self.get_end_effector_pose().pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
@@ -504,14 +504,14 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
       elif not monitor.threshold_breached():
         self._set_succeeded(
           "No surface was found",
-          final_pose=self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose,
+          final_pose=self.get_end_effector_pose().pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
       else:
         msg = _format_guarded_move_success_message(self.name, monitor)
-        pose = self.get_end_effector_pose(self.END_EFFECTOR_FRAME).pose
+        pose = self.get_end_effector_pose().pose
         msg += f". Surface found at ({pose.position.x:0.3f}, "
         msg +=                     f"{pose.position.y:0.3f}, "
         msg +=                     f"{pose.position.z:0.3f})"
