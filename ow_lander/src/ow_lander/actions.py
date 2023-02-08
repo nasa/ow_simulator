@@ -832,7 +832,7 @@ class DockIngestSampleServer(ActionServerBase):
 
 class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'PanTiltMoveJointsAction'
+  name          = 'PanTiltMoveJoints'
   action_type   = owl_msgs.msg.PanTiltMoveJointsAction
   goal_type     = owl_msgs.msg.PanTiltMoveJointsGoal
   feedback_type = owl_msgs.msg.PanTiltMoveJointsFeedback
@@ -859,7 +859,7 @@ class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
 
 class PanServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'PanAction'
+  name          = 'Pan'
   action_type   = ow_lander.msg.PanAction
   goal_type     = ow_lander.msg.PanGoal
   feedback_type = ow_lander.msg.PanFeedback
@@ -883,7 +883,7 @@ class PanServer(PanTiltMoveMixin, ActionServerBase):
 
 class TiltServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'TiltAction'
+  name          = 'Tilt'
   action_type   = ow_lander.msg.TiltAction
   goal_type     = ow_lander.msg.TiltGoal
   feedback_type = ow_lander.msg.TiltFeedback
