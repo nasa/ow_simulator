@@ -31,4 +31,4 @@ parser.add_argument('ground_position', type=float, nargs='?',
   help="Z-coordinate of ground level in base_link frame")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(actions.GrindServer, **vars(args))
+node_helper.call_single_use_action_client(actions.TaskGrindServer, **vars(args))
