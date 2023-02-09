@@ -32,7 +32,7 @@ from sensor_msgs.msg import PointCloud2
 # required for DockIngestSample
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
-# required for AntennaPanTilt
+# required for PanTiltMoveJoints
 from ow_lander import constants
 # required for PanTiltCartesianMove
 import math
@@ -65,13 +65,13 @@ def _format_guarded_move_success_message(action_name, monitor):
 ## ARM ACTIONS
 #####################
 
-class StopServer(ArmActionMixin, ActionServerBase):
+class ArmStopServer(ArmActionMixin, ActionServerBase):
 
-  name          = 'Stop'
-  action_type   = ow_lander.msg.StopAction
-  goal_type     = ow_lander.msg.StopGoal
-  feedback_type = ow_lander.msg.StopFeedback
-  result_type   = ow_lander.msg.StopResult
+  name          = 'ArmStop'
+  action_type   = owl_msgs.msg.ArmStopAction
+  goal_type     = owl_msgs.msg.ArmStopGoal
+  feedback_type = owl_msgs.msg.ArmStopFeedback
+  result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():
@@ -162,13 +162,13 @@ class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.plan_arm_to_target('arm_stowed')
 
 
-class GrindServer(GrinderTrajectoryMixin, ActionServerBase):
+class TaskGrindServer(GrinderTrajectoryMixin, ActionServerBase):
 
-  name          = 'Grind'
-  action_type   = ow_lander.msg.GrindAction
-  goal_type     = ow_lander.msg.GrindGoal
-  feedback_type = ow_lander.msg.GrindFeedback
-  result_type   = ow_lander.msg.GrindResult
+  name          = 'TaskGrind'
+  action_type   = owl_msgs.msg.TaskGrindAction
+  goal_type     = owl_msgs.msg.TaskGrindGoal
+  feedback_type = owl_msgs.msg.TaskGrindFeedback
+  result_type   = owl_msgs.msg.TaskGrindResult
 
   def plan_trajectory(self, goal):
     return self._planner.grind(goal)
@@ -527,10 +527,10 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
 class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoint'
-  action_type   = ow_lander.msg.ArmMoveJointAction
-  goal_type     = ow_lander.msg.ArmMoveJointGoal
-  feedback_type = ow_lander.msg.ArmMoveJointFeedback
-  result_type   = ow_lander.msg.ArmMoveJointResult
+  action_type   = owl_msgs.msg.ArmMoveJointAction
+  goal_type     = owl_msgs.msg.ArmMoveJointGoal
+  feedback_type = owl_msgs.msg.ArmMoveJointFeedback
+  result_type   = owl_msgs.msg.ArmMoveJointResult
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -546,10 +546,10 @@ class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
 class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoints'
-  action_type   = ow_lander.msg.ArmMoveJointsAction
-  goal_type     = ow_lander.msg.ArmMoveJointsGoal
-  feedback_type = ow_lander.msg.ArmMoveJointsFeedback
-  result_type   = ow_lander.msg.ArmMoveJointsResult
+  action_type   = owl_msgs.msg.ArmMoveJointsAction
+  goal_type     = owl_msgs.msg.ArmMoveJointsGoal
+  feedback_type = owl_msgs.msg.ArmMoveJointsFeedback
+  result_type   = owl_msgs.msg.ArmMoveJointsResult
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -623,10 +623,10 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
 class LightSetIntensityServer(ActionServerBase):
 
   name          = 'LightSetIntensity'
-  action_type   = ow_lander.msg.LightSetIntensityAction
-  goal_type     = ow_lander.msg.LightSetIntensityGoal
-  feedback_type = ow_lander.msg.LightSetIntensityFeedback
-  result_type   = ow_lander.msg.LightSetIntensityResult
+  action_type   = owl_msgs.msg.LightSetIntensityAction
+  goal_type     = owl_msgs.msg.LightSetIntensityGoal
+  feedback_type = owl_msgs.msg.LightSetIntensityFeedback
+  result_type   = owl_msgs.msg.LightSetIntensityResult
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__()
@@ -667,10 +667,10 @@ class LightSetIntensityServer(ActionServerBase):
 class CameraCaptureServer(ActionServerBase):
 
   name          = 'CameraCapture'
-  action_type   = ow_lander.msg.CameraCaptureAction
-  goal_type     = ow_lander.msg.CameraCaptureGoal
-  feedback_type = ow_lander.msg.CameraCaptureFeedback
-  result_type   = ow_lander.msg.CameraCaptureResult
+  action_type   = owl_msgs.msg.CameraCaptureAction
+  goal_type     = owl_msgs.msg.CameraCaptureGoal
+  feedback_type = owl_msgs.msg.CameraCaptureFeedback
+  result_type   = owl_msgs.msg.CameraCaptureResult
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
@@ -718,10 +718,10 @@ class CameraCaptureServer(ActionServerBase):
 class CameraSetExposureServer(ActionServerBase):
 
   name          = 'CameraSetExposure'
-  action_type   = ow_lander.msg.CameraSetExposureAction
-  goal_type     = ow_lander.msg.CameraSetExposureGoal
-  feedback_type = ow_lander.msg.CameraSetExposureFeedback
-  result_type   = ow_lander.msg.CameraSetExposureResult
+  action_type   = owl_msgs.msg.CameraSetExposureAction
+  goal_type     = owl_msgs.msg.CameraSetExposureGoal
+  feedback_type = owl_msgs.msg.CameraSetExposureFeedback
+  result_type   = owl_msgs.msg.CameraSetExposureResult
 
   def __init__(self):
     super(CameraSetExposureServer, self).__init__()
@@ -830,13 +830,13 @@ class DockIngestSampleServer(ActionServerBase):
       self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
 
 
-class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
+class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'AntennaPanTiltAction'
-  action_type   = ow_lander.msg.AntennaPanTiltAction
-  goal_type     = ow_lander.msg.AntennaPanTiltGoal
-  feedback_type = ow_lander.msg.AntennaPanTiltFeedback
-  result_type   = ow_lander.msg.AntennaPanTiltResult
+  name          = 'PanTiltMoveJoints'
+  action_type   = owl_msgs.msg.PanTiltMoveJointsAction
+  goal_type     = owl_msgs.msg.PanTiltMoveJointsGoal
+  feedback_type = owl_msgs.msg.PanTiltMoveJointsFeedback
+  result_type   = owl_msgs.msg.PanTiltMoveJointsResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos,
@@ -859,11 +859,11 @@ class AntennaPanTiltServer(PanTiltMoveMixin, ActionServerBase):
 
 class PanServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'PanAction'
-  action_type   = owl_msgs.msg.PanAction
-  goal_type     = owl_msgs.msg.PanGoal
-  feedback_type = owl_msgs.msg.PanFeedback
-  result_type   = owl_msgs.msg.PanResult
+  name          = 'Pan'
+  action_type   = ow_lander.msg.PanAction
+  goal_type     = ow_lander.msg.PanGoal
+  feedback_type = ow_lander.msg.PanFeedback
+  result_type   = ow_lander.msg.PanResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos)
@@ -883,11 +883,11 @@ class PanServer(PanTiltMoveMixin, ActionServerBase):
 
 class TiltServer(PanTiltMoveMixin, ActionServerBase):
 
-  name          = 'TiltAction'
-  action_type   = owl_msgs.msg.TiltAction
-  goal_type     = owl_msgs.msg.TiltGoal
-  feedback_type = owl_msgs.msg.TiltFeedback
-  result_type   = owl_msgs.msg.TiltResult
+  name          = 'Tilt'
+  action_type   = ow_lander.msg.TiltAction
+  goal_type     = ow_lander.msg.TiltGoal
+  feedback_type = ow_lander.msg.TiltFeedback
+  result_type   = ow_lander.msg.TiltResult
 
   def publish_feedback_cb(self):
     self._publish_feedback(tilt_position = self._tilt_pos)

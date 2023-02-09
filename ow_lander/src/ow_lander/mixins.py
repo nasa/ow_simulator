@@ -183,7 +183,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
 
   # NOTE: these two helper functions are hacky work-arounds necessary because
-  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-1096)
+  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-950)
   def __format_result(self):
     return {self.result_type.__slots__[0] : self._arm_joints_monitor
       .get_joint_positions()}

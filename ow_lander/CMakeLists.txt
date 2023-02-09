@@ -18,15 +18,9 @@ catkin_python_setup()
 add_action_files(
   DIRECTORY action
   FILES DockIngestSample.action
-  FILES Grind.action
   FILES GuardedMove.action
-  FILES AntennaPanTilt.action
-  FILES Stop.action
-  FILES ArmMoveJoint.action
-  FILES ArmMoveJoints.action
-  FILES LightSetIntensity.action
-  FILES CameraCapture.action
-  FILES CameraSetExposure.action
+  FILES Pan.action
+  FILES Tilt.action
 )
 
 add_message_files(
