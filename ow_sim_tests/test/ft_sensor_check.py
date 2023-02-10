@@ -67,11 +67,6 @@ class FT_Sensor_Check(unittest.TestCase):
     self.assertAlmostEqual(self._ft_wrench_msg.torque.z, self._FT_TARGET_STOW.torque.z, delta=1.0)
 
   def test_02_unstow(self):
-    # OW-934 version
-    # action_testing.test_action_noyaml(
-    #   self, 'Unstow', UnstowAction, UnstowGoal(), 30)
-
-    # OW-933 version
     action_testing.test_action_noyaml(
      self, 'ArmUnstow', ArmUnstowAction, ArmUnstowGoal, 30)
 
