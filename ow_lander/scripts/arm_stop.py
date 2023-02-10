@@ -15,4 +15,4 @@ parser = argparse.ArgumentParser(
               "executing a trajectory.")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(actions.StopServer)
+node_helper.call_single_use_action_client(actions.ArmStopServer)
