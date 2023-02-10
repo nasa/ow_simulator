@@ -15,8 +15,8 @@ def _magnitude(vec):
 class FTSensorThresholdMonitor:
 
   def __init__(self, force_threshold=None, torque_threshold=None):
-    self._ft_sensor_sub = rospy.Subscriber('/ft_sensor_dist_pitch',
-                                           WrenchStamped,
+    self._ft_sensor_sub = rospy.Subscriber('/arm_end_effector_force_torque',
+                                           ArmEndEffectorForceTorque,
                                            self._ft_sensor_cb)
     self._force_threshold = force_threshold
     self._torque_threshold = torque_threshold
@@ -24,7 +24,7 @@ class FTSensorThresholdMonitor:
     self._torque = 0
 
   def _ft_sensor_cb(self, msg):
-    wrench = msg.wrench
+    wrench = msg.value
     if self.is_force_monitor(): self._force = _magnitude(wrench.force)
     if self.is_torque_monitor(): self._torque = _magnitude(wrench.torque)
     if self.threshold_breached():
