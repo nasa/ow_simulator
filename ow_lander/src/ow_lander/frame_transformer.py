@@ -19,6 +19,10 @@ class FrameTransformer(metaclass = Singleton):
   transform operations on stamped geometry_msgs objects.
   """
 
+  # NOTE: If you see the "frame not found" error when calling a transform
+  #       method, try increasing the timeout for your call to that function.
+  #       If the error occurs for all transform calls regardless of frame,
+  #       try increasing the value of this class variable.
   DEFAULT_TIMEOUT = rospy.Duration(0.4)
 
   def __init__(self):

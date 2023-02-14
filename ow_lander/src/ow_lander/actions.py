@@ -172,14 +172,17 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   result_type   = owl_msgs.msg.TaskScoopCircularResult
 
   def plan_trajectory(self, goal):
+    # TODO check if base_link is ever different from world
+    PLANNING_FRAME = 'world'
     frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     # NOTE: the dig_circular method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
+    point = FrameTransformer().transform_present(
+      goal.point, PLANNING_FRAME, frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the world frame")
+                         f"to the {PLANNING_FRAME} frame")
     return self._planner.dig_circular(point, goal.depth, goal.parallel)
 
 
@@ -193,14 +196,17 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   result_type   = owl_msgs.msg.TaskScoopLinearResult
 
   def plan_trajectory(self, goal):
+    # TODO check if base_link is ever different from world
+    PLANNING_FRAME = 'world'
     frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     # NOTE: the dig_linear method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
+    point = FrameTransformer().transform_present(
+      goal.point, PLANNING_FRAME, frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the world frame")
+                         f"to the {PLANNING_FRAME} frame")
     return self._planner.dig_linear(point, goal.depth, goal.length)
 
 
@@ -214,14 +220,15 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   result_type   = owl_msgs.msg.TaskDiscardSampleResult
 
   def plan_trajectory(self, goal):
+    PLANNING_FRAME = 'base_link'
     frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     point = FrameTransformer().transform_present(
-      goal.point, 'base_link', frame_id)
+      goal.point, PLANNING_FRAME, frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
-                         f"to the end-effector frame")
+                         f"to the {PLANNING_FRAME} frame")
     return self._planner.discard_sample(point, goal.height)
 
 
