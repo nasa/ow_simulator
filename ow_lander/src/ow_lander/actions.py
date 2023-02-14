@@ -179,7 +179,7 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the end-effector frame")
+                         f"to the world frame")
     return self._planner.dig_circular(point, goal.depth, goal.parallel)
 
 
@@ -200,7 +200,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     point = FrameTransformer().transform_present(goal.point, 'world', frame_id)
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the end-effector frame")
+                         f"to the world frame")
     return self._planner.dig_linear(point, goal.depth, goal.length)
 
 
