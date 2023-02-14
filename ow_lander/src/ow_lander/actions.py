@@ -254,9 +254,13 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if frame_id is None:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    position = goal.pose.position
+    orientation = self.normalize_quaternion(goal.pose.orientation)
+    if orientation is None:
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
-      pose=goal.pose
+      pose=Pose(position, orientation)
     )
     try:
       self._arm.checkout_arm(self.name)
@@ -302,9 +306,13 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if frame_id is None:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    position = goal.pose.position
+    orientation = self.normalize_quaternion(goal.pose.orientation)
+    if orientation is None:
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
-      pose=goal.pose
+      pose=Pose(position, orientation)
     )
     # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,

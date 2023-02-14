@@ -176,6 +176,25 @@ class FrameMixin:
   def get_end_effector_pose(self, frame_id='base_link'):
     return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
 
+  def normalize_quaternion(self, q):
+    """Normalize a quaternion, or reject if it is the zero-quaternion
+    q -- Quaternion, typically representing an orientation
+    return the normalized form of q, or None if all elements of q are zeroes
+    """
+    dp = math3d.dot(q, q)
+    if dp == 0:
+      self._set_aborted("Orientation is the zero-quaternion which cannot "
+                        "represent a rotation.")
+      return None
+    elif dp != 1.0:
+      n = math3d.normalize(q)
+      rospy.logwarn(f"Orientation is a non-normalized quaternion, and will be "
+                    f"interpreted as ({n.x}, {n.y}, {n.z}, {n.w}) instead of "
+                    f"the provided value.")
+      return n
+    else:
+      return q
+
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
