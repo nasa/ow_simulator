@@ -19,12 +19,18 @@ class FrameTransformer(metaclass = Singleton):
   transform operations on stamped geometry_msgs objects.
   """
 
+  # NOTE: If you see the "frame not found" error when calling a transform
+  #       method, try increasing the timeout for your call to that function.
+  #       If the error occurs for all transform calls regardless of frame,
+  #       try increasing the value of this class variable.
+  DEFAULT_TIMEOUT = rospy.Duration(0.4)
+
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
 
   def transform_present(self, geometry, target_frame, source_frame, \
-      timeout=rospy.Duration(0.1)):
+      timeout=DEFAULT_TIMEOUT):
     """Performs a transform on a supported geometry_msgs object. Transform is
     performed in the present; use the transform method for past transforms.
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
@@ -65,12 +71,7 @@ class FrameTransformer(metaclass = Singleton):
     else:
       return None
 
-  # NOTE: Calling this function can sometimes result in the following error
-  # > "world" passed to lookupTransform argument target_frame does not exist.
-  # This example occurred when transforming to the "world" frame, which should
-  # exist, but it may occur when transforming into other frames as well.
-  # See Jira OW-1115
-  def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0.1)):
+  def transform(self, stamped_type, target_frame, timeout=DEFAULT_TIMEOUT):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
     target_frame -- ROS identifier string for the frame to be transformed into
@@ -84,7 +85,7 @@ class FrameTransformer(metaclass = Singleton):
       return None
 
   def lookup_transform(self, target_frame, source_frame,
-                       timestamp=rospy.Time(0), timeout=rospy.Duration(0.1)):
+                       timestamp=rospy.Time(0), timeout=DEFAULT_TIMEOUT):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
