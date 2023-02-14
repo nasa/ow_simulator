@@ -73,6 +73,7 @@ def normalize(v):
   returns the normalized version of v
   """
   n = norm(v)
+  assert(n != 0)
   if hasattr(v, 'w'):
     return type(v)(v.x / n, v.y / n, v.z / n, v.w / n)
   else:

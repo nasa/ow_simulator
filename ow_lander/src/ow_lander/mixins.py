@@ -176,24 +176,38 @@ class FrameMixin:
   def get_end_effector_pose(self, frame_id='base_link'):
     return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
 
-  def normalize_quaternion(self, q):
-    """Normalize a quaternion, or reject if it is the zero-quaternion
-    q -- Quaternion, typically representing an orientation
-    return the normalized form of q, or None if all elements of q are zeroes
+  def validate_normalization(self, x):
+    """Normalize a vector/quaternion, or reject if its elements are all zeroes.
+    Handles error and warning logging.
+    x -- Vector3, Point, or Quaternion
+    return the normalized form of x, or None if all elements of x are zeroes
     """
-    dp = math3d.dot(q, q)
+    is_quaternion = hasattr(x, 'w')
+    dp = math3d.dot(x, x)
     if dp == 0:
-      self._set_aborted("Orientation is the zero-quaternion which cannot "
-                        "represent a rotation.")
+      INVALID_ERROR = "{meaning} is the zero-{geometry} and cannot represent " \
+                      "a {represents}"
+      if is_quaternion:
+        self._set_aborted(INVALID_ERROR.format(
+           meaning='orientation', geometry='quaternion', represents='rotation'))
+      else:
+        self._set_aborted(INVALID_ERROR.format(
+           meaning='normal', geometry='vector', represents='direction'))
       return None
     elif dp != 1.0:
-      n = math3d.normalize(q)
-      rospy.logwarn(f"Orientation is a non-normalized quaternion, and will be "
-                    f"interpreted as ({n.x}, {n.y}, {n.z}, {n.w}) instead of "
-                    f"the provided value.")
-      return n
+      n = math3d.normalize(x)
+      MODIFIED_WARN = "{meaning} is not normalized and will be interpreted " \
+                      "as {value} instead of the provided value"
+      if is_quaternion:
+        rospy.logwarn(MODIFIED_WARN.format(
+          meaning='orientation', value=f"({n.x}, {n.y}, {n.z}, {n.w})"))
+      else:
+        rospy.logwarn(MODIFIED_WARN.format(
+          meaning='normal', value=f"({n.x}, {n.y}, {n.z}"))
+      return math3d.normalize(x)
     else:
-      return q
+      return x
+
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
