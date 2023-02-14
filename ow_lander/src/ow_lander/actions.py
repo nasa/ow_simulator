@@ -4,38 +4,26 @@
 
 """Defines all lander actions"""
 
+import math
+
 import rospy
-
-import ow_lander.msg
 import owl_msgs.msg
-from ow_lander.server import ActionServerBase
-
-# required for all arm actions
-from ow_lander.mixins import *
-# required for GuardedMove
-from ow_lander.ground_detector import GroundDetector
-from geometry_msgs.msg import Point
-# required for ArmMoveCartesianGuarded
-from ow_lander.ground_detector import FTSensorThresholdMonitor
-from ow_lander.common import create_most_recent_header, normalize_radians
-# required for ArmFindSurface
-from geometry_msgs.msg import Vector3, PoseStamped, Pose, PointStamped
-from ow_lander import math3d
-from ow_lander.frame_transformer import FrameTransformer
-from tf2_geometry_msgs import do_transform_point
-
-# required for LightSetIntensity
-from irg_gazebo_plugins.msg import ShaderParamUpdate
-# required for CameraCapture
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
-# required for DockIngestSample
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Vector3, PoseStamped, Pose
+from irg_gazebo_plugins.msg import ShaderParamUpdate
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
-# required for PanTiltMoveJoints
+
+import ow_lander.msg
+from ow_lander import mixins
+from ow_lander import math3d
 from ow_lander import constants
-# required for PanTiltCartesianMove
-import math
+from ow_lander.server import ActionServerBase
+from ow_lander.common import create_most_recent_header, normalize_radians
+from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
+from ow_lander.frame_transformer import FrameTransformer
 
 # This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
 NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
@@ -65,7 +53,7 @@ def _format_guarded_move_success_message(action_name, monitor):
 ## ARM ACTIONS
 #####################
 
-class ArmStopServer(ArmActionMixin, ActionServerBase):
+class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
 
   name          = 'ArmStop'
   action_type   = owl_msgs.msg.ArmStopAction
@@ -82,7 +70,7 @@ class ArmStopServer(ArmActionMixin, ActionServerBase):
         final=self._arm_tip_monitor.get_link_position())
 
 ### DEPRECATED: ArmFindSurface should be used in place of GuardedMove
-class GuardedMoveServer(ArmActionMixin, ActionServerBase):
+class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
 
   # NOTE: The "final" in GuardedMove's result is not in the same frame as the
   #       other arm action's finals, which seems misleading from a user
@@ -138,7 +126,7 @@ class GuardedMoveServer(ArmActionMixin, ActionServerBase):
         self._set_succeeded("No ground detected", final=Point(), success=False)
 
 
-class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
 
   name          = 'ArmUnstow'
   action_type   = owl_msgs.msg.ArmUnstowAction
@@ -150,7 +138,7 @@ class ArmUnstowServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.plan_arm_to_target('arm_unstowed')
 
 
-class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
+class ArmStowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
 
   name          = 'ArmStow'
   action_type   = owl_msgs.msg.ArmStowAction
@@ -162,7 +150,7 @@ class ArmStowServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.plan_arm_to_target('arm_stowed')
 
 
-class TaskGrindServer(GrinderTrajectoryMixin, ActionServerBase):
+class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
 
   name          = 'TaskGrind'
   action_type   = owl_msgs.msg.TaskGrindAction
@@ -174,7 +162,8 @@ class TaskGrindServer(GrinderTrajectoryMixin, ActionServerBase):
     return self._planner.grind(goal)
 
 
-class TaskScoopCircularServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
+class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
+                              ActionServerBase):
 
   name          = 'TaskScoopCircular'
   action_type   = owl_msgs.msg.TaskScoopCircularAction
@@ -194,7 +183,8 @@ class TaskScoopCircularServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_circular(point, goal.depth, goal.parallel)
 
 
-class TaskScoopLinearServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
+class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
+                            ActionServerBase):
 
   name          = 'TaskScoopLinear'
   action_type   = owl_msgs.msg.TaskScoopLinearAction
@@ -214,7 +204,8 @@ class TaskScoopLinearServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     return self._planner.dig_linear(point, goal.depth, goal.length)
 
 
-class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
+class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
+                              ActionServerBase):
 
   name          = 'TaskDiscardSample'
   action_type   = owl_msgs.msg.TaskDiscardSampleAction
@@ -234,7 +225,7 @@ class TaskDiscardSampleServer(FrameMixin, ArmTrajectoryMixin, ActionServerBase):
     return self._planner.discard_sample(point, goal.height)
 
 
-class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
+class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
 
   name          = 'TaskDeliverSample'
   action_type   = owl_msgs.msg.TaskDeliverSampleAction
@@ -246,7 +237,8 @@ class TaskDeliverSampleServer(ArmTrajectoryMixin, ActionServerBase):
     return self._planner.deliver_sample()
 
 
-class ArmMoveCartesianServer(FrameMixin, ArmActionMixin, ActionServerBase):
+class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
+                             ActionServerBase):
 
   name          = 'ArmMoveCartesian'
   action_type   = owl_msgs.msg.ArmMoveCartesianAction
@@ -296,7 +288,7 @@ class ArmMoveCartesianServer(FrameMixin, ArmActionMixin, ActionServerBase):
         final_pose=self._arm_tip_monitor.get_link_pose())
 
 
-class ArmMoveCartesianGuardedServer(FrameMixin, ArmActionMixin,
+class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
                                     ActionServerBase):
 
   name          = 'ArmMoveCartesianGuarded'
@@ -368,7 +360,8 @@ class ArmMoveCartesianGuardedServer(FrameMixin, ArmActionMixin,
       )
 
 
-class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
+class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
+                           ActionServerBase):
 
   name          = 'ArmFindSurface'
   action_type   = owl_msgs.msg.ArmFindSurfaceAction
@@ -524,7 +517,7 @@ class ArmFindSurfaceServer(FrameMixin, ArmActionMixin, ActionServerBase):
         )
 
 
-class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
+class ArmMoveJointServer(mixins.ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoint'
   action_type   = owl_msgs.msg.ArmMoveJointAction
@@ -543,7 +536,7 @@ class ArmMoveJointServer(ModifyJointValuesMixin, ActionServerBase):
     return pos
 
 
-class ArmMoveJointsServer(ModifyJointValuesMixin, ActionServerBase):
+class ArmMoveJointsServer(mixins.ModifyJointValuesMixin, ActionServerBase):
 
   name          = 'ArmMoveJoints'
   action_type   = owl_msgs.msg.ArmMoveJointsAction
@@ -830,7 +823,7 @@ class DockIngestSampleServer(ActionServerBase):
       self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
 
 
-class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
+class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveJoints'
   action_type   = owl_msgs.msg.PanTiltMoveJointsAction
@@ -857,7 +850,7 @@ class PanTiltMoveJointsServer(PanTiltMoveMixin, ActionServerBase):
           pan_position=self._pan_pos, tilt_position=self._tilt_pos)
 
 
-class PanServer(PanTiltMoveMixin, ActionServerBase):
+class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'Pan'
   action_type   = ow_lander.msg.PanAction
@@ -881,7 +874,7 @@ class PanServer(PanTiltMoveMixin, ActionServerBase):
         self._set_preempted("Action was preempted",
                             pan_position=self._pan_pos)
 
-class TiltServer(PanTiltMoveMixin, ActionServerBase):
+class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'Tilt'
   action_type   = ow_lander.msg.TiltAction
@@ -905,7 +898,7 @@ class TiltServer(PanTiltMoveMixin, ActionServerBase):
         self._set_preempted("Action was preempted",
                             tilt_position=self._tilt_pos)
 
-class PanTiltMoveCartesianServer(PanTiltMoveMixin, ActionServerBase):
+class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveCartesian'
   action_type   = owl_msgs.msg.PanTiltMoveCartesianAction

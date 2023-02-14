@@ -463,6 +463,13 @@ void PowerSystemNode::parseEoD_Event(const ProgEvent& eod_event,
   auto& model = dynamic_cast<ModelBasedPrognoser*>(m_prognoser.get())->getModel();
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(state));
   battery_temperature_msg.value = model_output[TEMPERATURE_INDEX];
+
+  // apply most recent timestamp to each message header
+  auto timestamp = ros::Time::now();
+  battery_rul_msg.header.stamp = timestamp;
+  battery_soc_msg.header.stamp = timestamp;
+  battery_temperature_msg.header.stamp = timestamp;
+
 }
 
 void PowerSystemNode::runPrognoser(double electrical_power)
