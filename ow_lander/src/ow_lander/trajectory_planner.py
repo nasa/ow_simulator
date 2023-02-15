@@ -109,10 +109,20 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             pose.header.stamp = rospy.Time(0)
             return FrameTransformer().transform(pose, frame_id)
 
+    def _set_joint_position_target(self, joint_positions):
+        try:
+            self._move_arm.set_joint_value_target(joint_positions)
+        except moveit_commander.exception.MoveItCommanderException as err:
+            rospy.logerr(
+                f"ArmTrajectoryPlanner._set_joint_position_target: {err}")
+            return False
+        return True
+
     def plan_arm_to_target(self, target_name):
         target_joints = self._move_arm.get_named_target_values(target_name)
         self._move_arm.set_start_state_to_current_state()
-        self._move_arm.set_joint_value_target(target_joints)
+        if not self._set_joint_position_target(target_joints):
+            return False
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
@@ -122,7 +132,8 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 "incorrect number of joints for arm move group.")
             return False
         self._move_arm.set_start_state_to_current_state()
-        self._move_arm.set_joint_value_target(arm_joint_angles)
+        if not self._set_joint_position_target(arm_joint_angles):
+            return False
         _, plan, _, _ = self._move_arm.plan()
         return plan
 

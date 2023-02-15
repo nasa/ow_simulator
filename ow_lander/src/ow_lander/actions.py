@@ -593,7 +593,7 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
-        angles=self._arm_joints_monitor.get_joint_positions(),
+        final_angles=self._arm_joints_monitor.get_joint_positions(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
     else:
