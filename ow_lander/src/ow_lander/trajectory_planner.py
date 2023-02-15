@@ -619,24 +619,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return dig_linear_traj
 
-    # FIXME: is this ever used?
-    def calculate_starting_state_grinder(self, plan):
-        # joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch,
-        #               j_hand_yaw, j_grinder]
-        # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw,
-        #                         j_shou_pitch, j_prox_pitch, j_dist_pitch,
-        #                         j_hand_yaw, j_grinder, j_scoop_yaw]
-
-        start_state = plan.joint_trajectory.points[len(
-            plan.joint_trajectory.points)-1].positions
-        cs = self._robot.get_current_state()
-        # adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
-        # j_scoop_yaw  state obstained from rviz
-        new_value = (0, 0) + start_state[:6] + (0.17403329917811217,)
-        # modify current state of robot to the end state of the previous plan
-        cs.joint_state.position = new_value
-        return cs, start_state
-
     def calculate_joint_state_end_pose_from_plan_grinder(self, plan):
         '''
         calculate the end pose (position and orientation), joint states and robot states
