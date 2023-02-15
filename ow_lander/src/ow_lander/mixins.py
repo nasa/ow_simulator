@@ -73,34 +73,6 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     pass
 
 
-# DEPRECTATED: This version that provides current and final positions will be
-#              removed as a result of command unification. For new or
-#              transitioned arm trajectory actions, use ArmTrajectoryMixin
-#              instead
-class ArmTrajectoryMixinOld(ArmActionMixin, ABC):
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
-      self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
-    else:
-      self._arm.checkin_arm(self.name)
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
-
-  @abstractmethod
-  def plan_trajectory(self, goal):
-    pass
-
 class GrinderTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
