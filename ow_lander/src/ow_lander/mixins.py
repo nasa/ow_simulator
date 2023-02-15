@@ -220,13 +220,9 @@ class PanTiltMoveMixin:
       return
 
   def move_pan_and_tilt(self, pan, tilt):
-    # FIXME: tolerance should not be necessary once the float precision
-    #        problem is fixed by command unification (OW-1085)
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
@@ -262,14 +258,13 @@ class PanTiltMoveMixin:
       rate.sleep()
     raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
 
-# NOTE: the following move_pan and move_tilt functions have been
-# dumbly factored out of the previous function.  The FIXME comments
-# above have been omitted but apply.  A more refined refactoring is
-# left to a future iteration.
+  # NOTE: the following move_pan and move_tilt functions have been
+  # dumbly factored out of the previous function.  The FIXME comments
+  # above have been omitted but apply.  A more refined refactoring is
+  # left to a future iteration.
 
   def move_pan(self, pan):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
 
     # publish requested values to start pan trajectory
@@ -290,8 +285,7 @@ class PanTiltMoveMixin:
     raise RuntimeError("Timed out waiting for pan value to reach goal.")
 
   def move_tilt(self, tilt):
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start tilt trajectory
