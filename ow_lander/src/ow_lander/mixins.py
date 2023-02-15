@@ -182,15 +182,6 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     super().__init__(*args, **kwargs)
     self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
 
-  # NOTE: these two helper functions are hacky work-arounds necessary because
-  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-950)
-  def __format_result(self):
-    return {self.result_type.__slots__[0] : self._arm_joints_monitor
-      .get_joint_positions()}
-  def __format_feedback(self):
-    return {self.feedback_type.__slots__[0] : self._arm_joints_monitor
-      .get_joint_positions()}
-
   def angles_reached(self, target_angles):
     actual = self._arm_joints_monitor.get_joint_positions()
     return all(
@@ -201,7 +192,8 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     )
 
   def publish_feedback_cb(self):
-    self._publish_feedback(**self.__format_feedback())
+    self._publish_feedback(
+      angles=self._arm_joints_monitor.get_joint_positions())
 
   def execute_action(self, goal):
     try:
@@ -214,15 +206,15 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
         as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
-        **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
+        final_angles=self._arm_joints_monitor.get_joint_positions())
     else:
       self._arm.checkin_arm(self.name)
       if self.angles_reached(new_positions):
         self._set_succeeded("Arm joints moved successfully",
-          **self.__format_result())
+          final_angles=self._arm_joints_monitor.get_joint_positions())
       else:
         self._set_aborted("Arm joints failed to reach intended target angles",
-          **self.__format_result())
+          final_angles=self._arm_joints_monitor.get_joint_positions())
 
   @abstractmethod
   def modify_joint_positions(self, goal):
