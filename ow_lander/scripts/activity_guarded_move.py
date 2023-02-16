@@ -5,9 +5,9 @@
 # this repository.
 
 import math
-import constants
+from ow_lander import constants
 import rospy
-from utils import is_shou_yaw_goal_in_range
+from ow_lander.common import is_shou_yaw_goal_in_range
 
 
 def arg_parsing(req):
