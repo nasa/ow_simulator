@@ -73,8 +73,6 @@
         </plugin>
       </visual>
       <light name="lander_light_light${suffix}" type="spot">
-        <!-- Light is not transformed by the joint above, so we transform it here. -->
-        <pose>0 ${y} 0 ${roll} ${pitch} 0</pose>
         <diffuse>1 1 1 1</diffuse>
         <attenuation>
           <range>100</range>

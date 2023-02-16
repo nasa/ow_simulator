@@ -4,38 +4,15 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import rospy
-import actionlib
+from ow_lander import actions
+from ow_lander import node_helper
+
 import argparse
-import ow_lander.msg
-from guarded_move_action_client import print_arguments
 
+parser = argparse.ArgumentParser(
+  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+  description="Trigger both mast cameras to capture photographs."
+)
+args = parser.parse_args()
 
-def camera_capture_client():
-  parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument('exposure', type=float,
-                      help='Camera exposure in seconds. Must be > 0 or current exposure will be used.',
-                      nargs='?', default=-1)
-  args = parser.parse_args()
-  print_arguments(args)
-
-  client = actionlib.SimpleActionClient('CameraCapture', ow_lander.msg.CameraCaptureAction)
-  client.wait_for_server()
-
-  goal = ow_lander.msg.CameraCaptureGoal(exposure=args.exposure)
-
-  # Sends the goal to the action server.
-  client.send_goal(goal)
-
-  # Waits for the server to finish performing the action.
-  client.wait_for_result()
-
-
-if __name__ == '__main__':
-  try:
-    # Initializes a rospy node
-    rospy.init_node('camera_capture_client_py')
-    camera_capture_client()
-  except rospy.ROSInterruptException:
-    rospy.logerror('program interrupted before completion')
-
+node_helper.call_single_use_action_client(actions.CameraCaptureServer)

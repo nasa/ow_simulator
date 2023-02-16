@@ -82,7 +82,7 @@ private:
   // Camera
   void camerTriggerCb(const std_msgs::Empty& msg);
   void cameraRawCb(const sensor_msgs::Image& msg);
-  void cameraTriggerPublishCb(const ros::TimerEvent& t);
+  void cameraPublishFaultMessages(bool is_fault);
 
   // Power
   void publishPowerSystemFault();
@@ -110,7 +110,6 @@ private:
   ros::Subscriber m_joint_states_sub;
 
   // Camera
-  ros::Timer m_camera_trigger_timer;
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
 
@@ -129,8 +128,7 @@ private:
   bool m_tilt_fault;
   
   // Camera
-  ros::Time m_cam_raw_time;
-  ros::Time m_cam_trigger_time;
+  bool m_camera_data_pending = false;
   
   // Power
   float m_last_SOC = std::numeric_limits<float>::quiet_NaN();
