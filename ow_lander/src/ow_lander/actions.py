@@ -261,9 +261,13 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if frame_id is None:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    position = goal.pose.position
+    orientation = self.validate_normalization(goal.pose.orientation)
+    if orientation is None:
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
-      pose=goal.pose
+      pose=Pose(position, orientation)
     )
     try:
       self._arm.checkout_arm(self.name)
@@ -309,9 +313,13 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if frame_id is None:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    position = goal.pose.position
+    orientation = self.validate_normalization(goal.pose.orientation)
+    if orientation is None:
+      return
     pose = PoseStamped(
       header=create_most_recent_header(frame_id),
-      pose=goal.pose
+      pose=Pose(position, orientation)
     )
     # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
@@ -391,10 +399,12 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if frame_id is None:
       self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
+    normal = self.validate_normalization(goal.normal)
+    if normal is None:
+      return
     # orient scoop so that the bottom points in the opposite to the normal
     # NOTE: regardless of frame parameter orientation is in the base_link frame
-    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD,
-                                                     goal.normal)
+    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
     start = goal.position
     if relative:
       start = FrameTransformer().transform_present(start,
@@ -404,7 +414,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
                           "trajectory planning.")
         return
     max_distance = goal.distance + goal.overdrive
-    displacement = math3d.scalar_multiply(max_distance, goal.normal)
+    displacement = math3d.scalar_multiply(max_distance, normal)
     end = math3d.add(start, displacement)
     # pose before end-effector is driven towards surface
     pose1 = PoseStamped(

@@ -148,6 +148,39 @@ class FrameMixin:
   def get_end_effector_pose(self, frame_id='base_link'):
     return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
 
+  def validate_normalization(self, x):
+    """Normalize a vector/quaternion, or reject if its elements are all zeroes.
+    Handles error and warning logging.
+    x -- Vector3, Point, or Quaternion
+    return the normalized form of x, or None if all elements of x are zeroes
+    """
+    is_quaternion = hasattr(x, 'w')
+    dp = math3d.dot(x, x)
+    if dp == 0:
+      INVALID_ERROR = "{meaning} is the zero-{geometry} and cannot represent " \
+                      "a {represents}"
+      if is_quaternion:
+        self._set_aborted(INVALID_ERROR.format(
+           meaning='Orientation', geometry='quaternion', represents='rotation'))
+      else:
+        self._set_aborted(INVALID_ERROR.format(
+           meaning='Normal', geometry='vector', represents='direction'))
+      return None
+    elif dp != 1.0:
+      n = math3d.normalize(x)
+      MODIFIED_WARN = "{meaning} is not normalized and will be interpreted " \
+                      "as {value} instead of the provided value"
+      if is_quaternion:
+        rospy.logwarn(MODIFIED_WARN.format(
+          meaning='Orientation', value=f"({n.x}, {n.y}, {n.z}, {n.w})"))
+      else:
+        rospy.logwarn(MODIFIED_WARN.format(
+          meaning='Normal', value=f"({n.x}, {n.y}, {n.z})"))
+      return math3d.normalize(x)
+    else:
+      return x
+
+
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
