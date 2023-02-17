@@ -73,34 +73,6 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     pass
 
 
-# DEPRECTATED: This version that provides current and final positions will be
-#              removed as a result of command unification. For new or
-#              transitioned arm trajectory actions, use ArmTrajectoryMixin
-#              instead
-class ArmTrajectoryMixinOld(ArmActionMixin, ABC):
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
-      self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
-    else:
-      self._arm.checkin_arm(self.name)
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
-
-  @abstractmethod
-  def plan_trajectory(self, goal):
-    pass
-
 class GrinderTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
@@ -215,15 +187,6 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     super().__init__(*args, **kwargs)
     self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
 
-  # NOTE: these two helper functions are hacky work-arounds necessary because
-  #       ArmMoveJoints.action uses wrong names in feedback and result (OW-950)
-  def __format_result(self):
-    return {self.result_type.__slots__[0] : self._arm_joints_monitor
-      .get_joint_positions()}
-  def __format_feedback(self):
-    return {self.feedback_type.__slots__[0] : self._arm_joints_monitor
-      .get_joint_positions()}
-
   def angles_reached(self, target_angles):
     actual = self._arm_joints_monitor.get_joint_positions()
     return all(
@@ -234,7 +197,8 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     )
 
   def publish_feedback_cb(self):
-    self._publish_feedback(**self.__format_feedback())
+    self._publish_feedback(
+      angles=self._arm_joints_monitor.get_joint_positions())
 
   def execute_action(self, goal):
     try:
@@ -247,15 +211,15 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
         as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
-        **self.__format_result(self._arm_joints_monitor.get_joint_positions()))
+        final_angles=self._arm_joints_monitor.get_joint_positions())
     else:
       self._arm.checkin_arm(self.name)
       if self.angles_reached(new_positions):
         self._set_succeeded("Arm joints moved successfully",
-          **self.__format_result())
+          final_angles=self._arm_joints_monitor.get_joint_positions())
       else:
         self._set_aborted("Arm joints failed to reach intended target angles",
-          **self.__format_result())
+          final_angles=self._arm_joints_monitor.get_joint_positions())
 
   @abstractmethod
   def modify_joint_positions(self, goal):
@@ -289,13 +253,9 @@ class PanTiltMoveMixin:
       return
 
   def move_pan_and_tilt(self, pan, tilt):
-    # FIXME: tolerance should not be necessary once the float precision
-    #        problem is fixed by command unification (OW-1085)
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
@@ -331,14 +291,13 @@ class PanTiltMoveMixin:
       rate.sleep()
     raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
 
-# NOTE: the following move_pan and move_tilt functions have been
-# dumbly factored out of the previous function.  The FIXME comments
-# above have been omitted but apply.  A more refined refactoring is
-# left to a future iteration.
+  # NOTE: the following move_pan and move_tilt functions have been
+  # dumbly factored out of the previous function.  The FIXME comments
+  # above have been omitted but apply.  A more refined refactoring is
+  # left to a future iteration.
 
   def move_pan(self, pan):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
 
     # publish requested values to start pan trajectory
@@ -359,8 +318,7 @@ class PanTiltMoveMixin:
     raise RuntimeError("Timed out waiting for pan value to reach goal.")
 
   def move_tilt(self, tilt):
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX,
-                           constants.PAN_TILT_INPUT_TOLERANCE):
+    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start tilt trajectory

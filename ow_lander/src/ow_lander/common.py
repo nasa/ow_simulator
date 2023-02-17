@@ -45,12 +45,12 @@ def normalize_radians(angle):
 def radians_equivalent(angle1, angle2, tolerance) :
   return abs(normalize_radians(angle1 - angle2)) <= tolerance
 
-def in_closed_range(val, lo, hi, tolerance):
+def in_closed_range(val, lo, hi):
   """
-  :param val, lo, hi, tolerance: (any mutually comparable types)
+  :param val, lo, hi: (any mutually comparable types)
   :return: (bool)
   """
-  return val >= lo-tolerance and val <= hi+tolerance
+  return val >= lo and val <= hi
 
 def create_most_recent_header(frame_id):
   return Header(0, Time(0), frame_id)
