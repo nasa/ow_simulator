@@ -161,10 +161,10 @@ class FrameMixin:
                       "a {represents}"
       if is_quaternion:
         self._set_aborted(INVALID_ERROR.format(
-           meaning='orientation', geometry='quaternion', represents='rotation'))
+           meaning='Orientation', geometry='quaternion', represents='rotation'))
       else:
         self._set_aborted(INVALID_ERROR.format(
-           meaning='normal', geometry='vector', represents='direction'))
+           meaning='Normal', geometry='vector', represents='direction'))
       return None
     elif dp != 1.0:
       n = math3d.normalize(x)
@@ -172,10 +172,10 @@ class FrameMixin:
                       "as {value} instead of the provided value"
       if is_quaternion:
         rospy.logwarn(MODIFIED_WARN.format(
-          meaning='orientation', value=f"({n.x}, {n.y}, {n.z}, {n.w})"))
+          meaning='Orientation', value=f"({n.x}, {n.y}, {n.z}, {n.w})"))
       else:
         rospy.logwarn(MODIFIED_WARN.format(
-          meaning='normal', value=f"({n.x}, {n.y}, {n.z}"))
+          meaning='Normal', value=f"({n.x}, {n.y}, {n.z})"))
       return math3d.normalize(x)
     else:
       return x
