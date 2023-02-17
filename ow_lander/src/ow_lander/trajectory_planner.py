@@ -13,13 +13,13 @@ import moveit_commander
 from moveit_msgs.msg import PositionConstraint, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion, PoseStamped
+from geometry_msgs.msg import Quaternion
 from shape_msgs.msg import SolidPrimitive
-from std_msgs.msg import Header
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
+from ow_lander.common import (Singleton, is_shou_yaw_goal_in_range,
+                              create_most_recent_header)
 from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
@@ -75,9 +75,6 @@ def _cascade_plans(plan1, plan2):
     new_traj.joint_trajectory = traj_msg
     return new_traj
 
-def _create_most_recent_header(frame_id):
-    return Header(0, rospy.Time(0), frame_id)
-
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -96,7 +93,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            _create_most_recent_header('base_link'),
+            create_most_recent_header('base_link'),
             [fk_target_link],
             robot_state
         )
@@ -112,10 +109,20 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             pose.header.stamp = rospy.Time(0)
             return FrameTransformer().transform(pose, frame_id)
 
+    def _set_joint_position_target(self, joint_positions):
+        try:
+            self._move_arm.set_joint_value_target(joint_positions)
+        except moveit_commander.exception.MoveItCommanderException as err:
+            rospy.logerr(
+                f"ArmTrajectoryPlanner._set_joint_position_target: {err}")
+            return False
+        return True
+
     def plan_arm_to_target(self, target_name):
         target_joints = self._move_arm.get_named_target_values(target_name)
         self._move_arm.set_start_state_to_current_state()
-        self._move_arm.set_joint_value_target(target_joints)
+        if not self._set_joint_position_target(target_joints):
+            return False
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
@@ -125,13 +132,14 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 "incorrect number of joints for arm move group.")
             return False
         self._move_arm.set_start_state_to_current_state()
-        self._move_arm.set_joint_value_target(arm_joint_angles)
+        if not self._set_joint_position_target(arm_joint_angles):
+            return False
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
     def plan_arm_to_pose(self, pose, end_effector):
         """Plan a trajectory from arm's current pose to a new pose
-        pose         -- Stamped pose plan will place end effector at
+        pose         -- Stamped pose plan will place end-effector at
         end_effector -- Name of end_effector
         """
         arm_frame = self._move_arm.get_pose_reference_frame()
@@ -266,7 +274,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         _, plan, _, _ = self._move_arm.plan()
         return plan
 
-    def dig_circular(self, args):
+    def dig_circular(self, point, depth, parallel):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
@@ -275,21 +283,24 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         circ_traj = None
         circ_traj = RobotTrajectory()
 
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        parallel = args.parallel
-        ground_position = args.ground_position
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. implement normal parameter
+        #  2. implement scoop_angle parameter
 
         if not parallel:
 
             plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
-            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
+            if not plan_a or len(plan_a.joint_trajectory.points) == 0:
+                # If no plan found, abort
                 return False
             # Once aligned to move goal and offset, place scoop tip at surface target offset
 
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(plan_a)
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
             end_pose.position.x = x_start
             end_pose.position.y = y_start
             end_pose.position.z = z_start
@@ -316,7 +327,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
             # if not parallel:
             # Once aligned to trench goal, place hand above trench middle point
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A  # - depth
+            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
 
             plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
             circ_traj = _cascade_plans(circ_traj, plan_d)
@@ -390,7 +401,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
 
-    # Compute shoulder yaw angle to trench
+        # Compute shoulder yaw angle to trench
         alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
         h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
                         pow(x_start-constants.X_SHOU, 2))
@@ -501,15 +512,19 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             return False
         return plan
 
-    def dig_linear(self, args):
+    def dig_linear(self, point, depth, length):
         """
         :type args: List[bool, float, int, float, float, float]
         """
-        x_start = args.x_start
-        y_start = args.y_start
-        depth = args.depth
-        length = args.length
-        ground_position = args.ground_position
+
+        # NOTE: point must be in world coordinates
+
+        x_start = point.x
+        y_start = point.y
+        ground_position = point.z
+
+        # TODO:
+        #  1. implement normal parameter
 
         plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
         if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
@@ -603,24 +618,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         self._move_arm.clear_pose_targets()
 
         return dig_linear_traj
-
-    # FIXME: is this ever used?
-    def calculate_starting_state_grinder(self, plan):
-        # joint_names: [j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch,
-        #               j_hand_yaw, j_grinder]
-        # robot full state name: [j_ant_pan, j_ant_tilt, j_shou_yaw,
-        #                         j_shou_pitch, j_prox_pitch, j_dist_pitch,
-        #                         j_hand_yaw, j_grinder, j_scoop_yaw]
-
-        start_state = plan.joint_trajectory.points[len(
-            plan.joint_trajectory.points)-1].positions
-        cs = self._robot.get_current_state()
-        # adding antenna state (0, 0) and j_scoop_yaw  to the robot states.
-        # j_scoop_yaw  state obstained from rviz
-        new_value = (0, 0) + start_state[:6] + (0.17403329917811217,)
-        # modify current state of robot to the end state of the previous plan
-        cs.joint_state.position = new_value
-        return cs, start_state
 
     def calculate_joint_state_end_pose_from_plan_grinder(self, plan):
         '''
@@ -852,7 +849,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return guarded_move_traj
 
-    def discard_sample(self, args):
+    def discard_sample(self, point, height):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type robot: class 'moveit_commander.RobotCommander'
@@ -861,9 +858,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         robot_state = self._robot.get_current_state()
         self._move_arm.set_start_state(robot_state)
-        x_discard = args.discard.x
-        y_discard = args.discard.y
-        z_discard = args.discard.z
 
         # after sample collect
         mypi = 3.14159
@@ -872,9 +866,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         goal_pose = self._move_arm.get_current_pose().pose
         # position was found from rviz tool
-        goal_pose.position.x = x_discard
-        goal_pose.position.y = y_discard
-        goal_pose.position.z = z_discard
+        goal_pose.position.x = point.x
+        goal_pose.position.y = point.y
+        goal_pose.position.z = point.z + height
 
         r = -179
         p = -20

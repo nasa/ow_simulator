@@ -16,7 +16,7 @@ import sys
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
 
-import ow_lander.msg
+import owl_msgs.msg
 
 from action_testing import *
 
@@ -25,7 +25,7 @@ TEST_NAME = 'sample_collection'
 roslib.load_manifest(PKG)
 
 GROUND_POSITION = -0.155
-DISCARD_POSITION = Point(1.5, 0.8, 0.65) # default for discard action
+DISCARD_POSITION = Point(1.5, 0.8, GROUND_POSITION) # default for discard action
 REGOLITH_CLEANUP_DELAY = 5.0 # seconds
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
@@ -231,8 +231,8 @@ class SampleCollection(unittest.TestCase):
   """
   def test_01_unstow(self):
     unstow_result = test_arm_action(self,
-      'Unstow', ow_lander.msg.UnstowAction,
-      ow_lander.msg.UnstowGoal(),
+      'ArmUnstow', owl_msgs.msg.ArmUnstowAction,
+      owl_msgs.msg.ArmUnstowGoal(),
       TEST_NAME, "test_01_unstow",
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
@@ -243,8 +243,8 @@ class SampleCollection(unittest.TestCase):
   """
   def test_02_grind(self):
     grind_result = test_arm_action(self,
-      'Grind', ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(
+      'TaskGrind', owl_msgs.msg.TaskGrindAction,
+      owl_msgs.msg.TaskGrindGoal(
         x_start         = 1.65,
         y_start         = 0.0,
         depth           = 0.15, # grind deep so terrain is modified
@@ -262,13 +262,13 @@ class SampleCollection(unittest.TestCase):
   """
   def test_03_dig_linear(self):
     dig_linear_result = test_arm_action(self,
-      'DigLinear', ow_lander.msg.DigLinearAction,
-      ow_lander.msg.DigLinearGoal(
-        x_start         = 1.46,
-        y_start         = 0.0,
-        depth           = 0.01,
-        length          = 0.1,
-        ground_position = GROUND_POSITION
+      'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
+      owl_msgs.msg.TaskScoopLinearGoal(
+        frame     = 0,
+        relative  = False,
+        point     = Point(1.46, 0, 0),
+        depth     = 0.01,
+        length    = 0.1
       ),
       TEST_NAME, "test_03_dig_linear",
       condition_check = self._assert_scoop_regolith_containment
@@ -283,9 +283,12 @@ class SampleCollection(unittest.TestCase):
   """
   def test_04_discard(self):
     discard_result = test_arm_action(self,
-      'Discard', ow_lander.msg.DiscardAction,
-      ow_lander.msg.DiscardGoal(
-        discard = DISCARD_POSITION
+      'TaskDiscardSample', owl_msgs.msg.TaskDiscardSampleAction,
+      owl_msgs.msg.TaskDiscardSampleAction(
+        frame = 0,
+        relative = False,
+        point = DISCARD_POSITION,
+        height = 0.7
       ),
       TEST_NAME, "test_04_discard",
       condition_check = self._assert_regolith_transports_and_discards
@@ -303,8 +306,8 @@ class SampleCollection(unittest.TestCase):
   """
   def test_05_grind(self):
     grind_result = test_arm_action(self,
-      'Grind', ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(
+      'TaskGrind', owl_msgs.msg.TaskGrindAction,
+      owl_msgs.msg.GrindGoal(
         x_start         = 1.65,
         y_start         = 0.5,
         depth           = 0.05,
@@ -322,13 +325,13 @@ class SampleCollection(unittest.TestCase):
   """
   def test_06_dig_circular(self):
     dig_circular_result = test_arm_action(self,
-      'DigCircular', ow_lander.msg.DigCircularAction,
-      ow_lander.msg.DigCircularGoal(
-        x_start         = 1.65,
-        y_start         = 0.5,
-        depth           = 0.01,
-        parallel        = True,
-        ground_position = GROUND_POSITION
+      'TaskScoopCircular', owl_msgs.msg.TaskScoopCircularAction,
+      owl_msgs.msg.TaskScoopCircularGoal(
+        frame    = 0,
+        relative = False,
+        point    = Point(1.65, 0.5, 0.01),
+        depth    = 0.01,
+        parallel = True
       ),
       TEST_NAME, "test_06_dig_circular",
       condition_check = self._assert_scoop_regolith_containment
@@ -344,8 +347,8 @@ class SampleCollection(unittest.TestCase):
   @unittest.expectedFailure
   def test_07_deliver(self):
     deliver_result = test_arm_action(self,
-      'Deliver', ow_lander.msg.DeliverAction,
-      ow_lander.msg.DeliverGoal(),
+      'TaskDeliverSample', owl_msgs.msg.TaskDeliverSampleAction,
+      owl_msgs.msg.TaskDeliverSampleGoal(),
       TEST_NAME, "test_07_deliver",
       condition_check = self._assert_regolith_transports_and_delivers_to_dock
     )
@@ -360,8 +363,8 @@ class SampleCollection(unittest.TestCase):
   """
   def test_08_unstow(self):
     unstow_result = test_arm_action(self,
-      'Unstow', ow_lander.msg.UnstowAction,
-      ow_lander.msg.UnstowGoal(),
+      'ArmUnstow', owl_msgs.msg.ArmUnstowAction,
+      owl_msgs.msg.ArmUnstowGoal(),
       TEST_NAME, "test_08_unstow"
     )
 
@@ -371,8 +374,8 @@ class SampleCollection(unittest.TestCase):
   """
   def test_09_stow(self):
     stow_result = test_arm_action(self,
-      'Stow', ow_lander.msg.StowAction,
-      ow_lander.msg.StowGoal(),
+      'ArmStow', owl_msgs.msg.ArmStowAction,
+      owl_msgs.msg.ArmStowGoal(),
       TEST_NAME, "test_09_stow"
     )
 
@@ -383,8 +386,8 @@ class SampleCollection(unittest.TestCase):
   @unittest.expectedFailure
   def test_10_ingest_sample(self):
     ingest_result = test_action(self,
-      'DockIngestSampleAction', ow_lander.msg.DockIngestSampleAction,
-      ow_lander.msg.DockIngestSampleGoal(),
+      'DockIngestSampleAction', owl_msgs.msg.DockIngestSampleAction,
+      owl_msgs.msg.DockIngestSampleGoal(),
       TEST_NAME, "test_10_ingest_sample"
     )
 

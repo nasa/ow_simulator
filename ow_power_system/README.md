@@ -5,15 +5,16 @@ this repository.
 # ow_power_system
 
 It creates a node called power_system_node, which monitors power consumption
-(mainly based of mechanical power at the current time), publishes the estimated
+(mainly based off mechanical power at the current time), publishes the messages 
+from the owl_msgs package that individually describe the estimated
 _state of charge (SOC)_, estimated _remaining useful life (RUL)_ in seconds and
 also publishes the estimated _battery temperature_ in degrees Celsius. To
 monitor any of these values simply subscribe to their respective topics:
 
 ```bash
-rostopic echo /power_system_node/state_of_charge
-rostopic echo /power_system_node/remaining_useful_life
-rostopic echo /power_system_node/battery_temperature
+rostopic echo /battery_state_of_charge
+rostopic echo /battery_remaining_useful_life
+rostopic echo /battery_temperature
 ```
 
 state_of_charge (SOC): The SOC estimate provides the amount of energy present in

@@ -1,0 +1,15 @@
+# goal definition
+bool relative
+float64[] angles
+float64 force_threshold
+float64 torque_threshold
+---
+# result
+float64[] final_angles
+float64 final_force
+float64 final_torque
+---
+# feedback
+float64[] angles
+float64 force
+float64 torque
