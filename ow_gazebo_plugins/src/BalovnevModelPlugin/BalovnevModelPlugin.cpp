@@ -4,6 +4,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <array>
 #include <gazebo/physics/Link.hh>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core.hpp>
@@ -43,6 +44,8 @@ const int BURIED = 0;  // BURIED = 1 if entire bucket is below the soil otherwis
 
 // constants specific to the scoop end-effector
 const string SCOOP_LINK_NAME       = "lander::l_scoop";
+const Vector3 SCOOP_FORWARD{1.0, 0.0, 0.0};
+const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
 
 const string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const string TOPIC_BALOVNEV_HORIZONTAL   = "/balovnev_model/horizontal_force";
@@ -110,14 +113,13 @@ void BalovnevModelPlugin::onUpdate()
     return;
   }
   // check for pushback
-  const Vector3 SCOOP_FORWARD = Vector3(1.0, 0.0, 0.0);
   auto link_vel = m_link->RelativeLinearVel();
   if (link_vel.Dot(SCOOP_FORWARD) < 0.0) {
     // reset force if pushback occurs
     resetForces();
     m_link->ResetPhysicsStates();
   }
-  if (m_horizontal_force == 0.0 || m_vertical_force == 0.0)
+  if (m_horizontal_force == 0.0 && m_vertical_force == 0.0)
     return; // no force to apply, early return
   m_link->AddRelativeForce(
     ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
@@ -209,10 +211,7 @@ void BalovnevModelPlugin::resetDepth() {
 bool BalovnevModelPlugin::isScoopDigging() const
 {
   static const Vector3 SCOOP_DOWNWARD(0.0, 0.0, 1.0);
-  static const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
-  Vector3 scoop_bottom(
-    m_link->WorldPose().Rot().RotateVector(SCOOP_DOWNWARD)
-  );
+  Vector3 scoop_bottom(m_link->WorldPose().Rot().RotateVector(SCOOP_DOWNWARD));
   return WORLD_DOWNWARD.Dot(scoop_bottom) > 0.0;
 }
 
@@ -244,20 +243,29 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
     return;
   }
 
-  // trim a 20% margin from the image so to only work with the central pixels
-  const float MARGIN_RATIO = 0.2f;
-  const int row_margin = static_cast<int>(round(MARGIN_RATIO * rows));
-  const int col_margin = static_cast<int>(round(MARGIN_RATIO * cols));
-  const cv::Rect region_of_interest(
-    col_margin, row_margin,                        // top-right corner position
-    cols - 2 * col_margin, rows - 2 * row_margin   // rectangle size
-  );
-  cv::Mat image(image_handle->image, region_of_interest);
+  // mask out trench edges to the left and right of the scoop
+  const float EDGE_TRIM_RATIO = 0.2f;
+  const cv::Point2f center(static_cast<float>(rows) / 2.0,
+                           static_cast<float>(cols) / 2.0);
+  const cv::Point2f size(static_cast<float>(rows) * 2.0,
+                         static_cast<float>(cols) * EDGE_TRIM_RATIO);
+  // find angle of scoop relative to image coordinates
+  Vector3 scoop_heading{m_link->WorldPose().Rot().RotateVector(SCOOP_FORWARD)};
+  float yaw = std::atan2(scoop_heading.Y(), scoop_heading.X());
+  const cv::RotatedRect roi(center, size, yaw);
+  std::array<cv::Point2f, 4> vertsf;
+  roi.points(vertsf.data());
+  // convert to floats to integers (OpenCV will convert via rounding)
+  std::array<cv::Point2i, 4> vertsi;
+  std::copy(vertsf.cbegin(), vertsf.cend(), vertsi.begin());
+  cv::Mat diff(image_handle->image);
+  cv::Mat mask = cv::Mat::zeros(diff.size(), CV_8U);
+  cv::fillConvexPoly(mask, vertsi.data(), 4, cv::Scalar(1));
 
   // get max pixel value
   // NOTE: pixel values should always be negative, so grab the minimum
   double min_pixel;
-  cv::minMaxLoc(image, &min_pixel);
+  cv::minMaxLoc(diff, &min_pixel, 0, 0, 0, mask);
   m_moving_max_depth->addDatum(-min_pixel);
 
   double depth = m_moving_max_depth->evaluate();
