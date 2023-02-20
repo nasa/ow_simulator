@@ -50,27 +50,46 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  ArmEndEffectorForceTorque.msg
+  ArmFaultsStatus.msg
   ArmJointAccelerations.msg
   ArmJointPositions.msg
   ArmJointTorques.msg
   ArmJointVelocities.msg
   ArmPose.msg
+  BatteryRemainingUsefulLife.msg
+  BatteryStateOfCharge.msg
+  BatteryTemperature.msg
+  CameraFaultsStatus.msg
+  PanTiltFaultsStatus.msg
   PanTiltPosition.msg
+  PowerFaultsStatus.msg
   SystemFaultsStatus.msg
 )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
 
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
+  ArmFindSurface.action
   ArmMoveCartesian.action
   ArmMoveCartesianGuarded.action
+  ArmMoveJoint.action
+  ArmMoveJoints.action
+  ArmMoveJointsGuarded.action
+  ArmStop.action
+  ArmStow.action
+  ArmUnstow.action
+  CameraCapture.action
+  CameraSetExposure.action
+  LightSetIntensity.action
+  PanTiltMoveCartesian.action
+  PanTiltMoveJoints.action
+  PanTiltMoveCartesian.action
+  TaskDeliverSample.action
+  TaskGrind.action
+  TaskDiscardSample.action
+  TaskScoopCircular.action
+  TaskScoopLinear.action
 )
 
 ## Generate added messages and services with any dependencies listed here

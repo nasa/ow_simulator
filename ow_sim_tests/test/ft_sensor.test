@@ -10,7 +10,7 @@
     </include>
 
     <test test-name="ft_sensor_hz_check" pkg="rostest" type="hztest" name="ft_sensor_hz_check">
-        <param name="topic" value="ft_sensor_dist_pitch" />
+        <param name="topic" value="arm_end_effector_force_torque" />
         <param name="hz" value="200.0" />
         <param name="hzerror" value="1.0" />
         <param name="test_duration" value="5.0" />

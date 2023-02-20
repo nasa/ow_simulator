@@ -20,12 +20,12 @@ FaultInjector::FaultInjector(ros::NodeHandle& nh)
                                     this);
   m_joint_state_remapped_pub = nh.advertise<sensor_msgs::JointState>(joint_states_str, 10);
 
-  const char* ft_sensor_dist_pitch_str = "/ft_sensor_dist_pitch";
-  m_dist_pitch_ft_sensor_sub = nh.subscribe( original_str + ft_sensor_dist_pitch_str,
+  const char* arm_end_effector_force_torque_str = "/arm_end_effector_force_torque";
+  m_arm_end_effector_force_torque_sensor_sub = nh.subscribe( original_str + arm_end_effector_force_torque_str,
                                              10, 
-                                             &FaultInjector::distPitchFtSensorCb, 
+                                             &FaultInjector::ArmEndEffectorForceTorqueSensorCb, 
                                              this);
-  m_dist_pitch_ft_sensor_pub = nh.advertise<geometry_msgs::WrenchStamped>(ft_sensor_dist_pitch_str, 10);
+  m_arm_end_effector_force_torque_sensor_pub = nh.advertise<owl_msgs::ArmEndEffectorForceTorque>(arm_end_effector_force_torque_str, 10);
 
   //camera sub and repub for remapped topic
   const char* image_raw_str = "/StereoCamera/left/image_raw";
@@ -49,7 +49,7 @@ void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, ui
 
 void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
 {
-  if (!m_cam_fault) {// if no fault
+  if (!m_camera_fault) {// if no fault
     m_camera_trigger_remapped_pub.publish(msg);
   } 
 }
@@ -70,23 +70,30 @@ void FaultInjector::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
   }
 
   // checking rqt
-  checkCamFaults();
+  checkCameraFaults();
 
   m_joint_state_remapped_pub.publish(output);
 }
 
-void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
+void FaultInjector::ArmEndEffectorForceTorqueSensorCb(const geometry_msgs::WrenchStamped& msg)
 {
   if (!m_faults.groups.ft_sensor_faults.enable) {
-    m_dist_pitch_ft_sensor_pub.publish(msg);
+    m_arm_end_effector_force_torque_sensor_pub.publish(msg);
     return;
   }
 
-  auto out_msg = msg;
+  owl_msgs::ArmEndEffectorForceTorque out_msg;
+  out_msg.header = msg.header;
 
   if (m_faults.groups.ft_sensor_faults.zero_signal_failure) {
-    out_msg.wrench.force = geometry_msgs::Vector3();
-    out_msg.wrench.torque = geometry_msgs::Vector3();
+    out_msg.value = geometry_msgs::Wrench();
+  } else {
+    out_msg.value.force.x = msg.wrench.force.x;
+    out_msg.value.force.y = msg.wrench.force.y;
+    out_msg.value.force.z = msg.wrench.force.z;
+    out_msg.value.torque.x = msg.wrench.torque.x;
+    out_msg.value.torque.y = msg.wrench.torque.y;
+    out_msg.value.torque.z = msg.wrench.torque.z;
   }
 
   auto mean = m_faults.groups.ft_sensor_faults.signal_bias_failure;
@@ -94,19 +101,19 @@ void FaultInjector::distPitchFtSensorCb(const geometry_msgs::WrenchStamped& msg)
   // TODO: consider optimizing this by re-creating the distribution only when
   // mean and stddev values change
   auto normal_dist = std::normal_distribution<float>(mean, stddev);
-  out_msg.wrench.force.x += normal_dist(m_random_generator);
-  out_msg.wrench.force.y += normal_dist(m_random_generator);
-  out_msg.wrench.force.z += normal_dist(m_random_generator);
-  out_msg.wrench.torque.x += normal_dist(m_random_generator);
-  out_msg.wrench.torque.y += normal_dist(m_random_generator);
-  out_msg.wrench.torque.z += normal_dist(m_random_generator);
+  out_msg.value.force.x += normal_dist(m_random_generator);
+  out_msg.value.force.y += normal_dist(m_random_generator);
+  out_msg.value.force.z += normal_dist(m_random_generator);
+  out_msg.value.torque.x += normal_dist(m_random_generator);
+  out_msg.value.torque.y += normal_dist(m_random_generator);
+  out_msg.value.torque.z += normal_dist(m_random_generator);
 
-  m_dist_pitch_ft_sensor_pub.publish(out_msg);
+  m_arm_end_effector_force_torque_sensor_pub.publish(out_msg);
 }
 
-void FaultInjector::checkCamFaults()
+void FaultInjector::checkCameraFaults()
 {
-  m_cam_fault = m_faults.camera_left_trigger_failure;
+  m_camera_fault = m_faults.camera_left_trigger_failure;
 }
 
 int FaultInjector::findPositionInGroup(const std::vector<string>& group, const string& item)

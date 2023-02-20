@@ -16,10 +16,12 @@ J_GRINDER = 5
 # these constants will eventually exist in a Frame message type in owl_msgs
 FRAME_BASE = 0
 FRAME_TOOL = 1
+FRAME_ID_BASE = 'base_link'
+FRAME_ID_TOOL = 'l_scoop_tip'
 # maps frame enumerate to the corresponding gazebo frame ID
 FRAME_ID_MAP = {
-  FRAME_BASE: 'base_link',
-  FRAME_TOOL: 'l_scoop_tip'
+  FRAME_BASE: FRAME_ID_BASE,
+  FRAME_TOOL: FRAME_ID_TOOL
 }
 
 # allowed deviation from commanded joint values
@@ -37,8 +39,8 @@ ARM_JOINTS = [ 'j_shou_yaw','j_shou_pitch','j_prox_pitch',
 ANTENNA_JOINTS = ['j_ant_pan', 'j_ant_tilt']
 
 # joint names mapped to their index in /joint_states (alphabetized by name)
-_all_joints = ARM_JOINTS + ANTENNA_JOINTS + ['j_grinder']
-JOINT_STATES_MAP = dict(zip(sorted(_all_joints), range(len(_all_joints))))
+ALL_JOINTS = ARM_JOINTS + ANTENNA_JOINTS + ['j_grinder']
+JOINT_STATES_MAP = dict(zip(sorted(ALL_JOINTS), range(len(ALL_JOINTS))))
 
 X_SHOU = 0.79
 Y_SHOU = 0.175

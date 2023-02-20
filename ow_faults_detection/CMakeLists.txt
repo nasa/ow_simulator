@@ -52,10 +52,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  ArmFaults.msg
-  PowerFaults.msg
-  PTFaults.msg
-  CamFaults.msg
   JointStatesFlag.msg
 )
 
