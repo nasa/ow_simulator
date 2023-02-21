@@ -20,26 +20,29 @@ using namespace cv_bridge;
 using namespace std;
 using namespace ignition::math;
 
+const double DEG2RAD                = M_PI / 180.0;
+const double RAD2DEG                = 1.0 / DEG2RAD;
+
 // world properties
 const double GRAVITY                  = 1.315;           // m/s^2
 
 // scoop properties
-const double BUCKET_WIDTH             = 0.085;           // m
-const double BUCKET_SIDE_PLATE_LENGTH = 0.1225;          // m
-const double BUCKET_HEIGHT_FROM_TIP   = 0.0026;          // m
-const double BLUNT_EDGE_THICK         = 0.0004;          // m
-const double BLUNT_EDGE_ANGLE         = 89./180 * M_PI;  // rad
-const double SIDE_PLATE_THICK         = 0.0016;          // m
+const double BUCKET_WIDTH             = 0.085;         // m
+const double BUCKET_SIDE_PLATE_LENGTH = 0.1225;        // m
+const double BUCKET_HEIGHT_FROM_TIP   = 0.0026;        // m
+const double BLUNT_EDGE_THICK         = 0.0004;        // m
+const double BLUNT_EDGE_ANGLE         = 89 * DEG2RAD;  // rad
+const double SIDE_PLATE_THICK         = 0.0016;        // m
 
 // regolith properties
-const double SOIL_DENSITY             = 1700;            // kg/m^3
-const double COHESION                 = 0;               // N/m^2
-const double INT_FRICTION_ANGLE       = 44./180 * M_PI;  // rad
-const double EXT_FRICTION_ANGLE       = 28./180 * M_PI;  // rad
-const double SURCHARGE_MASS           = 1;               // kg/m^2
+const double SOIL_DENSITY             = 1700;          // kg/m^3
+const double COHESION                 = 0;             // N/m^2
+const double INT_FRICTION_ANGLE       = 44 * DEG2RAD;  // rad
+const double EXT_FRICTION_ANGLE       = 28 * DEG2RAD;  // rad
+const double SURCHARGE_MASS           = 1;             // kg/m^2
 
 // real-time variables placeheld by constants
-const double RAKE_ANGLE               = 10./180 * M_PI;  // rad
+const double RAKE_ANGLE               = 10 * DEG2RAD;  // rad
 const int BURIED = 0;  // BURIED = 1 if entire bucket is below the soil otherwise BURIED = 0
 
 // constants specific to the scoop end-effector
@@ -244,19 +247,20 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   }
 
   // mask out trench edges to the left and right of the scoop
-  const float EDGE_TRIM_RATIO = 0.2f;
+  const float EDGE_TRIM_RATIO = 0.3f;
   const cv::Point2f center(static_cast<float>(rows) / 2.0,
                            static_cast<float>(cols) / 2.0);
   const cv::Point2f size(static_cast<float>(rows) * 2.0,
-                         static_cast<float>(cols) * EDGE_TRIM_RATIO);
+                         static_cast<float>(cols) * (1.0 - EDGE_TRIM_RATIO));
   // find angle of scoop relative to image coordinates
   Vector3 scoop_heading{m_link->WorldPose().Rot().RotateVector(SCOOP_FORWARD)};
   float yaw = std::atan2(scoop_heading.Y(), scoop_heading.X());
-  const cv::RotatedRect roi(center, size, yaw);
+  const cv::RotatedRect roi(center, size, yaw * RAD2DEG);
   std::array<cv::Point2f, 4> vertsf;
   roi.points(vertsf.data());
-  // convert to floats to integers (OpenCV will convert via rounding)
+  // convert floats to integers
   std::array<cv::Point2i, 4> vertsi;
+  // OpenCV will convert via rounding to nearest whole number
   std::copy(vertsf.cbegin(), vertsf.cend(), vertsi.begin());
   cv::Mat diff(image_handle->image);
   cv::Mat mask = cv::Mat::zeros(diff.size(), CV_8U);
