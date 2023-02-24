@@ -255,9 +255,9 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   // find angle of scoop relative to image coordinates
   Vector3 scoop_heading{m_link->WorldPose().Rot().RotateVector(SCOOP_FORWARD)};
   float yaw = std::atan2(scoop_heading.Y(), scoop_heading.X());
-  const cv::RotatedRect roi(center, size, yaw * RAD2DEG);
+  const cv::RotatedRect region_of_interest(center, size, yaw * RAD2DEG);
   std::array<cv::Point2f, 4> vertsf;
-  roi.points(vertsf.data());
+  region_of_interest.points(vertsf.data());
   // convert floats to integers
   std::array<cv::Point2i, 4> vertsi;
   // OpenCV will convert via rounding to nearest whole number
