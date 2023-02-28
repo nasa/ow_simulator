@@ -137,7 +137,7 @@ the `ow_power_system` package.
 
 1. Check out a designated tag of the source code:
 ```
-git clone -b v1.0.2b-OW https://github.com/nasa/GSAP.git gsap
+git clone -b v1.0.3-OW https://github.com/nasa/GSAP.git gsap
 ```
 
 This tagged version of GSAP's `master` branch is a tested version of
