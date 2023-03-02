@@ -34,7 +34,7 @@ private:
 
   void onUpdate();
 
-  double getParameterA(double x, double ifa, double efa);
+  double getParameterA(double x, double ifa, double efa) const;
 
   void computeForces(double vertical_cut_depth);
 
@@ -44,7 +44,7 @@ private:
 
   void resetDepth();
 
-  bool isScoopDigging();
+  bool isScoopDigging() const;
 
   void onModDiffVisualMsg(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
