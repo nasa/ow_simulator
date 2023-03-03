@@ -7,7 +7,11 @@
 #include <random>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
+#include <owl_msgs/BatteryRemainingUsefulLife.h>
+#include <owl_msgs/BatteryStateOfCharge.h>
+#include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
+
 
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
@@ -21,7 +25,7 @@ public:
 
 private:
   bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
+  PrognoserVector loadPowerProfile(const std::string& path_name, std::string custom_file);
   bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
   bool initPrognoser();
   bool initTopics();
@@ -44,18 +48,18 @@ private:
                                     double voltage,
                                     double temperature);
   void parseEoD_Event(const ProgEvent& eod_event,
-                      std_msgs::Float64& soc_msg,
-                      std_msgs::Int16& rul_msg,
-                      std_msgs::Float64& battery_temperature_msg);
+                      owl_msgs::BatteryStateOfCharge& battery_soc_msg,
+                      owl_msgs::BatteryRemainingUsefulLife& battery_rul_msg,
+                      owl_msgs::BatteryTemperature& battery_temperature_msg);
   void runPrognoser(double electrical_power);
 
-  ros::NodeHandle m_nh;                        // Node Handle Initialization
-  ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
-  ros::Publisher m_mechanical_power_avg_pub;   // Mechanical Power Averaged
-  ros::Publisher m_state_of_charge_pub;        // State of Charge Publisher
-  ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
-  ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
-  ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
+  ros::NodeHandle m_nh;                               // Node Handle Initialization
+  ros::Publisher m_mechanical_power_raw_pub;          // Mechanical Power Raw
+  ros::Publisher m_mechanical_power_avg_pub;          // Mechanical Power Averaged
+  ros::Publisher m_battery_state_of_charge_pub;       // State of Charge Publisher
+  ros::Publisher m_battery_remaining_useful_life_pub; // Remaining Useful Life Publisher
+  ros::Publisher m_battery_temperature_pub;           // Battery Temperature Publisher
+  ros::Subscriber m_joint_states_sub;                 // Mechanical Power Subscriber
 
   int m_moving_average_window = 25;
   std::vector<double> m_power_values;

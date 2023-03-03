@@ -15,9 +15,6 @@ import numpy as np
 PKG = 'ow_sim_tests'
 roslib.load_manifest(PKG)
 
-# a class that monitors minimum reported frame rate by a gazebo simulation
-
-
 class ArmCheckService(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):

@@ -1,0 +1,154 @@
+test_action_statistics:
+  test_01_unstow:
+    duration:
+      mean: 15.779625
+      samples: 20
+      std: 2.15230786094589
+    final_x:
+      mean: 1.739675
+      samples: 20
+      std: 0.0013855931657786827
+    final_y:
+      mean: 0.31003
+      samples: 20
+      std: 0.00018093325317713655
+    final_z:
+      mean: -6.698415
+      samples: 20
+      std: 0.0004380278770267775
+  test_02_grind:
+    duration:
+      mean: 43.080375
+      samples: 20
+      std: 0.06850026411781522
+    final_x:
+      mean: 1.49395
+      samples: 20
+      std: 0.03007615771932803
+    final_y:
+      mean: -0.14861
+      samples: 20
+      std: 0.02210334340034747
+    final_z:
+      mean: -6.655395
+      samples: 20
+      std: 0.031111928242192943
+  test_03_dig_linear:
+    duration:
+      mean: 56.941
+      samples: 20
+      std: 0.32943272614090885
+    final_x:
+      mean: 2.36638
+      samples: 20
+      std: 0.0037197340029404766
+    final_y:
+      mean: -0.013985000000000001
+      samples: 20
+      std: 0.002834983523575995
+    final_z:
+      mean: -7.021835
+      samples: 20
+      std: 0.028311933043004632
+  test_04_discard:
+    duration:
+      mean: 57.310249999999996
+      samples: 20
+      std: 0.10299431512160405
+    final_x:
+      mean: 1.50608
+      samples: 20
+      std: 0.00011050125029060433
+    final_y:
+      mean: 0.93293
+      samples: 20
+      std: 8.013147091863957e-05
+    final_z:
+      mean: -6.74862
+      samples: 20
+      std: 0.0001151657843926328
+  test_05_grind:
+    duration:
+      mean: 38.792375
+      samples: 20
+      std: 0.06742673899558546
+    final_x:
+      mean: 1.5321500000000001
+      samples: 20
+      std: 0.0001849608777979331
+    final_y:
+      mean: 0.21418500000000001
+      samples: 20
+      std: 0.00029784312366712407
+    final_z:
+      mean: -6.755265
+      samples: 20
+      std: 0.000236809939336226
+  test_06_dig_circular:
+    duration:
+      mean: 50.88175
+      samples: 20
+      std: 0.07187846101506896
+    final_x:
+      mean: 2.234465
+      samples: 20
+      std: 0.00450990430520487
+    final_y:
+      mean: 0.85084
+      samples: 20
+      std: 0.004962533308916455
+    final_z:
+      mean: -7.13507
+      samples: 20
+      std: 0.02367844011576338
+  test_07_deliver:
+    duration:
+      mean: 65.50805555555556
+      samples: 18
+      std: 3.0665464330650183
+    final_x:
+      mean: 0.5589611111111111
+      samples: 18
+      std: 5.016313257050519e-05
+    final_y:
+      mean: -0.1477277777777778
+      samples: 18
+      std: 0.00024448157769055794
+    final_z:
+      mean: -6.459727777777778
+      samples: 18
+      std: 0.0001274434386909675
+  test_08_unstow:
+    duration:
+      mean: 13.154625
+      samples: 20
+      std: 0.0896604523216692
+    final_x:
+      mean: 1.74584
+      samples: 20
+      std: 5.026246899499793e-05
+    final_y:
+      mean: 0.309725
+      samples: 20
+      std: 7.163503994115447e-05
+    final_z:
+      mean: -6.69777
+      samples: 20
+      std: 0.00015927467172349887
+  test_09_stow:
+    duration:
+      mean: 15.039250000000001
+      samples: 20
+      std: 0.07469719574811061
+    final_x:
+      mean: 0.600125
+      samples: 20
+      std: 5.5011960422012026e-05
+    final_y:
+      mean: -0.54518
+      samples: 20
+      std: 5.231483637805393e-05
+    final_z:
+      mean: -6.559815
+      samples: 20
+      std: 0.00010399898784908339

@@ -1,0 +1,10 @@
+# goal definition
+int32 frame
+bool relative
+geometry_msgs/Point point
+float64 depth
+bool parallel
+---
+# result
+---
+# feedback

@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   ow_lander
+  owl_msgs
   std_msgs
   message_generation
 )
@@ -51,11 +52,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  SystemFaults.msg
-  ArmFaults.msg
-  PowerFaults.msg
-  PTFaults.msg
-  CamFaults.msg
   JointStatesFlag.msg
 )
 
@@ -76,6 +72,7 @@ add_message_files(
 # ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  owl_msgs
   std_msgs  # Or other packages containing msgs
 )
 
@@ -112,6 +109,7 @@ catkin_package(
 #  CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
 #  DEPENDS system_lib
   CATKIN_DEPENDS
+  owl_msgs
   message_runtime
   std_msgs
 )

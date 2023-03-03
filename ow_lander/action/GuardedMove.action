@@ -1,3 +1,4 @@
+### DEPRECATED: ArmFindSurface should be used in place of GuardedMove
 # goal
 geometry_msgs/Point start     # arm start position
 geometry_msgs/Point normal    # vector normal to direction of approach
