@@ -653,11 +653,7 @@ class LightSetIntensityServer(ActionServerBase):
     name = goal.name.lower()
     # check intensity range
     if intensity < 0.0 or intensity > 1.0:
-      msg = f"Intensity = {intensity} is out of range."
-      # NOTE: This action's result format is redundant since actionlib already
-      #       conveys both a "success" flag and a "message" string. This
-      #       redundancy will be removed following command unification.
-      self._set_aborted(msg, success=False, message=msg)
+      self._set_aborted(f"Intensity = {intensity} is out of range.")
       return
     # check for correct names
     if name == 'left':
@@ -665,13 +661,11 @@ class LightSetIntensityServer(ActionServerBase):
     elif name == 'right':
       self.light_msg.paramName = 'spotlightIntensityScale[1]'
     else:
-      msg = f"\'{name}\' is not a light indentifier."
-      self._set_aborted(msg, success=False, message=msg)
+      self._set_aborted(f"\'{name}\' is not a light identifier.")
       return
     self.light_msg.paramValue = str(goal.intensity)
     self.light_pub.publish(self.light_msg)
-    msg = f"{name} light intensity set successfully."
-    self._set_succeeded(msg, success=True, message=msg)
+    self._set_succeeded(f"{name} light intensity set successfully.")
 
 
 class CameraCaptureServer(ActionServerBase):
