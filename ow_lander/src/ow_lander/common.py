@@ -52,5 +52,5 @@ def in_closed_range(val, lo, hi):
   """
   return val >= lo and val <= hi
 
-def create_most_recent_header(frame_id):
-  return Header(0, Time(0), frame_id)
+def create_header(frame_id, timestamp):
+  return Header(0, timestamp, frame_id)

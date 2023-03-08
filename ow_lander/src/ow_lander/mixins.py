@@ -123,9 +123,9 @@ class FrameMixin:
     return frame_id, relative
 
   @classmethod
-  def get_tool_transform(cls):
+  def get_current_tool_transform(cls):
     tool_transform = FrameTransformer().lookup_transform(
-      cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
+      cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL, rospy.Time.now())
     if tool_transform is None:
       raise RuntimeError("Failed to lookup TOOL frame transform")
     return tool_transform

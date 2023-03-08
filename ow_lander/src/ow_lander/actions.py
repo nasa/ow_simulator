@@ -21,7 +21,7 @@ from ow_lander import mixins
 from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
-from ow_lander.common import create_most_recent_header, normalize_radians
+from ow_lander.common import create_header, normalize_radians
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 
@@ -178,8 +178,8 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     # NOTE: the dig_circular method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    point = FrameTransformer().transform_geometry(
+      goal.point, PLANNING_FRAME, frame_id, rospy.Time.now())
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
                          f"to the {PLANNING_FRAME} frame")
@@ -202,8 +202,8 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
     # NOTE: the dig_linear method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    point = FrameTransformer().transform_geometry(
+      goal.point, PLANNING_FRAME, frame_id, rospy.Time.now())
     if point is None:
       raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
                          f"to the {PLANNING_FRAME} frame")
@@ -224,8 +224,8 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     frame_id, _relative = self.interpret_frame_goal(goal)
     if frame_id is None:
       raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    point = FrameTransformer().transform_geometry(
+      goal.point, PLANNING_FRAME, frame_id, rospy.Time.now())
     if point is None:
       raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
                          f"to the {PLANNING_FRAME} frame")
@@ -266,14 +266,15 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if orientation is None:
       return
     pose = PoseStamped(
-      header=create_most_recent_header(frame_id),
+      header=create_header(frame_id, rospy.Time.now()),
       pose=Pose(position, orientation)
     )
     try:
       self._arm.checkout_arm(self.name)
       plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
       # save current tool transform before executing movement
-      old_tool_transform = self.get_tool_transform() if relative else None
+      old_tool_transform = self.get_current_tool_transform() if relative \
+                           else None
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -318,7 +319,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     if orientation is None:
       return
     pose = PoseStamped(
-      header=create_most_recent_header(frame_id),
+      header=create_header(frame_id, rospy.Time.now()),
       pose=Pose(position, orientation)
     )
     # monitor F/T sensor and define a callback to check its status
@@ -337,7 +338,8 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       self._arm.checkout_arm(self.name)
       plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
       # save current tool transform before executing movement
-      old_tool_transform = self.get_tool_transform() if relative else None
+      old_tool_transform = self.get_current_tool_transform() if relative \
+                           else None
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
@@ -407,8 +409,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
     start = goal.position
     if relative:
-      start = FrameTransformer().transform_present(start,
-        constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
+      start = FrameTransformer().transform_geometry(start,
+        constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL, rospy.Time.now())
       if start is None:
         self._set_aborted("Failed to perform necessary frame transforms for " \
                           "trajectory planning.")
@@ -418,7 +420,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     end = math3d.add(start, displacement)
     # pose before end-effector is driven towards surface
     pose1 = PoseStamped(
-      header=create_most_recent_header(constants.FRAME_ID_BASE),
+      header=create_header(constants.FRAME_ID_BASE, rospy.Time.now()),
       pose=Pose(
         position=start,
         orientation=orientation
@@ -427,7 +429,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # pose after end-effector has driven its maximum distance towards surface
     # if there is no surface, the end-effector will reach this pose
     pose2 = PoseStamped(
-      header=create_most_recent_header(constants.FRAME_ID_BASE),
+      header=create_header(constants.FRAME_ID_BASE, rospy.Time.now()),
       pose=Pose(
         position=end,
         orientation=orientation
@@ -925,14 +927,17 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     cam_center = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
-                                                     'StereoCameraCenter_link')
+                                                     'StereoCameraCenter_link',
+                                                     rospy.Time.now())
     tilt_joint = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
-                                                     'l_ant_panel')
+                                                     'l_ant_panel',
+                                                     rospy.Time.now())
     lookat = goal.point if goal.frame == constants.FRAME_BASE \
-              else FrameTransformer().transform_present(
+              else FrameTransformer().transform_geometry(
                 goal.point,
                 constants.FRAME_ID_BASE,
-                constants.FRAME_ID_MAP[goal.frame]
+                constants.FRAME_ID_MAP[goal.frame],
+                rospy.Time.now()
               )
     if cam_center is None or tilt_joint is None or lookat is None:
       self._set_aborted("Failed to perform necessary transforms to compute "

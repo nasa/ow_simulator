@@ -5,7 +5,7 @@
 import rospy
 import tf2_ros
 
-from ow_lander.common import Singleton, create_most_recent_header
+from ow_lander.common import Singleton, create_header
 
 # NOTE: These imports are not directly used, but importing them works around a
 #       bug discussed here
@@ -23,14 +23,14 @@ class FrameTransformer(metaclass = Singleton):
   #       method, try increasing the timeout for your call to that function.
   #       If the error occurs for all transform calls regardless of frame,
   #       try increasing the value of this class variable.
-  DEFAULT_TIMEOUT = rospy.Duration(0.4)
+  DEFAULT_TIMEOUT = rospy.Duration(1.0)
 
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
 
-  def transform_present(self, geometry, target_frame, source_frame, \
-      timeout=DEFAULT_TIMEOUT):
+  def transform_geometry(self, geometry, target_frame, source_frame, \
+      timestamp, timeout=DEFAULT_TIMEOUT):
     """Performs a transform on a supported geometry_msgs object. Transform is
     performed in the present; use the transform method for past transforms.
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
@@ -45,16 +45,16 @@ class FrameTransformer(metaclass = Singleton):
     stamped = None
     if isinstance(geometry, Point):
       stamped = PointStamped(
-        header=create_most_recent_header(source_frame), point=geometry)
+        header=create_header(source_frame, rospy.Time.now()), point=geometry)
     elif isinstance(geometry, Pose):
       stamped = PoseStamped(
-        header=create_most_recent_header(source_frame), pose=geometry)
+        header=create_header(source_frame, rospy.Time.now()), pose=geometry)
     elif isinstance(geometry, Vector3):
       stamped = Vector3Stamped(
-        header=create_most_recent_header(source_frame), vector=geometry)
+        header=create_header(source_frame, rospy.Time.now()), vector=geometry)
     elif isinstance(geometry, Wrench):
       stamped = WrenchStamped(
-        header=create_most_recent_header(source_frame), wrench=geometry)
+        header=create_header(source_frame, rospy.Time.now()), wrench=geometry)
     else:
       rospy.logerr(f"Unsupported geometry type {type(geometry)}")
       return None
@@ -85,7 +85,7 @@ class FrameTransformer(metaclass = Singleton):
       return None
 
   def lookup_transform(self, target_frame, source_frame,
-                       timestamp=rospy.Time(0), timeout=DEFAULT_TIMEOUT):
+                       timestamp, timeout=DEFAULT_TIMEOUT):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
