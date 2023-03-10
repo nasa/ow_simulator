@@ -257,23 +257,33 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    frame_id, relative = self.interpret_frame_goal(goal)
+    frame_id = self.interpret_frame(goal.frame)
     if frame_id is None:
-      self._set_aborted(f"Unrecognized frame {goal.frame}")
       return
     position = goal.pose.position
     orientation = self.validate_normalization(goal.pose.orientation)
     if orientation is None:
       return
-    pose = PoseStamped(
-      header=create_most_recent_header(frame_id),
-      pose=Pose(position, orientation)
-    )
+    intended_pose = None
+    if goal.relative:
+      # treat as additive to the current pose
+      current_pose = self.get_end_effector_pose(frame_id).pose
+      intended_pose = Pose(
+        math3d.add(current_pose.position, position),
+        math3d.quaternion_multiply(current_pose.orientation, orientation)
+      )
+    else:
+      # treat as absolute in the frame
+      intended_pose = Pose(position, orientation)
+    intended_pose_stamped = PoseStamped(
+      header=create_most_recent_header(frame_id), pose=intended_pose)
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
+      plan = self._planner.plan_arm_to_pose(intended_pose_stamped,
+                                            self.END_EFFECTOR)
       # save current tool transform before executing movement
-      old_tool_transform = self.get_tool_transform() if relative else None
+      old_tool_transform = self.get_tool_transform() \
+                           if frame_id == constants.FRAME_ID_TOOL else None
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -284,7 +294,8 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       final = self.get_end_effector_pose('world')
-      expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
+      expected = self.get_intended_end_effector_pose(intended_pose_stamped,
+                                                     old_tool_transform)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",

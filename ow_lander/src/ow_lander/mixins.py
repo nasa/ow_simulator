@@ -113,16 +113,6 @@ class FrameMixin:
   END_EFFECTOR = 'l_scoop_tip'
 
   @classmethod
-  def interpret_frame_goal(cls, goal):
-    if goal.frame not in constants.FRAME_ID_MAP:
-      return None, None
-    # selecting relative is the same as selecting the Tool frame and vice versa
-    relative = goal.relative or goal.frame == constants.FRAME_TOOL
-    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative else \
-               constants.FRAME_ID_MAP[goal.frame]
-    return frame_id, relative
-
-  @classmethod
   def get_tool_transform(cls):
     tool_transform = FrameTransformer().lookup_transform(
       cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
@@ -144,6 +134,14 @@ class FrameMixin:
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+
+  def interpret_frame(self, frame):
+    if frame not in constants.FRAME_ID_MAP:
+      self._set_aborted(f"Unrecognized frame index {frame}. "
+        f"Options are {str(constants.FRAME_ID_MAP)}")
+      return None
+    # selecting relative is the same as selecting the Tool frame and vice versa
+    return constants.FRAME_ID_MAP[frame]
 
   def get_end_effector_pose(self, frame_id='base_link'):
     return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
