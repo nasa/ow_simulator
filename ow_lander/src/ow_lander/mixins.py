@@ -112,15 +112,6 @@ class FrameMixin:
 
   COMPARISON_FRAME = 'world'
 
-  # DEPRECATED
-  # @classmethod
-  # def get_tool_transform(cls):
-  #   tool_transform = FrameTransformer().lookup_transform(
-  #     cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
-  #   if tool_transform is None:
-  #     raise RuntimeError("Failed to lookup TOOL frame transform")
-  #   return tool_transform
-
   @classmethod
   def get_comparison_transform(cls, source_frame):
     transform = FrameTransformer().lookup_transform(cls.COMPARISON_FRAME,
@@ -133,13 +124,6 @@ class FrameMixin:
   def poses_equivalent(cls, pose1, pose2):
     return math3d.poses_approx_equivalent(pose1, pose2,
       constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_RADIAN_TOLERANCE)
-
-  # @classmethod
-  # def get_intended_end_effector_pose(cls, pose, transform=None):
-  #   if transform is None:
-  #     return FrameTransformer().transform(pose, cls.COMPARISON_FRAME)
-  #   else:
-  #     return do_transform_pose(pose, transform)
 
   @classmethod
   def get_frame_id_from_index(cls, frame):
@@ -221,7 +205,7 @@ class FrameMixin:
     return PoseStamped(header=create_most_recent_header(frame_id),
                        pose=intended_pose)
 
-  def verify_intended_pose_reached(self, intended_pose, transform):
+  def verify_pose_reached(self, intended_pose, transform):
     expected = do_transform_pose(intended_pose, transform)
     actual = self.get_end_effector_pose(self.COMPARISON_FRAME)
     return self.poses_equivalent(expected.pose, actual.pose)
