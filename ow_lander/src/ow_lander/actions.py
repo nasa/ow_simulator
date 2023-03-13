@@ -172,6 +172,10 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   result_type   = owl_msgs.msg.TaskScoopCircularResult
 
   def plan_trajectory(self, goal):
+
+    intended_dig_point = self.create_intended_point(
+      goal.frame, goal.relative, goal.point)
+
     # TODO check if base_link is ever different from world
     PLANNING_FRAME = 'world'
     frame_id, _relative = self.interpret_frame_goal(goal)
@@ -253,37 +257,24 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
   feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianResult
 
+  def __init__(self, *args, **kwargs):
+    super().__init__('l_scoop_tip', *args, **kwargs)
+
   def publish_feedback_cb(self):
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
-    frame_id = self.interpret_frame(goal.frame)
-    if frame_id is None:
+    try:
+      intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
+                                                     goal.pose)
+    except RuntimeError as err:
+      self._set_aborted(str(err))
       return
-    position = goal.pose.position
-    orientation = self.validate_normalization(goal.pose.orientation)
-    if orientation is None:
-      return
-    intended_pose = None
-    if goal.relative:
-      # treat as additive to the current pose
-      current_pose = self.get_end_effector_pose(frame_id).pose
-      intended_pose = Pose(
-        math3d.add(current_pose.position, position),
-        math3d.quaternion_multiply(current_pose.orientation, orientation)
-      )
-    else:
-      # treat as absolute in the frame
-      intended_pose = Pose(position, orientation)
-    intended_pose_stamped = PoseStamped(
-      header=create_most_recent_header(frame_id), pose=intended_pose)
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(intended_pose_stamped,
-                                            self.END_EFFECTOR)
-      # save current tool transform before executing movement
-      old_tool_transform = self.get_tool_transform() \
-                           if frame_id == constants.FRAME_ID_TOOL else None
+      plan = self.plan_end_effector_to_pose(intended_pose_stamped)
+      comparison_transform = self.get_comparison_transform(
+        intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -293,21 +284,19 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       return
     else:
       self._arm.checkin_arm(self.name)
-      final = self.get_end_effector_pose('world')
-      expected = self.get_intended_end_effector_pose(intended_pose_stamped,
-                                                     old_tool_transform)
-      if final is None or expected is None:
-        self._set_aborted(
-          "Failed to perform necessary transforms to verify final pose",
-          final_pose=self._arm_tip_monitor.get_link_pose()
-        )
+      # dictionary of the action's Result and their appropriate values
+      results = {'final_pose': self._arm_tip_monitor.get_link_pose()}
+
+      try:
+        intended_pose_reached = self.verify_intended_pose_reached(
+          intended_pose_stamped, comparison_transform)
+      except RuntimeError as err:
+        self._set_aborted(str(err), **results)
         return
-      if not self.poses_equivalent(final.pose, expected.pose):
-        self._set_aborted("Failed to reach intended pose",
-          final_pose=self._arm_tip_monitor.get_link_pose())
-        return
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final_pose=self._arm_tip_monitor.get_link_pose())
+      if not intended_pose_reached:
+        self._set_aborted("Failed to reach intended pose", **results)
+      else:
+        self._set_succeeded(f"{self.name} trajectory succeeded", **results)
 
 
 class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
@@ -320,18 +309,12 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
 
   def execute_action(self, goal):
-    frame_id, relative = self.interpret_frame_goal(goal)
-    if frame_id is None:
-      self._set_aborted(f"Unrecognized frame {goal.frame}")
+    try:
+      intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
+                                                     goal.pose)
+    except RuntimeError as err:
+      self._set_aborted(str(err))
       return
-    position = goal.pose.position
-    orientation = self.validate_normalization(goal.pose.orientation)
-    if orientation is None:
-      return
-    pose = PoseStamped(
-      header=create_most_recent_header(frame_id),
-      pose=Pose(position, orientation)
-    )
     # monitor F/T sensor and define a callback to check its status
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
@@ -346,9 +329,12 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # perform action
     try:
       self._arm.checkout_arm(self.name)
-      plan = self._planner.plan_arm_to_pose(pose, self.END_EFFECTOR)
+      plan = self._planner.plan_arm_to_pose(intended_pose_stamped,
+                                            self.END_EFFECTOR)
       # save current tool transform before executing movement
-      old_tool_transform = self.get_tool_transform() if relative else None
+      old_tool_transform = None
+      if intended_pose_stamped.header.frame_id == constants.FRAME_ID_TOOL:
+        old_tool_transform = self.get_tool_transform()
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
@@ -360,8 +346,9 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       # check if requested pose agrees with commanded pose in comparison frame
-      final = self.get_end_effector_pose('world')
-      expected = self.get_intended_end_effector_pose(pose, old_tool_transform)
+      final = self.get_end_effector_pose(self.COMPARISON_FRAME)
+      expected = self.get_intended_end_effector_pose(intended_pose_stamped,
+                                                     old_tool_transform)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
@@ -406,48 +393,40 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
   def execute_action(self, goal):
     # the normal vector direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
-    frame_id, relative = self.interpret_frame_goal(goal)
-    if frame_id is None:
-      self._set_aborted(f"Unrecognized frame {goal.frame}")
+    try:
+      intended_start = self.get_intended_position(goal.frame, goal.relative,
+                                                  goal.point)
+      # NOTE: regardless of frame parameter normal is in the base_link frame
+      normal = self.validate_normalization(goal.normal)
+    except RuntimeError as err:
+      self._set_aborted(str(err))
       return
-    normal = self.validate_normalization(goal.normal)
-    if normal is None:
-      return
-    # orient scoop so that the bottom points in the opposite to the normal
-    # NOTE: regardless of frame parameter orientation is in the base_link frame
+    # orient scoop so that the bottom points opposite to the normal
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
-    start = goal.position
-    if relative:
-      start = FrameTransformer().transform_present(start,
-        constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
-      if start is None:
-        self._set_aborted("Failed to perform necessary frame transforms for " \
-                          "trajectory planning.")
-        return
-    max_distance = goal.distance + goal.overdrive
-    displacement = math3d.scalar_multiply(max_distance, normal)
-    end = math3d.add(start, displacement)
     # pose before end-effector is driven towards surface
-    pose1 = PoseStamped(
-      header=create_most_recent_header(constants.FRAME_ID_BASE),
+    intended_start_pose = PoseStamped(
+      header=intended_start.header,
       pose=Pose(
-        position=start,
+        position=intended_start.point,
         orientation=orientation
       )
     )
+    max_distance = goal.distance + goal.overdrive
+    displacement = math3d.scalar_multiply(max_distance, normal)
     # pose after end-effector has driven its maximum distance towards surface
     # if there is no surface, the end-effector will reach this pose
-    pose2 = PoseStamped(
-      header=create_most_recent_header(constants.FRAME_ID_BASE),
+    intended_end_pose = PoseStamped(
+      header=intended_start.header,
       pose=Pose(
-        position=end,
+        position=math3d.add(intended_start.point, displacement),
         orientation=orientation
       )
     )
     # move to setup pose prior to surface approach
     try:
       self._arm.checkout_arm(self.name)
-      plan1 = self._planner.plan_arm_to_pose(pose1, self.END_EFFECTOR)
+      plan1 = self._planner.plan_arm_to_pose(intended_start_pose,
+                                             self.END_EFFECTOR)
       self._arm.execute_arm_trajectory(plan1,
         action_feedback_cb=self.publish_feedback_cb)
     except RuntimeError as err:
@@ -459,7 +438,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       final = self.get_end_effector_pose('world')
-      expected = self.get_intended_end_effector_pose(pose1)
+      expected = self.get_intended_end_effector_pose(intended_start_pose)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
@@ -475,7 +454,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # local function to compute progress of the action during surface approach
     def compute_distance():
       pose = self.get_end_effector_pose().pose
-      d = math3d.subtract(pose.position, start)
+      d = math3d.subtract(pose.position, intended_start.point)
       return math3d.norm(d)
     # setup F/T monitor and its callback
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
@@ -488,7 +467,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # move towards surface until F/T is breached or overdrive distance reached
     try:
       self._arm.checkout_arm(self.name)
-      plan2 = self._planner.plan_arm_to_pose(pose2, self.END_EFFECTOR)
+      plan2 = self._planner.plan_arm_to_pose(intended_end_pose,
+                                             self.END_EFFECTOR)
       self._arm.execute_arm_trajectory(plan2, action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
@@ -502,7 +482,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       self._arm.checkin_arm(self.name)
       # check if requested pose agrees with commanded pose in comparison frame
       final = self.get_end_effector_pose('world')
-      expected = self.get_intended_end_effector_pose(pose2)
+      expected = self.get_intended_end_effector_pose(intended_end_pose)
       if final is None or expected is None:
         self._set_aborted(
           "Failed to perform necessary transforms to verify final pose",
@@ -515,16 +495,14 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       if not monitor.threshold_breached() and \
           not self.poses_equivalent(final.pose, expected.pose):
         # pose was not reached due to planning/monitor error
-        self._set_aborted(
-          NO_THRESHOLD_BREACH_MESSAGE,
+        self._set_aborted(NO_THRESHOLD_BREACH_MESSAGE,
           final_pose=self.get_end_effector_pose().pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
           final_torque=monitor.get_torque()
         )
       elif not monitor.threshold_breached():
-        self._set_succeeded(
-          "No surface was found",
+        self._set_succeeded("No surface was found",
           final_pose=self.get_end_effector_pose().pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
@@ -536,8 +514,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         msg += f". Surface found at ({pose.position.x:0.3f}, "
         msg +=                     f"{pose.position.y:0.3f}, "
         msg +=                     f"{pose.position.z:0.3f})"
-        self._set_succeeded(
-          msg,
+        self._set_succeeded(msg,
           final_pose=pose,
           final_distance=compute_distance(),
           final_force=monitor.get_force(),
