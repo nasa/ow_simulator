@@ -171,23 +171,18 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   feedback_type = owl_msgs.msg.TaskScoopCircularFeedback
   result_type   = owl_msgs.msg.TaskScoopCircularResult
 
+  def __init__(self, *args, **kwargs):
+    super().__init__('l_scoop_tip', *args, **kwargs)
+
   def plan_trajectory(self, goal):
-
-    intended_dig_point = self.create_intended_point(
-      goal.frame, goal.relative, goal.point)
-
-    # TODO check if base_link is ever different from world
-    PLANNING_FRAME = 'world'
-    frame_id, _relative = self.interpret_frame_goal(goal)
-    if frame_id is None:
-      raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    # NOTE: the dig_circular method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    intended_dig_point = self.get_intended_position(goal.frame, goal.relative,
+                                                    goal.point)
+    PLANNING_FRAME = 'base_link'
+    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
     if point is None:
-      raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the {PLANNING_FRAME} frame")
-    return self._planner.dig_circular(point, goal.depth, goal.parallel)
+      raise RuntimeError("Failed to transform dig point from " \
+                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
+    return self._planner.dig_circular(point.point, goal.depth, goal.parallel)
 
 
 class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
@@ -199,19 +194,18 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   feedback_type = owl_msgs.msg.TaskScoopLinearFeedback
   result_type   = owl_msgs.msg.TaskScoopLinearResult
 
+  def __init__(self, *args, **kwargs):
+    super().__init__('l_scoop_tip', *args, **kwargs)
+
   def plan_trajectory(self, goal):
-    # TODO check if base_link is ever different from world
-    PLANNING_FRAME = 'world'
-    frame_id, _relative = self.interpret_frame_goal(goal)
-    if frame_id is None:
-      raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    # NOTE: the dig_linear method computes trajectory in the world frame
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    intended_dig_point = self.get_intended_position(goal.frame, goal.relative,
+                                                    goal.point)
+    PLANNING_FRAME = 'base_link'
+    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
     if point is None:
-      raise RuntimeError(f"Failed to transform dig point from {frame_id} " \
-                         f"to the {PLANNING_FRAME} frame")
-    return self._planner.dig_linear(point, goal.depth, goal.length)
+      raise RuntimeError("Failed to transform dig point from " \
+                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
+    return self._planner.dig_linear(point.point, goal.depth, goal.length)
 
 
 class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
@@ -223,17 +217,18 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   feedback_type = owl_msgs.msg.TaskDiscardSampleFeedback
   result_type   = owl_msgs.msg.TaskDiscardSampleResult
 
+  def __init__(self, *args, **kwargs):
+    super().__init__('l_scoop_tip', *args, **kwargs)
+
   def plan_trajectory(self, goal):
+    intended_dig_point = self.get_intended_position(goal.frame, goal.relative,
+                                                    goal.point)
     PLANNING_FRAME = 'base_link'
-    frame_id, _relative = self.interpret_frame_goal(goal)
-    if frame_id is None:
-      raise RuntimeError(f"Unrecognized frame {goal.frame}")
-    point = FrameTransformer().transform_present(
-      goal.point, PLANNING_FRAME, frame_id)
+    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
     if point is None:
-      raise RuntimeError(f"Failed to transform discard point from {frame_id} " \
-                         f"to the {PLANNING_FRAME} frame")
-    return self._planner.discard_sample(point, goal.height)
+      raise RuntimeError("Failed to transform dig point from " \
+                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
+    return self._planner.discard_sample(point.point, goal.height)
 
 
 class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):

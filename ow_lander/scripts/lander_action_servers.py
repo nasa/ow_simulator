@@ -23,9 +23,9 @@ server_move_cartesian = actions.ArmMoveCartesianServer()
 server_move_cartesian_guarded = actions.ArmMoveCartesianGuardedServer()
 server_find_surface   = actions.ArmFindSurfaceServer()
 server_move_joint_guarded = actions.ArmMoveJointsGuardedServer()
-# server_dig_circular   = actions.TaskScoopCircularServer()
-# server_dig_linear     = actions.TaskScoopLinearServer()
-# server_discard        = actions.TaskDiscardSampleServer()
+server_dig_circular   = actions.TaskScoopCircularServer()
+server_dig_linear     = actions.TaskScoopLinearServer()
+server_discard        = actions.TaskDiscardSampleServer()
 
 # other non-arm lander actions
 server_light_set_intensity = actions.LightSetIntensityServer()
