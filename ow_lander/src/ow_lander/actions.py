@@ -861,16 +861,20 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = owl_msgs.msg.PanTiltMoveCartesianResult
 
   def execute_action(self, goal):
-    cam_center = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
+    LOOKAT_FRAME = constants.FRAME_ID_BASE
+    cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'StereoCameraCenter_link')
-    tilt_joint = FrameTransformer().lookup_transform(constants.FRAME_ID_BASE,
+    tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'l_ant_panel')
-    lookat = goal.point if goal.frame == constants.FRAME_BASE \
-              else FrameTransformer().transform_present(
-                goal.point,
-                constants.FRAME_ID_BASE,
-                constants.FRAME_ID_MAP[goal.frame]
-              )
+    try:
+      frame_id = mixins.FrameMixin.get_frame_id_from_index(goal.frame)
+    except RuntimeError as err:
+      self._set_aborted(str(err))
+      return
+    lookat = goal.point
+    if frame_id != LOOKAT_FRAME:
+      lookat = FrameTransformer().transform_present(
+        goal.point, LOOKAT_FRAME, frame_id)
     if cam_center is None or tilt_joint is None or lookat is None:
       self._set_aborted("Failed to perform necessary transforms to compute "
                         "appropriate pan and tilt values.")
