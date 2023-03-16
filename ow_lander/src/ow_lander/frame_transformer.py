@@ -45,16 +45,16 @@ class FrameTransformer(metaclass = Singleton):
     stamped = None
     if isinstance(geometry, Point):
       stamped = PointStamped(
-        header=create_header(source_frame, rospy.Time.now()), point=geometry)
+        header=create_header(source_frame, timestamp), point=geometry)
     elif isinstance(geometry, Pose):
       stamped = PoseStamped(
-        header=create_header(source_frame, rospy.Time.now()), pose=geometry)
+        header=create_header(source_frame, timestamp), pose=geometry)
     elif isinstance(geometry, Vector3):
       stamped = Vector3Stamped(
-        header=create_header(source_frame, rospy.Time.now()), vector=geometry)
+        header=create_header(source_frame, timestamp), vector=geometry)
     elif isinstance(geometry, Wrench):
       stamped = WrenchStamped(
-        header=create_header(source_frame, rospy.Time.now()), wrench=geometry)
+        header=create_header(source_frame, timestamp), wrench=geometry)
     else:
       rospy.logerr(f"Unsupported geometry type {type(geometry)}")
       return None
