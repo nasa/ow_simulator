@@ -18,8 +18,7 @@ from shape_msgs.msg import SolidPrimitive
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import (Singleton, is_shou_yaw_goal_in_range,
-                              create_header)
+from ow_lander.common import Singleton, is_shou_yaw_goal_in_range, create_header
 from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
