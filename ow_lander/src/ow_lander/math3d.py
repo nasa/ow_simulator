@@ -32,6 +32,16 @@ def scalar_multiply(a, b):
   """
   return type(b)(a * b.x, a * b.y, a * b.z)
 
+def quaternion_multiply(a, b):
+  """Computes the product of two quaternions multiplied together (a * b)
+  a -- geometry_msgs Quaternion
+  b -- geometry_msgs Quaternion
+  """
+  return Quaternion(a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+                    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+                    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+                    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z)
+
 def dot(a, b):
   """Computes dot product between vectors/Quaternions a and b (a * b)
   a -- geometry_msgs Vector3, Point, or Quaternions

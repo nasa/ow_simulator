@@ -15,11 +15,13 @@ import moveit_commander
 from tf2_geometry_msgs import do_transform_pose
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Pose, PoseStamped, PointStamped
 
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent, in_closed_range
+from ow_lander.common import (radians_equivalent, in_closed_range,
+                              create_most_recent_header)
 from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
@@ -104,31 +106,19 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
 
 
 class FrameMixin:
-  """Can be inherited by ArmMoveActions that modify pose. DOES NOT implement an
-  arm interface, and so must be inherited along with ArmActionMixin or one of
-  its children.
+  """Can be inherited by an arm action that operates in different frames.
+  DOES NOT implement an arm interface, and so must be inherited along with ArmActionMixin or one of its children.
   """
 
   COMPARISON_FRAME = 'world'
-  END_EFFECTOR = 'l_scoop_tip'
 
   @classmethod
-  def interpret_frame_goal(cls, goal):
-    if goal.frame not in constants.FRAME_ID_MAP:
-      return None, None
-    # selecting relative is the same as selecting the Tool frame and vice versa
-    relative = goal.relative or goal.frame == constants.FRAME_TOOL
-    frame_id = constants.FRAME_ID_MAP[constants.FRAME_TOOL] if relative else \
-               constants.FRAME_ID_MAP[goal.frame]
-    return frame_id, relative
-
-  @classmethod
-  def get_tool_transform(cls):
-    tool_transform = FrameTransformer().lookup_transform(
-      cls.COMPARISON_FRAME, constants.FRAME_ID_TOOL)
-    if tool_transform is None:
-      raise RuntimeError("Failed to lookup TOOL frame transform")
-    return tool_transform
+  def get_comparison_transform(cls, source_frame):
+    transform = FrameTransformer().lookup_transform(cls.COMPARISON_FRAME,
+                                                    source_frame)
+    if transform is None:
+      raise RuntimeError("Failed to acquire transform")
+    return transform
 
   @classmethod
   def poses_equivalent(cls, pose1, pose2):
@@ -136,23 +126,18 @@ class FrameMixin:
       constants.ARM_POSE_METER_TOLERANCE, constants.ARM_POSE_RADIAN_TOLERANCE)
 
   @classmethod
-  def get_intended_end_effector_pose(cls, pose, transform=None):
-    if transform is None:
-      return FrameTransformer().transform(pose, cls.COMPARISON_FRAME)
-    else:
-      return do_transform_pose(pose, transform)
+  def get_frame_id_from_index(cls, frame):
+    if frame not in constants.FRAME_ID_MAP:
+      raise RuntimeError(f"Unrecognized frame index {frame}. "
+                         f"Options are {str(constants.FRAME_ID_MAP)}")
+    # selecting relative is the same as selecting the Tool frame and vice versa
+    return constants.FRAME_ID_MAP[frame]
 
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-  def get_end_effector_pose(self, frame_id='base_link'):
-    return self._planner.get_end_effector_pose(self.END_EFFECTOR, frame_id)
-
-  def validate_normalization(self, x):
-    """Normalize a vector/quaternion, or reject if its elements are all zeroes.
-    Handles error and warning logging.
-    x -- Vector3, Point, or Quaternion
-    return the normalized form of x, or None if all elements of x are zeroes
+  @classmethod
+  def validate_normalization(cls, x):
+    """Normalize a vector/quaternion, or reject if all elements are zero.
+    x -- Vector3 or Quaternion
+    returns normalized form of x or raise an error if all elements of x are zero
     """
     is_quaternion = hasattr(x, 'w')
     dp = math3d.dot(x, x)
@@ -160,11 +145,15 @@ class FrameMixin:
       INVALID_ERROR = "{meaning} is the zero-{geometry} and cannot represent " \
                       "a {represents}"
       if is_quaternion:
-        self._set_aborted(INVALID_ERROR.format(
-           meaning='Orientation', geometry='quaternion', represents='rotation'))
+        raise RuntimeError(
+          INVALID_ERROR.format(
+            meaning='Orientation', geometry='quaternion', represents='rotation')
+        )
       else:
-        self._set_aborted(INVALID_ERROR.format(
-           meaning='Normal', geometry='vector', represents='direction'))
+        raise RuntimeError(
+          INVALID_ERROR.format(
+            meaning='Normal', geometry='vector', represents='direction')
+        )
       return None
     elif dp != 1.0:
       n = math3d.normalize(x)
@@ -176,9 +165,56 @@ class FrameMixin:
       else:
         rospy.logwarn(MODIFIED_WARN.format(
           meaning='Normal', value=f"({n.x}, {n.y}, {n.z})"))
-      return math3d.normalize(x)
+      return n
     else:
       return x
+
+  def __init__(self, end_effector = 'l_scoop_link', *args, **kwargs):
+    self._end_effector = end_effector
+    super().__init__(*args, **kwargs)
+
+  def get_intended_position(self, frame_index, move_relative, position):
+    frame_id = self.get_frame_id_from_index(frame_index)
+    intended_position = position
+    if move_relative:
+      # treat as additive to the current pose
+      current_position = self.get_end_effector_pose(frame_id).pose.position
+      if current_position == None:
+        raise RuntimeError("Failed to query current end-effector position in "
+                           f"the {frame_id} frame. Cannot perform relative "
+                           "motion.")
+      intended_position = math3d.add(current_position, position)
+    return PointStamped(header=create_most_recent_header(frame_id),
+                        point=intended_position)
+
+  def get_intended_pose(self, frame_index, move_relative, pose):
+    frame_id = self.get_frame_id_from_index(frame_index)
+    position = pose.position
+    orientation = self.validate_normalization(pose.orientation)
+    intended_pose = Pose(position, orientation)
+    if move_relative:
+      # treat as additive to the current pose
+      current_pose = self.get_end_effector_pose(frame_id).pose
+      if current_pose == None:
+        raise RuntimeError("Failed to query current end-effector pose in the"
+                           f"{frame_id} frame. Cannot perform relative motion.")
+      intended_pose = Pose(
+        math3d.add(current_pose.position, position),
+        math3d.quaternion_multiply(current_pose.orientation, orientation)
+      )
+    return PoseStamped(header=create_most_recent_header(frame_id),
+                       pose=intended_pose)
+
+  def verify_pose_reached(self, intended_pose, transform):
+    expected = do_transform_pose(intended_pose, transform)
+    actual = self.get_end_effector_pose(self.COMPARISON_FRAME)
+    return self.poses_equivalent(expected.pose, actual.pose)
+
+  def get_end_effector_pose(self, frame_id='base_link'):
+    return self._planner.get_end_effector_pose(self._end_effector, frame_id)
+
+  def plan_end_effector_to_pose(self, pose):
+    return self._planner.plan_arm_to_pose(pose, self._end_effector)
 
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):
