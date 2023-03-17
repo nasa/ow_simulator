@@ -1,4 +1,11 @@
-# goal definition
+# Perform a guarded pose move to the specified position moving along
+# the given normal vector until meeting a force threshold. More
+# specifically, move to a location offset by the given distance above
+# a target point and localize it by moving along a given distance and
+# up to an overdrive extra distance. Motion fails if the force/torque
+# thresholds are not met by the end of the motion.
+
+# goal
 int32 frame
 bool relative
 geometry_msgs/Point position  # estimated position of surface in requested frame
@@ -7,12 +14,14 @@ float64 distance   # away from surface approach trajectory will start
 float64 overdrive  # distance past surface approach trajectory will continue
 float64 force_threshold
 float64 torque_threshold
+
 ---
 # result
 geometry_msgs/Pose final_pose
 float64 final_distance
 float64 final_force
 float64 final_torque
+
 ---
 # feedback
 geometry_msgs/Pose pose
