@@ -1,13 +1,18 @@
-# goal definition
+# Guarded joint move with all joints.  Moves the arm to the prescribed
+# position, either absolute or relative to present position.
+
+# goal
 bool relative
 float64[] angles
 float64 force_threshold
 float64 torque_threshold
+
 ---
 # result
 float64[] final_angles
 float64 final_force
 float64 final_torque
+
 ---
 # feedback
 float64[] angles
