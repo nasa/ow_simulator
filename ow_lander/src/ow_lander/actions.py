@@ -178,8 +178,7 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     intended_dig_point = self.get_intended_position(
       goal.frame, goal.relative, goal.point)
     PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(
-      intended_dig_point, PLANNING_FRAME, rospy.Time.now())
+    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
     if point is None:
       raise RuntimeError("Failed to transform dig point from " \
                          f"{goal.frame_id} to the {PLANNING_FRAME} frame")
@@ -202,8 +201,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     intended_dig_point = self.get_intended_position(
       goal.frame, goal.relative, goal.point)
     PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(
-      intended_dig_point, PLANNING_FRAME, rospy.Time.now())
+    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
     if point is None:
       raise RuntimeError("Failed to transform dig point from " \
                          f"{goal.frame_id} to the {PLANNING_FRAME} frame")
@@ -226,8 +224,7 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     intended_discard_point = self.get_intended_position(
       goal.frame, goal.relative, goal.point)
     PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(
-      intended_discard_point, PLANNING_FRAME, rospy.Time.now())
+    point = FrameTransformer().transform(intended_discard_point, PLANNING_FRAME)
     if point is None:
       raise RuntimeError("Failed to transform dig point from " \
                          f"{goal.frame_id} to the {PLANNING_FRAME} frame")
@@ -367,7 +364,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
 
   def publish_feedback_cb(self, distance=0, force=0, torque=0):
     self._publish_feedback(
-      pose=self.get_end_effector_pose().pose,
+      pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
       distance=distance,
       force=force,
       torque=torque
@@ -377,12 +374,18 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # the normal vector direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     try:
-      intended_start_position_stamped = self.get_intended_position(
-        goal.frame, goal.relative, goal.position)
-      # NOTE: regardless of frame parameter normal is in the base_link frame
+      # pre-transform only position
+      intended_start_position_stamped = FrameTransformer().transform(
+        self.get_intended_position(goal.frame, goal.relative, goal.position),
+        constants.FRAME_ID_BASE
+      )
+      # normal is always considered in base_link regardless of frame parameter
       normal = self.validate_normalization(goal.normal)
     except RuntimeError as err:
       self._set_aborted(str(err))
+      return
+    if intended_start_position_stamped is None:
+      self._set_aborted("Failed to perform necessary transform of position.")
       return
     # orient scoop so that the bottom points opposite to the normal
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
@@ -417,7 +420,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
-        final_pose=self.get_end_effector_pose().pose,
+        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         final_distance=0, final_force=0, final_torque=0)
       return
     else:
@@ -425,12 +428,12 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       if not self.verify_pose_reached(intended_start_pose_stamped,
                                        comparison_transform):
        self._set_aborted("Failed to reach setup pose.",
-          final_pose=self.get_end_effector_pose().pose,
+          final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
           final_distance=0, final_force=0, final_torque=0)
        return
     # local function to compute progress of the action during surface approach
     def compute_distance():
-      pose = self.get_end_effector_pose().pose
+      pose = self.get_end_effector_pose(constants.FRAME_ID_BASE).pose
       d = math3d.subtract(pose.position, intended_start_position_stamped.point)
       return math3d.norm(d)
     # setup F/T monitor and its callback
@@ -451,7 +454,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
-        final_pose=self.get_end_effector_pose().pose,
+        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         final_distance=compute_distance(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
@@ -459,7 +462,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       results = {
-        'final_pose'     : self.get_end_effector_pose().pose,
+        'final_pose' : self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         'final_distance' : compute_distance(),
         'final_force'    : monitor.get_force(),
         'final_torque'   : monitor.get_torque(),
@@ -865,10 +868,10 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
-    cam_center = FrameTransformer().lookup_transform(
-      LOOKAT_FRAME, 'StereoCameraCenter_link', rospy.Time.now())
-    tilt_joint = FrameTransformer().lookup_transform(
-      LOOKAT_FRAME, 'l_ant_panel', rospy.Time.now())
+    cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
+                                                    'StereoCameraCenter_link')
+    tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,
+                                                     'l_ant_panel')
     try:
       frame_id = mixins.FrameMixin.get_frame_id_from_index(goal.frame)
     except RuntimeError as err:
@@ -877,7 +880,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     lookat = goal.point
     if frame_id != LOOKAT_FRAME:
       lookat = FrameTransformer().transform_geometry(
-        goal.point, LOOKAT_FRAME, frame_id, rospy.Time.now())
+        goal.point, LOOKAT_FRAME, frame_id)
     if cam_center is None or tilt_joint is None or lookat is None:
       self._set_aborted("Failed to perform necessary transforms to compute "
                         "appropriate pan and tilt values.")

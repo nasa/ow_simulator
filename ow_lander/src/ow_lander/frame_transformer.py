@@ -19,18 +19,12 @@ class FrameTransformer(metaclass = Singleton):
   transform operations on stamped geometry_msgs objects.
   """
 
-  # NOTE: If you see the "frame not found" error when calling a transform
-  #       method, try increasing the timeout for your call to that function.
-  #       If the error occurs for all transform calls regardless of frame,
-  #       try increasing the value of this class variable.
-  DEFAULT_TIMEOUT = rospy.Duration(1.0)
-
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
 
-  def transform_geometry(self, geometry, target_frame, source_frame, \
-      timestamp, timeout=DEFAULT_TIMEOUT):
+  def transform_geometry(self, geometry, target_frame, source_frame,
+                         timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
     """Performs a transform on a supported geometry_msgs object. Transform is
     performed in the present; use the transform method for past transforms.
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
@@ -71,7 +65,7 @@ class FrameTransformer(metaclass = Singleton):
     else:
       return None
 
-  def transform(self, stamped_type, target_frame, timeout=DEFAULT_TIMEOUT):
+  def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0)):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
     target_frame -- ROS identifier string for the frame to be transformed into
@@ -85,7 +79,7 @@ class FrameTransformer(metaclass = Singleton):
       return None
 
   def lookup_transform(self, target_frame, source_frame,
-                       timestamp, timeout=DEFAULT_TIMEOUT):
+                       timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
@@ -99,3 +93,7 @@ class FrameTransformer(metaclass = Singleton):
     except tf2_ros.TransformException as err:
       rospy.logerr(f"FrameTransfomer.lookup_transform failure: {str(err)}")
       return None
+
+def initialize():
+  """Initialize tf2 Buffer. Call this following rospy.init_node"""
+  FrameTransformer()

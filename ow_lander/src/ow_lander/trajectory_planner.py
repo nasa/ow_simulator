@@ -98,15 +98,12 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         )
         return goal_pose_stamped.pose_stamped[0].pose
 
-    def get_end_effector_pose(self, end_effector, frame_id = None):
+    def get_end_effector_pose(self, end_effector, frame_id,
+                              timestamp=rospy.Time(0),
+                              timeout=rospy.Duration(0)):
         pose = self._move_arm.get_current_pose(end_effector)
-        if frame_id is None \
-                or frame_id == self._move_arm.get_pose_reference_frame():
-            return pose
-        else:
-            # ensures the most recent transform is used
-            pose.header.stamp = rospy.Time(0)
-            return FrameTransformer().transform(pose, frame_id)
+        pose.header.stamp = timestamp
+        return FrameTransformer().transform(pose, frame_id, timeout)
 
     def _set_joint_position_target(self, joint_positions):
         try:
