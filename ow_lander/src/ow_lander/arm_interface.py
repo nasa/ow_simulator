@@ -269,16 +269,13 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
     def get_active_controller(self):
         return self._active_controller
 
-    def execute(self, trajectory, goal_time_tolerance=rospy.Time(0.1),
+    def execute(self, trajectory,
                 done_cb=None, active_cb=None, feedback_cb=None):
         """Execute the provided trajectory asynchronously.
         trajectory -- An instance of moveit_msgs.msg.RobotTrajectory that
                       describes the desired trajectory.
         """
-        goal = FollowJointTrajectoryGoal(
-            trajectory = trajectory,
-            goal_time_tolerance = goal_time_tolerance
-        )
+        goal = FollowJointTrajectoryGoal(trajectory=trajectory)
         self._get_active_follow_client().send_goal(
             goal, done_cb, active_cb, feedback_cb)
 
