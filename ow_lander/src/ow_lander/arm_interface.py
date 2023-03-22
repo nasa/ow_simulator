@@ -226,18 +226,17 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         self._active_controller = self.SUPPORTED_CONTROLLERS[0]
         self._follow_action_clients = dict()
         for controller in self.SUPPORTED_CONTROLLERS:
-            self._follow_action_clients[controller] = actionlib.SimpleActionClient(
-                f"{controller}/follow_joint_trajectory",
-                FollowJointTrajectoryAction
-            )
+            action = f"{controller}/follow_joint_trajectory"
+            self._follow_action_clients[controller] = actionlib. \
+              SimpleActionClient(action, FollowJointTrajectoryAction)
             if not self._follow_action_clients[controller].wait_for_server(
                     rospy.Duration(ACTION_CLIENT_TIMEOUT)):
                 raise TimeoutError(
                   f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for "\
-                  f"connection the {controller} joint trajectory action server."
+                  f"connection to the {action} action server."
                 )
-            rospy.loginfo(f"Successfully connected to {controller} joint "\
-                          f"trajectory action server.")
+            rospy.loginfo(
+              f"Successfully connected to the {action} action server.")
         # initialize controller switch service proxy to enable grinder trajectories
         SWITCH_CONTROLLER_SERVICE = '/controller_manager/switch_controller'
         SERVICE_PROXY_TIMEOUT = 30 # seconds
