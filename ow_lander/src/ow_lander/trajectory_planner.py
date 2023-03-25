@@ -101,6 +101,15 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def get_end_effector_pose(self, end_effector, frame_id,
                               timestamp=rospy.Time(0),
                               timeout=rospy.Duration(0)):
+        """Look up the pose of an end-effector
+        end_effector -- Name of the end-effector link
+        frame_id     -- Frame ID in which to provide the result
+        timestamp    -- See method comments in frame_transformer.py for usage
+                        default: rospy.Time(0)
+        timeout      -- See method comments in frame_tansformer.py for usage
+                        default: rospy.Duration(0)
+        returns geometry_msgs.PoseStamped
+        """
         pose = self._move_arm.get_current_pose(end_effector)
         pose.header.stamp = timestamp
         return FrameTransformer().transform(pose, frame_id, timeout)

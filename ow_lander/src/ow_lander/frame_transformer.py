@@ -30,6 +30,20 @@ class FrameTransformer(metaclass = Singleton):
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
     target_frame -- ROS identifier string for the frame to be transformed into
     source_frame -- ROS identifier string from the frame being transformed from
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a geometry_msgs object of the same type as provided, but transformed
     into the target_frame. None if transform call fails
     """
@@ -69,6 +83,20 @@ class FrameTransformer(metaclass = Singleton):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
     target_frame -- ROS identifier string for the frame to be transformed into
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a stamped object of the same type only transformed into target_frame
     or None if transform call fails
     """
@@ -83,8 +111,20 @@ class FrameTransformer(metaclass = Singleton):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
-    timestamp    -- Time on the ROS clock to look up frame transform. Too far in
-                    the past will through an error. Defaults to most recent.
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a transform or None if lookup_transform call fails
     """
     try:
