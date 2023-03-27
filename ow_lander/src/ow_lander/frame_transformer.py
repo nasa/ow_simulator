@@ -5,7 +5,7 @@
 import rospy
 import tf2_ros
 
-from ow_lander.common import Singleton, create_most_recent_header
+from ow_lander.common import Singleton, create_header
 
 # NOTE: These imports are not directly used, but importing them works around a
 #       bug discussed here
@@ -19,23 +19,31 @@ class FrameTransformer(metaclass = Singleton):
   transform operations on stamped geometry_msgs objects.
   """
 
-  # NOTE: If you see the "frame not found" error when calling a transform
-  #       method, try increasing the timeout for your call to that function.
-  #       If the error occurs for all transform calls regardless of frame,
-  #       try increasing the value of this class variable.
-  DEFAULT_TIMEOUT = rospy.Duration(0.4)
-
   def __init__(self):
     self._buffer = tf2_ros.Buffer()
     self._listener = tf2_ros.TransformListener(self._buffer)
 
-  def transform_present(self, geometry, target_frame, source_frame, \
-      timeout=DEFAULT_TIMEOUT):
+  def transform_geometry(self, geometry, target_frame, source_frame,
+                         timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
     """Performs a transform on a supported geometry_msgs object. Transform is
     performed in the present; use the transform method for past transforms.
     geometry -- A geometry_msgs object. Supported: Point, Pose, Vector3, Wrench
     target_frame -- ROS identifier string for the frame to be transformed into
     source_frame -- ROS identifier string from the frame being transformed from
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a geometry_msgs object of the same type as provided, but transformed
     into the target_frame. None if transform call fails
     """
@@ -45,16 +53,16 @@ class FrameTransformer(metaclass = Singleton):
     stamped = None
     if isinstance(geometry, Point):
       stamped = PointStamped(
-        header=create_most_recent_header(source_frame), point=geometry)
+        header=create_header(source_frame, timestamp), point=geometry)
     elif isinstance(geometry, Pose):
       stamped = PoseStamped(
-        header=create_most_recent_header(source_frame), pose=geometry)
+        header=create_header(source_frame, timestamp), pose=geometry)
     elif isinstance(geometry, Vector3):
       stamped = Vector3Stamped(
-        header=create_most_recent_header(source_frame), vector=geometry)
+        header=create_header(source_frame, timestamp), vector=geometry)
     elif isinstance(geometry, Wrench):
       stamped = WrenchStamped(
-        header=create_most_recent_header(source_frame), wrench=geometry)
+        header=create_header(source_frame, timestamp), wrench=geometry)
     else:
       rospy.logerr(f"Unsupported geometry type {type(geometry)}")
       return None
@@ -71,10 +79,24 @@ class FrameTransformer(metaclass = Singleton):
     else:
       return None
 
-  def transform(self, stamped_type, target_frame, timeout=DEFAULT_TIMEOUT):
+  def transform(self, stamped_type, target_frame, timeout=rospy.Duration(0)):
     """Performs a transform on a stamped geometry_msgs object
     stamped_type -- A stamped geometry_msgs object
     target_frame -- ROS identifier string for the frame to be transformed into
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a stamped object of the same type only transformed into target_frame
     or None if transform call fails
     """
@@ -85,12 +107,24 @@ class FrameTransformer(metaclass = Singleton):
       return None
 
   def lookup_transform(self, target_frame, source_frame,
-                       timestamp=rospy.Time(0), timeout=DEFAULT_TIMEOUT):
+                       timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
     """Computes a transform from the source frame to the target frame
     source_frame -- The frame from which the transform is computed
     target_frame -- The frame transformed into
-    timestamp    -- Time on the ROS clock to look up frame transform. Too far in
-                    the past will through an error. Defaults to most recent.
+    timestamp -- The time of the desired transform. Assigning rospy.Time(0) will
+                 request the most recent transform available in the cache. Even
+                 older transforms may be requested, but be careful not to
+                 request transforms further in the past than the cache saves.
+                 Using ropsy.Time.now() will acquire the next (newest)
+                 transform. If a rospy.Time.now() or a transform in the future
+                 is used, a sufficiently long timeout must be set, or the frame
+                 transform will not be found, resulting in an error.
+                 default: rospy.Time(0)
+    timeout -- The maximum time interval the method will block for while waiting
+               for the requested transform to become available. Using
+               rospy.Duration(0) will ensure the method returns immediately, and
+               should only be used when requesting a timestamp in the past.
+               default: rospy.Duration(0)
     returns a transform or None if lookup_transform call fails
     """
     try:
@@ -99,3 +133,7 @@ class FrameTransformer(metaclass = Singleton):
     except tf2_ros.TransformException as err:
       rospy.logerr(f"FrameTransfomer.lookup_transform failure: {str(err)}")
       return None
+
+def initialize():
+  """Initialize tf2 Buffer. Call this following rospy.init_node"""
+  FrameTransformer()

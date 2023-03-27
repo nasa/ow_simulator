@@ -20,8 +20,7 @@ from geometry_msgs.msg import Pose, PoseStamped, PointStamped
 from ow_lander.arm_interface import ArmInterface
 from ow_lander.trajectory_planner import ArmTrajectoryPlanner
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import (radians_equivalent, in_closed_range,
-                              create_most_recent_header)
+from ow_lander.common import radians_equivalent, in_closed_range, create_header
 from ow_lander import math3d
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
@@ -178,13 +177,13 @@ class FrameMixin:
     intended_position = position
     if move_relative:
       # treat as additive to the current pose
-      current_position = self.get_end_effector_pose(frame_id).pose.position
-      if current_position == None:
+      current = self.get_end_effector_pose(frame_id)
+      if current == None:
         raise RuntimeError("Failed to query current end-effector position in "
                            f"the {frame_id} frame. Cannot perform relative "
                            "motion.")
-      intended_position = math3d.add(current_position, position)
-    return PointStamped(header=create_most_recent_header(frame_id),
+      intended_position = math3d.add(current.pose.position, position)
+    return PointStamped(header=create_header(frame_id),
                         point=intended_position)
 
   def get_intended_pose(self, frame_index, move_relative, pose):
@@ -194,24 +193,38 @@ class FrameMixin:
     intended_pose = Pose(position, orientation)
     if move_relative:
       # treat as additive to the current pose
-      current_pose = self.get_end_effector_pose(frame_id).pose
-      if current_pose == None:
+      current = self.get_end_effector_pose(frame_id)
+      if current == None:
         raise RuntimeError("Failed to query current end-effector pose in the"
                            f"{frame_id} frame. Cannot perform relative motion.")
       intended_pose = Pose(
-        math3d.add(current_pose.position, position),
-        math3d.quaternion_multiply(current_pose.orientation, orientation)
+        math3d.add(current.pose.position, position),
+        math3d.quaternion_multiply(current.pose.orientation, orientation)
       )
-    return PoseStamped(header=create_most_recent_header(frame_id),
+    return PoseStamped(header=create_header(frame_id),
                        pose=intended_pose)
 
   def verify_pose_reached(self, intended_pose, transform):
     expected = do_transform_pose(intended_pose, transform)
-    actual = self.get_end_effector_pose(self.COMPARISON_FRAME)
+    # NOTE: When checking if a pose has been reached following a movement, it's
+    # safest to wait for the next transform to become available in case there is
+    # residual movement
+    actual = self.get_end_effector_pose(
+      self.COMPARISON_FRAME, rospy.Time.now(), rospy.Duration(1.0))
     return self.poses_equivalent(expected.pose, actual.pose)
 
-  def get_end_effector_pose(self, frame_id='base_link'):
-    return self._planner.get_end_effector_pose(self._end_effector, frame_id)
+  def get_end_effector_pose(self, frame_id, timestamp=rospy.Time(0),
+                            timeout=rospy.Duration(0)):
+    """Look up the pose of the set end-effector
+    frame_id     -- Frame ID in which to provide the result
+    timestamp    -- See method comments in frame_transformer.py for usage
+                    default: rospy.Time(0)
+    timeout      -- See method comments in frame_tansformer.py for usage
+                    default: rospy.Duration(0)
+    returns geometry_msgs.PoseStamped
+    """
+    return self._planner.get_end_effector_pose(self._end_effector, frame_id,
+                                               timestamp, timeout)
 
   def plan_end_effector_to_pose(self, pose):
     return self._planner.plan_arm_to_pose(pose, self._end_effector)
