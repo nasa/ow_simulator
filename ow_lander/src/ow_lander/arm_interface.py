@@ -264,8 +264,11 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         rate = rospy.Rate(CHECK_RATE)
         for i in range(int(CHECK_RATE * MAX_WAIT)):
           if self.is_active():
-            break
+            return
           rate.sleep()
+        rospy.logwarn(f"The {self._active_controller}/follow_joint_trajectory "
+                      f"action failed to become active within {MAX_WAIT} "
+                      "seconds of sending a goal.")
 
     def cease_execution(self):
         """Stops the execution of the last trajectory submitted for execution"""
