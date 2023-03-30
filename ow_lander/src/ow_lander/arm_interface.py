@@ -74,9 +74,6 @@ class ArmInterface:
   def stop_trajectory_silently(self):
     """Will bypass the stop flag and cease trajectory execution directly. This
     results in no exception being thrown."""
-    # NOTE: Until OW-1090 is fixed, this will stop a trajectory without an
-    #       exception being thrown, but execute_arm_trajectory will continue to
-    #       block for the remainder of the expected trajectory duration.
     self._executor.cease_execution()
 
   def switch_to_grinder_controller(self):
@@ -123,38 +120,19 @@ class ArmInterface:
       feedback_cb=self._stop_arm_if_fault)
 
     # publish feedback while waiting for trajectory execution completion
-    # NOTE : Looping for a timeout like this is prone to errors and results in a
-    #        large discontinuity between the final "current" value (in feedback)
-    #        and the "final" value (in result). This is at least partially
-    #        responsible for final positions varying far more than the eye can
-    #        see in the simulation because previously the "final" value was
-    #        assigned to whatever the most recent "current" value was, even if
-    #        timeout caused that "current" value to be grabbed milliseconds
-    #        before the actual completion of the action.
-    #        Ideally this would loop so long as _executor is active, or in other
-    #        words, so long as the active follow_joint_trajectory action client
-    #        in _executor returns a get_state() of 1 (ACTIVE). However, this is
-    #        bugged and an aborted state is commonly returned by this method in
-    #        the middle of a trajectory. See OW-1090 for more details.
     FEEDBACK_RATE = 100 # hertz
     rate = rospy.Rate(FEEDBACK_RATE)
     timeout = plan.joint_trajectory.points[-1].time_from_start \
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
-    while rospy.get_time() - start_time < timeout.secs:
+    while rospy.get_time() - start_time < timeout.to_sec() \
+          or self._executor.is_active():
       if ArmInterface._stopped:
         self._executor.cease_execution()
         raise RuntimeError("Stop was called; trajectory execution ceased")
       if action_feedback_cb is not None:
         action_feedback_cb()
       rate.sleep()
-
-    # wait for action to complete in case it takes longer than the timeout
-    self._executor.wait()
-
-    # FIXME: follow trajectory action sometimes returns an early result; this
-    #        sleep provides a buffer in time in case that happens (OW-1097)
-    rospy.sleep(4.0)
 
 class ArmFaultMonitor(metaclass=Singleton):
     """Checks whether the arm has faulted."""
@@ -226,18 +204,17 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         self._active_controller = self.SUPPORTED_CONTROLLERS[0]
         self._follow_action_clients = dict()
         for controller in self.SUPPORTED_CONTROLLERS:
-            self._follow_action_clients[controller] = actionlib.SimpleActionClient(
-                f"{controller}/follow_joint_trajectory",
-                FollowJointTrajectoryAction
-            )
+            action = f"{controller}/follow_joint_trajectory"
+            self._follow_action_clients[controller] = actionlib. \
+              SimpleActionClient(action, FollowJointTrajectoryAction)
             if not self._follow_action_clients[controller].wait_for_server(
                     rospy.Duration(ACTION_CLIENT_TIMEOUT)):
                 raise TimeoutError(
                   f"Timed out waiting {ACTION_CLIENT_TIMEOUT} seconds for "\
-                  f"connection the {controller} joint trajectory action server."
+                  f"connection to the {action} action server."
                 )
-            rospy.loginfo(f"Successfully connected to {controller} joint "\
-                          f"trajectory action server.")
+            rospy.loginfo(
+              f"Successfully connected to the {action} action server.")
         # initialize controller switch service proxy to enable grinder trajectories
         SWITCH_CONTROLLER_SERVICE = '/controller_manager/switch_controller'
         SERVICE_PROXY_TIMEOUT = 30 # seconds
@@ -268,42 +245,50 @@ class ArmTrajectoryExecutor(metaclass=Singleton):
         return success
 
     def get_active_controller(self):
+        """Returns the name of the currently active joint controller
+        """
         return self._active_controller
 
-    def execute(self, trajectory, goal_time_tolerance=rospy.Time(0.1),
+    def execute(self, trajectory,
                 done_cb=None, active_cb=None, feedback_cb=None):
         """Execute the provided trajectory asynchronously.
         trajectory -- An instance of moveit_msgs.msg.RobotTrajectory that
                       describes the desired trajectory.
         """
-        goal = FollowJointTrajectoryGoal(
-            trajectory = trajectory,
-            goal_time_tolerance = goal_time_tolerance
-        )
+        goal = FollowJointTrajectoryGoal(trajectory=trajectory)
         self._get_active_follow_client().send_goal(
             goal, done_cb, active_cb, feedback_cb)
+        # block until client is active, which should only take some milliseconds
+        CHECK_RATE = 500 # hertz
+        MAX_WAIT = 1.0 # seconds
+        rate = rospy.Rate(CHECK_RATE)
+        for i in range(int(CHECK_RATE * MAX_WAIT)):
+          if self.is_active():
+            return
+          rate.sleep()
+        rospy.logwarn(f"The {self._active_controller}/follow_joint_trajectory "
+                      f"action failed to become active within {MAX_WAIT} "
+                      "seconds of sending a goal.")
 
-    # FIXME: May not cancel follow_client if it has failed. See OW-1090
     def cease_execution(self):
         """Stops the execution of the last trajectory submitted for execution"""
         if self._get_active_follow_client().get_state() == GoalStatus.ACTIVE:
             self._get_active_follow_client().cancel_goal()
 
     def wait(self, timeout=0):
-        """
-        Blocks until the execution of the current trajectory comes to an end
-        :type timeout: int
+        """Blocks until the execution of the current trajectory comes to an end
+        timeout -- Seconds to wait for results
         """
         self._get_active_follow_client().wait_for_result(
             timeout=rospy.Duration(timeout))
 
     def result(self):
-        """
-        Gets the result of the last goal
+        """Gets the result of the last goal
         """
         return self._get_active_follow_client().get_result()
 
-    # FIXME: returns 4 (GoalStatus.ABORTED) after the initial movement on
-    #        complex trajectories like grind (see OW-1090 for more details)
     def is_active(self):
+        """Returns true if a trajectory is being executed and has not resulted
+        in an error code.
+        """
         return self._get_active_follow_client().get_state() == GoalStatus.ACTIVE

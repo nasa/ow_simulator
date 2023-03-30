@@ -80,7 +80,11 @@ arm_controller:
     # Velocity to be considered approximately equal to zero.
     stopped_velocity_tolerance: 0.001
     # Position tolerance for a particular joint to reach the goal and throughout the trajectory
-    j_shou_yaw: {trajectory: &traj_tolerance 0.5, goal: &goal_tolerance 0.1}
+    # NOTE: A zero trajectory tolerance is a work-around for joint trajectories
+    #       being generated that contain a discontinuity in their positions. The
+    #       discontinuity would always result in a PATH_TOLERANCE_VIOLATION.
+    # j_shou_yaw: {trajectory: &traj_tolerance 0.5, goal: &goal_tolerance 0.1}
+    j_shou_yaw: {trajectory: &traj_tolerance 0, goal: &goal_tolerance 0.1}
     j_shou_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
     j_prox_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
     j_dist_pitch: {trajectory: *traj_tolerance, goal: *goal_tolerance}
