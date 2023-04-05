@@ -159,80 +159,42 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         :type args: List[bool, float, int, float, float, float]
         """
 
-        x_start = point.x
-        y_start = point.y
-        ground_position = point.z
-
         # TODO:
         #  1. implement normal parameter
         #  2. implement scoop_angle parameter
 
+        trench_center = Point(
+            point.x,
+            point.y,
+            point.z - depth + constants.R_PARALLEL_FALSE_A
+        )
         sequence = TrajectorySequence('l_scoop', self._robot, self._move_arm)
-
-        if not parallel:
-            # place end-effector above trench position
-            sequence.plan_to_joint_positions(
-                _compute_trench_setup_config(x_start, y_start)
-            )
+        # place end-effector above trench position
+        sequence.plan_to_joint_positions(
+            _compute_trench_setup_config(trench_center.x, trench_center.y)
+        )
+        if parallel:
+            # rotate hand so scoop bottom points down
+            sequence.plan_to_joint_position(constants.J_HAND_YAW, 0.0)
+            # rotate scoop to face radially out from lander
+            sequence.plan_to_joint_position(constants.J_SCOOP_YAW, math.pi/2)
+            # pitch scoop back with the distal pitch so its blade faces terrain
+            sequence.plan_to_joint_position(constants.J_DIST_PITCH,
+                                            -19.0/54.0*math.pi)
+            # Once aligned to trench goal, place hand above trench middle point
+            sequence.plan_to_position(trench_center)
+            # perform scoop by rotating distal pitch, and scoop through surface
+            sequence.plan_to_joint_translation(constants.J_DIST_PITCH,
+                                               2.0/3.0*math.pi)
+        else:
             # lower to trench position, maintaining up-right orientation
-            z_start = ground_position - depth + constants.R_PARALLEL_FALSE_A
-            sequence.plan_to_position(Point(x_start, y_start, z_start))
+            sequence.plan_to_position(trench_center)
             # rotate hand yaw so scoop tip points into surface
             sequence.plan_to_joint_position(constants.J_HAND_YAW, math.pi/2.2)
             # lower scoop back to down z-position with new hand yaw position set
-            sequence.plan_to_z(z_start)
+            sequence.plan_to_z(trench_center.z)
             # perform scoop by rotating hand yaw, and scoop through surface
             sequence.plan_to_joint_position(constants.J_HAND_YAW, -0.29*math.pi)
-
-        else:
-
-            plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
-            if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-                return False
-            # Rotate hand so scoop is in middle point
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-                plan_a)
-
-            plan_b = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
-            circ_traj = _cascade_plans(plan_a, plan_b)
-
-            # Rotate scoop
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-                circ_traj)
-
-            plan_c = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
-            circ_traj = _cascade_plans(circ_traj, plan_c)
-
-            # Rotate dist so scoop is back
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-                circ_traj)
-
-            plan_d = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_DIST_PITCH, -19.0/54.0*math.pi)
-            circ_traj = _cascade_plans(circ_traj, plan_d)
-
-            # Once aligned to trench goal, place hand above trench middle point
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-                circ_traj)
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
-
-            plan_e = self.go_to_XYZ_coordinate(
-                cs, end_pose, x_start, y_start, z_start)
-            circ_traj = _cascade_plans(circ_traj, plan_e)
-
-            # Rotate dist to dig
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-                circ_traj)
-            dist_now = start_state[3]
-
-            plan_f = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
-            circ_traj = _cascade_plans(circ_traj, plan_f)
-
-        # self._move_arm.clear_pose_targets()
-
         return sequence.merge()
 
     def move_to_pre_trench_configuration(self, x_start, y_start):
