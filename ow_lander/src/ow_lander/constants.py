@@ -5,12 +5,12 @@
 """Define constants required by multiple modules within the package"""
 
 ## GLOBAL VARS ##
-J_SCOOP_YAW = 5
-J_HAND_YAW = 4
-J_DIST_PITCH = 3
-J_PROX_PITCH = 2
-J_SHOU_PITCH = 1
 J_SHOU_YAW = 0
+J_SHOU_PITCH = 1
+J_PROX_PITCH = 2
+J_DIST_PITCH = 3
+J_HAND_YAW = 4
+J_SCOOP_YAW = 5
 J_GRINDER = 5
 
 # these constants will eventually exist in a Frame message type in owl_msgs

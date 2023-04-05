@@ -19,6 +19,14 @@ from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
 
+def _compute_workspace_shoulder_yaw(x, y):
+    # Compute shoulder yaw angle to trench
+    alpha = math.atan2(y - constants.Y_SHOU, x - constants.X_SHOU)
+    h = math.sqrt(pow(y - constants.Y_SHOU, 2) + pow(x - constants.X_SHOU, 2))
+    l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+    beta = math.asin(l / h)
+    return alpha + beta
+
 def _compute_trench_setup_config(x_start, y_start):
     # Compute shoulder yaw angle to trench
     alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
@@ -163,7 +171,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         #  1. implement normal parameter
         #  2. implement scoop_angle parameter
 
-        trench_center = Point(
+        trench_bottom = Point(
             point.x,
             point.y,
             point.z - depth + constants.R_PARALLEL_FALSE_A
@@ -171,30 +179,33 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         sequence = TrajectorySequence('l_scoop', self._robot, self._move_arm)
         # place end-effector above trench position
         sequence.plan_to_joint_positions(
-            _compute_trench_setup_config(trench_center.x, trench_center.y)
+            j_shou_yaw = _compute_workspace_shoulder_yaw(point.x, point.y),
+            j_shou_pitch = math.pi / 2,
+            j_prox_pitch = -math.pi / 2,
+            j_dist_pitch = 0.0,
+            j_hand_yaw = 0.0,
+            j_scoop_yaw = 0.0
         )
         if parallel:
             # rotate hand so scoop bottom points down
-            sequence.plan_to_joint_position(constants.J_HAND_YAW, 0.0)
+            sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
             # rotate scoop to face radially out from lander
-            sequence.plan_to_joint_position(constants.J_SCOOP_YAW, math.pi/2)
+            sequence.plan_to_joint_positions(j_scoop_yaw = math.pi/2)
             # pitch scoop back with the distal pitch so its blade faces terrain
-            sequence.plan_to_joint_position(constants.J_DIST_PITCH,
-                                            -19.0/54.0*math.pi)
+            sequence.plan_to_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
             # Once aligned to trench goal, place hand above trench middle point
-            sequence.plan_to_position(trench_center)
+            sequence.plan_to_position(trench_bottom)
             # perform scoop by rotating distal pitch, and scoop through surface
-            sequence.plan_to_joint_translation(constants.J_DIST_PITCH,
-                                               2.0/3.0*math.pi)
+            sequence.plan_to_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
         else:
             # lower to trench position, maintaining up-right orientation
-            sequence.plan_to_position(trench_center)
+            sequence.plan_to_position(trench_bottom)
             # rotate hand yaw so scoop tip points into surface
-            sequence.plan_to_joint_position(constants.J_HAND_YAW, math.pi/2.2)
+            sequence.plan_to_joint_positions(j_hand_yaw = math.pi/2.2)
             # lower scoop back to down z-position with new hand yaw position set
-            sequence.plan_to_z(trench_center.z)
+            sequence.plan_to_z(trench_bottom.z)
             # perform scoop by rotating hand yaw, and scoop through surface
-            sequence.plan_to_joint_position(constants.J_HAND_YAW, -0.29*math.pi)
+            sequence.plan_to_joint_positions(j_hand_yaw = -0.29*math.pi)
         return sequence.merge()
 
     def move_to_pre_trench_configuration(self, x_start, y_start):

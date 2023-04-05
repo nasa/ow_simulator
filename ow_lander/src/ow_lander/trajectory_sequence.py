@@ -41,12 +41,17 @@ class TrajectorySequence:
     if index >= self._joints_count or index < 0:
       raise PlanningException("Joint index is out of range")
 
+  def _lookup_joint_index(self, joint_name):
+    if joint_name not in self._group.get_joints():
+      raise PlanningException(f"Joint {joint_name} is unknown to the "
+                              f"{self._group.get_name()} move group.")
+    else:
+      return self._group.get_joints().index(joint_name)
+
   def _compute_forward_kinematics(self, robot_state):
     # TODO unhandled exception could be raised
     result = self._compute_fk_srv(create_header('base_link'),# rospy.Time.now()),
                                   [self._ee], robot_state)
-    print("MoveItErrorCodes.SUCCESS = ", MoveItErrorCodes.SUCCESS)
-    print("result = ", result)
     if result.error_code.val != MoveItErrorCodes.SUCCESS:
       raise PlanningException(f"{self.SRV_COMPUTE_FK} service returned "
                               f"error code {result.error_code}")
@@ -81,8 +86,8 @@ class TrajectorySequence:
       = list(self._get_final_joint_positions_of(trajectory))
     self._planning_time_total += planning_time
 
-  def plan_to_joint_positions(self, joint_positions):
-    """Plan all joints to move to a set of new joint positions
+  def _plan_to_joint_positions(self, joint_positions):
+    """Plan for all joints to move to new configuration
     joint_positions -- list of arm joint positions in radians
     """
     if len(joint_positions) != self._joints_count:
@@ -91,35 +96,48 @@ class TrajectorySequence:
     self._group.set_joint_value_target(joint_positions)
     self._plan()
 
-  def plan_to_joint_position(self, index, joint_position):
-    """Plan a single joint to a new position
-    index -- index of joint
-    joint_position -- new absolute position of joint
-    """
-    self._assert_joint_index_validity(index)
-    joint_positions = self._most_recent_joint_positions
-    joint_positions[index] = joint_position
-    self.plan_to_joint_positions(joint_positions)
-
-  def plan_to_joint_translations(self, joint_translations):
-    """Plan all joint to change their positions by a list of translations
+  def _plan_to_joint_translations(self, joint_translations):
+    """Plan for all joints to change their positions by a list of translations
     joint_translations -- list of joint displacements in radians
     """
     if len(joint_translations) != self._joints_count:
       raise PlanningException("Incorrect number of joints for arm move group")
     current = self._most_recent_joint_positions
     final = [x + y for x, y in zip(current, joint_translations)]
-    self.plan_to_joint_positions(final)
+    self._plan_to_joint_positions(final)
 
-  def plan_to_joint_translation(self, index, translation):
-    """Plan a joint to change its position by a translation
-    index -- index of joint
-    translation -- displacement to move joint by
+  def _plan_to_coordinate(self, coordinate, position):
+    """Internal helper function so position of a coordinate can be set
+    independent of other coordinates and orientation.
+    coordinate -- either the characters 'x', 'y', or 'z'
+    position   -- absolute frame position coordinate will be moved to
     """
-    self._assert_joint_index_validity(index)
-    joint_translations = [0.0] * self._joints_count
-    joint_translations[index] = translation
-    self.plan_to_joint_translations(joint_translations)
+    pose = self._compute_forward_kinematics(self._most_recent_state)
+    setattr(pose.position, coordinate, position)
+    self.plan_to_pose(pose)
+
+  def plan_to_joint_positions(self, **kwargs):
+    """Plan for one or more joints to move to a new position. Any joint not
+    listed in kwargs will not change from its most recent position.
+    kwargs -- keywords are joint names and their values are the joint's desired
+              translation in radians
+    """
+    positions = self._most_recent_joint_positions
+    for joint in kwargs:
+      positions[self._lookup_joint_index(joint)] = kwargs[joint]
+    self._plan_to_joint_positions(positions)
+
+  def plan_to_joint_translations(self, **kwargs):
+    """Plan for one or more joints to change their positions by some translation.
+    Any joint not listed in kwargs will not translate from its most recent
+    positions.
+    kwargs -- keywords are joint names and their values are the joint's desired
+              translation in radians
+    """
+    translations = [0.0] * self._joints_count
+    for joint in kwargs:
+        translations[self._lookup_joint_index(joint)] = kwargs[joint]
+    self._plan_to_joint_translations(translations)
 
   def plan_to_target(self, target_name):
     """Plan to a named set of joint positions
@@ -156,16 +174,6 @@ class TrajectorySequence:
       current.orientation
     )
     self.plan_to_pose(final)
-
-  def _plan_to_coordinate(self, coordinate, position):
-    """Internal helper function so position of a coordinate can be set
-    independent of other coordinates and orientation.
-    coordinate -- either the characters 'x', 'y', or 'z'
-    position   -- absolute frame position coordinate will be moved to
-    """
-    pose = self._compute_forward_kinematics(self._most_recent_state)
-    setattr(pose.position, coordinate, position)
-    self.plan_to_pose(pose)
 
   def plan_to_x(self, position):
     """Set absolute x-position independent of other coordinates and orientation
