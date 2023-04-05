@@ -10,69 +10,35 @@ import rospy
 import math
 import copy
 import moveit_commander
-from moveit_msgs.msg import PositionConstraint, RobotTrajectory
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Point
 from shape_msgs.msg import SolidPrimitive
-from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import Singleton, is_shou_yaw_goal_in_range, create_header
+from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
 from ow_lander.frame_transformer import FrameTransformer
+from ow_lander.trajectory_sequence import TrajectorySequence
 
-def _cascade_plans(plan1, plan2):
-    """Joins two robot motion plans into one
-    plan1 -- first part of plan
-    plan2 -- second part of plan
-    return the conjoined result
-    """
-    # Create a new trajectory object
-    new_traj = RobotTrajectory()
-    # Initialize the new trajectory to be the same as the planned trajectory
-    traj_msg = JointTrajectory()
-    # Get the number of joints involved
-    n_joints1 = len(plan1.joint_trajectory.joint_names)
-    n_joints2 = len(plan2.joint_trajectory.joint_names)
-    # Get the number of points on the trajectory
-    n_points1 = len(plan1.joint_trajectory.points)
-    n_points2 = len(plan2.joint_trajectory.points)
-    # Store the trajectory points
-    points1 = list(plan1.joint_trajectory.points)
-    points2 = list(plan2.joint_trajectory.points)
-    end_time = plan1.joint_trajectory.points[n_points1-1].time_from_start
-    start_time = plan1.joint_trajectory.points[0].time_from_start
-    duration = end_time - start_time
-    # add a time toleracne between  successive plans
-    time_tolerance = rospy.Duration.from_sec(0.1)
-
-    for i in range(n_points1):
-        point = JointTrajectoryPoint()
-        point.time_from_start = plan1.joint_trajectory.points[i].time_from_start
-        point.velocities = list(
-            plan1.joint_trajectory.points[i].velocities)
-        point.accelerations = list(
-            plan1.joint_trajectory.points[i].accelerations)
-        point.positions = plan1.joint_trajectory.points[i].positions
-        points1[i] = point
-        traj_msg.points.append(point)
-        end_time = plan1.joint_trajectory.points[i].time_from_start
-
-    for i in range(n_points2):
-        point = JointTrajectoryPoint()
-        point.time_from_start = plan2.joint_trajectory.points[i].time_from_start + \
-            end_time + time_tolerance
-        point.velocities = list(
-            plan2.joint_trajectory.points[i].velocities)
-        point.accelerations = list(
-            plan2.joint_trajectory.points[i].accelerations)
-        point.positions = plan2.joint_trajectory.points[i].positions
-        traj_msg.points.append(point)
-
-    traj_msg.joint_names = plan1.joint_trajectory.joint_names
-    traj_msg.header.frame_id = plan1.joint_trajectory.header.frame_id
-    new_traj.joint_trajectory = traj_msg
-    return new_traj
+def _compute_trench_setup_config(x_start, y_start):
+    # Compute shoulder yaw angle to trench
+    alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
+    h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
+                    pow(x_start-constants.X_SHOU, 2))
+    l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+    beta = math.asin(l/h)
+    joint_goal = [0.0] * 6
+    # Move to pre trench position, align shoulder yaw
+    joint_goal[constants.J_DIST_PITCH] = 0.0
+    joint_goal[constants.J_HAND_YAW] = 0.0
+    joint_goal[constants.J_PROX_PITCH] = -math.pi/2
+    joint_goal[constants.J_SHOU_PITCH] = math.pi/2
+    joint_goal[constants.J_SHOU_YAW] = alpha + beta
+    joint_goal[constants.J_SCOOP_YAW] = 0
+    # TODO: generalize this function
+    # If out of joint range, abort
+    if (is_shou_yaw_goal_in_range(joint_goal) == False):
+        return False
+    return joint_goal
 
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
@@ -84,19 +50,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         self._robot = moveit_commander.RobotCommander()
         self._move_arm = moveit_commander.MoveGroupCommander('arm')
         self._move_grinder = moveit_commander.MoveGroupCommander('grinder')
-        # enable forward kinematic calculations
-        SERVICE_TIMEOUT = 30 # seconds
-        rospy.wait_for_service('compute_fk', SERVICE_TIMEOUT)
-        self._compute_fk_srv = rospy.ServiceProxy('compute_fk', GetPositionFK)
-
-    def compute_forward_kinematics(self, fk_target_link, robot_state):
-        # TODO: may raise ROSSerializationException
-        goal_pose_stamped = self._compute_fk_srv(
-            create_header('base_link', rospy.Time.now()),
-            [fk_target_link],
-            robot_state
-        )
-        return goal_pose_stamped.pose_stamped[0].pose
 
     def get_end_effector_pose(self, end_effector, frame_id,
                               timestamp=rospy.Time(0),
@@ -113,50 +66,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         pose = self._move_arm.get_current_pose(end_effector)
         pose.header.stamp = timestamp
         return FrameTransformer().transform(pose, frame_id, timeout)
-
-    def _set_joint_position_target(self, joint_positions):
-        try:
-            self._move_arm.set_joint_value_target(joint_positions)
-        except moveit_commander.exception.MoveItCommanderException as err:
-            rospy.logerr(
-                f"ArmTrajectoryPlanner._set_joint_position_target: {err}")
-            return False
-        return True
-
-    def plan_arm_to_target(self, target_name):
-        target_joints = self._move_arm.get_named_target_values(target_name)
-        self._move_arm.set_start_state_to_current_state()
-        if not self._set_joint_position_target(target_joints):
-            return False
-        _, plan, _, _ = self._move_arm.plan()
-        return plan
-
-    def plan_arm_to_joint_angles(self, arm_joint_angles):
-        if len(arm_joint_angles) != len(self._move_arm.get_joints()):
-            rospy.logerr("ArmTrajectoryPlanner.plan_arm_to_joint_angles: " \
-                "incorrect number of joints for arm move group.")
-            return False
-        self._move_arm.set_start_state_to_current_state()
-        if not self._set_joint_position_target(arm_joint_angles):
-            return False
-        _, plan, _, _ = self._move_arm.plan()
-        return plan
-
-    def plan_arm_to_pose(self, pose, end_effector):
-        """Plan a trajectory from arm's current pose to a new pose
-        pose         -- Stamped pose plan will place end-effector at
-        end_effector -- Name of end_effector
-        """
-        arm_frame = self._move_arm.get_pose_reference_frame()
-        pose_t = FrameTransformer().transform(pose, arm_frame)
-        if pose_t is None:
-            return False
-        # plan trajectory to pose in the arm's pose frame
-        self._move_arm.set_start_state_to_current_state()
-        self._move_arm.set_pose_target(pose_t, end_effector)
-        _, plan, _, _ = self._move_arm.plan()
-        self._move_arm.clear_pose_target(end_effector)
-        return plan
 
     def calculate_joint_state_end_pose_from_plan_arm(self, plan):
         '''
@@ -244,49 +153,11 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return plan
 
-    def move_to_pre_trench_configuration_dig_circ(self, x_start, y_start):
-        """
-        :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type x_start: float
-        :type y_start: float
-        """
-        # Initilize to current position
-        joint_goal = self._move_arm.get_current_pose().pose
-        robot_state = self._robot.get_current_state()
-        self._move_arm.set_start_state(robot_state)
-
-        # Compute shoulder yaw angle to trench
-        alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
-        h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
-                        pow(x_start-constants.X_SHOU, 2))
-        l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-        beta = math.asin(l/h)
-        # Move to pre trench position, align shoulder yaw
-        joint_goal = self._move_arm.get_current_joint_values()
-        joint_goal[constants.J_DIST_PITCH] = 0.0
-        joint_goal[constants.J_HAND_YAW] = 0.0
-        joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-        joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-        joint_goal[constants.J_SHOU_YAW] = alpha + beta
-
-        # If out of joint range, abort
-        if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False
-
-        joint_goal[constants.J_SCOOP_YAW] = 0
-
-        self._move_arm.set_joint_value_target(joint_goal)
-        _, plan, _, _ = self._move_arm.plan()
-        return plan
-
     def dig_circular(self, point, depth, parallel):
         """
         :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
         :type args: List[bool, float, int, float, float, float]
         """
-
-        circ_traj = None
-        circ_traj = RobotTrajectory()
 
         x_start = point.x
         y_start = point.y
@@ -296,53 +167,22 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         #  1. implement normal parameter
         #  2. implement scoop_angle parameter
 
+        sequence = TrajectorySequence('l_scoop', self._robot, self._move_arm)
+
         if not parallel:
-
-            plan_a = self.move_to_pre_trench_configuration_dig_circ(x_start, y_start)
-            if not plan_a or len(plan_a.joint_trajectory.points) == 0:
-                # If no plan found, abort
-                return False
-            # Once aligned to move goal and offset, place scoop tip at surface target offset
-
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(plan_a)
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
-            end_pose.position.x = x_start
-            end_pose.position.y = y_start
-            end_pose.position.z = z_start
-
-            self._move_arm.set_start_state(cs)
-            self._move_arm.set_pose_target(end_pose)
-
-            _, plan_b, _, _ = self._move_arm.plan()
-
-            if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
-                self._move_arm.clear_pose_targets()
-                return False
-            circ_traj = _cascade_plans(plan_a, plan_b)
-
-            # Rotate J_HAND_YAW to correct postion
-
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
-
-            plan_c = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_HAND_YAW,  math.pi/2.2)
-
-            circ_traj = _cascade_plans(circ_traj, plan_c)
-
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
-            # if not parallel:
-            # Once aligned to trench goal, place hand above trench middle point
-            z_start = ground_position + constants.R_PARALLEL_FALSE_A - depth
-
-            plan_d = self.go_to_Z_coordinate_dig_circular(cs, end_pose, z_start)
-            circ_traj = _cascade_plans(circ_traj, plan_d)
-
-            # Rotate hand perpendicular to arm direction
-            cs, start_state, end_pose = self.calculate_joint_state_end_pose_from_plan_arm(circ_traj)
-
-            plan_e = self.change_joint_value(
-                self._move_arm, cs, start_state, constants.J_HAND_YAW, -0.29*math.pi)
-            circ_traj = _cascade_plans(circ_traj, plan_e)
+            # place end-effector above trench position
+            sequence.plan_to_joint_positions(
+                _compute_trench_setup_config(x_start, y_start)
+            )
+            # lower to trench position, maintaining up-right orientation
+            z_start = ground_position - depth + constants.R_PARALLEL_FALSE_A
+            sequence.plan_to_position(Point(x_start, y_start, z_start))
+            # rotate hand yaw so scoop tip points into surface
+            sequence.plan_to_joint_position(constants.J_HAND_YAW, math.pi/2.2)
+            # lower scoop back to down z-position with new hand yaw position set
+            sequence.plan_to_z(z_start)
+            # perform scoop by rotating hand yaw, and scoop through surface
+            sequence.plan_to_joint_position(constants.J_HAND_YAW, -0.29*math.pi)
 
         else:
 
@@ -391,9 +231,9 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
                 self._move_arm, cs, start_state, constants.J_DIST_PITCH, dist_now + 2*math.pi/3)
             circ_traj = _cascade_plans(circ_traj, plan_f)
 
-        self._move_arm.clear_pose_targets()
+        # self._move_arm.clear_pose_targets()
 
-        return circ_traj
+        return sequence.merge()
 
     def move_to_pre_trench_configuration(self, x_start, y_start):
         """

@@ -1,15 +1,19 @@
 import rospy
-from moveit_msgs.srv import GetPositionFK, MoveItErrorCodes
-from movie_msgs.msg import RobotTrajectory
+from moveit_msgs.srv import GetPositionFK
+from moveit_msgs.msg import RobotTrajectory, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from geometry_msgs.msg import Pose
 
-from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.common import create_header
+from ow_lander import math3d
 
 class PlanningException(RuntimeError):
-    pass
+  pass
 
 class TrajectorySequence:
+  """Plan a sequence of trajectories for a given end-effector, robot, and move
+  group.
+  """
 
   SRV_COMPUTE_FK = '/compute_fk'
 
@@ -17,18 +21,44 @@ class TrajectorySequence:
     self._ee = end_effector
     self._robot = robot
     self._group = move_group
+    self._joints_count = len(self._group.get_joints())
     self._sequence = list()
     self._most_recent_state = self._robot.get_current_state()
+    self._most_recent_joint_positions = self._group.get_current_joint_values()
+    self._planning_time_total = 0.0
     # initialize forward-kinematics facility
     SERVICE_TIMEOUT = 30 # seconds
     rospy.wait_for_service(self.SRV_COMPUTE_FK, SERVICE_TIMEOUT)
     self._compute_fk_srv = rospy.ServiceProxy(self.SRV_COMPUTE_FK,
                                               GetPositionFK)
 
+  def __del__(self):
+    # clean-up any target states left-over in move_group so they are not carried
+    # over to unrelated planning
+    self._group.clear_pose_targets()
+
+  def _assert_joint_index_validity(self, index):
+    if index >= self._joints_count or index < 0:
+      raise PlanningException("Joint index is out of range")
+
+  def _compute_forward_kinematics(self, robot_state):
+    # TODO unhandled exception could be raised
+    result = self._compute_fk_srv(create_header('base_link'),# rospy.Time.now()),
+                                  [self._ee], robot_state)
+    print("MoveItErrorCodes.SUCCESS = ", MoveItErrorCodes.SUCCESS)
+    print("result = ", result)
+    if result.error_code.val != MoveItErrorCodes.SUCCESS:
+      raise PlanningException(f"{self.SRV_COMPUTE_FK} service returned "
+                              f"error code {result.error_code}")
+    return result.pose_stamped[0].pose
+
+  def _get_final_joint_positions_of(self, trajectory):
+    return trajectory.joint_trajectory.points[-1].positions
+
   def _get_final_robot_state_of(self, trajectory):
-    assert(len(trajectory) > 0)
+    assert(len(trajectory.joint_trajectory.points) > 0)
     rs = self._group.get_current_state()
-    joint_states = trajectory.joint_trajectory.points[-1]
+    joint_states = self._get_final_joint_positions_of(trajectory)
     # TODO: is there not better way to do this???
     # adding antenna (0,0) and grinder positions (-0.1) which should not change
     rs.joint_state.position = (
@@ -37,69 +67,146 @@ class TrajectorySequence:
 
   def _plan(self):
     success, trajectory, planning_time, error_code = self._group.plan()
+    print("success = ", success)
+    # print("trajectory = ", trajectory)
+    print("planning_time = ", planning_time)
+    print("error_code = ", error_code)
     if not success:
       raise PlanningException(
         f"MoveIt planning failed with error code: {error_code}")
     rospy.logdebug(f"Plan took {planning_time} seconds.")
     self._sequence.append(trajectory)
     self._most_recent_state = self._get_final_robot_state_of(trajectory)
+    self._most_recent_joint_positions \
+      = list(self._get_final_joint_positions_of(trajectory))
+    self._planning_time_total += planning_time
 
   def plan_to_joint_positions(self, joint_positions):
-    """Construct a plan from an some initial configuration to the provided
-    configuration
+    """Plan all joints to move to a set of new joint positions
     joint_positions -- list of arm joint positions in radians
-    returns
     """
-    if len(joint_positions) != len(self._move_arm.get_joints()):
-      raise PlanningException(
-        "Incorrect number of joints for arm move group")
+    if len(joint_positions) != self._joints_count:
+      raise PlanningException("Incorrect number of joints for arm move group")
     self._group.set_start_state(self._most_recent_state)
     self._group.set_joint_value_target(joint_positions)
     self._plan()
 
+  def plan_to_joint_position(self, index, joint_position):
+    """Plan a single joint to a new position
+    index -- index of joint
+    joint_position -- new absolute position of joint
+    """
+    self._assert_joint_index_validity(index)
+    joint_positions = self._most_recent_joint_positions
+    joint_positions[index] = joint_position
+    self.plan_to_joint_positions(joint_positions)
+
+  def plan_to_joint_translations(self, joint_translations):
+    """Plan all joint to change their positions by a list of translations
+    joint_translations -- list of joint displacements in radians
+    """
+    if len(joint_translations) != self._joints_count:
+      raise PlanningException("Incorrect number of joints for arm move group")
+    current = self._most_recent_joint_positions
+    final = [x + y for x, y in zip(current, joint_translations)]
+    self.plan_to_joint_positions(final)
+
+  def plan_to_joint_translation(self, index, translation):
+    """Plan a joint to change its position by a translation
+    index -- index of joint
+    translation -- displacement to move joint by
+    """
+    self._assert_joint_index_validity(index)
+    joint_translations = [0.0] * self._joints_count
+    joint_translations[index] = translation
+    self.plan_to_joint_translations(joint_translations)
+
   def plan_to_target(self, target_name):
+    """Plan to a named set of joint positions
+    target_name -- named set of joint positions
+    """
     self.plan_to_joint_positions(
       self._group.get_named_target_values(target_name))
 
   def plan_to_pose(self, pose):
-    """Plan a trajectory from arm's current pose to a new pose
-    pose         -- Stamped pose plan will place end-effector at
-    end_effector -- Name of end_effector
+    """Plan the end-effector to a new pose
+    pose -- geometry_msgs Pose end-effector will move to
     """
-    group_frame = self._group.get_pose_reference_frame()
-    pose_t = FrameTransformer().transform(pose, group_frame)
-    if pose_t is None:
-      raise PlanningException(
-        "Failed to transform requested pose to pose reference frame")
     self._group.set_start_state(self._most_recent_state)
     self._group.set_pose_target(pose, self._ee)
     self._plan()
-    # TODO: investigate if this is necessary
-    self._group.clear_pose_target(self._ee)
 
-  def compute_forward_kinematics(self, fk_target_links, robot_state):
-    result = self._compute_fk_srv(create_header('base_link', rospy.Time.now()),
-                                  fk_target_links, robot_state)
-    if result.error_code != MoveItErrorCodes.SUCCESS:
-      raise PlanningException(f"{self.SRV_COMPUTE_FK} service returned "
-                              f"error code {result.error_code}")
-    return result.pose_stamped
+  def plan_to_position(self, point):
+    """Plan the end-effector a new position and acquire the same orientation in
+    the final pose.
+    translation -- geometry_msgs Point/Vector3 representing new position
+    """
+    current = self._compute_forward_kinematics(self._most_recent_state)
+    final = Pose(point, current.orientation)
+    self.plan_to_pose(final)
+
+  def plan_to_translation(self, translation):
+    """Plan the end-effector to move by a Cartesian translation and acquire the
+    same orientation in the final pose.
+    translation -- geometry_msgs Point/Vector3 representing a change in position
+    """
+    current = self._compute_forward_kinematics(self._most_recent_state)
+    final = Pose(
+      math3d.add(current.pose.position, translation),
+      current.orientation
+    )
+    self.plan_to_pose(final)
+
+  def _plan_to_coordinate(self, coordinate, position):
+    """Internal helper function so position of a coordinate can be set
+    independent of other coordinates and orientation.
+    coordinate -- either the characters 'x', 'y', or 'z'
+    position   -- absolute frame position coordinate will be moved to
+    """
+    pose = self._compute_forward_kinematics(self._most_recent_state)
+    setattr(pose.position, coordinate, position)
+    self.plan_to_pose(pose)
+
+  def plan_to_x(self, position):
+    """Set absolute x-position independent of other coordinates and orientation
+    position -- New x-position
+    """
+    self._plan_to_coordinate('x', position)
+
+  def plan_to_y(self, position):
+    """Set absolute y-position independent of other coordinates and orientation
+    position -- New y-position
+    """
+    self._plan_to_coordinate('y', position)
+
+  def plan_to_z(self, position):
+    """Set absolute z-position independent of other coordinates and orientation
+    position -- New z-position
+    """
+    self._plan_to_coordinate('z', position)
 
   def merge(self):
+    """Merge all trajectories in the sequence into a single trajectory. Must be
+    called after calling at least one `plan_to_*` method.
+    returns a moveit_msgs/RobotTrajectory that is a merge of all contained
+    trajectories
+    """
     if len(self._sequence) == 0:
       raise PlanningException("Sequence contains no trajectories")
     if len(self._sequence) == 1:
       return self._sequence[0]
     BETWEEN_TRAJECTORY_PAUSE = rospy.Duration(0.1)
+    rospy.logdebug("Total time for planning the sequence was "
+                   f"{self._planning_time_total} seconds")
     # merge trajectories together
     merged = JointTrajectory()
-    merged.header.frame_id = self._sequence[0].joint_trajectory.header
+    merged.header.frame_id = self._group.get_pose_reference_frame()
     merged.joint_names = self._sequence[0].joint_trajectory.joint_names
     time_offset = rospy.Duration(0)
     for trajectory in self._sequence:
       merged.points += [
         JointTrajectoryPoint(
-          x.positions, x.velocities, x.accelerations,
+          x.positions, x.velocities, x.accelerations, x.effort,
           x.time_from_start + time_offset
         ) for x in trajectory.joint_trajectory.points
       ]
