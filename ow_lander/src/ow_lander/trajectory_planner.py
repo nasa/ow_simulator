@@ -11,7 +11,7 @@ import math
 import copy
 import moveit_commander
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion, Point
+from geometry_msgs.msg import Quaternion, Point, Pose
 from shape_msgs.msg import SolidPrimitive
 
 from ow_lander import constants
@@ -335,107 +335,51 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         :type args: List[bool, float, int, float, float, float]
         """
 
-        # NOTE: point must be in world coordinates
-
-        x_start = point.x
-        y_start = point.y
-        ground_position = point.z
-
         # TODO:
         #  1. implement normal parameter
 
-        plan_a = self.move_to_pre_trench_configuration(x_start, y_start)
-        if not plan_a or len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
-
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            plan_a)
-        #################### Rotate hand yaw to dig in#################################
-
-        plan_b = self.change_joint_value(
-            self._move_arm, cs, start_state, constants.J_HAND_YAW, 0.0)
-
-        # If no plan found, send the previous plan only
-        if len(plan_b.joint_trajectory.points) == 0:
-            return plan_a
-
-        dig_linear_traj = _cascade_plans(plan_a, plan_b)
-
-        ######################### rotate scoop #######################################
-
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        plan_c = self.change_joint_value(
-            self._move_arm, cs, start_state, constants.J_SCOOP_YAW, math.pi/2)
-
-        dig_linear_traj = _cascade_plans(dig_linear_traj, plan_c)
-
-        ######################### rotate dist pith to pre-trenching position###########
-
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        plan_d = self.change_joint_value(
-            self._move_arm, cs, start_state, constants.J_DIST_PITCH, -math.pi/2)
-
-        dig_linear_traj = _cascade_plans(dig_linear_traj, plan_d)
-
-        # Once aligned to trench goal,
-        # place hand above the desired start point
+        ## TODO: comment on what these calculations do
         alpha = math.atan2(constants.WRIST_SCOOP_PARAL,
                              constants.WRIST_SCOOP_PERP)
         distance_from_ground = constants.ROT_RADIUS * \
             (math.cos(alpha) - math.sin(alpha))
-        z_start = ground_position + constants.SCOOP_HEIGHT - depth + distance_from_ground
-
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        plan_e = self.go_to_Z_coordinate(
-            self._move_arm, cs, goal_pose, x_start, y_start, z_start)
-
-        dig_linear_traj = _cascade_plans(dig_linear_traj, plan_e)
-
-        # rotate to dig in the ground
-
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        plan_f = self.change_joint_value(
-            self._move_arm, cs, start_state, constants.J_DIST_PITCH, 2.0/9.0*math.pi)
-
-        dig_linear_traj = _cascade_plans(dig_linear_traj, plan_f)
-
-        # determine linear trenching direction (alpha) value obtained from rviz
-
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        quaternion = [current_pose.orientation.x, current_pose.orientation.y,
-                        current_pose.orientation.z, current_pose.orientation.w]
-        current_euler = euler_from_quaternion(quaternion)
-        alpha = current_euler[2]
-
-        # linear trenching
-
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-        cartesian_plan, fraction = self.plan_cartesian_path_lin(
-            self._move_arm, current_pose, length, alpha, z_start, cs)
-        dig_linear_traj = _cascade_plans(dig_linear_traj, cartesian_plan)
-
-        #  rotate to dig out
-        cs, start_state, current_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            dig_linear_traj)
-
-        plan_g = self.change_joint_value(
-            self._move_arm, cs, start_state, constants.J_DIST_PITCH, math.pi/2)
-        dig_linear_traj = _cascade_plans(dig_linear_traj, plan_g)
-
-        self._move_arm.clear_pose_targets()
-
-        return dig_linear_traj
+        # TODO: what point does this reference??
+        center = Point(
+            point.x,
+            point.y,
+            point.z + constants.SCOOP_HEIGHT - depth + distance_from_ground
+        )
+        sequence = TrajectorySequence('l_scoop', self._robot, self._move_arm)
+        # place end-effector above trench position
+        sequence.plan_to_joint_positions(
+            j_shou_yaw = _compute_workspace_shoulder_yaw(point.x, point.y),
+            j_shou_pitch = math.pi / 2,
+            j_prox_pitch = -math.pi / 2,
+            j_dist_pitch = 0.0,
+            j_hand_yaw = math.pi/2.2,
+            j_scoop_yaw = 0.0
+        )
+        # rotate hand so scoop bottom points down
+        sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
+        # rotate scoop to face radially out from lander
+        sequence.plan_to_joint_positions(j_scoop_yaw = math.pi / 2)
+        # retract scoop back so its blades face terrain
+        sequence.plan_to_joint_positions(j_dist_pitch = -math.pi / 2)
+        # place scoop at the trench side nearest to the lander
+        sequence.plan_to_position(center)
+        # TODO: what is this doing?
+        sequence.plan_to_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
+        # compute the far end of the trench
+        far_trench_pose = sequence.get_final_pose()
+        q = far_trench_pose.orientation
+        yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])[2]
+        far_trench_pose.position.x += length * math.cos(yaw)
+        far_trench_pose.position.y += length * math.sin(yaw)
+        # move the scoop along a linear path to the end of the trench
+        sequence.plan_linear_path_to_pose(far_trench_pose)
+        # pitch scoop upward to maintain sample
+        sequence.plan_to_joint_positions(j_dist_pitch = math.pi / 2)
+        return sequence.merge()
 
     def calculate_joint_state_end_pose_from_plan_grinder(self, plan):
         '''

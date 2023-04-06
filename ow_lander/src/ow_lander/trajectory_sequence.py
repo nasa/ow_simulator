@@ -1,4 +1,5 @@
 import rospy
+import time
 from moveit_msgs.srv import GetPositionFK
 from moveit_msgs.msg import RobotTrajectory, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -70,7 +71,18 @@ class TrajectorySequence:
         0, 0) + joint_states[:5] + (-0.1,) + (joint_states[5],)
     return rs
 
+  def _append_trajectory(self, trajectory, planning_time):
+    rospy.logdebug(f"Trajectory took {planning_time} seconds to plan.")
+    self._sequence.append(trajectory)
+    self._most_recent_state = self._get_final_robot_state_of(trajectory)
+    self._most_recent_joint_positions \
+      = list(self._get_final_joint_positions_of(trajectory))
+    self._planning_time_total += planning_time
+
   def _plan(self):
+    """Calls on MoveIt to plan the next trajectory of the sequence. If no
+    trajectory is provided, the plan is constructed from
+    """
     success, trajectory, planning_time, error_code = self._group.plan()
     print("success = ", success)
     # print("trajectory = ", trajectory)
@@ -79,12 +91,7 @@ class TrajectorySequence:
     if not success:
       raise PlanningException(
         f"MoveIt planning failed with error code: {error_code}")
-    rospy.logdebug(f"Plan took {planning_time} seconds.")
-    self._sequence.append(trajectory)
-    self._most_recent_state = self._get_final_robot_state_of(trajectory)
-    self._most_recent_joint_positions \
-      = list(self._get_final_joint_positions_of(trajectory))
-    self._planning_time_total += planning_time
+    self._append_trajectory(trajectory, planning_time)
 
   def _plan_to_joint_positions(self, joint_positions):
     """Plan for all joints to move to new configuration
@@ -112,6 +119,8 @@ class TrajectorySequence:
     coordinate -- either the characters 'x', 'y', or 'z'
     position   -- absolute frame position coordinate will be moved to
     """
+    if coordinate not in ['x', 'y', 'z']:
+      raise PlanningException(f"Unrecognized Cartesian coordinate {coordinate}")
     pose = self._compute_forward_kinematics(self._most_recent_state)
     setattr(pose.position, coordinate, position)
     self.plan_to_pose(pose)
@@ -154,6 +163,19 @@ class TrajectorySequence:
     self._group.set_pose_target(pose, self._ee)
     self._plan()
 
+  def plan_linear_path_to_pose(self, pose):
+    self._group.set_start_state(self._most_recent_state)
+    start = time.time()
+    trajectory, fraction = self._group.compute_cartesian_path(
+      [pose], # sequence of waypoints
+      0.01,   # end-effector follow step (meters)
+      0.0     # jump threshold
+    )
+    planning_time = time.time() - start
+    print("fraction = ", fraction)
+    # TODO check if fraction is 1.0
+    self._append_trajectory(trajectory, planning_time)
+
   def plan_to_position(self, point):
     """Plan the end-effector a new position and acquire the same orientation in
     the final pose.
@@ -192,6 +214,12 @@ class TrajectorySequence:
     position -- New z-position
     """
     self._plan_to_coordinate('z', position)
+
+  def get_final_joint_positions(self):
+    return self._most_recent_joint_positions
+
+  def get_final_pose(self):
+    return self._compute_forward_kinematics(self._most_recent_state)
 
   def merge(self):
     """Merge all trajectories in the sequence into a single trajectory. Must be
