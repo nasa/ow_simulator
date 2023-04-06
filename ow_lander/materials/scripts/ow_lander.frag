@@ -35,12 +35,11 @@ uniform sampler2DShadow shadowMap2;
 uniform float inverseShadowmapSize[3];
 in vec4 lsPos[3];
 
-uniform float spotlightIntensityScale[2];
 uniform vec4 vsLightPos[3];
 uniform vec4 vsLightDir[3];
+uniform vec4 lightDiffuseColor[3];
+uniform vec4 lightAtten[3];
 uniform vec4 spotlightParams[3];
-uniform vec4 spotlightColor0;
-uniform vec4 spotlightAtten0;
 in vec4 spotlightTexCoord[2];
 
 uniform samplerCube irradianceMap;
@@ -237,8 +236,8 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
   vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
   for (int i=0; i<2; i++) {
-    spotlight(vsLightPos[i+1].xyz - vsPos, -vsLightDir[i+1].xyz, spotlightAtten0,
-              spotlightParams[1+1], spotlightColor0.rgb * spotlightIntensityScale[i],
+    spotlight(vsLightPos[i+1].xyz - vsPos, -vsLightDir[i+1].xyz, lightAtten[i+1],
+              spotlightParams[i+1], lightDiffuseColor[i+1].rgb,
               spotlightTexCoord[i], vsDirToEye, vsDetailNormal, specular_power,
               diffuse, specular);
   }
