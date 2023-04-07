@@ -172,17 +172,26 @@ class TrajectorySequence:
       0.0     # jump threshold
     )
     planning_time = time.time() - start
-    print("fraction = ", fraction)
-    # TODO check if fraction is 1.0
+    if fraction != 1.0:
+      raise PlanningException("Linear path planning failed")
     self._append_trajectory(trajectory, planning_time)
 
   def plan_to_position(self, point):
-    """Plan the end-effector a new position and acquire the same orientation in
-    the final pose.
+    """Plan the end-effector into a new position and acquire the same
+    orientation in the final pose.
     translation -- geometry_msgs Point/Vector3 representing new position
     """
     current = self._compute_forward_kinematics(self._most_recent_state)
     final = Pose(point, current.orientation)
+    self.plan_to_pose(final)
+
+  def plan_to_orientation(self, orientation):
+    """Plan the end-effector into a new orientation and acquire the same
+    position in the final pose.
+    orientation -- geometry_msgs Quaternion representing new orientation
+    """
+    current = self._compute_forward_kinematics(self._most_recent_state)
+    final = Pose(current.position, orientation)
     self.plan_to_pose(final)
 
   def plan_to_translation(self, translation):
@@ -227,11 +236,11 @@ class TrajectorySequence:
     returns a moveit_msgs/RobotTrajectory that is a merge of all contained
     trajectories
     """
+    BETWEEN_TRAJECTORY_PAUSE = rospy.Duration(0.1)
     if len(self._sequence) == 0:
       raise PlanningException("Sequence contains no trajectories")
     if len(self._sequence) == 1:
       return self._sequence[0]
-    BETWEEN_TRAJECTORY_PAUSE = rospy.Duration(0.1)
     rospy.logdebug("Total time for planning the sequence was "
                    f"{self._planning_time_total} seconds")
     # merge trajectories together

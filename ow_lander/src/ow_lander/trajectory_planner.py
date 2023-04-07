@@ -10,14 +10,14 @@ import rospy
 import math
 import copy
 import moveit_commander
-from tf.transformations import quaternion_from_euler, euler_from_quaternion
-from geometry_msgs.msg import Quaternion, Point, Pose
-from shape_msgs.msg import SolidPrimitive
+from geometry_msgs.msg import Point, Pose
+# from shape_msgs.msg import SolidPrimitive
 
+from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.common import Singleton, is_shou_yaw_goal_in_range
 from ow_lander.frame_transformer import FrameTransformer
-from ow_lander.trajectory_sequence import TrajectorySequence
+from ow_lander.trajectory_sequence import TrajectorySequence, PlanningException
 
 def _compute_workspace_shoulder_yaw(x, y):
     # Compute shoulder yaw angle to trench
@@ -371,8 +371,7 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         sequence.plan_to_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
         # compute the far end of the trench
         far_trench_pose = sequence.get_final_pose()
-        q = far_trench_pose.orientation
-        yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])[2]
+        _, _, yaw = math3d.euler_from_quaternion(far_trench_pose.orientation)
         far_trench_pose.position.x += length * math.cos(yaw)
         far_trench_pose.position.y += length * math.sin(yaw)
         # move the scoop along a linear path to the end of the trench
@@ -618,74 +617,60 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         :type moveit_fk: class moveit_msgs/GetPositionFK
         :type args: List[bool, float, float, float]
         """
-        robot_state = self._robot.get_current_state()
-        self._move_arm.set_start_state(robot_state)
+        # robot_state = self._robot.get_current_state()
+        # self._move_arm.set_start_state(robot_state)
 
-        # after sample collect
-        mypi = 3.14159
-        d2r = mypi/180
-        r2d = 180/mypi
+        D2R = math.pi / 180
 
-        goal_pose = self._move_arm.get_current_pose().pose
-        # position was found from rviz tool
-        goal_pose.position.x = point.x
-        goal_pose.position.y = point.y
-        goal_pose.position.z = point.z + height
-
-        r = -179
-        p = -20
-        y = -90
-
-        q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
-        goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-
-        self._move_arm.set_pose_target(goal_pose)
         self._move_arm.set_planner_id("RRTstar")
-        _, plan_a, _, _ = self._move_arm.plan()
 
-        if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            self._move_arm.clear_pose_targets()
-            return False
+        try:
+            sequence = TrajectorySequence(
+                'l_scoop', self._robot, self._move_arm)
 
-        # adding position constraint on the solution so that the tip does not
-        # diverge to get to the solution.
-        pos_constraint = PositionConstraint()
-        pos_constraint.header.frame_id = "base_link"
-        pos_constraint.link_name = "l_scoop"
-        pos_constraint.target_point_offset.x = 0.1
-        pos_constraint.target_point_offset.y = 0.1
-        # rotate scoop to discard sample at current location begin
-        pos_constraint.target_point_offset.z = 0.1
-        pos_constraint.constraint_region.primitives.append(
-            SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
-        pos_constraint.weight = 1
+            # move scoop to the pose at the discard point that holds the sample
+            held_euler = (
+                -179 * D2R,
+                -20  * D2R,
+                -90  * D2R
+            )
+            held_pose = Pose(
+                position = math3d.add(point, Point(0, 0, height)),
+                orientation = math3d.quaternion_from_euler(*held_euler)
+            )
+            sequence.plan_to_pose(held_pose)
 
-        # using euler angles for own verification..
+            # NOTE: This code does nothing since pos_constraint always remains a
+            #       local variable. Saved in case the constraint is useful.
+            # # adding position constraint on the solution so that the tip does not
+            # # diverge to get to the solution.
+            # pos_constraint = PositionConstraint()
+            # pos_constraint.header.frame_id = "base_link"
+            # pos_constraint.link_name = "l_scoop"
+            # pos_constraint.target_point_offset.x = 0.1
+            # pos_constraint.target_point_offset.y = 0.1
+            # # rotate scoop to discard sample at current location begin
+            # pos_constraint.target_point_offset.z = 0.1
+            # pos_constraint.constraint_region.primitives.append(
+            #     SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+            # pos_constraint.weight = 1
 
-        r = +180
-        p = 90
-        y = -90
-        q = quaternion_from_euler(r*d2r, p*d2r, y*d2r)
+            # point front of scoop downward to discard sample
+            dumped_euler = (
+                180 * D2R,
+                90  * D2R,
+                -90 * D2R
+            )
+            dumped_quat = math3d.quaternion_from_euler(*dumped_euler)
+            sequence.plan_to_orientation(dumped_quat)
 
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            plan_a)
+        except PlanningException as err:
+            raise err
+        finally:
+            # ensure planner type is reset even if an exception occurs
+            self._move_arm.set_planner_id("RRTConnect")
 
-        self._move_arm.set_start_state(cs)
-
-        goal_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
-
-        self._move_arm.set_pose_target(goal_pose)
-        _, plan_b, _, _ = self._move_arm.plan()
-
-        self._move_arm.clear_pose_targets()
-
-        # If no plan found, send the previous plan only
-        if len(plan_b.joint_trajectory.points) == 0:
-            return plan_a
-
-        discard_sample_traj = _cascade_plans(plan_a, plan_b)
-        self._move_arm.set_planner_id("RRTConnect")
-        return discard_sample_traj
+        return sequence.merge()
 
     def deliver_sample(self):
         """
