@@ -10,7 +10,7 @@ import rospy
 import math
 import copy
 import moveit_commander
-from geometry_msgs.msg import Point, Pose
+from geometry_msgs.msg import Point, Pose, Quaternion, Vector3
 # from shape_msgs.msg import SolidPrimitive
 
 from ow_lander import math3d
@@ -405,118 +405,68 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         """
         :type args: List[bool, float, float, float, float, bool, float, bool]
         """
+        PREGRIND_HEIGHT = 0.25
 
-        x_start = args.x_start
-        y_start = args.y_start
+        point = Point(args.x_start, args.y_start, args.ground_position)
         depth = args.depth
         length = args.length
         parallel = args.parallel
-        ground_position = args.ground_position
 
-        # Compute shoulder yaw angle to trench
-        alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
-        h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
-                        pow(x_start-constants.X_SHOU, 2))
-        l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-        beta = math.asin(l/h)
-        alpha = alpha+beta
-
+        yaw = _compute_workspace_shoulder_yaw(point.x, point.y)
         if parallel:
-            R = math.sqrt(x_start*x_start+y_start*y_start)
+            R = math.sqrt(point.x*point.x+point.y*point.y)
             # adjust trench to fit scoop circular motion
-            dx = 0.04*R*math.sin(alpha)  # Center dig_circular in grind trench
-            dy = 0.04*R*math.cos(alpha)
+            dx = 0.04*R*math.sin(yaw)  # Center dig_circular in grind trench
+            dy = 0.04*R*math.cos(yaw)
             # Move starting point back to avoid scoop-terrain collision
-            x_start = 0.9*(x_start + dx)
-            y_start = 0.9*(y_start - dy)
+            point.x = 0.9*(point.x + dx)
+            point.y = 0.9*(point.y - dy)
         else:
-            dx = 5*length/8*math.sin(alpha)
-            dy = 5*length/8*math.cos(alpha)
+            dx = 5*length/8*math.sin(yaw)
+            dy = 5*length/8*math.cos(yaw)
             # Move starting point back to avoid scoop-terrain collision
-            x_start = 0.97*(x_start - dx)
-            y_start = 0.97*(y_start + dy)
+            point.x = 0.97*(point.x - dx)
+            point.y = 0.97*(point.y + dy)
 
-        # Place the grinder vertical, above the desired starting point, at
-        # an altitude of 0.25 meters in the base_link frame.
-        robot_state = self._robot.get_current_state()
-        self._move_grinder.set_start_state(robot_state)
-        goal_pose = self._move_grinder.get_current_pose().pose
-        goal_pose.position.x = x_start  # Position
-        goal_pose.position.y = y_start
-        goal_pose.position.z = 0.25
-        goal_pose.orientation.x = 0.70616885803  # Orientation
-        goal_pose.orientation.y = 0.0303977418722
-        goal_pose.orientation.z = -0.706723318474
-        goal_pose.orientation.w = 0.0307192507001
-        self._move_grinder.set_pose_target(goal_pose)
-
-        _, plan_a, _, _ = self._move_grinder.plan()
-
-        if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            self._move_grinder.clear_pose_targets()
-            return False
-
-        # entering terrain
-        z_start = ground_position + constants.GRINDER_OFFSET - depth
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_grinder(
-            plan_a)
-        plan_b = self.go_to_Z_coordinate(
-            self._move_grinder, cs, goal_pose, x_start, y_start, z_start, False)
-
-        grind_traj = _cascade_plans(plan_a, plan_b)
-
+        sequence = TrajectorySequence(
+            'l_grinder', self._robot, self._move_grinder)
+        # place grinder above the start point
+        pregrind_position = math3d.add(point, Vector3(0, 0, PREGRIND_HEIGHT))
+        pregrind_pose = Pose(
+            position = pregrind_position,
+            orientation = Quaternion(
+                0.70616885803, 0.0303977418722,
+                -0.706723318474, 0.0307192507001
+            )
+        )
+        sequence.plan_to_pose(pregrind_pose)
+        # enter terrain
+        trench_bottom = math3d.add(
+            point, Vector3(0, 0, constants.GRINDER_OFFSET - depth)
+        )
+        sequence.plan_to_z(trench_bottom.z)
         # grinding ice forward
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_grinder(
-            grind_traj)
-        cartesian_plan, fraction = self.plan_cartesian_path(
-            self._move_grinder, goal_pose, length, alpha, parallel, z_start, cs)
-
-        grind_traj = _cascade_plans(grind_traj, cartesian_plan)
-
-        # grinding sideways
-        cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
-            grind_traj)
+        yaw_offset = 0 if parallel else -math.pi / 2
+        trench_segment = math3d.scalar_multiply(
+            length,
+            Vector3(math.cos(yaw + yaw_offset), math.sin(yaw + yaw_offset), 0)
+        )
+        sequence.plan_linear_translation(trench_segment)
+        # grind sideways
         if parallel:
-            plan_c = self.change_joint_value(
-                self._move_grinder, cs, start_state, constants.J_SHOU_YAW, start_state[0]+0.08)
+            # NOTE: small angle approximation?
+            sequence.plan_to_joint_translations(j_shou_yaw = 0.08)
         else:
-            x_now = joint_goal.position.x
-            y_now = joint_goal.position.y
-            z_now = joint_goal.position.z
-            x_goal = x_now + 0.08*math.cos(alpha)
-            y_goal = y_now + 0.08*math.sin(alpha)
-            plan_c = self.go_to_Z_coordinate(
-                self._move_grinder, cs, joint_goal, x_goal, y_goal, z_now, False)
-
-        grind_traj = _cascade_plans(grind_traj, plan_c)
-        # grinding ice backwards
-        cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
-            grind_traj)
-        cartesian_plan2, fraction2 = self.plan_cartesian_path(
-            self._move_grinder, joint_goal, -length, alpha, parallel, z_start, cs)
-        grind_traj = _cascade_plans(grind_traj, cartesian_plan2)
-
-        # exiting terrain
-        cs, start_state, joint_goal = self.calculate_joint_state_end_pose_from_plan_grinder(
-            grind_traj)
-        plan_d = self.go_to_Z_coordinate(
-            self._move_grinder, cs, joint_goal, x_start, y_start, 0.22, False)
-        grind_traj = _cascade_plans(grind_traj, plan_d)
-
-        self._move_grinder.clear_pose_targets()
-
-        return grind_traj
+            sequence.plan_to_translation(math3d.scalar_multiply(0.08,
+                Vector3(math.cos(yaw), math.sin(yaw), 0)))
+        # grind backwards towards lander
+        sequence.plan_linear_translation(
+            math3d.scalar_multiply(-1, trench_segment))
+        # exit terrain
+        sequence.plan_to_z(pregrind_position.z)
+        return sequence.merge()
 
     def guarded_move(self, point, normal, search_distance):
-
-        # targ_x = args.start.x
-        # targ_y = args.start.y
-        # targ_z = args.start.z
-        # direction_x = args.normal.x
-        # direction_y = args.normal.y
-        # direction_z = args.normal.z
-        # search_distance = args.search_distance
-
         self._move_arm.set_planner_id("RRTstar")
         try:
             sequence = TrajectorySequence(
@@ -572,7 +522,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         try:
             sequence = TrajectorySequence(
                 'l_scoop', self._robot, self._move_arm)
-
             # move scoop to the pose at the discard point that holds the sample
             held_euler = (
                 -179 * D2R,
@@ -614,7 +563,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         finally:
             # ensure planner type is reset even if an exception occurs
             self._move_arm.set_planner_id("RRTConnect")
-
         return sequence.merge()
 
     def deliver_sample(self):

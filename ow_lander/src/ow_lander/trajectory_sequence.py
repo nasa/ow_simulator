@@ -164,6 +164,10 @@ class TrajectorySequence:
     self._plan()
 
   def plan_linear_path_to_pose(self, pose):
+    """Plan the end-effector along a linear path from its most recent pose in
+    the sequence to a new pose
+    pose -- geometry_msgs Pose
+    """
     self._group.set_start_state(self._most_recent_state)
     start = time.time()
     trajectory, fraction = self._group.compute_cartesian_path(
@@ -175,6 +179,19 @@ class TrajectorySequence:
     if fraction != 1.0:
       raise PlanningException("Linear path planning failed")
     self._append_trajectory(trajectory, planning_time)
+
+  def plan_linear_translation(self, translation):
+    """Plan the end-effector along a linear path form its most recent pose in
+    the sequence to a new pose, which will achieve the same orientation it
+    started the trajectory with
+    translation -- geometry_msgs Point/Vector3
+    """
+    current = self._compute_forward_kinematics(self._most_recent_state)
+    final = Pose(
+      math3d.add(current.position, translation),
+      current.orientation
+    )
+    self.plan_linear_path_to_pose(final)
 
   def plan_to_position(self, point):
     """Plan the end-effector into a new position and acquire the same
