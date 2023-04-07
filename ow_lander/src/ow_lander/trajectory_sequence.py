@@ -152,7 +152,7 @@ class TrajectorySequence:
     """Plan to a named set of joint positions
     target_name -- named set of joint positions
     """
-    self.plan_to_joint_positions(
+    self._plan_to_joint_positions(
       self._group.get_named_target_values(target_name))
 
   def plan_to_pose(self, pose):
@@ -201,7 +201,7 @@ class TrajectorySequence:
     """
     current = self._compute_forward_kinematics(self._most_recent_state)
     final = Pose(
-      math3d.add(current.pose.position, translation),
+      math3d.add(current.position, translation),
       current.orientation
     )
     self.plan_to_pose(final)

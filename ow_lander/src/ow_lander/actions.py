@@ -108,7 +108,8 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       # TODO: split guarded_move trajectory into 2 parts so that ground
       #       detection can be started before the second execute_trajectory is
       #       called
-      plan = self._planner.guarded_move(goal)
+      plan = self._planner.guarded_move(
+        goal.start, goal.normal, goal.search_distance)
       self._arm.execute_arm_trajectory(plan,
         action_feedback_cb=ground_detect_cb)
     except RuntimeError as err:

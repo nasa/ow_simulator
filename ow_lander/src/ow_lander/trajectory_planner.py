@@ -507,108 +507,53 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
 
         return grind_traj
 
-    def guarded_move(self, args):
-        """
-        :type self._move_arm: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type robot: class 'moveit_commander.RobotCommander'
-        :type moveit_fk: class moveit_msgs/GetPositionFK
-        :type args: List[bool, float, float, float, float, float, float, float]
-        """
+    def guarded_move(self, point, normal, search_distance):
 
-        robot_state = self._robot.get_current_state()
-        self._move_arm.set_start_state(robot_state)
+        # targ_x = args.start.x
+        # targ_y = args.start.y
+        # targ_z = args.start.z
+        # direction_x = args.normal.x
+        # direction_y = args.normal.y
+        # direction_z = args.normal.z
+        # search_distance = args.search_distance
+
         self._move_arm.set_planner_id("RRTstar")
-
-        ### pre-guarded move starts here ###
-
-        targ_x = args.start.x
-        targ_y = args.start.y
-        targ_z = args.start.z
-        direction_x = args.normal.x
-        direction_y = args.normal.y
-        direction_z = args.normal.z
-        search_distance = args.search_distance
-
-        # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
-        targ_elevation = -0.2
-        if (targ_z+targ_elevation) == 0:
-            offset = search_distance
-        else:
-            offset = (targ_z*search_distance)/(targ_z+targ_elevation)
-
-        # Compute shoulder yaw angle to target
-        alpha = math.atan2((targ_y+direction_y*offset)-constants.Y_SHOU,
-                             (targ_x+direction_x*offset)-constants.X_SHOU)
-        h = math.sqrt(pow((targ_y+direction_y*offset)-constants.Y_SHOU, 2) +
-                        pow((targ_x+direction_x*offset)-constants.X_SHOU, 2))
-        l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-        beta = math.asin(l/h)
-
-        # Move to pre move position, align shoulder yaw
-        joint_goal = self._move_arm.get_current_joint_values()
-        joint_goal[constants.J_DIST_PITCH] = 0
-        joint_goal[constants.J_HAND_YAW] = 0
-        joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-        joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-        joint_goal[constants.J_SHOU_YAW] = alpha + beta
-
-        # If out of joint range, abort
-        if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False
-
-        joint_goal[constants.J_SCOOP_YAW] = 0
-
-        self._move_arm.set_joint_value_target(joint_goal)
-
-        _, plan_a, _, _ = self._move_arm.plan()
-        if len(plan_a.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
-
-        # Once aligned to move goal and offset, place scoop tip at surface target offset
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            plan_a)
-        self._move_arm.set_start_state(cs)
-        goal_pose.position.x = targ_x
-        goal_pose.position.y = targ_y
-        goal_pose.position.z = targ_z
-
-        self._move_arm.set_pose_target(goal_pose)
-
-        _, plan_b, _, _ = self._move_arm.plan()
-        if len(plan_b.joint_trajectory.points) == 0:  # If no plan found, abort
-            self._move_arm.clear_pose_targets()
-            return False
-        pre_guarded_move_traj = _cascade_plans(plan_a, plan_b)
-
-        ### pre-guarded move ends here ###
-
-        # Drive scoop tip along norm vector, distance is search_distance
-
-        cs, start_state, goal_pose = self.calculate_joint_state_end_pose_from_plan_arm(
-            pre_guarded_move_traj)
-        self._move_arm.set_start_state(cs)
-        goal_pose.position.x = targ_x
-        goal_pose.position.y = targ_y
-        goal_pose.position.z = targ_z
-        goal_pose.position.x -= direction_x*search_distance
-        goal_pose.position.y -= direction_y*search_distance
-        goal_pose.position.z -= direction_z*search_distance
-
-        self._move_arm.set_pose_target(goal_pose)
-
-        _, plan_c, _, _ = self._move_arm.plan()
-
-        guarded_move_traj = _cascade_plans(pre_guarded_move_traj, plan_c)
-        self._move_arm.set_planner_id("RRTConnect")
-        '''
-        estimated time ratio is the ratio between the time to complete first two parts of the plan
-        to the the entire plan. It is used for ground detection only during the last part of the plan.
-        It is set at 0.5 after several tests
-        '''
-
-        self._move_arm.clear_pose_targets()
-
-        return guarded_move_traj
+        try:
+            sequence = TrajectorySequence(
+                'l_scoop', self._robot, self._move_arm)
+            # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
+            targ_elevation = -0.2
+            if (point.z+targ_elevation) == 0:
+                offset = search_distance
+            else:
+                offset = (point.z*search_distance)/(point.z+targ_elevation)
+            # Compute shoulder yaw angle to target
+            alpha = math.atan2((point.y+normal.y*offset)-constants.Y_SHOU,
+                                 (point.x+normal.x*offset)-constants.X_SHOU)
+            h = math.sqrt(pow((point.y+normal.y*offset)-constants.Y_SHOU, 2) +
+                            pow((point.x+normal.x*offset)-constants.X_SHOU, 2))
+            l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+            beta = math.asin(l/h)
+            # align scoop above target point
+            sequence.plan_to_joint_positions(
+                j_shou_yaw = alpha + beta,
+                j_shou_pitch = math.pi / 2,
+                j_prox_pitch = -math.pi / 2,
+                j_dist_pitch = 0.0,
+                j_hand_yaw = 0.0,
+                j_scoop_yaw = 0.0
+            )
+            # once aligned to move goal and offset, place scoop tip at surface target offset
+            sequence.plan_to_position(point)
+            # drive scoop along anti-normal vector by the search distance
+            sequence.plan_to_translation(
+                math3d.scalar_multiply(-search_distance, normal)
+            )
+        except PlanningException as err:
+            raise err
+        finally:
+            self._move_arm.set_planner_id("RRTConnect")
+        return sequence.merge()
 
     def discard_sample(self, point, height):
         """
@@ -678,24 +623,19 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         :type robot: class 'moveit_commander.RobotCommander'
         :type moveit_fk: class moveit_msgs/GetPositionFK
         """
-        total_plan = None
         targets = [
             "arm_deliver_staging_1",
             "arm_deliver_staging_2",
             "arm_deliver_final"
         ]
-        for t in targets:
-            cs = self._robot.get_current_state() if total_plan is None else \
-                self.calculate_joint_state_end_pose_from_plan_arm(total_plan)[0]
-            self._move_arm.set_start_state(cs)
-            self._move_arm.set_planner_id("RRTstar")
-            goal = self._move_arm.get_named_target_values(t)
-            self._move_arm.set_joint_value_target(goal)
-
-            _, plan, _, _ = self._move_arm.plan()
-            if len(plan.joint_trajectory.points) == 0:
-                return False
-            total_plan = plan if total_plan is None else \
-                _cascade_plans(total_plan, plan)
-        self._move_arm.set_planner_id("RRTConnect")
-        return total_plan
+        self._move_arm.set_planner_id("RRTstar")
+        try:
+            sequence = TrajectorySequence(
+                'l_scoop', self._robot, self._move_arm)
+            for t in targets:
+                sequence.plan_to_target(t)
+        except PlanningException as err:
+            raise err
+        finally:
+            self._move_arm.set_planner_id("RRTConnect")
+        return sequence.merge()
