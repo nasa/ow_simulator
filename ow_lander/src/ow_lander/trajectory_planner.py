@@ -27,27 +27,6 @@ def _compute_workspace_shoulder_yaw(x, y):
     beta = math.asin(l / h)
     return alpha + beta
 
-def _compute_trench_setup_config(x_start, y_start):
-    # Compute shoulder yaw angle to trench
-    alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
-    h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
-                    pow(x_start-constants.X_SHOU, 2))
-    l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-    beta = math.asin(l/h)
-    joint_goal = [0.0] * 6
-    # Move to pre trench position, align shoulder yaw
-    joint_goal[constants.J_DIST_PITCH] = 0.0
-    joint_goal[constants.J_HAND_YAW] = 0.0
-    joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-    joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-    joint_goal[constants.J_SHOU_YAW] = alpha + beta
-    joint_goal[constants.J_SCOOP_YAW] = 0
-    # TODO: generalize this function
-    # If out of joint range, abort
-    if (is_shou_yaw_goal_in_range(joint_goal) == False):
-        return False
-    return joint_goal
-
 class ArmTrajectoryPlanner(metaclass = Singleton):
     """Computes trajectories for arm actions and returns the result as a
     moveit_msgs.msg.RobotTrajectory
@@ -74,92 +53,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         pose = self._move_arm.get_current_pose(end_effector)
         pose.header.stamp = timestamp
         return FrameTransformer().transform(pose, frame_id, timeout)
-
-    def calculate_joint_state_end_pose_from_plan_arm(self, plan):
-        '''
-        calculate the end pose (position and orientation), joint states and robot states
-        from the current plan
-        inputs:  current plan, robot, arm interface, and moveit forward kinematics object
-        outputs: goal_pose, robot state and joint states at end of the plan
-        '''
-        # get joint states from the end of the plan
-        joint_states = plan.joint_trajectory.points[-1].positions
-        # construct robot state at the end of the plan
-        robot_state = self._robot.get_current_state()
-        # adding antenna (0,0) and grinder positions (-0.1) which should not change
-        new_value = new_value = (
-            0, 0) + joint_states[:5] + (-0.1,) + (joint_states[5],)
-        # modify current state of robot to the end state of the previous plan
-        robot_state.joint_state.position = new_value
-        # TODO: may raise ROSSerializationException
-        goal_pose = self.compute_forward_kinematics('l_scoop', robot_state)
-        return robot_state, joint_states, goal_pose
-
-    def go_to_XYZ_coordinate(self, cs, goal_pose, x_start, y_start, z_start, approximate=True):
-        """
-        :param approximate: use an approximate solution. default True
-        :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type x_start: float
-        :type y_start: float
-        :type z_start: float
-        :type approximate: bool
-        """
-
-        self._move_arm.set_start_state(cs)
-        goal_pose.position.x = x_start
-        goal_pose.position.y = y_start
-        goal_pose.position.z = z_start
-
-        goal_pose.orientation.x = goal_pose.orientation.x
-        goal_pose.orientation.y = goal_pose.orientation.y
-        goal_pose.orientation.z = goal_pose.orientation.z
-        goal_pose.orientation.w = goal_pose.orientation.w
-
-        # Ask the planner to generate a plan to the approximate joint values generated
-        # by kinematics builtin IK solver. For more insight on this issue refer to:
-        # https://github.com/nasa/ow_simulator/pull/60
-        if approximate:
-            self._move_arm.set_joint_value_target(goal_pose, True)
-        else:
-            self._move_arm.set_pose_target(goal_pose)
-
-        _, plan, _, _ = self._move_arm.plan()
-
-        if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
-
-        return plan
-
-    def go_to_Z_coordinate_dig_circular(self, cs, goal_pose, z_start, approximate=True):
-        """
-        :type cs: class 'moveit_msgs/RobotState'
-        :type goal_pose: Pose
-        :type z_start: float
-        :param approximate: use an approximate solution. default True
-        """
-
-        self._move_arm.set_start_state(cs)
-        goal_pose.position.z = z_start
-
-        goal_pose.orientation.x = goal_pose.orientation.x
-        goal_pose.orientation.y = goal_pose.orientation.y
-        goal_pose.orientation.z = goal_pose.orientation.z
-        goal_pose.orientation.w = goal_pose.orientation.w
-
-        # Ask the planner to generate a plan to the approximate joint values generated
-        # by kinematics builtin IK solver. For more insight on this issue refer to:
-        # https://github.com/nasa/ow_simulator/pull/60
-        if approximate:
-            self._move_arm.set_joint_value_target(goal_pose, True)
-        else:
-            self._move_arm.set_pose_target(goal_pose)
-
-        _, plan, _, _ = self._move_arm.plan()
-
-        if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
-
-        return plan
 
     def dig_circular(self, point, depth, parallel):
         """
@@ -207,128 +100,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
             # perform scoop by rotating hand yaw, and scoop through surface
             sequence.plan_to_joint_positions(j_hand_yaw = -0.29*math.pi)
         return sequence.merge()
-
-    def move_to_pre_trench_configuration(self, x_start, y_start):
-        """
-        :type x_start: float
-        :type y_start: float
-        """
-
-        # Initilize to current position
-        joint_goal = self._move_arm.get_current_pose().pose
-        robot_state = self._robot.get_current_state()
-        self._move_arm.set_start_state(robot_state)
-
-        # Compute shoulder yaw angle to trench
-        alpha = math.atan2(y_start-constants.Y_SHOU, x_start-constants.X_SHOU)
-        h = math.sqrt(pow(y_start-constants.Y_SHOU, 2) +
-                        pow(x_start-constants.X_SHOU, 2))
-        l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-        beta = math.asin(l/h)
-        # Move to pre trench position, align shoulder yaw
-        joint_goal = self._move_arm.get_current_joint_values()
-        joint_goal[constants.J_DIST_PITCH] = 0.0
-        joint_goal[constants.J_HAND_YAW] = math.pi/2.2
-        joint_goal[constants.J_PROX_PITCH] = -math.pi/2
-        joint_goal[constants.J_SHOU_PITCH] = math.pi/2
-        joint_goal[constants.J_SHOU_YAW] = alpha + beta
-
-        # If out of joint range, abort
-        if (is_shou_yaw_goal_in_range(joint_goal) == False):
-            return False
-
-        joint_goal[constants.J_SCOOP_YAW] = 0
-        self._move_arm.set_joint_value_target(joint_goal)
-        _, plan, _, _ = self._move_arm.plan()
-        return plan
-
-    def plan_cartesian_path(self, move_group, wpose, length, alpha, parallel, z_start, cs):
-        """
-        :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type length: float
-        :type alpha: float
-        :type parallel: bool
-        """
-        if parallel == False:
-            alpha = alpha - math.pi/2
-        move_group.set_start_state(cs)
-        waypoints = []
-        wpose.position.z = z_start
-        wpose.position.x += length*math.cos(alpha)
-        wpose.position.y += length*math.sin(alpha)
-        waypoints.append(copy.deepcopy(wpose))
-
-        (plan, fraction) = move_group.compute_cartesian_path(
-            waypoints,   # waypoints to follow
-            0.01,        # end effector follow step (meters)
-            0.0)         # jump threshold
-
-        return plan, fraction
-
-    def plan_cartesian_path_lin(self, move_group, wpose, length, alpha, z_start, cs):
-        """
-        :type length: float
-        :type alpha: float
-        """
-        move_group.set_start_state(cs)
-        waypoints = []
-
-        wpose.position.x += length*math.cos(alpha)
-        wpose.position.y += length*math.sin(alpha)
-
-        waypoints.append(copy.deepcopy(wpose))
-
-        (plan, fraction) = move_group.compute_cartesian_path(
-            waypoints,   # waypoints to follow
-            0.01,        # end effector follow step (meters)
-            0.0)         # jump threshold
-
-        return plan, fraction
-
-    def change_joint_value(self, move_group, cs, start_state, joint_index, target_value):
-        """
-        :type move_group: class 'moveit_commander.move_group.MoveGroupCommander'
-        :type joint_index: int
-        :type target_value: float
-        """
-        move_group.set_start_state(cs)
-
-        joint_goal = move_group.get_current_joint_values()
-        for k in range(0, len(start_state)):
-            joint_goal[k] = start_state[k]
-
-        joint_goal[joint_index] = target_value
-        move_group.set_joint_value_target(joint_goal)
-        _, plan, _, _ = move_group.plan()
-        return plan
-
-    def go_to_Z_coordinate(self, move_group, cs, goal_pose, x_start, y_start, z_start, approximate=True):
-        """
-        :param approximate: use an approximate solution. default True
-        :type x_start: float
-        :type y_start: float
-        :type z_start: float
-        :type approximate: bool
-        """
-
-        move_group.set_start_state(cs)
-
-        goal_pose.position.x = x_start
-        goal_pose.position.y = y_start
-        goal_pose.position.z = z_start
-
-        # Ask the planner to generate a plan to the approximate joint values generated
-        # by kinematics builtin IK solver. For more insight on this issue refer to:
-        # https://github.com/nasa/ow_simulator/pull/60
-        if approximate:
-            move_group.set_joint_value_target(goal_pose, True)
-        else:
-            move_group.set_pose_target(goal_pose)
-        _, plan, _, _ = move_group.plan()
-
-        if len(plan.joint_trajectory.points) == 0:  # If no plan found, abort
-            return False
-        return plan
 
     def dig_linear(self, point, depth, length):
         """
@@ -379,27 +150,6 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
         # pitch scoop upward to maintain sample
         sequence.plan_to_joint_positions(j_dist_pitch = math.pi / 2)
         return sequence.merge()
-
-    def calculate_joint_state_end_pose_from_plan_grinder(self, plan):
-        '''
-        calculate the end pose (position and orientation), joint states and robot states
-        from the current plan
-        inputs:  current plan, robot, grinder interface, and moveit forward kinematics object
-        outputs: goal_pose, robot state and joint states at end of the plan
-
-        :type plan: JointTrajectory
-        '''
-        # get joint states from the end of the plan
-        joint_states = plan.joint_trajectory.points[-1].positions
-        # construct robot state at the end of the plan
-        robot_state = self._robot.get_current_state()
-        # adding antenna (0,0) and j_scoop_yaw (0.1) which should not change
-        new_value = (0, 0) + joint_states[:6] + (0.1740,)
-        # modify current state of robot to the end state of the previous plan
-        robot_state.joint_state.position = new_value
-        # TODO: may raise ROSSerializationException
-        goal_pose = self.compute_forward_kinematics('l_grinder', robot_state)
-        return robot_state, joint_states, goal_pose
 
     def grind(self, args):
         """
