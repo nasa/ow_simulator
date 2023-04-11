@@ -71,6 +71,7 @@ class ActionServerBase(ABC):
       feedback = self.feedback_type(**kwargs)
     except AttributeError as err:
       rospy.logerr_once(err)
+      return
     self._server.publish_feedback(feedback)
 
   def _set_succeeded(self, msg, **kwargs):

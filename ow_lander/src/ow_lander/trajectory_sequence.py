@@ -5,8 +5,8 @@ from moveit_msgs.msg import RobotTrajectory, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from geometry_msgs.msg import Pose
 
-from ow_lander.common import create_header
 from ow_lander import math3d
+from ow_lander.common import create_header
 
 class PlanningException(RuntimeError):
   pass
@@ -18,7 +18,7 @@ class TrajectorySequence:
 
   SRV_COMPUTE_FK = '/compute_fk'
 
-  def __init__(self, end_effector, robot, move_group):
+  def __init__(self, robot, move_group, end_effector=None):
     self._ee = end_effector
     self._robot = robot
     self._group = move_group
@@ -38,6 +38,10 @@ class TrajectorySequence:
     # over to unrelated planning
     self._group.clear_pose_targets()
 
+  def _assert_end_effector_set(self):
+    if self._ee is None:
+      raise PlanningException("End-effector must be provided to IK planning")
+
   def _assert_joint_index_validity(self, index):
     if index >= self._joints_count or index < 0:
       raise PlanningException("Joint index is out of range")
@@ -51,6 +55,7 @@ class TrajectorySequence:
 
   def _compute_forward_kinematics(self, robot_state):
     # TODO unhandled exception could be raised
+    self._assert_end_effector_set()
     result = self._compute_fk_srv(create_header('base_link'),# rospy.Time.now()),
                                   [self._ee], robot_state)
     if result.error_code.val != MoveItErrorCodes.SUCCESS:
@@ -159,6 +164,7 @@ class TrajectorySequence:
     """Plan the end-effector to a new pose
     pose -- geometry_msgs Pose end-effector will move to
     """
+    self._assert_end_effector_set()
     self._group.set_start_state(self._most_recent_state)
     self._group.set_pose_target(pose, self._ee)
     self._plan()

@@ -9,21 +9,21 @@ define non-arm mixins.
 """
 
 import sys
-from abc import ABC, abstractmethod
 import rospy
 import moveit_commander
-from tf2_geometry_msgs import do_transform_pose
+from abc import ABC, abstractmethod
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Pose, PoseStamped, PointStamped
+from tf2_geometry_msgs import do_transform_pose
 
-from ow_lander.arm_interface import ArmInterface
-from ow_lander.trajectory_planner import ArmTrajectoryPlanner
-from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent, in_closed_range, create_header
-from ow_lander import math3d
-from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
+from ow_lander import math3d
+from ow_lander.common import radians_equivalent, in_closed_range, create_header
+from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
+from ow_lander.arm_interface import OWArmInterface
+from ow_lander.frame_transformer import FrameTransformer
+from ow_lander.trajectory_sequence import TrajectorySequence, PlanningException
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
@@ -36,20 +36,11 @@ class ArmActionMixin:
     super().__init__(*args, **kwargs)
     # initialize moveit interface for arm control
     moveit_commander.roscpp_initialize(sys.argv)
-    # initialize/reference trajectory planner singleton (for external use)
-    self._planner = ArmTrajectoryPlanner()
     # initialize/reference
-    self._arm = ArmInterface()
+    self._arm = OWArmInterface()
     # initialize interface for querying scoop tip position
     self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()
-
-  def publish_feedback_cb(self):
-    """Publishes the action's feedback. Most arm actions publish the scoop tip
-    position under the name "current" in their feedback, so that is what this
-    method does by default, but it can be overridden by the child class.
-    """
-    self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
 
 class ArmTrajectoryMixin(ArmActionMixin, ABC):
@@ -61,20 +52,28 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
     try:
       self._arm.checkout_arm(self.name)
       plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan)
-    except RuntimeError as err:
+      self._arm.execute_arm_trajectory(plan,
+        action_feedback_cb = self.publish_feedback_cb)
+    except (RuntimeError, PlanningException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
     else:
       self._arm.checkin_arm(self.name)
-      self._set_succeeded("Arm trajectory succeeded")
+      self._set_succeeded(f"{self.name} trajectory succeeded")
+
+  def publish_feedback_cb(self):
+    """Publishes the action's feedback. Most arm actions publish the scoop tip
+    position under the name "current" in their feedback, so that is what this
+    method does by default, but it can be overridden by the child class.
+    """
+    pass
 
   @abstractmethod
   def plan_trajectory(self, goal):
     pass
 
 
-class GrinderTrajectoryMixin(ArmActionMixin, ABC):
+class GrinderTrajectoryMixin(ArmTrajectoryMixin):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -88,25 +87,23 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
       self._arm.checkout_arm(self.name)
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
+      self._arm.execute_arm_trajectory(plan)
+    except (RuntimeError, PlanningException) as err:
       self._cleanup()
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_aborted(str(err))
     else:
       self._cleanup()
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
-
-  @abstractmethod
-  def plan_trajectory(self, goal):
-    pass
+      self._set_succeeded(f"{self.name} trajectory succeeded")
 
 
 class FrameMixin:
   """Can be inherited by an arm action that operates in different frames.
-  DOES NOT implement an arm interface, and so must be inherited along with ArmActionMixin or one of its children.
+  THIS CLASS DOES NOT implement an arm interface
+    This must be inherited along with ArmActionMixin or one of its children. FrameMixin should come before ArmActionMixin in the inheritance order.
+  THIS CLASS DOES NOT support the grinder move group
+    All transforms, trajectory planning, and pose queries are done using only
+    the 'arm' move group, and there is no way to select the 'grinder' move
+    group while using this class' methods.
   """
 
   COMPARISON_FRAME = 'world'
@@ -204,6 +201,16 @@ class FrameMixin:
     return PoseStamped(header=create_header(frame_id),
                        pose=intended_pose)
 
+  def transform_to_planning_frame(self, intended_geometry):
+    planning_frame = self._arm.move_group_scoop.get_pose_reference_frame()
+    point = FrameTransformer().transform(intended_geometry, planning_frame)
+    if point is None:
+      raise PlanningException(
+        f"Failed to transform requested {type(intended_geometry)} from "
+        f"{intended_geometry.frame_id} to the {planning_frame} frame"
+      )
+    return point
+
   def verify_pose_reached(self, intended_pose, transform):
     expected = do_transform_pose(intended_pose, transform)
     # NOTE: When checking if a pose has been reached following a movement, it's
@@ -223,11 +230,21 @@ class FrameMixin:
                     default: rospy.Duration(0)
     returns geometry_msgs.PoseStamped
     """
-    return self._planner.get_end_effector_pose(self._end_effector, frame_id,
-                                               timestamp, timeout)
+    pose = self._arm.move_group_scoop.get_current_pose(self._end_effector)
+    pose.header.stamp = timestamp
+    return FrameTransformer().transform(pose, frame_id, timeout)
 
   def plan_end_effector_to_pose(self, pose):
-    return self._planner.plan_arm_to_pose(pose, self._end_effector)
+    """Plan a trajectory from arm's current pose to a new pose
+    pose         -- Stamped pose plan will place end-effector at
+    end_effector -- Name of end_effector
+    """
+    pose_t = self.transform_to_planning_frame(pose)
+    # plan trajectory to pose in the arm's pose frame
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_scoop, self._end_effector)
+    sequence.plan_to_pose(pose_t.pose)
+    return sequence.merge()
 
 
 class ModifyJointValuesMixin(ArmActionMixin, ABC):

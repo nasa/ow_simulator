@@ -11,7 +11,7 @@ import owl_msgs.msg
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Point
-from geometry_msgs.msg import Vector3, PoseStamped, Pose
+from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 
@@ -23,6 +23,7 @@ from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
+from ow_lander.trajectory_sequence import TrajectorySequence, PlanningException
 
 # This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
 NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
@@ -47,6 +48,16 @@ def _format_guarded_move_success_message(action_name, monitor):
     return f"{action_name} trajectory completed without breaching force or " \
            f"torque thresholds"
 
+def _compute_workspace_shoulder_yaw(x, y):
+    """Compute shoulder yaw angle to trench
+    x -- base_link x position
+    y -- base_link y position
+    """
+    alpha = math.atan2(y - constants.Y_SHOU, x - constants.X_SHOU)
+    h = math.sqrt(pow(y - constants.Y_SHOU, 2) + pow(x - constants.X_SHOU, 2))
+    l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+    beta = math.asin(l / h)
+    return alpha + beta
 
 #####################
 ## ARM ACTIONS
@@ -62,11 +73,10 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():
-      self._set_succeeded("Arm trajectory stopped",
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_succeeded("Arm trajectory stopped")
     else:
-      self._set_aborted("No arm trajectory to stop",
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_aborted("No arm trajectory to stop")
+
 
 ### DEPRECATED: ArmFindSurface should be used in place of GuardedMove
 class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
@@ -89,6 +99,39 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
                                        ow_lander.msg.GuardedMoveFinalResult,
                                        queue_size=1)
 
+  def plan_trajectory(self, goal):
+    sequence = TrajectorySequence(
+      'l_scoop', self._arm.robot, self._arm.move_group_scoop)
+    # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
+    targ_elevation = -0.2
+    if (goal.point.z+targ_elevation) == 0:
+      offset = goal.search_distance
+    else:
+      offset = (goal.point.z*goal.search_distance)/(goal.point.z+targ_elevation)
+    # Compute shoulder yaw angle to target
+    alpha = math.atan2((goal.point.y+goal.normal.y*offset)-constants.Y_SHOU,
+                       (goal.point.x+goal.normal.x*offset)-constants.X_SHOU)
+    h = math.sqrt(pow((goal.point.y+goal.normal.y*offset)-constants.Y_SHOU, 2) +
+                  pow((goal.point.x+goal.normal.x*offset)-constants.X_SHOU, 2))
+    l = constants.Y_SHOU - constants.HAND_Y_OFFSET
+    beta = math.asin(l/h)
+    # align scoop above target point
+    sequence.plan_to_joint_positions(
+      j_shou_yaw = alpha + beta,
+      j_shou_pitch = math.pi / 2,
+      j_prox_pitch = -math.pi / 2,
+      j_dist_pitch = 0.0,
+      j_hand_yaw = 0.0,
+      j_scoop_yaw = 0.0
+    )
+    # once aligned to move goal and offset, place scoop tip at surface target offset
+    sequence.plan_to_position(goal.point)
+    # drive scoop along anti-normal vector by the search distance
+    sequence.plan_to_translation(
+        math3d.scalar_multiply(-goal.search_distance, goal.normal)
+    )
+    return sequence.merge()
+
   def execute_action(self, goal):
     GROUND_REFERENCE_FRAME = 'base_link'
     GROUND_POKER_LINK = 'l_scoop_tip'
@@ -103,16 +146,16 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       if detector.was_ground_detected():
         self._arm.stop_trajectory_silently()
 
+    self._arm.move_group_scoop.set_planner_id('RRTstar')
     try:
       self._arm.checkout_arm(self.name)
       # TODO: split guarded_move trajectory into 2 parts so that ground
       #       detection can be started before the second execute_trajectory is
       #       called
-      plan = self._planner.guarded_move(
-        goal.start, goal.normal, goal.search_distance)
-      self._arm.execute_arm_trajectory(plan,
+      trajectory = self.plan_trajectory(goal)
+      self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except RuntimeError as err:
+    except (RuntimeError, PlanningException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err), final=Point())
     else:
@@ -124,6 +167,8 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       else:
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
+    finally:
+      self._arm.move_group_scoop.set_planner_id('RRTstar')
 
 
 class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
@@ -135,7 +180,9 @@ class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmUnstowResult
 
   def plan_trajectory(self, _goal):
-    return self._planner.plan_arm_to_target('arm_unstowed')
+    sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+    sequence.plan_to_target('arm_unstowed')
+    return sequence.merge()
 
 
 class ArmStowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
@@ -147,7 +194,9 @@ class ArmStowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmStowResult
 
   def plan_trajectory(self, _goal):
-    return self._planner.plan_arm_to_target('arm_stowed')
+    sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+    sequence.plan_to_target('arm_stowed')
+    return sequence.merge()
 
 
 class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
@@ -158,9 +207,68 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
   feedback_type = owl_msgs.msg.TaskGrindFeedback
   result_type   = owl_msgs.msg.TaskGrindResult
 
-  def plan_trajectory(self, goal):
-    return self._planner.grind(goal)
+  def publish_feedback_cb(self):
+    self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
+  def plan_trajectory(self, goal):
+    PREGRIND_HEIGHT = 0.25
+
+    point = Point(goal.x_start, goal.y_start, goal.ground_position)
+    depth = goal.depth
+    length = goal.length
+    parallel = goal.parallel
+
+    yaw = _compute_workspace_shoulder_yaw(point.x, point.y)
+    if parallel:
+      R = math.sqrt(point.x*point.x+point.y*point.y)
+      # adjust trench to fit scoop circular motion
+      dx = 0.04*R*math.sin(yaw)  # Center dig_circular in grind trench
+      dy = 0.04*R*math.cos(yaw)
+      # Move starting point back to avoid scoop-terrain collision
+      point.x = 0.9*(point.x + dx)
+      point.y = 0.9*(point.y - dy)
+    else:
+      dx = 5*length/8*math.sin(yaw)
+      dy = 5*length/8*math.cos(yaw)
+      # Move starting point back to avoid scoop-terrain collision
+      point.x = 0.97*(point.x - dx)
+      point.y = 0.97*(point.y + dy)
+
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_grinder, 'l_grinder')
+    # place grinder above the start point
+    pregrind_position = math3d.add(point, Vector3(0, 0, PREGRIND_HEIGHT))
+    pregrind_pose = Pose(
+      position = pregrind_position,
+      orientation = Quaternion(0.70616885803, 0.0303977418722,
+                               -0.706723318474, 0.0307192507001)
+    )
+    sequence.plan_to_pose(pregrind_pose)
+    # enter terrain
+    trench_bottom = math3d.add(
+      point, Vector3(0, 0, constants.GRINDER_OFFSET - depth)
+    )
+    sequence.plan_to_z(trench_bottom.z)
+    # grinding ice forward
+    yaw_offset = 0 if parallel else -math.pi / 2
+    trench_segment = math3d.scalar_multiply(
+      length,
+      Vector3(math.cos(yaw + yaw_offset), math.sin(yaw + yaw_offset), 0)
+    )
+    sequence.plan_linear_translation(trench_segment)
+    # grind sideways
+    if parallel:
+      # NOTE: small angle approximation?
+      sequence.plan_to_joint_translations(j_shou_yaw = 0.08)
+    else:
+      sequence.plan_to_translation(math3d.scalar_multiply(0.08,
+          Vector3(math.cos(yaw), math.sin(yaw), 0)))
+    # grind backwards towards lander
+    sequence.plan_linear_translation(
+      math3d.scalar_multiply(-1, trench_segment))
+    # exit terrain
+    sequence.plan_to_z(pregrind_position.z)
+    return sequence.merge()
 
 class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
                               ActionServerBase):
@@ -175,15 +283,50 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def plan_trajectory(self, goal):
-    intended_dig_point = self.get_intended_position(
-      goal.frame, goal.relative, goal.point)
-    PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
-    if point is None:
-      raise RuntimeError("Failed to transform dig point from " \
-                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
-    return self._planner.dig_circular(point.point, goal.depth, goal.parallel)
+    # TODO:
+    #  1. implement normal parameter
+    #  2. implement scoop_angle parameter
 
+    trench_surface = self.transform_to_planning_frame(
+      self.get_intended_position(goal.frame, goal.relative, goal.point)).point
+    trench_bottom = Point(
+      trench_surface.x,
+      trench_surface.y,
+      trench_surface.z - goal.depth + constants.R_PARALLEL_FALSE_A
+    )
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+    # place end-effector above trench position
+    sequence.plan_to_joint_positions(
+      j_shou_yaw = _compute_workspace_shoulder_yaw(
+        trench_bottom.x, trench_bottom.y),
+      j_shou_pitch = math.pi / 2,
+      j_prox_pitch = -math.pi / 2,
+      j_dist_pitch = 0.0,
+      j_hand_yaw = 0.0,
+      j_scoop_yaw = 0.0
+    )
+    if goal.parallel:
+      # rotate hand so scoop bottom points down
+      sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
+      # rotate scoop to face radially out from lander
+      sequence.plan_to_joint_positions(j_scoop_yaw = math.pi/2)
+      # pitch scoop back with the distal pitch so its blade faces terrain
+      sequence.plan_to_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
+      # Once aligned to trench goal, place hand above trench middle point
+      sequence.plan_to_position(trench_bottom)
+      # perform scoop by rotating distal pitch, and scoop through surface
+      sequence.plan_to_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
+    else:
+      # lower to trench position, maintaining up-right orientation
+      sequence.plan_to_position(trench_bottom)
+      # rotate hand yaw so scoop tip points into surface
+      sequence.plan_to_joint_positions(j_hand_yaw = math.pi/2.2)
+      # lower scoop back to down z-position with new hand yaw position set
+      sequence.plan_to_z(trench_bottom.z)
+      # perform scoop by rotating hand yaw, and scoop through surface
+      sequence.plan_to_joint_positions(j_hand_yaw = -0.29*math.pi)
+    return sequence.merge()
 
 class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
                             ActionServerBase):
@@ -198,14 +341,54 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def plan_trajectory(self, goal):
-    intended_dig_point = self.get_intended_position(
-      goal.frame, goal.relative, goal.point)
-    PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(intended_dig_point, PLANNING_FRAME)
-    if point is None:
-      raise RuntimeError("Failed to transform dig point from " \
-                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
-    return self._planner.dig_linear(point.point, goal.depth, goal.length)
+    # TODO:
+    #  1. implement normal parameter
+
+    trench_surface = self.transform_to_planning_frame(
+      self.get_intended_position(goal.frame, goal.relative, goal.point)).point
+    ## TODO: comment on what these calculations do
+    alpha = math.atan2(constants.WRIST_SCOOP_PARAL,
+                       constants.WRIST_SCOOP_PERP)
+    distance_from_ground = constants.ROT_RADIUS * \
+      (math.cos(alpha) - math.sin(alpha))
+    # TODO: what point does this reference??
+    center = Point(
+      trench_surface.x,
+      trench_surface.y,
+      trench_surface.z + constants.SCOOP_HEIGHT - goal.depth + distance_from_ground
+    )
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+    # place end-effector above trench position
+    sequence.plan_to_joint_positions(
+      j_shou_yaw = _compute_workspace_shoulder_yaw(
+        trench_surface.x, trench_surface.y),
+      j_shou_pitch = math.pi / 2,
+      j_prox_pitch = -math.pi / 2,
+      j_dist_pitch = 0.0,
+      j_hand_yaw = math.pi/2.2,
+      j_scoop_yaw = 0.0
+    )
+    # rotate hand so scoop bottom points down
+    sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
+    # rotate scoop to face radially out from lander
+    sequence.plan_to_joint_positions(j_scoop_yaw = math.pi / 2)
+    # retract scoop back so its blades face terrain
+    sequence.plan_to_joint_positions(j_dist_pitch = -math.pi / 2)
+    # place scoop at the trench side nearest to the lander
+    sequence.plan_to_position(center)
+    # TODO: what is this doing?
+    sequence.plan_to_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
+    # compute the far end of the trench
+    far_trench_pose = sequence.get_final_pose()
+    _, _, yaw = math3d.euler_from_quaternion(far_trench_pose.orientation)
+    far_trench_pose.position.x += goal.length * math.cos(yaw)
+    far_trench_pose.position.y += goal.length * math.sin(yaw)
+    # move the scoop along a linear path to the end of the trench
+    sequence.plan_linear_path_to_pose(far_trench_pose)
+    # pitch scoop upward to maintain sample
+    sequence.plan_to_joint_positions(j_dist_pitch = math.pi / 2)
+    return sequence.merge()
 
 
 class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
@@ -221,14 +404,56 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def plan_trajectory(self, goal):
-    intended_discard_point = self.get_intended_position(
-      goal.frame, goal.relative, goal.point)
-    PLANNING_FRAME = 'base_link'
-    point = FrameTransformer().transform(intended_discard_point, PLANNING_FRAME)
-    if point is None:
-      raise RuntimeError("Failed to transform dig point from " \
-                         f"{goal.frame_id} to the {PLANNING_FRAME} frame")
-    return self._planner.discard_sample(point.point, goal.height)
+    discard_surface_pos = self.transform_to_planning_frame(
+      self.get_intended_position(goal.frame, goal.relative, goal.point)).point
+    self._arm.move_group_scoop.set_planner_id("RRTstar")
+    try:
+      sequence = TrajectorySequence(
+        self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+      # move scoop to a pose above the discard point that holds the sample
+      D2R = math.pi / 180
+      held_euler = (
+          -179 * D2R,
+          -20  * D2R,
+          -90  * D2R
+      )
+      held_pose = Pose(
+        position = math3d.add(discard_surface_pos, Point(0, 0, goal.height)),
+        orientation = math3d.quaternion_from_euler(*held_euler)
+      )
+      sequence.plan_to_pose(held_pose)
+
+      # NOTE: This code does nothing since pos_constraint always remains a
+      #       local variable. Saved in case the constraint is useful.
+      # # adding position constraint on the solution so that the tip does not
+      # # diverge to get to the solution.
+      # pos_constraint = PositionConstraint()
+      # pos_constraint.header.frame_id = "base_link"
+      # pos_constraint.link_name = "l_scoop"
+      # pos_constraint.target_point_offset.x = 0.1
+      # pos_constraint.target_point_offset.y = 0.1
+      # # rotate scoop to discard sample at current location begin
+      # pos_constraint.target_point_offset.z = 0.1
+      # pos_constraint.constraint_region.primitives.append(
+      #     SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[0.01]))
+      # pos_constraint.weight = 1
+
+      # point front of scoop downward to discard sample
+      dumped_euler = (
+          180 * D2R,
+          90  * D2R,
+          -90 * D2R
+      )
+      dumped_quat = math3d.quaternion_from_euler(*dumped_euler)
+      sequence.plan_to_orientation(dumped_quat)
+      return sequence.merge()
+    except PlanningException as err:
+      raise err
+    finally:
+      # TrajectorySequence calls may throw PlanningException, which is handled
+      # by ArmTrajectoryMixin, but they must be caught and passed on here so the
+      # planner ID may be set back to RRTConnect before this method ends
+      self._arm.move_group_scoop.set_planner_id("RRTConnect")
 
 
 class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
@@ -240,8 +465,21 @@ class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   result_type   = owl_msgs.msg.TaskDeliverSampleResult
 
   def plan_trajectory(self, _goal):
-    return self._planner.deliver_sample()
-
+    self._arm.move_group_scoop.set_planner_id("RRTstar")
+    try:
+      sequence = TrajectorySequence(
+        self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+      sequence.plan_to_target("arm_deliver_staging_1")
+      sequence.plan_to_target("arm_deliver_staging_2")
+      sequence.plan_to_target("arm_deliver_final")
+      return sequence.merge()
+    except PlanningException as err:
+      raise err
+    finally:
+      # TrajectorySequence calls may throw PlanningException, which is handled
+      # by ArmTrajectoryMixin, but they must be caught and passed on here so the
+      # planner ID may be set back to RRTConnect before this method ends
+      self._arm.move_group_scoop.set_planner_id("RRTConnect")
 
 class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
                              ActionServerBase):
@@ -267,12 +505,12 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       return
     try:
       self._arm.checkout_arm(self.name)
-      plan = self.plan_end_effector_to_pose(intended_pose_stamped)
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
-      self._arm.execute_arm_trajectory(plan,
+      trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
+      self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
+    except (RuntimeError, PlanningException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
@@ -324,7 +562,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except RuntimeError as err:
+    except (RuntimeError, PlanningException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
@@ -374,18 +612,14 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # the normal vector direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     try:
-      # pre-transform only position
-      intended_start_position_stamped = FrameTransformer().transform(
-        self.get_intended_position(goal.frame, goal.relative, goal.position),
-        constants.FRAME_ID_BASE
+      # transform only position
+      intended_start_position_stamped = self.transform_to_planning_frame(
+        self.get_intended_position(goal.frame, goal.relative, goal.position)
       )
       # normal is always considered in base_link regardless of frame parameter
       normal = self.validate_normalization(goal.normal)
     except RuntimeError as err:
       self._set_aborted(str(err))
-      return
-    if intended_start_position_stamped is None:
-      self._set_aborted("Failed to perform necessary transform of position.")
       return
     # orient scoop so that the bottom points opposite to the normal
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
@@ -412,12 +646,13 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # move to setup pose prior to surface approach
     try:
       self._arm.checkout_arm(self.name)
-      plan1 = self.plan_end_effector_to_pose(intended_start_pose_stamped)
+      trajectory_setup = self.plan_end_effector_to_pose(
+        intended_start_pose_stamped)
       comparison_transform = self.get_comparison_transform(
         intended_start_pose_stamped.header.frame_id)
-      self._arm.execute_arm_trajectory(plan1,
+      self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
+    except (RuntimeError, PlanningException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -426,7 +661,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       if not self.verify_pose_reached(intended_start_pose_stamped,
-                                       comparison_transform):
+                                      comparison_transform):
        self._set_aborted("Failed to reach setup pose.",
           final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
           final_distance=0, final_force=0, final_torque=0)
@@ -447,10 +682,12 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # move towards surface until F/T is breached or overdrive distance reached
     try:
       self._arm.checkout_arm(self.name)
-      plan2 = self.plan_end_effector_to_pose(intended_end_pose_stamped)
+      trajectory_approach = self.plan_end_effector_to_pose(
+        intended_end_pose_stamped)
       comparison_transform = self.get_comparison_transform(
         intended_start_pose_stamped.header.frame_id)
-      self._arm.execute_arm_trajectory(plan2, action_feedback_cb=guarded_cb)
+      self._arm.execute_arm_trajectory(trajectory_approach,
+        action_feedback_cb=guarded_cb)
     except RuntimeError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
