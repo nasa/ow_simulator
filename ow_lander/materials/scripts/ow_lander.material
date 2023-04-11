@@ -50,7 +50,7 @@ fragment_program ow_lander_frag glsl
     param_named irradianceMap                  int 3
 
     // lander lights
-    // Control status of rover lights (spotlights)
+    // Control status of lander lights (spotlights)
     param_named_auto vsLightPos                light_position_view_space_array 3
     param_named_auto vsLightDir                light_direction_view_space_array 3
     // Color is misused to turn lights on and off

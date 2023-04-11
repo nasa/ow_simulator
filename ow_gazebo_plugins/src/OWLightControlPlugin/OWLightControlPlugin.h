@@ -14,8 +14,8 @@ namespace gazebo {
 class OWLightControlPlugin : public gazebo::VisualPlugin
 {
 public:
-  OWLightControlPlugin();
-  ~OWLightControlPlugin();
+  OWLightControlPlugin() {}
+  ~OWLightControlPlugin() {}
 
   virtual void Load(gazebo::rendering::VisualPtr visual, sdf::ElementPtr sdf);
 
