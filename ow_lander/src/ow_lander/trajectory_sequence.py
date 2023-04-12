@@ -10,8 +10,8 @@ from ow_lander.common import create_header
 from ow_lander.exception import ArmPlanningError
 
 class TrajectorySequence:
-  """Plan a sequence of trajectories for a given end-effector, robot, and move
-  group.
+  """Plan a sequence of trajectories for a given robot and move group. If an
+  end-effector is provided, IK can be used to plan to poses.
   """
 
   SRV_COMPUTE_FK = '/compute_fk'
@@ -177,7 +177,8 @@ class TrajectorySequence:
     )
     planning_time = time.time() - start
     if fraction != 1.0:
-      raise ArmPlanningError("Linear path planning failed")
+      raise ArmPlanningError("Linear path planning failed. Can only make it "
+                            f"{fraction * 100:.1}% of the way")
     self._append_trajectory(trajectory, planning_time)
 
   def plan_linear_translation(self, translation):
@@ -242,9 +243,11 @@ class TrajectorySequence:
     self._plan_to_coordinate('z', position)
 
   def get_final_joint_positions(self):
+    """return joint positions at the end of the current sequence"""
     return self._most_recent_joint_positions
 
   def get_final_pose(self):
+    """return end-effector pose at the end of the current sequence"""
     return self._compute_forward_kinematics(self._most_recent_state)
 
   def merge(self):

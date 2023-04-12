@@ -65,14 +65,17 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
       self._set_succeeded(f"{self.name} trajectory succeeded")
 
   def publish_feedback_cb(self):
-    """Publishes the action's feedback. Most arm actions publish the scoop tip
-    position under the name "current" in their feedback, so that is what this
-    method does by default, but it can be overridden by the child class.
+    """Publishes the action's feedback. Can optionally be overridden by child
+    class to publish feedback.
     """
     pass
 
   @abstractmethod
   def plan_trajectory(self, goal):
+    """Compute the trajectory of the arm from the provided goal. This MUST be
+    overridden by the child class.
+    returns a RobotTrajectory
+    """
     pass
 
 
@@ -141,6 +144,9 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   @abstractmethod
   def modify_joint_positions(self, goal):
+    """Compute new joint positions based on the provided goal.
+    returns a complete ordered list of joint positions
+    """
     pass
 
 
