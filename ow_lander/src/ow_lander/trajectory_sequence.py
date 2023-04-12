@@ -7,9 +7,7 @@ from geometry_msgs.msg import Pose
 
 from ow_lander import math3d
 from ow_lander.common import create_header
-
-class PlanningException(RuntimeError):
-  pass
+from ow_lander.exception import ArmPlanningError
 
 class TrajectorySequence:
   """Plan a sequence of trajectories for a given end-effector, robot, and move
@@ -40,16 +38,16 @@ class TrajectorySequence:
 
   def _assert_end_effector_set(self):
     if self._ee is None:
-      raise PlanningException("End-effector must be provided to IK planning")
+      raise ArmPlanningError("End-effector must be provided to IK planning")
 
   def _assert_joint_index_validity(self, index):
     if index >= self._joints_count or index < 0:
-      raise PlanningException("Joint index is out of range")
+      raise ArmPlanningError("Joint index is out of range")
 
   def _lookup_joint_index(self, joint_name):
     if joint_name not in self._group.get_joints():
-      raise PlanningException(f"Joint {joint_name} is unknown to the "
-                              f"{self._group.get_name()} move group.")
+      raise ArmPlanningError(f"Joint {joint_name} is unknown to the "
+                          f"{self._group.get_name()} move group.")
     else:
       return self._group.get_joints().index(joint_name)
 
@@ -59,8 +57,8 @@ class TrajectorySequence:
     result = self._compute_fk_srv(create_header('base_link'),# rospy.Time.now()),
                                   [self._ee], robot_state)
     if result.error_code.val != MoveItErrorCodes.SUCCESS:
-      raise PlanningException(f"{self.SRV_COMPUTE_FK} service returned "
-                              f"error code {result.error_code}")
+      raise ArmPlanningError(f"{self.SRV_COMPUTE_FK} service returned "
+                          f"error code {result.error_code}")
     return result.pose_stamped[0].pose
 
   def _get_final_joint_positions_of(self, trajectory):
@@ -89,12 +87,8 @@ class TrajectorySequence:
     trajectory is provided, the plan is constructed from
     """
     success, trajectory, planning_time, error_code = self._group.plan()
-    print("success = ", success)
-    # print("trajectory = ", trajectory)
-    print("planning_time = ", planning_time)
-    print("error_code = ", error_code)
     if not success:
-      raise PlanningException(
+      raise ArmPlanningError(
         f"MoveIt planning failed with error code: {error_code}")
     self._append_trajectory(trajectory, planning_time)
 
@@ -103,7 +97,7 @@ class TrajectorySequence:
     joint_positions -- list of arm joint positions in radians
     """
     if len(joint_positions) != self._joints_count:
-      raise PlanningException("Incorrect number of joints for arm move group")
+      raise ArmPlanningError("Incorrect number of joints for arm move group")
     self._group.set_start_state(self._most_recent_state)
     self._group.set_joint_value_target(joint_positions)
     self._plan()
@@ -113,7 +107,7 @@ class TrajectorySequence:
     joint_translations -- list of joint displacements in radians
     """
     if len(joint_translations) != self._joints_count:
-      raise PlanningException("Incorrect number of joints for arm move group")
+      raise ArmPlanningError("Incorrect number of joints for arm move group")
     current = self._most_recent_joint_positions
     final = [x + y for x, y in zip(current, joint_translations)]
     self._plan_to_joint_positions(final)
@@ -125,7 +119,7 @@ class TrajectorySequence:
     position   -- absolute frame position coordinate will be moved to
     """
     if coordinate not in ['x', 'y', 'z']:
-      raise PlanningException(f"Unrecognized Cartesian coordinate {coordinate}")
+      raise ArmPlanningError(f"Unrecognized Cartesian coordinate {coordinate}")
     pose = self._compute_forward_kinematics(self._most_recent_state)
     setattr(pose.position, coordinate, position)
     self.plan_to_pose(pose)
@@ -183,7 +177,7 @@ class TrajectorySequence:
     )
     planning_time = time.time() - start
     if fraction != 1.0:
-      raise PlanningException("Linear path planning failed")
+      raise ArmPlanningError("Linear path planning failed")
     self._append_trajectory(trajectory, planning_time)
 
   def plan_linear_translation(self, translation):
@@ -261,7 +255,7 @@ class TrajectorySequence:
     """
     BETWEEN_TRAJECTORY_PAUSE = rospy.Duration(0.1)
     if len(self._sequence) == 0:
-      raise PlanningException("Sequence contains no trajectories")
+      raise ArmPlanningError("Sequence contains no trajectories")
     if len(self._sequence) == 1:
       return self._sequence[0]
     rospy.logdebug("Total time for planning the sequence was "

@@ -20,10 +20,12 @@ from tf2_geometry_msgs import do_transform_pose
 from ow_lander import constants
 from ow_lander import math3d
 from ow_lander.common import radians_equivalent, in_closed_range, create_header
+from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
+                                 AntennaPlanningError, AntennaExecutionError)
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.arm_interface import OWArmInterface
 from ow_lander.frame_transformer import FrameTransformer
-from ow_lander.trajectory_sequence import TrajectorySequence, PlanningException
+from ow_lander.trajectory_sequence import TrajectorySequence
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
@@ -51,10 +53,11 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
-      plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb = self.publish_feedback_cb)
-    except (RuntimeError, PlanningException) as err:
+      self._arm.execute_arm_trajectory(
+        self.plan_trajectory(goal),
+        action_feedback_cb = self.publish_feedback_cb
+      )
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
     else:
@@ -88,7 +91,7 @@ class GrinderTrajectoryMixin(ArmTrajectoryMixin):
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(plan)
-    except (RuntimeError, PlanningException) as err:
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._cleanup()
       self._set_aborted(str(err))
     else:
@@ -113,7 +116,7 @@ class FrameMixin:
     transform = FrameTransformer().lookup_transform(cls.COMPARISON_FRAME,
                                                     source_frame)
     if transform is None:
-      raise RuntimeError("Failed to acquire transform")
+      raise ArmPlanningError("Failed to acquire transform")
     return transform
 
   @classmethod
@@ -124,8 +127,8 @@ class FrameMixin:
   @classmethod
   def get_frame_id_from_index(cls, frame):
     if frame not in constants.FRAME_ID_MAP:
-      raise RuntimeError(f"Unrecognized frame index {frame}. "
-                         f"Options are {str(constants.FRAME_ID_MAP)}")
+      raise ArmPlanningError(f"Unrecognized frame index {frame}. "
+                             f"Options are {str(constants.FRAME_ID_MAP)}")
     # selecting relative is the same as selecting the Tool frame and vice versa
     return constants.FRAME_ID_MAP[frame]
 
@@ -141,12 +144,12 @@ class FrameMixin:
       INVALID_ERROR = "{meaning} is the zero-{geometry} and cannot represent " \
                       "a {represents}"
       if is_quaternion:
-        raise RuntimeError(
+        raise ArmPlanningError(
           INVALID_ERROR.format(
             meaning='Orientation', geometry='quaternion', represents='rotation')
         )
       else:
-        raise RuntimeError(
+        raise ArmPlanningError(
           INVALID_ERROR.format(
             meaning='Normal', geometry='vector', represents='direction')
         )
@@ -176,9 +179,10 @@ class FrameMixin:
       # treat as additive to the current pose
       current = self.get_end_effector_pose(frame_id)
       if current == None:
-        raise RuntimeError("Failed to query current end-effector position in "
-                           f"the {frame_id} frame. Cannot perform relative "
-                           "motion.")
+        raise ArmPlanningError(
+          f"Failed to query current end-effector position in the {frame_id} "
+          "frame. Cannot perform relative motion."
+        )
       intended_position = math3d.add(current.pose.position, position)
     return PointStamped(header=create_header(frame_id),
                         point=intended_position)
@@ -192,8 +196,10 @@ class FrameMixin:
       # treat as additive to the current pose
       current = self.get_end_effector_pose(frame_id)
       if current == None:
-        raise RuntimeError("Failed to query current end-effector pose in the"
-                           f"{frame_id} frame. Cannot perform relative motion.")
+        raise ArmPlanningError(
+          f"Failed to query current end-effector pose in the {frame_id} frame. "
+          "Cannot perform relative motion."
+        )
       intended_pose = Pose(
         math3d.add(current.pose.position, position),
         math3d.quaternion_multiply(current.pose.orientation, orientation)
@@ -205,7 +211,7 @@ class FrameMixin:
     planning_frame = self._arm.move_group_scoop.get_pose_reference_frame()
     point = FrameTransformer().transform(intended_geometry, planning_frame)
     if point is None:
-      raise PlanningException(
+      raise ArmPlanningError(
         f"Failed to transform requested {type(intended_geometry)} from "
         f"{intended_geometry.frame_id} to the {planning_frame} frame"
       )
@@ -270,11 +276,12 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
     try:
       self._arm.checkout_arm(self.name)
       new_positions = self.modify_joint_positions(goal)
-      plan = self._planner.plan_arm_to_joint_angles(new_positions)
-      self._arm.execute_arm_trajectory(plan,
+      sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+      sequence.plan_to_joint_positions(new_positions)
+      self._arm.execute_arm_trajectory(sequence.merge(),
         action_feedback_cb=self.publish_feedback_cb)
-    except (RuntimeError, moveit_commander.exception.MoveItCommanderException) \
-        as err:
+    except (ArmPlanningError,
+            moveit_commander.exception.MoveItCommanderException) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions())
@@ -320,9 +327,11 @@ class PanTiltMoveMixin:
 
   def move_pan_and_tilt(self, pan, tilt):
     if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested pan {pan} is not within allowed limits.")
     if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
     self._pan_pub.publish(pan)
@@ -355,7 +364,8 @@ class PanTiltMoveMixin:
           radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for pan/tilt values to reach goal.")
 
   # NOTE: the following move_pan and move_tilt functions have been
   # dumbly factored out of the previous function.  The FIXME comments
@@ -364,7 +374,8 @@ class PanTiltMoveMixin:
 
   def move_pan(self, pan):
     if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested pan {pan} is not within allowed limits.")
 
     # publish requested values to start pan trajectory
     self._pan_pub.publish(pan)
@@ -381,11 +392,13 @@ class PanTiltMoveMixin:
       if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for pan value to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for pan value to reach goal.")
 
   def move_tilt(self, tilt):
     if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start tilt trajectory
     self._tilt_pub.publish(tilt)
@@ -402,7 +415,8 @@ class PanTiltMoveMixin:
       if radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for tilt value to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for tilt value to reach goal.")
 
   def publish_feedback_cb(self):
     """overrideable"""

@@ -10,10 +10,11 @@ import rospy
 import owl_msgs.msg
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import Point
-from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
+from urdf_parser_py.urdf import URDF
 
 import ow_lander.msg
 from ow_lander import mixins
@@ -21,9 +22,11 @@ from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians
+from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
+                                 AntennaPlanningError, AntennaExecutionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
-from ow_lander.trajectory_sequence import TrajectorySequence, PlanningException
+from ow_lander.trajectory_sequence import TrajectorySequence
 
 # This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
 NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
@@ -48,16 +51,27 @@ def _format_guarded_move_success_message(action_name, monitor):
     return f"{action_name} trajectory completed without breaching force or " \
            f"torque thresholds"
 
+def _assert_shou_yaw_in_range(shou_yaw_position):
+    """Check if shoulder yaw is within allowable
+    shou_yaw_position -- shoulder yaw joint position in radians
+    """
+    # If shoulder yaw goal angle is out of joint range, abort
+    upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
+    lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
+    if shou_yaw_position <= lower or shou_yaw_position >= upper:
+      raise ArmPlanningError("Shoulder yaw is outside of allowable range")
+
 def _compute_workspace_shoulder_yaw(x, y):
     """Compute shoulder yaw angle to trench
     x -- base_link x position
     y -- base_link y position
     """
-    alpha = math.atan2(y - constants.Y_SHOU, x - constants.X_SHOU)
+    yaw = math.atan2(y - constants.Y_SHOU, x - constants.X_SHOU)
     h = math.sqrt(pow(y - constants.Y_SHOU, 2) + pow(x - constants.X_SHOU, 2))
     l = constants.Y_SHOU - constants.HAND_Y_OFFSET
-    beta = math.asin(l / h)
-    return alpha + beta
+    yaw += math.asin(l / h)
+    _assert_shou_yaw_in_range(yaw)
+    return yaw
 
 #####################
 ## ARM ACTIONS
@@ -155,7 +169,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       trajectory = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except (RuntimeError, PlanningException) as err:
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err), final=Point())
     else:
@@ -447,10 +461,10 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       dumped_quat = math3d.quaternion_from_euler(*dumped_euler)
       sequence.plan_to_orientation(dumped_quat)
       return sequence.merge()
-    except PlanningException as err:
+    except ArmPlanningError as err:
       raise err
     finally:
-      # TrajectorySequence calls may throw PlanningException, which is handled
+      # TrajectorySequence calls may throw ArmPlanningError, which is handled
       # by ArmTrajectoryMixin, but they must be caught and passed on here so the
       # planner ID may be set back to RRTConnect before this method ends
       self._arm.move_group_scoop.set_planner_id("RRTConnect")
@@ -473,10 +487,10 @@ class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
       sequence.plan_to_target("arm_deliver_staging_2")
       sequence.plan_to_target("arm_deliver_final")
       return sequence.merge()
-    except PlanningException as err:
+    except ArmPlanningError as err:
       raise err
     finally:
-      # TrajectorySequence calls may throw PlanningException, which is handled
+      # TrajectorySequence calls may throw ArmPlanningError, which is handled
       # by ArmTrajectoryMixin, but they must be caught and passed on here so the
       # planner ID may be set back to RRTConnect before this method ends
       self._arm.move_group_scoop.set_planner_id("RRTConnect")
@@ -500,7 +514,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err))
       return
     try:
@@ -510,7 +524,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except (RuntimeError, PlanningException) as err:
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
@@ -541,7 +555,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err))
       return
     # monitor F/T sensor and define a callback to check its status
@@ -562,7 +576,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except (RuntimeError, PlanningException) as err:
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
@@ -618,7 +632,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       )
       # normal is always considered in base_link regardless of frame parameter
       normal = self.validate_normalization(goal.normal)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err))
       return
     # orient scoop so that the bottom points opposite to the normal
@@ -652,7 +666,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except (RuntimeError, PlanningException) as err:
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -688,7 +702,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_approach,
         action_feedback_cb=guarded_cb)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -731,7 +745,7 @@ class ArmMoveJointServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
     if goal.joint < 0 or goal.joint >= len(pos):
-      raise RuntimeError("Provided joint index is not within range")
+      raise ArmExecutionError("Provided joint index is not within range")
     if goal.relative:
       pos[goal.joint] += goal.angle
     else:
@@ -750,7 +764,7 @@ class ArmMoveJointsServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
     if len(goal.angles) != len(pos):
-      raise RuntimeError("Number of angle positions provided does not much " \
+      raise ArmExecutionError("Number of angle positions provided does not much " \
                          "the number of joints in the arm move group")
     for i in range(len(pos)):
       if goal.relative:
@@ -786,7 +800,7 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
       new_positions = self.modify_joint_positions(goal)
       plan = self._planner.plan_arm_to_joint_angles(new_positions)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions(),
@@ -1027,7 +1041,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err),
         pan_position=self._pan_pos, tilt_position=self._tilt_pos)
     else:
@@ -1053,7 +1067,7 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err), pan_position=self._pan_pos)
     else:
       if not_preempted:
@@ -1077,7 +1091,7 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err), tilt_position=self._tilt_pos)
     else:
       if not_preempted:
@@ -1103,7 +1117,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
                                                      'l_ant_panel')
     try:
       frame_id = mixins.FrameMixin.get_frame_id_from_index(goal.frame)
-    except RuntimeError as err:
+    except ArmExecutionError as err:
       self._set_aborted(str(err))
       return
     lookat = goal.point
@@ -1147,7 +1161,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     tilt = normalize_radians(tilt_raw)
     try:
       not_preempted = self.move_pan_and_tilt(pan, tilt)
-    except RuntimeError as err:
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       self._set_aborted(str(err))
     else:
       if not_preempted:

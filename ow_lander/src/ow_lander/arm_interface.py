@@ -11,27 +11,15 @@ import rospy
 import actionlib
 import moveit_commander
 import dynamic_reconfigure.client
-from actionlib_msgs.msg import GoalStatus
-from control_msgs.msg import FollowJointTrajectoryAction, \
-                             FollowJointTrajectoryGoal
-from controller_manager_msgs.srv import SwitchController
 from owl_msgs.msg import SystemFaultsStatus
-from urdf_parser_py.urdf import URDF
+from control_msgs.msg import (FollowJointTrajectoryAction,
+                              FollowJointTrajectoryGoal)
+from actionlib_msgs.msg import GoalStatus
+from controller_manager_msgs.srv import SwitchController
 
 from ow_lander.common import Singleton
+from ow_lander.exception import ArmExecutionError
 from ow_lander.frame_transformer import FrameTransformer
-
-def _in_shou_yaw_range(shou_yaw_position):
-    """Check if shoulder yaw is within allowable
-    shou_yaw_position -- shoulder yaw joint position in radians
-    """
-    # If shoulder yaw goal angle is out of joint range, abort
-    upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
-    lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-    if shou_yaw_position <= lower or shou_yaw_position >= upper:
-        return False
-    else:
-        return True
 
 class OWArmInterface(metaclass = Singleton):
   """Implements an ownership layer and stop method over trajectory execution.
@@ -51,7 +39,7 @@ class OWArmInterface(metaclass = Singleton):
   @classmethod
   def checkout_arm(cls, owner):
     if cls._in_use_by is not None:
-      raise RuntimeError(
+      raise ArmExecutionError(
         f"Arm is already checked out by the {cls._in_use_by} action server")
     cls._in_use_by = owner
 
@@ -71,7 +59,7 @@ class OWArmInterface(metaclass = Singleton):
   @classmethod
   def _assert_arm_is_checked_out(cls):
     if cls._in_use_by is None:
-      raise RuntimeError("Arm action did not check-out the arm before " \
+      raise ArmExecutionError("Arm action did not check-out the arm before " \
                          "attempting to execute a trajectory.")
 
   def __init__(self):
@@ -101,7 +89,7 @@ class OWArmInterface(metaclass = Singleton):
       return
     if not self.__executor.switch_controllers('grinder_controller',
                                              'arm_controller'):
-      raise RuntimeError("Failed to switch to grinder_controller")
+      raise ArmExecutionError("Failed to switch to grinder_controller")
 
   def switch_to_arm_controller(self):
     OWArmInterface._assert_arm_is_checked_out()
@@ -109,7 +97,7 @@ class OWArmInterface(metaclass = Singleton):
       return
     if not self.__executor.switch_controllers('arm_controller',
                                              'grinder_controller'):
-      raise RuntimeError("Failed to switch to arm_controller")
+      raise ArmExecutionError("Failed to switch to arm_controller")
 
   def execute_arm_trajectory(self, plan, action_feedback_cb=None):
     """Executes the provided plan and awaits its completions
@@ -127,13 +115,13 @@ class OWArmInterface(metaclass = Singleton):
     if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
       # other planning functions may simply return an empty plan
-      raise RuntimeError("Trajectory planning failed")
+      raise ArmExecutionError("Trajectory planning failed")
 
     # check if fault occurred during planning phase
     self._stop_arm_if_fault()
 
     if OWArmInterface._stopped:
-      raise RuntimeError("Stop was called; trajectory will not be executed")
+      raise ArmExecutionError("Stop was called; trajectory will not be executed")
 
     self.__executor.execute(plan.joint_trajectory,
       feedback_cb=self._stop_arm_if_fault)
@@ -148,7 +136,7 @@ class OWArmInterface(metaclass = Singleton):
           or self.__executor.is_active():
       if OWArmInterface._stopped:
         self.__executor.cease_execution()
-        raise RuntimeError("Stop was called; trajectory execution ceased")
+        raise ArmExecutionError("Stop was called; trajectory execution ceased")
       if action_feedback_cb is not None:
         action_feedback_cb()
       rate.sleep()
