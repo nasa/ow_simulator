@@ -130,7 +130,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
     l = constants.Y_SHOU - constants.HAND_Y_OFFSET
     beta = math.asin(l/h)
     # align scoop above target point
-    sequence.plan_to_joint_positions(
+    sequence.plan_to_named_joint_positions(
       j_shou_yaw = alpha + beta,
       j_shou_pitch = math.pi / 2,
       j_prox_pitch = -math.pi / 2,
@@ -273,7 +273,7 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     # grind sideways
     if parallel:
       # NOTE: small angle approximation?
-      sequence.plan_to_joint_translations(j_shou_yaw = 0.08)
+      sequence.plan_to_named_joint_translations(j_shou_yaw = 0.08)
     else:
       sequence.plan_to_translation(math3d.scalar_multiply(0.08,
           Vector3(math.cos(yaw), math.sin(yaw), 0)))
@@ -311,7 +311,7 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     sequence = TrajectorySequence(
       self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
     # place end-effector above trench position
-    sequence.plan_to_joint_positions(
+    sequence.plan_to_named_joint_positions(
       j_shou_yaw = _compute_workspace_shoulder_yaw(
         trench_bottom.x, trench_bottom.y),
       j_shou_pitch = math.pi / 2,
@@ -322,24 +322,24 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     )
     if goal.parallel:
       # rotate hand so scoop bottom points down
-      sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
+      sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
       # rotate scoop to face radially out from lander
-      sequence.plan_to_joint_positions(j_scoop_yaw = math.pi/2)
+      sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi/2)
       # pitch scoop back with the distal pitch so its blade faces terrain
-      sequence.plan_to_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
+      sequence.plan_to_named_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
       # Once aligned to trench goal, place hand above trench middle point
       sequence.plan_to_position(trench_bottom)
       # perform scoop by rotating distal pitch, and scoop through surface
-      sequence.plan_to_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
+      sequence.plan_to_named_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
     else:
       # lower to trench position, maintaining up-right orientation
       sequence.plan_to_position(trench_bottom)
       # rotate hand yaw so scoop tip points into surface
-      sequence.plan_to_joint_positions(j_hand_yaw = math.pi/2.2)
+      sequence.plan_to_named_joint_positions(j_hand_yaw = math.pi/2.2)
       # lower scoop back to down z-position with new hand yaw position set
       sequence.plan_to_z(trench_bottom.z)
       # perform scoop by rotating hand yaw, and scoop through surface
-      sequence.plan_to_joint_positions(j_hand_yaw = -0.29*math.pi)
+      sequence.plan_to_named_joint_positions(j_hand_yaw = -0.29*math.pi)
     return sequence.merge()
 
 class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
@@ -374,7 +374,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     sequence = TrajectorySequence(
       self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
     # place end-effector above trench position
-    sequence.plan_to_joint_positions(
+    sequence.plan_to_named_joint_positions(
       j_shou_yaw = _compute_workspace_shoulder_yaw(
         trench_surface.x, trench_surface.y),
       j_shou_pitch = math.pi / 2,
@@ -384,15 +384,15 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       j_scoop_yaw = 0.0
     )
     # rotate hand so scoop bottom points down
-    sequence.plan_to_joint_positions(j_hand_yaw = 0.0)
+    sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
     # rotate scoop to face radially out from lander
-    sequence.plan_to_joint_positions(j_scoop_yaw = math.pi / 2)
+    sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi / 2)
     # retract scoop back so its blades face terrain
-    sequence.plan_to_joint_positions(j_dist_pitch = -math.pi / 2)
+    sequence.plan_to_named_joint_positions(j_dist_pitch = -math.pi / 2)
     # place scoop at the trench side nearest to the lander
     sequence.plan_to_position(center)
     # TODO: what is this doing?
-    sequence.plan_to_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
+    sequence.plan_to_named_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
     # compute the far end of the trench
     far_trench_pose = sequence.get_final_pose()
     _, _, yaw = math3d.euler_from_quaternion(far_trench_pose.orientation)
@@ -401,7 +401,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     # move the scoop along a linear path to the end of the trench
     sequence.plan_linear_path_to_pose(far_trench_pose)
     # pitch scoop upward to maintain sample
-    sequence.plan_to_joint_positions(j_dist_pitch = math.pi / 2)
+    sequence.plan_to_named_joint_positions(j_dist_pitch = math.pi / 2)
     return sequence.merge()
 
 
@@ -764,8 +764,8 @@ class ArmMoveJointsServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
     if len(goal.angles) != len(pos):
-      raise ArmExecutionError("Number of angle positions provided does not much " \
-                         "the number of joints in the arm move group")
+      raise ArmExecutionError("Number of angle positions provided does not " \
+                              "much the number of joints in the arm move group")
     for i in range(len(pos)):
       if goal.relative:
         pos[i] += goal.angles[i]
@@ -798,9 +798,11 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
     try:
       self._arm.checkout_arm(self.name)
       new_positions = self.modify_joint_positions(goal)
-      plan = self._planner.plan_arm_to_joint_angles(new_positions)
-      self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except ArmExecutionError as err:
+      sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+      sequence.plan_to_joint_positions(new_positions)
+      self._arm.execute_arm_trajectory(sequence.merge(),
+        action_feedback_cb=guarded_cb)
+    except (ArmPlanningError, ArmExecutionError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions(),

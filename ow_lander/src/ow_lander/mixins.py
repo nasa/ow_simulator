@@ -99,6 +99,51 @@ class GrinderTrajectoryMixin(ArmTrajectoryMixin):
       self._set_succeeded(f"{self.name} trajectory succeeded")
 
 
+class ModifyJointValuesMixin(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
+
+  def angles_reached(self, target_angles):
+    actual = self._arm_joints_monitor.get_joint_positions()
+    return all(
+      [
+        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
+          for a, b in zip(actual, target_angles)
+      ]
+    )
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(
+      angles=self._arm_joints_monitor.get_joint_positions())
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      new_positions = self.modify_joint_positions(goal)
+      sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+      sequence.plan_to_joint_positions(new_positions)
+      self._arm.execute_arm_trajectory(sequence.merge(),
+        action_feedback_cb=self.publish_feedback_cb)
+    except (ArmPlanningError, ArmExecutionError) as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_angles=self._arm_joints_monitor.get_joint_positions())
+    else:
+      self._arm.checkin_arm(self.name)
+      if self.angles_reached(new_positions):
+        self._set_succeeded("Arm joints moved successfully",
+          final_angles=self._arm_joints_monitor.get_joint_positions())
+      else:
+        self._set_aborted("Arm joints failed to reach intended target angles",
+          final_angles=self._arm_joints_monitor.get_joint_positions())
+
+  @abstractmethod
+  def modify_joint_positions(self, goal):
+    pass
+
+
 class FrameMixin:
   """Can be inherited by an arm action that operates in different frames.
   THIS CLASS DOES NOT implement an arm interface
@@ -252,51 +297,6 @@ class FrameMixin:
     sequence.plan_to_pose(pose_t.pose)
     return sequence.merge()
 
-
-class ModifyJointValuesMixin(ArmActionMixin, ABC):
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
-
-  def angles_reached(self, target_angles):
-    actual = self._arm_joints_monitor.get_joint_positions()
-    return all(
-      [
-        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
-          for a, b in zip(actual, target_angles)
-      ]
-    )
-
-  def publish_feedback_cb(self):
-    self._publish_feedback(
-      angles=self._arm_joints_monitor.get_joint_positions())
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      new_positions = self.modify_joint_positions(goal)
-      sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
-      sequence.plan_to_joint_positions(new_positions)
-      self._arm.execute_arm_trajectory(sequence.merge(),
-        action_feedback_cb=self.publish_feedback_cb)
-    except (ArmPlanningError,
-            moveit_commander.exception.MoveItCommanderException) as err:
-      self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final_angles=self._arm_joints_monitor.get_joint_positions())
-    else:
-      self._arm.checkin_arm(self.name)
-      if self.angles_reached(new_positions):
-        self._set_succeeded("Arm joints moved successfully",
-          final_angles=self._arm_joints_monitor.get_joint_positions())
-      else:
-        self._set_aborted("Arm joints failed to reach intended target angles",
-          final_angles=self._arm_joints_monitor.get_joint_positions())
-
-  @abstractmethod
-  def modify_joint_positions(self, goal):
-    pass
 
 class PanTiltMoveMixin:
 

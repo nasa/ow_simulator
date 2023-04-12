@@ -92,26 +92,6 @@ class TrajectorySequence:
         f"MoveIt planning failed with error code: {error_code}")
     self._append_trajectory(trajectory, planning_time)
 
-  def _plan_to_joint_positions(self, joint_positions):
-    """Plan for all joints to move to new configuration
-    joint_positions -- list of arm joint positions in radians
-    """
-    if len(joint_positions) != self._joints_count:
-      raise ArmPlanningError("Incorrect number of joints for arm move group")
-    self._group.set_start_state(self._most_recent_state)
-    self._group.set_joint_value_target(joint_positions)
-    self._plan()
-
-  def _plan_to_joint_translations(self, joint_translations):
-    """Plan for all joints to change their positions by a list of translations
-    joint_translations -- list of joint displacements in radians
-    """
-    if len(joint_translations) != self._joints_count:
-      raise ArmPlanningError("Incorrect number of joints for arm move group")
-    current = self._most_recent_joint_positions
-    final = [x + y for x, y in zip(current, joint_translations)]
-    self._plan_to_joint_positions(final)
-
   def _plan_to_coordinate(self, coordinate, position):
     """Internal helper function so position of a coordinate can be set
     independent of other coordinates and orientation.
@@ -124,7 +104,27 @@ class TrajectorySequence:
     setattr(pose.position, coordinate, position)
     self.plan_to_pose(pose)
 
-  def plan_to_joint_positions(self, **kwargs):
+  def plan_to_joint_positions(self, joint_positions):
+    """Plan for all joints to move to new configuration
+    joint_positions -- list of arm joint positions in radians
+    """
+    if len(joint_positions) != self._joints_count:
+      raise ArmPlanningError("Incorrect number of joints for arm move group")
+    self._group.set_start_state(self._most_recent_state)
+    self._group.set_joint_value_target(joint_positions)
+    self._plan()
+
+  def plan_to_joint_translations(self, joint_translations):
+    """Plan for all joints to change their positions by a list of translations
+    joint_translations -- list of joint displacements in radians
+    """
+    if len(joint_translations) != self._joints_count:
+      raise ArmPlanningError("Incorrect number of joints for arm move group")
+    current = self._most_recent_joint_positions
+    final = [x + y for x, y in zip(current, joint_translations)]
+    self.plan_to_joint_positions(final)
+
+  def plan_to_named_joint_positions(self, **kwargs):
     """Plan for one or more joints to move to a new position. Any joint not
     listed in kwargs will not change from its most recent position.
     kwargs -- keywords are joint names and their values are the joint's desired
@@ -133,9 +133,9 @@ class TrajectorySequence:
     positions = self._most_recent_joint_positions
     for joint in kwargs:
       positions[self._lookup_joint_index(joint)] = kwargs[joint]
-    self._plan_to_joint_positions(positions)
+    self.plan_to_joint_positions(positions)
 
-  def plan_to_joint_translations(self, **kwargs):
+  def plan_to_named_joint_translations(self, **kwargs):
     """Plan for one or more joints to change their positions by some translation.
     Any joint not listed in kwargs will not translate from its most recent
     positions.
@@ -145,13 +145,13 @@ class TrajectorySequence:
     translations = [0.0] * self._joints_count
     for joint in kwargs:
         translations[self._lookup_joint_index(joint)] = kwargs[joint]
-    self._plan_to_joint_translations(translations)
+    self.plan_to_joint_translations(translations)
 
   def plan_to_target(self, target_name):
     """Plan to a named set of joint positions
     target_name -- named set of joint positions
     """
-    self._plan_to_joint_positions(
+    self.plan_to_joint_positions(
       self._group.get_named_target_values(target_name))
 
   def plan_to_pose(self, pose):
