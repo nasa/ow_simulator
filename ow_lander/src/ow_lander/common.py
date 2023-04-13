@@ -4,12 +4,13 @@
 
 """Defines functions required by multiple modules within the package"""
 
-from math import pi, tau, acos, sqrt
+from math import pi, tau
 from ow_lander import constants
 from std_msgs.msg import Header
 from rospy import Time
-# import roslib; roslib.load_manifest('urdfdom_py')
+
 from urdf_parser_py.urdf import URDF
+
 
 class Singleton(type):
   """When passed to the metaclass parameter in the class definition, the class
@@ -52,5 +53,5 @@ def in_closed_range(val, lo, hi):
   """
   return val >= lo and val <= hi
 
-def create_most_recent_header(frame_id):
-  return Header(0, Time(0), frame_id)
+def create_header(frame_id, timestamp=Time(0)):
+  return Header(0, timestamp, frame_id)

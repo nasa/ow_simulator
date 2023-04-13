@@ -85,6 +85,7 @@
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
       </plugin>
+      <plugin name="OWLightControlPlugin" filename="libOWLightControlPlugin.so" />
     </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain

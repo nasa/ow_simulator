@@ -18,8 +18,7 @@ from shape_msgs.msg import SolidPrimitive
 from moveit_msgs.srv import GetPositionFK
 
 from ow_lander import constants
-from ow_lander.common import (Singleton, is_shou_yaw_goal_in_range,
-                              create_most_recent_header)
+from ow_lander.common import Singleton, is_shou_yaw_goal_in_range, create_header
 from ow_lander.frame_transformer import FrameTransformer
 
 def _cascade_plans(plan1, plan2):
@@ -93,21 +92,27 @@ class ArmTrajectoryPlanner(metaclass = Singleton):
     def compute_forward_kinematics(self, fk_target_link, robot_state):
         # TODO: may raise ROSSerializationException
         goal_pose_stamped = self._compute_fk_srv(
-            create_most_recent_header('base_link'),
+            create_header('base_link', rospy.Time.now()),
             [fk_target_link],
             robot_state
         )
         return goal_pose_stamped.pose_stamped[0].pose
 
-    def get_end_effector_pose(self, end_effector, frame_id = None):
+    def get_end_effector_pose(self, end_effector, frame_id,
+                              timestamp=rospy.Time(0),
+                              timeout=rospy.Duration(0)):
+        """Look up the pose of an end-effector
+        end_effector -- Name of the end-effector link
+        frame_id     -- Frame ID in which to provide the result
+        timestamp    -- See method comments in frame_transformer.py for usage
+                        default: rospy.Time(0)
+        timeout      -- See method comments in frame_tansformer.py for usage
+                        default: rospy.Duration(0)
+        returns geometry_msgs.PoseStamped
+        """
         pose = self._move_arm.get_current_pose(end_effector)
-        if frame_id is None \
-                or frame_id == self._move_arm.get_pose_reference_frame():
-            return pose
-        else:
-            # ensures the most recent transform is used
-            pose.header.stamp = rospy.Time(0)
-            return FrameTransformer().transform(pose, frame_id)
+        pose.header.stamp = timestamp
+        return FrameTransformer().transform(pose, frame_id, timeout)
 
     def _set_joint_position_target(self, joint_positions):
         try:
