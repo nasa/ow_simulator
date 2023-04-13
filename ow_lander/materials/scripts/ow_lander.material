@@ -50,14 +50,14 @@ fragment_program ow_lander_frag glsl
     param_named irradianceMap                  int 3
 
     // lander lights
-    param_named spotlightIntensityScale[0]     float 1.0
-    param_named spotlightIntensityScale[1]     float 1.0
+    // Control status of lander lights (spotlights)
     param_named_auto vsLightPos                light_position_view_space_array 3
     param_named_auto vsLightDir                light_direction_view_space_array 3
+    // Color is misused to turn lights on and off
+    param_named_auto lightDiffuseColor         light_diffuse_colour_array 3
+    // Light intensity is baked into attenuation
+    param_named_auto lightAtten                light_attenuation_array 3
     param_named_auto spotlightParams           spotlight_params_array 3
-    // Assuming these spotlights are the same, these parameters can be reused for each.
-    param_named_auto spotlightColor0           light_diffuse_colour 1
-    param_named_auto spotlightAtten0           light_attenuation 1
     // spotlight texture
     param_named spotlightMap                   int 4
   }

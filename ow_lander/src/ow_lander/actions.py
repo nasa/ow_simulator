@@ -12,7 +12,6 @@ from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3, PoseStamped, Pose
-from irg_gazebo_plugins.msg import ShaderParamUpdate
 from ow_regolith.srv import RemoveRegolith
 from ow_regolith.msg import Contacts
 
@@ -589,12 +588,6 @@ class LightSetIntensityServer(ActionServerBase):
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__()
-    # set up interface for changing mast light brightness
-    self.light_pub = rospy.Publisher('/gazebo/global_shader_param',
-                                     ShaderParamUpdate,
-                                     queue_size=1)
-    self.light_msg = ShaderParamUpdate()
-    self.light_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
     self._start_server()
 
   def execute_action(self, goal):
@@ -606,14 +599,12 @@ class LightSetIntensityServer(ActionServerBase):
       return
     # check for correct names
     if name == 'left':
-      self.light_msg.paramName = 'spotlightIntensityScale[0]'
+      rospy.set_param('/OWLightControlPlugin/left_light', intensity)
     elif name == 'right':
-      self.light_msg.paramName = 'spotlightIntensityScale[1]'
+      rospy.set_param('/OWLightControlPlugin/right_light', intensity)
     else:
       self._set_aborted(f"\'{name}\' is not a light identifier.")
       return
-    self.light_msg.paramValue = str(goal.intensity)
-    self.light_pub.publish(self.light_msg)
     self._set_succeeded(f"{name} light intensity set successfully.")
 
 
