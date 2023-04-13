@@ -306,10 +306,10 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     trench_bottom = Point(
       trench_surface.x,
       trench_surface.y,
-      trench_surface.z - goal.depth + constants.R_PARALLEL_FALSE_A
+      trench_surface.z - goal.depth
     )
     sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop_tip')
     # place end-effector above trench position
     sequence.plan_to_named_joint_positions(
       j_shou_yaw = _compute_workspace_shoulder_yaw(
@@ -321,6 +321,8 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       j_scoop_yaw = 0.0
     )
     if goal.parallel:
+      # the radial distance between the wrist axis and the tip of the scoop
+      R_WRIST_AXIS_TO_SCOOP_TIP = 0.394
       # rotate hand so scoop bottom points down
       sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
       # rotate scoop to face radially out from lander
@@ -332,8 +334,10 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       # perform scoop by rotating distal pitch, and scoop through surface
       sequence.plan_to_named_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
     else:
+      # the radial distance between the hand yaw axis and the tip of the scoop
+      R_HAND_AXIS_TO_SCOOP_TIP = 0.230 # meters
       # lower to trench position, maintaining up-right orientation
-      sequence.plan_to_position(trench_bottom)
+      sequence.plan_to_position(trench_surface)
       # rotate hand yaw so scoop tip points into surface
       sequence.plan_to_named_joint_positions(j_hand_yaw = math.pi/2.2)
       # lower scoop back to down z-position with new hand yaw position set
