@@ -780,6 +780,27 @@
     </actuator>
   </transmission>
 
+  <!-- link that we can reference in Gazebo to get altitude of tip
+     of grinder above the terrain. Note that without an inertial
+     tag, the link will not show up in the SDF/Gazebo at all -->
+  <link name="l_grinder_tip">
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="l_grinder_tip_joint" type="fixed">
+    <origin xyz="-0.1550 -0.2684 0.0" rpy="1.5708 1.5708 -0.5236"/>
+
+    <!-- 1.5708 0 -0.5236 -->
+    <!-- fix to hand so it does not rotate with grinder -->
+    <parent link="l_hand"/>
+    <child link="l_grinder_tip"/>
+  </joint>
+  <gazebo reference="l_grinder_tip_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
   <link name="l_ant_foot">
     <inertial>
       <origin
