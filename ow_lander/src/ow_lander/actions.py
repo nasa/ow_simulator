@@ -336,12 +336,17 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     else:
       # the radial distance between the hand yaw axis and the tip of the scoop
       R_HAND_AXIS_TO_SCOOP_TIP = 0.230 # meters
+      SURFACE_APPROACH_DISTANCE = 0.02 # meters
       # lower to trench position, maintaining up-right orientation
-      sequence.plan_to_position(trench_surface)
+      sequence.plan_to_position(
+        math3d.add(trench_surface, Vector3(0, 0, SURFACE_APPROACH_DISTANCE))
+      )
       # rotate hand yaw so scoop tip points into surface
       sequence.plan_to_named_joint_positions(j_hand_yaw = math.pi/2.2)
       # lower scoop back to down z-position with new hand yaw position set
-      sequence.plan_to_z(trench_bottom.z)
+      sequence.plan_to_translation(
+        Vector3(0, 0, -goal.depth - SURFACE_APPROACH_DISTANCE)
+      )
       # perform scoop by rotating hand yaw, and scoop through surface
       sequence.plan_to_named_joint_positions(j_hand_yaw = -0.29*math.pi)
     return sequence.merge()
