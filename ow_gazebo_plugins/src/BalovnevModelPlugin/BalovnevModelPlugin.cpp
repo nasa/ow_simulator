@@ -120,7 +120,7 @@ void BalovnevModelPlugin::onUpdate()
   if (link_vel.Dot(SCOOP_FORWARD) < 0.0) {
     // reset force if pushback occurs
     resetForces();
-    m_link->ResetPhysicsStates();
+    m_link->SetLinearVel(ignition::math::Vector3d(0, 0, 0));
   }
   if (m_horizontal_force == 0.0 && m_vertical_force == 0.0)
     return; // no force to apply, early return
