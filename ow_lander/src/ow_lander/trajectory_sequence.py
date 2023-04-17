@@ -178,7 +178,7 @@ class TrajectorySequence:
     planning_time = time.time() - start
     if fraction != 1.0:
       raise ArmPlanningError("Linear path planning failed. Can only make it "
-                            f"{fraction * 100:.1}% of the way")
+                            f"{fraction * 100:.1f}% of the way")
     self._append_trajectory(trajectory, planning_time)
 
   def plan_linear_translation(self, translation):
