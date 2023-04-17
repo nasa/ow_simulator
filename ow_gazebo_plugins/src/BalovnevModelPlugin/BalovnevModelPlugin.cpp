@@ -117,8 +117,8 @@ void BalovnevModelPlugin::onUpdate()
   }
   // check for pushback
   auto link_vel = m_link->RelativeLinearVel();
-  double BACKWARD_MOTION_CHECK_TRHESHOLD = 0.001; // meters
-  if (link_vel.Length() > BACKWARD_MOTION_CHECK_TRHESHOLD
+  double BACKWARD_MOTION_CHECK_THRESHOLD = 0.001; // meters
+  if (link_vel.Length() > BACKWARD_MOTION_CHECK_THRESHOLD
       && link_vel.Dot(SCOOP_FORWARD) < 0.0) {
     // reset force if pushback occurs
     resetForces();
