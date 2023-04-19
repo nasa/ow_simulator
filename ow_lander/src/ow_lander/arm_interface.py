@@ -171,7 +171,7 @@ class ArmFaultMonitor(metaclass=Singleton):
         self._sub_system__faults = rospy.Subscriber(
             SYSTEM__FAULTS_TOPIC,
             SystemFaultsStatus,
-            self._system__faults_callback
+            self._system_faults_callback
         )
         self._arm_fault = False
 
@@ -193,7 +193,7 @@ class ArmFaultMonitor(metaclass=Singleton):
         self._continue_arm_in_fault = config[
             ArmFaultMonitor.CONTINUE_ARM_IN_FAULT_NAME]
 
-    def _system__faults_callback(self, data):
+    def _system_faults_callback(self, data):
         """If system fault occurs and it is an arm failure, mark flag true"""
         ARM_FAULT = 4
         self._arm_fault = data.value & ARM_FAULT == ARM_FAULT
