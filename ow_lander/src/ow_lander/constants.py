@@ -5,6 +5,12 @@
 """Define constants required by multiple modules within the package"""
 
 ## GLOBAL VARS ##
+
+# move group indices
+# NOTE: J_SHOU_YAW through J_HAND_YAW are shared by the arm and grinder move
+#       groups. J_SCOOP_YAW is exclusive to the arm move group, but happens to
+#       share the same index as J_GRINDER, which is exclusive to the grinder
+#       move group.
 J_SHOU_YAW = 0
 J_SHOU_PITCH = 1
 J_PROX_PITCH = 2
