@@ -9,16 +9,19 @@ ability to stop the arm mid-trajectory.
 
 import rospy
 import actionlib
+import moveit_commander
 import dynamic_reconfigure.client
-from actionlib_msgs.msg import GoalStatus
-from control_msgs.msg import FollowJointTrajectoryAction, \
-                             FollowJointTrajectoryGoal
-from controller_manager_msgs.srv import SwitchController
 from owl_msgs.msg import SystemFaultsStatus
+from control_msgs.msg import (FollowJointTrajectoryAction,
+                              FollowJointTrajectoryGoal)
+from actionlib_msgs.msg import GoalStatus
+from controller_manager_msgs.srv import SwitchController
 
 from ow_lander.common import Singleton
+from ow_lander.exception import ArmExecutionError
+from ow_lander.frame_transformer import FrameTransformer
 
-class ArmInterface:
+class OWArmInterface(metaclass = Singleton):
   """Implements an ownership layer and stop method over trajectory execution.
   Ownership is claimed/relinquished via the check out/in methods.
   """
@@ -36,7 +39,7 @@ class ArmInterface:
   @classmethod
   def checkout_arm(cls, owner):
     if cls._in_use_by is not None:
-      raise RuntimeError(
+      raise ArmExecutionError(
         f"Arm is already checked out by the {cls._in_use_by} action server")
     cls._in_use_by = owner
 
@@ -56,41 +59,45 @@ class ArmInterface:
   @classmethod
   def _assert_arm_is_checked_out(cls):
     if cls._in_use_by is None:
-      raise RuntimeError("Arm action did not check-out the arm before " \
+      raise ArmExecutionError("Arm action did not check-out the arm before " \
                          "attempting to execute a trajectory.")
 
   def __init__(self):
     # initialize/reference trajectory execution singleton
-    self._executor = ArmTrajectoryExecutor()
+    self.__executor = ArmTrajectoryExecutor()
     # initialize/reference fault monitor
-    self._faults = ArmFaultMonitor()
+    self.__faults = ArmFaultMonitor()
+    # basic MoveIt interface for arm planning
+    self.robot = moveit_commander.RobotCommander()
+    self.move_group_scoop = moveit_commander.MoveGroupCommander('arm')
+    self.move_group_grinder = moveit_commander.MoveGroupCommander('grinder')
 
   def _stop_arm_if_fault(self, _feedback=None):
     """Ticks the stop flag when arm should stop due to a fault."""
-    if not self._faults.should_arm_continue_in_fault() and \
-        self._faults.is_arm_faulted():
-      ArmInterface._stopped = True
+    if not self.__faults.should_arm_continue_in_fault() and \
+        self.__faults.is_arm_faulted():
+      OWArmInterface._stopped = True
 
   def stop_trajectory_silently(self):
     """Will bypass the stop flag and cease trajectory execution directly. This
     results in no exception being thrown."""
-    self._executor.cease_execution()
+    self.__executor.cease_execution()
 
   def switch_to_grinder_controller(self):
-    ArmInterface._assert_arm_is_checked_out()
-    if self._executor.get_active_controller() == 'grinder_controller':
+    OWArmInterface._assert_arm_is_checked_out()
+    if self.__executor.get_active_controller() == 'grinder_controller':
       return
-    if not self._executor.switch_controllers('grinder_controller',
+    if not self.__executor.switch_controllers('grinder_controller',
                                              'arm_controller'):
-      raise RuntimeError("Failed to switch to grinder_controller")
+      raise ArmExecutionError("Failed to switch to grinder_controller")
 
   def switch_to_arm_controller(self):
-    ArmInterface._assert_arm_is_checked_out()
-    if self._executor.get_active_controller() == 'arm_controller':
+    OWArmInterface._assert_arm_is_checked_out()
+    if self.__executor.get_active_controller() == 'arm_controller':
       return
-    if not self._executor.switch_controllers('arm_controller',
+    if not self.__executor.switch_controllers('arm_controller',
                                              'grinder_controller'):
-      raise RuntimeError("Failed to switch to arm_controller")
+      raise ArmExecutionError("Failed to switch to arm_controller")
 
   def execute_arm_trajectory(self, plan, action_feedback_cb=None):
     """Executes the provided plan and awaits its completions
@@ -103,20 +110,20 @@ class ArmInterface:
     returns True if plan was executed successfully and without preempt.
     """
 
-    ArmInterface._assert_arm_is_checked_out()
+    OWArmInterface._assert_arm_is_checked_out()
 
     if not plan or len(plan.joint_trajectory.points) == 0:
       # trajectory planner returns false when planning has failed
       # other planning functions may simply return an empty plan
-      raise RuntimeError("Trajectory planning failed")
+      raise ArmExecutionError("Trajectory planning failed")
 
     # check if fault occurred during planning phase
     self._stop_arm_if_fault()
 
-    if ArmInterface._stopped:
-      raise RuntimeError("Stop was called; trajectory will not be executed")
+    if OWArmInterface._stopped:
+      raise ArmExecutionError("Stop was called; trajectory will not be executed")
 
-    self._executor.execute(plan.joint_trajectory,
+    self.__executor.execute(plan.joint_trajectory,
       feedback_cb=self._stop_arm_if_fault)
 
     # publish feedback while waiting for trajectory execution completion
@@ -126,13 +133,28 @@ class ArmInterface:
               - plan.joint_trajectory.points[0].time_from_start
     start_time = rospy.get_time()
     while rospy.get_time() - start_time < timeout.to_sec() \
-          or self._executor.is_active():
-      if ArmInterface._stopped:
-        self._executor.cease_execution()
-        raise RuntimeError("Stop was called; trajectory execution ceased")
+          or self.__executor.is_active():
+      if OWArmInterface._stopped:
+        self.__executor.cease_execution()
+        raise ArmExecutionError("Stop was called; trajectory execution ceased")
       if action_feedback_cb is not None:
         action_feedback_cb()
       rate.sleep()
+
+  def get_end_effector_pose(self, end_effector, frame_id,
+                            timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
+    """Look up the pose of an end-effector in the currently active control group
+    end_effector -- Name of the end-effector link
+    frame_id     -- Frame ID in which to provide the result
+    timestamp    -- See method comments in frame_transformer.py for usage
+                    default: rospy.Time(0)
+    timeout      -- See method comments in frame_tansformer.py for usage
+                    default: rospy.Duration(0)
+    returns geometry_msgs.PoseStamped
+    """
+    pose = self._move_arm.get_current_pose(end_effector)
+    pose.header.stamp = timestamp
+    return FrameTransformer().transform(pose, frame_id, timeout)
 
 class ArmFaultMonitor(metaclass=Singleton):
     """Checks whether the arm has faulted."""
@@ -145,9 +167,9 @@ class ArmFaultMonitor(metaclass=Singleton):
         fault flag.
         May raise TimeoutError if a server connection fails.
         """
-        SYSTEM_FAULTS_TOPIC = "/system_faults_status"
-        self._sub_system_faults = rospy.Subscriber(
-            SYSTEM_FAULTS_TOPIC,
+        SYSTEM__FAULTS_TOPIC = "/system__faults_status"
+        self._sub_system__faults = rospy.Subscriber(
+            SYSTEM__FAULTS_TOPIC,
             SystemFaultsStatus,
             self._system_faults_callback
         )
@@ -155,10 +177,10 @@ class ArmFaultMonitor(metaclass=Singleton):
 
         DYNRECON_CLIENT_TIMEOUT = 30 # seconds
         DYNRECON_NAME = "faults"
-        self._faults_reconfigure_client = dynamic_reconfigure.client.Client(
+        self.__faults_reconfigure_client = dynamic_reconfigure.client.Client(
             DYNRECON_NAME, timeout=DYNRECON_CLIENT_TIMEOUT,
             config_callback=self._dynamic_reconfigure_callback)
-        config = self._faults_reconfigure_client.get_configuration(
+        config = self.__faults_reconfigure_client.get_configuration(
             DYNRECON_CLIENT_TIMEOUT)
         if not config:
             raise TimeoutError(

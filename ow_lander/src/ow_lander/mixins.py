@@ -9,21 +9,23 @@ define non-arm mixins.
 """
 
 import sys
-from abc import ABC, abstractmethod
 import rospy
 import moveit_commander
-from tf2_geometry_msgs import do_transform_pose
+from abc import ABC, abstractmethod
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Pose, PoseStamped, PointStamped
+from tf2_geometry_msgs import do_transform_pose
 
-from ow_lander.arm_interface import ArmInterface
-from ow_lander.trajectory_planner import ArmTrajectoryPlanner
-from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
-from ow_lander.common import radians_equivalent, in_closed_range, create_header
-from ow_lander import math3d
-from ow_lander.frame_transformer import FrameTransformer
 from ow_lander import constants
+from ow_lander import math3d
+from ow_lander.common import radians_equivalent, in_closed_range, create_header
+from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
+                                 AntennaPlanningError, AntennaExecutionError)
+from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
+from ow_lander.arm_interface import OWArmInterface
+from ow_lander.frame_transformer import FrameTransformer
+from ow_lander.trajectory_sequence import TrajectorySequence
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
@@ -36,20 +38,11 @@ class ArmActionMixin:
     super().__init__(*args, **kwargs)
     # initialize moveit interface for arm control
     moveit_commander.roscpp_initialize(sys.argv)
-    # initialize/reference trajectory planner singleton (for external use)
-    self._planner = ArmTrajectoryPlanner()
     # initialize/reference
-    self._arm = ArmInterface()
+    self._arm = OWArmInterface()
     # initialize interface for querying scoop tip position
     self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()
-
-  def publish_feedback_cb(self):
-    """Publishes the action's feedback. Most arm actions publish the scoop tip
-    position under the name "current" in their feedback, so that is what this
-    method does by default, but it can be overridden by the child class.
-    """
-    self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
 
 class ArmTrajectoryMixin(ArmActionMixin, ABC):
@@ -60,21 +53,33 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
   def execute_action(self, goal):
     try:
       self._arm.checkout_arm(self.name)
-      plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan)
-    except RuntimeError as err:
+      self._arm.execute_arm_trajectory(
+        self.plan_trajectory(goal),
+        action_feedback_cb = self.publish_feedback_cb
+      )
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
     else:
       self._arm.checkin_arm(self.name)
-      self._set_succeeded("Arm trajectory succeeded")
+      self._set_succeeded(f"{self.name} trajectory succeeded")
+
+  def publish_feedback_cb(self):
+    """Publishes the action's feedback. Can optionally be overridden by child
+    class to publish feedback.
+    """
+    pass
 
   @abstractmethod
   def plan_trajectory(self, goal):
+    """Compute the trajectory of the arm from the provided goal. This MUST be
+    overridden by the child class.
+    returns a RobotTrajectory
+    """
     pass
 
 
-class GrinderTrajectoryMixin(ArmActionMixin, ABC):
+class GrinderTrajectoryMixin(ArmTrajectoryMixin):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -88,25 +93,71 @@ class GrinderTrajectoryMixin(ArmActionMixin, ABC):
       self._arm.checkout_arm(self.name)
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.publish_feedback_cb)
-    except RuntimeError as err:
+      self._arm.execute_arm_trajectory(plan)
+    except (ArmExecutionError, ArmPlanningError) as err:
       self._cleanup()
-      self._set_aborted(str(err),
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_aborted(str(err))
     else:
       self._cleanup()
-      self._set_succeeded(f"{self.name} trajectory succeeded",
-        final=self._arm_tip_monitor.get_link_position())
+      self._set_succeeded(f"{self.name} trajectory succeeded")
+
+
+class ModifyJointValuesMixin(ArmActionMixin, ABC):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
+
+  def angles_reached(self, target_angles):
+    actual = self._arm_joints_monitor.get_joint_positions()
+    return all(
+      [
+        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
+          for a, b in zip(actual, target_angles)
+      ]
+    )
+
+  def publish_feedback_cb(self):
+    self._publish_feedback(
+      angles=self._arm_joints_monitor.get_joint_positions())
+
+  def execute_action(self, goal):
+    try:
+      self._arm.checkout_arm(self.name)
+      new_positions = self.modify_joint_positions(goal)
+      sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
+      sequence.plan_to_joint_positions(new_positions)
+      self._arm.execute_arm_trajectory(sequence.merge(),
+        action_feedback_cb=self.publish_feedback_cb)
+    except (ArmPlanningError, ArmExecutionError) as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_angles=self._arm_joints_monitor.get_joint_positions())
+    else:
+      self._arm.checkin_arm(self.name)
+      if self.angles_reached(new_positions):
+        self._set_succeeded("Arm joints moved successfully",
+          final_angles=self._arm_joints_monitor.get_joint_positions())
+      else:
+        self._set_aborted("Arm joints failed to reach intended target angles",
+          final_angles=self._arm_joints_monitor.get_joint_positions())
 
   @abstractmethod
-  def plan_trajectory(self, goal):
+  def modify_joint_positions(self, goal):
+    """Compute new joint positions based on the provided goal.
+    returns a complete ordered list of joint positions
+    """
     pass
 
 
 class FrameMixin:
   """Can be inherited by an arm action that operates in different frames.
-  DOES NOT implement an arm interface, and so must be inherited along with ArmActionMixin or one of its children.
+  THIS CLASS DOES NOT implement an arm interface
+    This must be inherited along with ArmActionMixin or one of its children. FrameMixin should come before ArmActionMixin in the inheritance order.
+  THIS CLASS DOES NOT support the grinder move group
+    All transforms, trajectory planning, and pose queries are done using only
+    the 'arm' move group, and there is no way to select the 'grinder' move
+    group while using this class' methods.
   """
 
   COMPARISON_FRAME = 'world'
@@ -116,7 +167,7 @@ class FrameMixin:
     transform = FrameTransformer().lookup_transform(cls.COMPARISON_FRAME,
                                                     source_frame)
     if transform is None:
-      raise RuntimeError("Failed to acquire transform")
+      raise ArmPlanningError("Failed to acquire transform")
     return transform
 
   @classmethod
@@ -127,8 +178,8 @@ class FrameMixin:
   @classmethod
   def get_frame_id_from_index(cls, frame):
     if frame not in constants.FRAME_ID_MAP:
-      raise RuntimeError(f"Unrecognized frame index {frame}. "
-                         f"Options are {str(constants.FRAME_ID_MAP)}")
+      raise ArmPlanningError(f"Unrecognized frame index {frame}. "
+                             f"Options are {str(constants.FRAME_ID_MAP)}")
     # selecting relative is the same as selecting the Tool frame and vice versa
     return constants.FRAME_ID_MAP[frame]
 
@@ -144,12 +195,12 @@ class FrameMixin:
       INVALID_ERROR = "{meaning} is the zero-{geometry} and cannot represent " \
                       "a {represents}"
       if is_quaternion:
-        raise RuntimeError(
+        raise ArmPlanningError(
           INVALID_ERROR.format(
             meaning='Orientation', geometry='quaternion', represents='rotation')
         )
       else:
-        raise RuntimeError(
+        raise ArmPlanningError(
           INVALID_ERROR.format(
             meaning='Normal', geometry='vector', represents='direction')
         )
@@ -179,9 +230,10 @@ class FrameMixin:
       # treat as additive to the current pose
       current = self.get_end_effector_pose(frame_id)
       if current == None:
-        raise RuntimeError("Failed to query current end-effector position in "
-                           f"the {frame_id} frame. Cannot perform relative "
-                           "motion.")
+        raise ArmPlanningError(
+          f"Failed to query current end-effector position in the {frame_id} "
+          "frame. Cannot perform relative motion."
+        )
       intended_position = math3d.add(current.pose.position, position)
     return PointStamped(header=create_header(frame_id),
                         point=intended_position)
@@ -195,14 +247,26 @@ class FrameMixin:
       # treat as additive to the current pose
       current = self.get_end_effector_pose(frame_id)
       if current == None:
-        raise RuntimeError("Failed to query current end-effector pose in the"
-                           f"{frame_id} frame. Cannot perform relative motion.")
+        raise ArmPlanningError(
+          f"Failed to query current end-effector pose in the {frame_id} frame. "
+          "Cannot perform relative motion."
+        )
       intended_pose = Pose(
         math3d.add(current.pose.position, position),
         math3d.quaternion_multiply(current.pose.orientation, orientation)
       )
     return PoseStamped(header=create_header(frame_id),
                        pose=intended_pose)
+
+  def transform_to_planning_frame(self, intended_geometry):
+    planning_frame = self._arm.move_group_scoop.get_pose_reference_frame()
+    point = FrameTransformer().transform(intended_geometry, planning_frame)
+    if point is None:
+      raise ArmPlanningError(
+        f"Failed to transform requested {type(intended_geometry)} from "
+        f"{intended_geometry.frame_id} to the {planning_frame} frame"
+      )
+    return point
 
   def verify_pose_reached(self, intended_pose, transform):
     expected = do_transform_pose(intended_pose, transform)
@@ -223,56 +287,22 @@ class FrameMixin:
                     default: rospy.Duration(0)
     returns geometry_msgs.PoseStamped
     """
-    return self._planner.get_end_effector_pose(self._end_effector, frame_id,
-                                               timestamp, timeout)
+    pose = self._arm.move_group_scoop.get_current_pose(self._end_effector)
+    pose.header.stamp = timestamp
+    return FrameTransformer().transform(pose, frame_id, timeout)
 
   def plan_end_effector_to_pose(self, pose):
-    return self._planner.plan_arm_to_pose(pose, self._end_effector)
+    """Plan a trajectory from arm's current pose to a new pose
+    pose         -- Stamped pose plan will place end-effector at
+    end_effector -- Name of end_effector
+    """
+    pose_t = self.transform_to_planning_frame(pose)
+    # plan trajectory to pose in the arm's pose frame
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_scoop, self._end_effector)
+    sequence.plan_to_pose(pose_t.pose)
+    return sequence.merge()
 
-
-class ModifyJointValuesMixin(ArmActionMixin, ABC):
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self._arm_joints_monitor = JointAnglesSubscriber(constants.ARM_JOINTS)
-
-  def angles_reached(self, target_angles):
-    actual = self._arm_joints_monitor.get_joint_positions()
-    return all(
-      [
-        radians_equivalent(a, b, constants.ARM_JOINT_TOLERANCE)
-          for a, b in zip(actual, target_angles)
-      ]
-    )
-
-  def publish_feedback_cb(self):
-    self._publish_feedback(
-      angles=self._arm_joints_monitor.get_joint_positions())
-
-  def execute_action(self, goal):
-    try:
-      self._arm.checkout_arm(self.name)
-      new_positions = self.modify_joint_positions(goal)
-      plan = self._planner.plan_arm_to_joint_angles(new_positions)
-      self._arm.execute_arm_trajectory(plan,
-        action_feedback_cb=self.publish_feedback_cb)
-    except (RuntimeError, moveit_commander.exception.MoveItCommanderException) \
-        as err:
-      self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final_angles=self._arm_joints_monitor.get_joint_positions())
-    else:
-      self._arm.checkin_arm(self.name)
-      if self.angles_reached(new_positions):
-        self._set_succeeded("Arm joints moved successfully",
-          final_angles=self._arm_joints_monitor.get_joint_positions())
-      else:
-        self._set_aborted("Arm joints failed to reach intended target angles",
-          final_angles=self._arm_joints_monitor.get_joint_positions())
-
-  @abstractmethod
-  def modify_joint_positions(self, goal):
-    pass
 
 class PanTiltMoveMixin:
 
@@ -303,9 +333,11 @@ class PanTiltMoveMixin:
 
   def move_pan_and_tilt(self, pan, tilt):
     if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested pan {pan} is not within allowed limits.")
     if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
     self._pan_pub.publish(pan)
@@ -338,7 +370,8 @@ class PanTiltMoveMixin:
           radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for pan/tilt values to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for pan/tilt values to reach goal.")
 
   # NOTE: the following move_pan and move_tilt functions have been
   # dumbly factored out of the previous function.  The FIXME comments
@@ -347,7 +380,8 @@ class PanTiltMoveMixin:
 
   def move_pan(self, pan):
     if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise RuntimeError(f"Requested pan {pan} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested pan {pan} is not within allowed limits.")
 
     # publish requested values to start pan trajectory
     self._pan_pub.publish(pan)
@@ -364,11 +398,13 @@ class PanTiltMoveMixin:
       if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for pan value to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for pan value to reach goal.")
 
   def move_tilt(self, tilt):
     if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise RuntimeError(f"Requested tilt {tilt} is not within allowed limits.")
+      raise AntennaPlanningError(
+        f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start tilt trajectory
     self._tilt_pub.publish(tilt)
@@ -385,7 +421,8 @@ class PanTiltMoveMixin:
       if radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
-    raise RuntimeError("Timed out waiting for tilt value to reach goal.")
+    raise AntennaExecutionError(
+      "Timed out waiting for tilt value to reach goal.")
 
   def publish_feedback_cb(self):
     """overrideable"""

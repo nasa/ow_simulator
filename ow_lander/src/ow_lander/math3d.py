@@ -4,6 +4,7 @@
 
 from math import sqrt, isclose, acos
 from geometry_msgs.msg import Quaternion, Vector3
+import tf.transformations
 
 def _types_match(a, b):
   return type(a) == type(b)
@@ -120,6 +121,24 @@ def orthogonal(v):
   else:
     basis = t(0, 1, 0) if y < z else t(0, 0, 1)
   return cross(normalized, basis)
+
+def quaternion_from_euler(x, y, z):
+  """A version of tf.transformation's quaternion_from_euler that returns a
+  geometry_msgs Quaternion
+  x -- Radian rotation around x
+  y -- Radian rotation around y
+  z -- Radian rotation around z
+  returns a geometry_msgs Quaternion
+  """
+  return Quaternion(*list(tf.transformations.quaternion_from_euler(x, y, z)))
+
+def euler_from_quaternion(q):
+  """A version of tf.transformation's euler_from_quaternion that accepts a
+  geometry_msgs Quaternion
+  q -- geometry_msgs Quaternion
+  returns a 3-tuple of Euler angles (x, y, z)
+  """
+  return tuple(tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w]))
 
 def quaternion_rotation_between(a, b):
   """Computes the quaternion rotation between the vectors a and b.
