@@ -89,24 +89,11 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- == launch the services servers ============== -->
-  <node pkg="ow_lander" name="path_planning_commander" type="path_planning_commander.py" output="screen"/>
-  <node pkg="ow_lander" name="lander_service_server" type="lander_service_server.py" output="screen"/>
-  
   <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />  
-  <node pkg="ow_lander" name="ArmActionServers" type="arm_action_servers.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-  <node pkg="ow_lander" name="AntennaPanTiltAction"
-    type="antenna_pan_tilt_action_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
-  <node pkg="ow_lander" name="DockIngestSampleAction"
-    type="dock_ingest_sample_action_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
-  <node pkg="ow_lander" name="LightSetIntensity"
-    type="light_set_intensity_action_server.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
-    output="screen"/>
+  <node pkg="ow_lander" name="lander_action_servers" type="lander_action_servers.py"
+    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " output="screen"/>
+
+  <!-- == launch the state repackaging node ============== -->
+  <node pkg="ow_lander" name="state_publisher" type="state_publisher.py" output="screen"/>
 </launch>

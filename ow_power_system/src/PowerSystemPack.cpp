@@ -282,9 +282,9 @@ bool PowerSystemPack::initTopics()
   // Construct the PowerSystemNode publishers
   m_mechanical_power_raw_pub = m_nh.advertise<std_msgs::Float64>("mechanical_power/raw", 1);
   m_mechanical_power_avg_pub = m_nh.advertise<std_msgs::Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<std_msgs::Int16>("power_system_node/remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<std_msgs::Float64>("power_system_node/battery_temperature", 1);
+  m_state_of_charge_pub = m_nh.advertise<owl_msgs::BatteryStateOfCharge>("/battery_state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise<owl_msgs::BatteryRemainingUsefulLife>("/battery_remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemPack::jointStatesCb, this);
   return true;
@@ -623,9 +623,9 @@ void PowerSystemPack::publishPredictions()
   int min_rul = -1;
   double min_soc = -1;
   double max_tmp = -1;
-  std_msgs::Int16 rul_msg;
-  std_msgs::Float64 soc_msg;
-  std_msgs::Float64 tmp_msg;
+  owl_msgs::BatteryRemainingUsefulLife rul_msg;
+  owl_msgs::BatteryStateOfCharge soc_msg;
+  owl_msgs::BatteryTemperature tmp_msg;
 
   for (int i = 0; i < NUM_NODES; i++)
   {
@@ -688,9 +688,16 @@ void PowerSystemPack::publishPredictions()
   }
 
   // Publish the values for other components.
-  rul_msg.data = min_rul;
-  soc_msg.data = min_soc;
-  tmp_msg.data = max_tmp;
+  rul_msg.value = min_rul;
+  soc_msg.value = min_soc;
+  tmp_msg.value = max_tmp;
+
+  // Apply the most recent timestamp to each message header.
+  // MAY NOT WORK PROPERLY, depending on how ros::Time::now() works.
+  auto timestamp = ros::Time::now();
+  rul_msg.header.stamp = timestamp;
+  soc_msg.header.stamp = timestamp;
+  tmp_msg.header.stamp = timestamp;
 
   m_state_of_charge_pub.publish(soc_msg);
   m_remaining_useful_life_pub.publish(rul_msg);

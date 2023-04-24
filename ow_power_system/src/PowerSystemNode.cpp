@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
-#include <std_msgs/Int16.h>
 #include <ow_lander/lander_joints.h>
 #include "PowerSystemNode.h"
 

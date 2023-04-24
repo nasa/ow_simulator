@@ -17,6 +17,9 @@
 #include <random>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
+#include <owl_msgs/BatteryRemainingUsefulLife.h>
+#include <owl_msgs/BatteryStateOfCharge.h>
+#include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
 
 class PowerSystemNode

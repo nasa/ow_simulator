@@ -5,42 +5,22 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   roslaunch
+  tf2_ros
   message_generation
   std_msgs
   geometry_msgs
   actionlib_msgs
+  sensor_msgs
 )
 
-add_service_files(
-  FILES
-  DeliverSample.srv
-  DigCircular.srv
-  DigLinear.srv
-  Grind.srv
-  GuardedMove.srv
-  Light.srv
-  PublishTrajectory.srv
-  Stop.srv
-  Stow.srv
-  Unstow.srv
-)
+catkin_python_setup()
 
 add_action_files(
   DIRECTORY action
-  FILES Unstow.action
-  FILES Stow.action
-  FILES Deliver.action
-  FILES DigLinear.action
-  FILES DigCircular.action
   FILES DockIngestSample.action
-  FILES Grind.action
   FILES GuardedMove.action
-  FILES AntennaPanTilt.action
-  FILES Discard.action
-  FILES Stop.action
-  FILES ArmMoveJoint.action
-  FILES ArmMoveJoints.action
-  FILES LightSetIntensity.action
+  FILES Pan.action
+  FILES Tilt.action
 )
 
 add_message_files(
@@ -57,7 +37,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs actionlib_msgs
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs actionlib_msgs sensor_msgs
 )
 
 catkin_add_env_hooks(

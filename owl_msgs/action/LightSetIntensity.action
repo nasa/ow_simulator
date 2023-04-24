@@ -1,0 +1,7 @@
+# goal definition
+string name        # "left" or "right" corresponding to the two mast lights
+float64 intensity  # in the range [0..1], 0 is off and 1 is max intensity
+---
+# result
+---
+# feedback

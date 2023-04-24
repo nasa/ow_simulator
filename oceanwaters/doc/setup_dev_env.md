@@ -25,7 +25,7 @@ required):
     -   The git version control system
 -   [ROS Noetic Ninjemys](http://wiki.ros.org/noetic) distribution, with:
     -   The Catkin build system
--   Gazebo 11.9+
+-   Gazebo 11.12+
 - PLEXIL plan language and executive (http://plexil.sourceforge.net).
 - Generic Software Architecture for Prognostics (GSAP) v2.0
 
@@ -45,27 +45,33 @@ In the following instructions, we assume the default command shell is Bash.
 
 The OceanWATERS distribution includes an autonomy module
 (`ow_autonomy`) that at present uses PLEXIL, an open-source plan
-authoring language and autonomy executive (see
-[*http://plexil.sourceforge.net](http://plexil.sourceforge.net)).
-PLEXIL must be installed and built *prior* to building the `ow_plexil`
-package.
+authoring language and autonomy executive developed largely by NASA.
+It is hosted at
+[*https://github.com/plexil-group/plexil](https://github.com/plexil-group/plexil).
 
-Note that both source code and binary distributions of PLEXIL are
-available at the Sourceforge link above. However, only the source code
-distribution should be used, because the binaries are out of date and
-will not be compatible with OceanWATERS.
+PLEXIL must be built from its source code *prior* to building the
+`ow_plexil` package.  This is a one-time step, that may need to be
+repeated only when there is an essential update to the PLEXIL software
+needed by OceanWATERS, which is infrequent.
 
-* Check out the `releases/plexil-4.6` branch of the source code:
+1. Check out the `releases/plexil-4.6` branch of the source code:
+
 ```
-git clone --branch releases/plexil-4.6 https://git.code.sf.net/p/plexil/git plexil
+git clone -b releases/plexil-4.6 https://github.com/plexil-group/plexil.git
 ```
 
-* Install any of the following build prerequisites needed. If you're
-not sure which, if any, are missing on your system, try the build as
-instructed below, and if there are errors that indicate missing
-software packages, install them and try again.  All packages needed
-can be installed with: `sudo apt install <package-name>`.  Here is one
-command to get them all:
+Note that at the time of this writing, the head of the branch above
+was used, which has a git commit hash beginning with `c1b8c10`.  This
+commit has also been tagged `OceanWATERS-v11.0`.  Newer versions of
+this branch should continue to work with OceanWATERS, but you can
+revert to this version if you run into problem.
+
+2. Install any of the following build prerequisites needed. If you're
+   not sure which, if any, are missing on your system, try the build
+   as instructed below, and if there are errors that indicate missing
+   software packages, install them and try again.  All packages needed
+   can be installed with: `sudo apt install <package-name>`.  Here is
+   one command to get them all:
 
 ```
 sudo apt install make \
@@ -81,81 +87,77 @@ sudo apt install make \
 Note that PLEXIL (specifically the plan compiler) requires the Java compiler and
 runtime environment, version 8 or newer.
 
-* Define the `PLEXIL_HOME` environment variable as the location of
-  your PLEXIL installation.  This is needed _prior_ to building
-  PLEXIL, and will be needed each time you run PLEXIL, with
-  OceanWATERS or otherwise.  Therefore we recommend placing the
-  following command (substituting the correct pathname) in your shell
-  initialization file, e.g. `~/.bashrc`.
+3. Define the `PLEXIL_HOME` environment variable as the location of
+   your PLEXIL installation.  This is needed _prior_ to building
+   PLEXIL, and will be needed each time you run PLEXIL, with
+   OceanWATERS or otherwise.  Therefore we recommend placing the
+   following command (substituting the correct pathname) in your shell
+   initialization file, e.g. `~/.bashrc`.
 
 ```
-export PLEXIL_HOME=/home/<username>/plexil
+export PLEXIL_HOME=/path/to/plexil
 ```
 
-* Source the PLEXIL initialization file.  This will also be needed
-  every time you run PLEXIL, so we recommend placing this in your
-  shell initialization file as well, below the previous command.
+4. Source the PLEXIL initialization file.  This will also be needed
+   every time you run PLEXIL, so we recommend placing this in your
+   shell initialization file as well, below the previous command.
 
 ```
 source $PLEXIL_HOME/scripts/plexil-setup.sh
 ```
 
-* Configure PLEXIL for the build.
-
-NOTE: OceanWATERS must be with a version of this branch tagged
-`OceanWATERS-v10.0`.  (Its git commit hash begins with `cde7d07`).
-Newer versions of this branch do not build at the time of this
-writing.  Soon, a new distribution of PLEXIL on GitHub will be made
-official.
+5. Configure PLEXIL for the build.
 
 ```
 cd $PLEXIL_HOME
-git checkout OceanWATERS-v10.0
+git submodule update --init --recursive
 make src/configure
 cd src
 ./configure CFLAGS="-g -O2" CXXFLAGS="-g -O2" --prefix=$PLEXIL_HOME --disable-static --disable-viewer --enable-ipc
 ```
 
-* Build PLEXIL.
+6. Build PLEXIL.
+
 ```
 cd $PLEXIL_HOME
 make universalExec plexil-compiler checkpoint
 ```
 
-* Note that this is a minimal build of PLEXIL including only what is needed by
-OceanWATERS.  Additional build information is available
-[here](http://plexil.sourceforge.net/wiki/index.php/Installation).
+Note that this is a minimal build of PLEXIL as needed by OceanWATERS.
+Additional build information is available at the PLEXIL website given
+above.
 
 
 ### GSAP
 
-The OceanWATERS distribution includes a power system module (`ow_power_system`)
-that at present depends on GSAP, an open-source battery prognostics
-executive. GSAP must be installed *prior* to building the `ow_power_system`
-package.
+The OceanWATERS distribution includes a power system module
+(`ow_power_system`) that uses GSAP, an open-source battery prognostics
+engine developed by NASA. GSAP must be installed *prior* to building
+the `ow_power_system` package.
 
-* Check out the source code:
+1. Check out a designated tag of the source code:
 ```
-git clone -b v1.0-OW https://github.com/nasa/GSAP.git gsap
-```
-
-This checks out the git _tag_ `v1.0-OW` of GSAP's `master` branch, which is a
-tested version of GSAP for use with OceanWATERS.  Note that checking out a
-specific tag leaves your local repository in a "detached HEAD" state; this is of
-no concern.
-
-* Define the `GSAP_HOME` environment variable as the location of your GSAP
-  installation, e.g.
-
-```
-export GSAP_HOME=/home/<username>/gsap
+git clone -b v1.0.3-OW https://github.com/nasa/GSAP.git gsap
 ```
 
-NOTE: for convenience, you may wish to add the previous command to your shell
-initialization file (e.g. `.profile` or `.bashrc`), since they are needed every
-time.
+This tagged version of GSAP's `master` branch is a tested version of
+GSAP for use with OceanWATERS -- newer versions of the branch are not
+guaranteed to work.  Note that checking out a specific tag leaves your
+local repository in a "detached HEAD" state; this is of no concern.
 
-* Build GSAP.
+2. Define the `GSAP_HOME` environment variable as the location of your GSAP
+   installation, subsrituting the correct pathname in the following example.
+
+```
+export GSAP_HOME=/path/to/gsap
+```
+
+NOTE: for convenience, you may wish to add this export to your shell
+initialization file (e.g. `.bashrc`), since it is needed every time
+OceanWATERS is used.
+
+3. Build GSAP.
+
 ```
 cd $GSAP_HOME
 mkdir build
@@ -166,11 +168,11 @@ make
 
 NOTE: Configuration files can be used to tune the prognostics algorithm and/or
 adjust the prognostics model used to perform calculations.  An example
-configuration file can be found at: ``` ow_power_system/config/example.cfg ```
+configuration file can be found at: `ow_power_system/config/example.cfg`.
 Additional information about mapping configuration files and modifying their
 contents can be found [here](https://github.com/nasa/GSAP/wiki/Getting-Started).
 
-* If you have problems, see additional build information
+If you have problems, see additional build information
 [here](https://github.com/nasa/GSAP/wiki).
 
 ### ROS
@@ -185,27 +187,31 @@ and instructions for installing ROS are available at
 [these instructions](http://wiki.ros.org/noetic/Installation/Ubuntu). Select the
 ros-noetic-desktop-full package when you get to that step.
 
-In the remainder of this document, we assume that ROS has been installed under `/opt/ros/noetic`.
+In the remainder of this document, we assume that ROS has been
+installed under `/opt/ros/noetic`.
 
 ### Gazebo
 
-* Install Gazebo 11.9+.
+* Install Gazebo 11.12+.
 
-  * First run `gazebo --version` and check the version that is currently installed,
-if you have 11.9 or higher installed then you may skip this Gazebo upgrade.
+  * First run `gazebo --version` and check the version that is
+    currently installed, if you have 11.12 or higher installed then
+    you may skip this Gazebo upgrade.
 
   * Add OSRF gazebo repositories to your linux enviroment:
+  
 ```
 sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 ```
 
   * Update and upgrade the packages (confirm the upgrade when you get prompted):
+  
 ```
 sudo apt-get update
 sudo apt-get upgrade
 ```
-  * Run `gazebo --version` and verify that you have a version of 11.9 or higher.
+  * Run `gazebo --version` and verify that you have a version of 11.12 or higher.
 
   * If you may be using Gazebo/OceanWATERS with a VPN (Virtual Private
     Network) running, it is highly recommended you add the following
@@ -216,7 +222,6 @@ sudo apt-get upgrade
 ```
 export IGN_IP=127.0.0.1
 ```
-
 
 
 ### Additional Packages

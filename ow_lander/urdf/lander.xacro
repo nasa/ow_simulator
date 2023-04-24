@@ -85,6 +85,7 @@
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
       </plugin>
+      <plugin name="OWLightControlPlugin" filename="libOWLightControlPlugin.so" />
     </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
@@ -410,7 +411,7 @@
   <gazebo>
     <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
       <jointName>j_dist_pitch</jointName>
-      <topicName>/_original/ft_sensor_dist_pitch</topicName>
+      <topicName>/_original/arm_end_effector_force_torque</topicName>
       <updateRate>200</updateRate>  <!-- Barret F/T sensor runs at 250 Hz and has max update rate of 2500 Hz
                                          However, the gazebo_ros_ft_sensor plugin is only able to run at a max of 200 -->
       <gaussianNoise>0.2</gaussianNoise> <!-- estimated based on a profile of the barret ft sensor -->
