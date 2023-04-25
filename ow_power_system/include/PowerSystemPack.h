@@ -38,25 +38,6 @@ using PrognoserVector = std::vector<PrognoserMap>;
 //       so it may not be addressable here.
 const int NUM_NODES = 8;
 
-// Change this value to modify the number of samples each node creates during the
-// Monte Carlo prediction process. Lower values mean faster performance, but lower
-// accuracy (needs testing for confirmation).
-// The default value is 100, but this is very slow and infeasible for the simulation.
-// My computer reached similar speeds to the original simple prognoser at a sample
-// value of 25, but this may vary from computer to computer, and it also varies
-// depending on the value of the RUL prediction. Higher RULs take significantly longer
-// to return. ~Liam
-const int NUM_SAMPLES = 100;
-
-// Change this value to modify the maximum RUL estimation output from the Monte
-// Carlo prediction process. Lower values mean faster performance in the event
-// a RUL prediction would exceed the horizon value, but it also means the prognoser
-// can't return RUL values higher than this.
-// The default value is 10000, but this is slow in situations where the prognoser
-// predicts a value that high (or higher than that). Testing and discussion
-// is needed to determine the ideal value for this.
-const int MAX_HORIZON_SECS = 10000;
-
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 const int CUSTOM_FILE_EXPECTED_COLS           = 4;
@@ -127,6 +108,27 @@ private:
   // update if such a function is added in the future.
   std::string m_print_debug_val = "false";
   bool m_print_debug = false;
+
+  // The maximum RUL estimation output from the Monte Carlo prediction process.
+  // Lower values mean faster performance in the event a RUL prediction would
+  // exceed the horizon value, but it also means the prognoser can't return RUL
+  // values higher than this.
+  // The current default value is 10000 (overridden by system.cfg's value), but 
+  // this is slow in situations where the prognoser predicts a value that high
+  // (or higher than that). Further testing and discussion is needed to 
+  // determine the ideal value for this.
+  int m_max_horizon_secs = 10000;
+  
+  // Change this value to modify the number of samples each node creates during the
+  // Monte Carlo prediction process. Lower values mean faster performance, but lower
+  // accuracy (needs testing for confirmation).
+  // The default value is 100 (overridden by system.cfg), but this is very slow 
+  // and infeasible for the simulation.
+  // My computer reached similar speeds to the original simple prognoser at a sample
+  // value of 25, but this may vary from computer to computer, and it also varies
+  // depending on the value of the RUL prediction. Higher RULs take significantly longer
+  // to return. ~Liam
+  int m_num_samples = 100;
 
   // Flag determining if the battery has reached a fail state.
   bool m_battery_failed = false;

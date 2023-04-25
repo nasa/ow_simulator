@@ -29,7 +29,7 @@ const auto START_TIME       = MessageClock::now();
  */
 void PowerSystemPack::InitAndRun()
 {
-  // Read system.cfg for the 'print_debug' flag.
+  // Read system.cfg for various parameters.
   auto system_config_path = ros::package::getPath("ow_power_system")
     + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
@@ -44,6 +44,9 @@ void PowerSystemPack::InitAndRun()
   {
     m_print_debug = false;
   }
+
+  m_max_horizon_secs = system_config.getInt32("max_horizon");
+  m_num_samples = system_config.getInt32("num_samples");
 
   if (!initNodes())
   {
@@ -93,8 +96,8 @@ void PowerSystemPack::InitAndRun()
   builder.setLoadEstimatorName("MovingAverage");
   // To modify the number of samples & horizon (and thus change performance), see the
   // constant declared in PowerSystemPack.h.
-  builder.setConfigParam("Predictor.SampleCount", std::to_string(NUM_SAMPLES));
-  builder.setConfigParam("Predictor.Horizon", std::to_string(MAX_HORIZON_SECS));
+  builder.setConfigParam("Predictor.SampleCount", std::to_string(m_num_samples));
+  builder.setConfigParam("Predictor.Horizon", std::to_string(m_max_horizon_secs));
 
   // Create the prognosers using the builder that will send predictions using
   // their corresponding message bus.
@@ -109,7 +112,7 @@ void PowerSystemPack::InitAndRun()
   // This rate object is used to sync the cycles up to the provided Hz.
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
   //       necessarily occur, but the simulation will be out of sync with real
-  //       time. Ideally, values like NUM_SAMPLES and MAX_HORIZON_SECS should be set
+  //       time. Ideally, values like num_samples and max_horizon_secs should be set
   //       such that the cycle time is under the provided rate (currently 0.5Hz).
   ros::Rate rate(m_gsap_rate_hz);
 
@@ -632,7 +635,7 @@ void PowerSystemPack::publishPredictions()
     // If RUL is infinity, set it to the maximum horizon value instead.
     if (isinf(m_EoD_events[i].remaining_useful_life))
     {
-      m_EoD_events[i].remaining_useful_life = MAX_HORIZON_SECS;
+      m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
     }
 
     // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
@@ -678,7 +681,7 @@ void PowerSystemPack::publishPredictions()
   }
 
   // /* DEBUG PRINT
-  // Note that the debug printouts do not cap at MAX_HORIZON_SECS, nor do they
+  // Note that the debug printouts do not cap at max_horizon_secs, nor do they
   // flatline at 0 when the battery fails.
   if (m_print_debug && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0)) || (m_nodes[0].model.timestamp >= 20)))
   {
