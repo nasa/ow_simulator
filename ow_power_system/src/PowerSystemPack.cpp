@@ -47,6 +47,7 @@ void PowerSystemPack::InitAndRun()
 
   m_max_horizon_secs = system_config.getInt32("max_horizon");
   m_num_samples = system_config.getInt32("num_samples");
+  m_profile_increment = system_config.getInt32("profile_increment");
 
   if (!initNodes())
   {
@@ -124,6 +125,7 @@ void PowerSystemPack::InitAndRun()
 
   // For debug prints.
   int saved_timestamp = -1;
+  auto timeStart = ros::Time::now();
 
   // Loop through the PowerSystemNodes to update their values and send them to the bus
   // to get predictions.
@@ -137,6 +139,8 @@ void PowerSystemPack::InitAndRun()
     // /* DEBUG PRINT
     if (m_print_debug)
     {
+      timeStart = ros::Time::now();
+
       saved_timestamp = m_nodes[0].model.timestamp;
       ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS:");
     }
@@ -227,6 +231,9 @@ void PowerSystemPack::InitAndRun()
     // /* DEBUG PRINT
     if (m_print_debug)
     {
+      // Print amount of time it took to get predictions.
+      auto timeDif = ros::Time::now() - timeStart;
+      ROS_INFO_STREAM("Real-time to get predictions: " << timeDif);
       ROS_INFO_STREAM("Timestamp " << saved_timestamp << " OUTPUTS:");
       for (int i = 0; i < NUM_NODES; i++)
       {
@@ -664,9 +671,11 @@ void PowerSystemPack::publishPredictions()
   // implemented yet.
   // For now, treat all fail states as permanent and flatline all future
   // publications.
-  // The timestamp stipulation is to prevent odd values on startup from triggering
-  // the fail state.
-  if ((min_rul < 0 || min_soc < 0) && (!m_battery_failed) && (m_nodes[0].model.timestamp >= 10))
+  // The timestamp stipulation is to prevent odd/invalid values during startup
+  // from triggering the fail state.
+  if ((min_rul < 0 || min_soc < 0)
+      && (!m_battery_failed)
+      && (m_nodes[0].model.timestamp >= (m_profile_increment * 3))
   {
     ROS_WARN_STREAM("The battery has reached a fail state. Flatlining "
                     << "all future published predictions");
