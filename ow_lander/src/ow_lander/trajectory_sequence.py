@@ -1,5 +1,11 @@
+# The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+# Research and Simulation can be found in README.md in the root directory of
+# this repository.
+
 import rospy
 import time
+import math
+from numpy import arange
 from moveit_msgs.srv import GetPositionFK
 from moveit_msgs.msg import RobotTrajectory, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -30,11 +36,18 @@ class TrajectorySequence:
     rospy.wait_for_service(self.SRV_COMPUTE_FK, SERVICE_TIMEOUT)
     self._compute_fk_srv = rospy.ServiceProxy(self.SRV_COMPUTE_FK,
                                               GetPositionFK)
+    if self._ee is not None:
+      self._old_ee = self._group.get_end_effector_link()
+      # compute_cartesian_path requires this is set to work properly
+      self._group.set_end_effector_link(self._ee)
 
   def __del__(self):
     # clean-up any target states left-over in move_group so they are not carried
     # over to unrelated planning
     self._group.clear_pose_targets()
+    # reset to previous end-effector
+    if self._ee is not None:
+      self._group.set_end_effector_link(self._old_ee)
 
   def _assert_end_effector_set(self):
     if self._ee is None:
@@ -177,8 +190,81 @@ class TrajectorySequence:
     )
     planning_time = time.time() - start
     if fraction != 1.0:
-      raise ArmPlanningError("Linear path planning failed. Can only make it "
+      raise ArmPlanningError("Linear path planning failed. Can only plan up to "
                             f"{fraction * 100:.1f}% of the way")
+    self._append_trajectory(trajectory, planning_time)
+
+  def plan_circular_path_to_pose(self, pose, center):
+    """Plan the end-effector along a circular path from its most recent pose in
+    the sequence to a new pose.
+    NOTE: If the most recent pose in the sequence and the intended pose do not
+    lie on the same circle centered at center, the path will not be circular,
+    but will be curved. It is up to the method caller to provide arguments that
+    define a circular path with the most recent pose.
+    pose   -- geometry_msgs Pose -- Pose that will be acquired at the end of
+              the circular path.
+    center -- geometry_msgs Point/Vector3 -- The center of the circle traced out
+              by the end-effector.
+    """
+    ARC_INCREMENT = 0.02 # meters
+    # track planning time
+    start_time = time.time()
+    current = self._compute_forward_kinematics(self._most_recent_state)
+    # compute pose positions relative to the circle's center (points of contact)
+    poc1 = math3d.subtract(current.position, center)
+    poc2 = math3d.subtract(pose.position, center)
+    if math3d.vectors_approx_equivalent(poc1, poc2, 0.0):
+      raise ArmPlanningError(
+        "Circular path planning failed. The intended end-effector position "
+        "may not be the same as the most recent position in the sequence."
+      )
+    r1 = math3d.norm(poc1)
+    r2 = math3d.norm(poc2)
+    if r1 == 0 or r2 == 0:
+      raise ArmPlanningError(
+        "Circular path planning failed. The position of the circle's center "
+        "may not be at the same location as the intended position or the most "
+        "recent end-effector position in the sequence."
+      )
+    # use the cosine identity of the dot product to find the arc length between
+    # the two points of contact
+    # NOTE: this allows for r1 =\= r2, but if this is the case the trajectory
+    # will not necessarily be circular
+    arc_length = r1 * math.acos(math3d.dot(poc1, poc2) / (r1 * r2))
+    # populate a list of poses along the circle between pose1 and pose2
+    poses = list()
+    for t in arange(0.0, 1.0,  ARC_INCREMENT / arc_length):
+      poc = math3d.slerp(poc1, poc2, t)
+      orientation = math3d.slerp_quaternion(
+        current.orientation, pose.orientation, t
+      )
+      poses.append(Pose(math3d.add(center, poc), orientation))
+    # the previous loop excludes the final pose, so add it now
+    poses.append(pose)
+    # plan path using the series of Cartesian poses
+    self._group.set_start_state(self._most_recent_state)
+    trajectory, fraction = self._group.compute_cartesian_path(
+      poses, ARC_INCREMENT / 2.0, 0
+    )
+    planning_time = time.time() - start_time
+    if len(trajectory.joint_trajectory.points) < 3:
+      raise ArmPlanningError(
+        "Circular path planning failed. Only two or fewer trajectory points "
+        "were generated. Either the commanded circle radius or arc length are "
+        "too small and will not produce a circular movement."
+      )
+    if fraction != 1.0:
+      raise ArmPlanningError(
+        "Circular path planning failed. Can only plan up to "
+        f"{fraction * 100:.1f}% of the way"
+      )
+    # NOTE: There appears to be a bug with compute_cartesian_path that causes
+    #       it to sometimes return a trajectory with the first 2 points
+    #       overlapping at time zero. This check works around the bug.
+    if trajectory.joint_trajectory.points[0].time_from_start == \
+          trajectory.joint_trajectory.points[1].time_from_start:
+      trajectory.joint_trajectory.points \
+        = trajectory.joint_trajectory.points[1:]
     self._append_trajectory(trajectory, planning_time)
 
   def plan_linear_translation(self, translation):
