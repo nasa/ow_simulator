@@ -228,12 +228,14 @@ class TrajectorySequence:
       )
     # use the cosine identity of the dot product to find the arc length between
     # the two points of contact
-    # NOTE: this allows for r1 =\= r2, but if this is the case the trajectory
+    # NOTE: this allows for r1 =/= r2, but if this is the case the trajectory
     # will not necessarily be circular
     arc_length = r1 * math.acos(math3d.dot(poc1, poc2) / (r1 * r2))
     # populate a list of poses along the circle between pose1 and pose2
     poses = list()
-    for t in arange(0.0, 1.0,  ARC_INCREMENT / arc_length):
+    t_step = ARC_INCREMENT / arc_length
+    # start at t_step so the starting pose is not included in the resulting list
+    for t in arange(t_step, 1.0, t_step):
       poc = math3d.slerp(poc1, poc2, t)
       orientation = math3d.slerp_quaternion(
         current.orientation, pose.orientation, t
@@ -258,13 +260,6 @@ class TrajectorySequence:
         "Circular path planning failed. Can only plan up to "
         f"{fraction * 100:.1f}% of the way"
       )
-    # NOTE: There appears to be a bug with compute_cartesian_path that causes
-    #       it to sometimes return a trajectory with the first 2 points
-    #       overlapping at time zero. This check works around the bug.
-    if trajectory.joint_trajectory.points[0].time_from_start == \
-          trajectory.joint_trajectory.points[1].time_from_start:
-      trajectory.joint_trajectory.points \
-        = trajectory.joint_trajectory.points[1:]
     self._append_trajectory(trajectory, planning_time)
 
   def plan_linear_translation(self, translation):
