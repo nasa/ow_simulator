@@ -301,6 +301,10 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     #  1. implement normal parameter
     #  2. implement scoop_angle parameter
 
+    RADIUS = 0.4 # meters
+    ARC = math.pi / 2
+    RETRACT_DISTANCE = 0.2 # meters
+
     trench_surface = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
     trench_bottom = Point(
@@ -308,48 +312,55 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       trench_surface.y,
       trench_surface.z - goal.depth
     )
+    # center of the circular arc
+    center = math3d.add(trench_bottom, Vector3(0, 0, RADIUS))
     sequence = TrajectorySequence(
       self._arm.robot, self._arm.move_group_scoop, 'l_scoop_tip')
     # place end-effector above trench position
+    yaw = _compute_workspace_shoulder_yaw(trench_bottom.x, trench_bottom.y)
     sequence.plan_to_named_joint_positions(
-      j_shou_yaw = _compute_workspace_shoulder_yaw(
-        trench_bottom.x, trench_bottom.y),
+      j_shou_yaw = yaw,
       j_shou_pitch = math.pi / 2,
       j_prox_pitch = -math.pi / 2,
       j_dist_pitch = 0.0,
       j_hand_yaw = 0.0,
-      j_scoop_yaw = 0.0
+      j_scoop_yaw = math.pi / 2 if goal.parallel else 0.0
     )
+    # rotates a downward facing point of contact (POC) on the circle to the
+    # start and end of the perpendicular downward arc trajectory
+    rot_down_to_start = math3d.quaternion_from_euler(ARC / 2, 0, yaw)
+    rot_down_to_end = math3d.quaternion_from_euler(-ARC / 2, 0, yaw)
+    # rotates from the scoops identity orientation (bottom up, facing away from
+    # lander) to its perpendicular mid-scooping orientation (bottom down, facing
+    # to the lander's right)
+    rot_scoop_to_down = math3d.quaternion_from_euler(math.pi, 0, -math.pi / 2)
     if goal.parallel:
-      # the radial distance between the wrist axis and the tip of the scoop
-      R_WRIST_AXIS_TO_SCOOP_TIP = 0.394
-      # rotate hand so scoop bottom points down
-      sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
-      # rotate scoop to face radially out from lander
-      sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi/2)
-      # pitch scoop back with the distal pitch so its blade faces terrain
-      sequence.plan_to_named_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
-      # Once aligned to trench goal, place hand above trench middle point
-      sequence.plan_to_position(trench_bottom)
-      # perform scoop by rotating distal pitch, and scoop through surface
-      sequence.plan_to_named_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
-    else:
-      # the radial distance between the hand yaw axis and the tip of the scoop
-      R_HAND_AXIS_TO_SCOOP_TIP = 0.230 # meters
-      SURFACE_APPROACH_DISTANCE = 0.02 # meters
-      # lower to trench position, maintaining up-right orientation
-      sequence.plan_to_position(
-        math3d.add(trench_surface, Vector3(0, 0, SURFACE_APPROACH_DISTANCE))
-      )
-      # rotate hand yaw so scoop tip points into surface
-      sequence.plan_to_named_joint_positions(j_hand_yaw = math.pi/2.2)
-      # lower scoop back to down z-position with new hand yaw position set
-      sequence.plan_to_translation(
-        Vector3(0, 0, -goal.depth - SURFACE_APPROACH_DISTANCE)
-      )
-      # perform scoop by rotating hand yaw, and scoop through surface
-      sequence.plan_to_named_joint_positions(j_hand_yaw = -0.29*math.pi)
+      # modify rotations so they describe the parallel downward arc trajectory
+      rot_to_parallel = math3d.quaternion_from_euler(0, 0, math.pi / 2)
+      rot_down_to_start = math3d.quaternion_multiply(rot_to_parallel,
+                                                     rot_down_to_start)
+      rot_down_to_end = math3d.quaternion_multiply(rot_to_parallel,
+                                                   rot_down_to_end)
+    # compute the start and end POCs along the circle by rotating the downward
+    # facing POC into position using the rot_down_to_* quaternions
+    poc1 = math3d.quaternion_rotate(rot_down_to_start, Vector3(0, 0, -RADIUS))
+    poc2 = math3d.quaternion_rotate(rot_down_to_end, Vector3(0, 0, -RADIUS))
+    # convert POCs back to BASE frame
+    p1 = math3d.add(poc1, center)
+    p2 = math3d.add(poc2, center)
+    # acquire BASE frame orientations by combining the rotation required to
+    # rotate the scoop into its mid-scooping orientation at the downward POC
+    # with the rot_down_to_* rotations
+    o1 = math3d.quaternion_multiply(rot_down_to_start, rot_scoop_to_down)
+    o2 = math3d.quaternion_multiply(rot_down_to_end, rot_scoop_to_down)
+    # move arm to start of downward circular arc, with scoop facing down
+    sequence.plan_to_pose(Pose(p1, o1))
+    # move through downward circular arc and end with scoop pitched up
+    sequence.plan_circular_path_to_pose(Pose(p2, o2), center)
+    # retract out of the trench so the next arm movement can be made safely
+    sequence.plan_to_z(trench_surface.z + RETRACT_DISTANCE)
     return sequence.merge()
+
 
 class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
                             ActionServerBase):
