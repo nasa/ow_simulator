@@ -213,14 +213,14 @@ class TrajectorySequence:
     # compute pose positions relative to the circle's center (points of contact)
     poc1 = math3d.subtract(current.position, center)
     poc2 = math3d.subtract(pose.position, center)
-    if math3d.vectors_approx_equivalent(poc1, poc2, 0.0):
+    if math3d.vectors_approx_equivalent(poc1, poc2, 1e-5):
       raise ArmPlanningError(
         "Circular path planning failed. The intended end-effector position "
         "may not be the same as the most recent position in the sequence."
       )
     r1 = math3d.norm(poc1)
     r2 = math3d.norm(poc2)
-    if r1 == 0 or r2 == 0:
+    if math.isclose(r1, 0) or math.isclose(r2, 0):
       raise ArmPlanningError(
         "Circular path planning failed. The position of the circle's center "
         "may not be at the same location as the intended position or the most "
@@ -241,13 +241,20 @@ class TrajectorySequence:
         current.orientation, pose.orientation, t
       )
       poses.append(Pose(math3d.add(center, poc), orientation))
-    # the previous loop excludes the final pose, so add it now
-    poses.append(pose)
+    # the previous loop may result in a final pose that's not quite there
+    if math3d.vectors_approx_equivalent(poses[-1].position,
+                                        pose.position, 1e-3):
+      # replace final pose with goal if difference is less than 1 mm
+      poses[-1] = pose
+    else:
+      # otherwise, add the goal onto the end of the sequence
+      poses.append(pose)
     # plan path using the series of Cartesian poses
     self._group.set_start_state(self._most_recent_state)
     trajectory, fraction = self._group.compute_cartesian_path(
       poses, ARC_INCREMENT / 2.0, 0
     )
+
     planning_time = time.time() - start_time
     if len(trajectory.joint_trajectory.points) < 3:
       raise ArmPlanningError(

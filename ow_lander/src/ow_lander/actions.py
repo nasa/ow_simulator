@@ -5,6 +5,7 @@
 """Defines all lander actions"""
 
 import math
+from copy import copy
 
 import rospy
 import owl_msgs.msg
@@ -72,6 +73,7 @@ def _compute_workspace_shoulder_yaw(x, y):
     yaw += math.asin(l / h)
     _assert_shou_yaw_in_range(yaw)
     return yaw
+
 
 #####################
 ## ARM ACTIONS
@@ -376,52 +378,83 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
 
   def plan_trajectory(self, goal):
     # TODO:
-    #  1. implement normal parameter
+    #  1. normal parameter
 
-    trench_surface = self.transform_to_planning_frame(
+    APPROACH_DISTANCE = 0.22 # meters
+    RETRACT_DISTANCE = 0.16 # meters
+    ENTRY_RADIUS = 0.2 # meters
+    EXIT_RADIUS = 0.4 # meters
+    ENTRY_PITCH = math.pi / 2
+    # this pitch was picked to avoid hand collision with terrain
+    EXIT_PITCH = -0.8 # radians
+
+    # the commanded dig point is on the surface directly above the start of the
+    # linear segment
+    dig_point = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
-    ## TODO: comment on what these calculations do
-    alpha = math.atan2(constants.WRIST_SCOOP_PARAL,
-                       constants.WRIST_SCOOP_PERP)
-    distance_from_ground = constants.ROT_RADIUS * \
-      (math.cos(alpha) - math.sin(alpha))
-    # TODO: what point does this reference??
-    center = Point(
-      trench_surface.x,
-      trench_surface.y,
-      trench_surface.z + constants.SCOOP_HEIGHT - goal.depth + distance_from_ground
-    )
+    yaw = _compute_workspace_shoulder_yaw(dig_point.x, dig_point.y)
+    trench_direction = Vector3(math.cos(yaw), math.sin(yaw), 0.0)
+    # orientations scoop will transition between
+    digging_orientation = math3d.quaternion_from_euler(math.pi, 0, yaw)
+    entry_orietation = math3d.quaternion_from_euler(math.pi, ENTRY_PITCH, yaw)
+    # exit_arc = self._compute_arc_for_circular_height_change(
+    #   goal.depth + RETRACT_DISTANCE, EXIT_RADIUS)
+    exit_orientation = math3d.quaternion_from_euler(math.pi, EXIT_PITCH, yaw)
+    # point under the surface where linear movement starts
+    linear_start = math3d.add(dig_point, Vector3(0, 0, -goal.depth))
+    # point under the surface where linear movement ends
+    linear_end = math3d.add(linear_start,
+      math3d.scalar_multiply(goal.length, trench_direction))
+    # center of the circular entry arc
+    entry_circle_center = math3d.add(linear_start, Vector3(0, 0, ENTRY_RADIUS))
+    # center of the circular exit arc
+    exit_circle_center = math3d.add(linear_end, Vector3(0, 0, EXIT_RADIUS))
+
+    # rotate around center by entry arc
+    entry_rot = math3d.quaternion_from_euler(0, ENTRY_PITCH, yaw)
+    linear_start_poc = math3d.subtract(linear_start, entry_circle_center)
+    entry_arc_start_poc = math3d.quaternion_rotate(entry_rot, linear_start_poc)
+    entry_arc_start = math3d.add(entry_arc_start_poc, entry_circle_center)
+
+    entry_approach = copy(entry_arc_start)
+    entry_approach.z = dig_point.z + APPROACH_DISTANCE
+
+    # rotate around center by exit arc
+    exit_rot = math3d.quaternion_from_euler(0, EXIT_PITCH, yaw)
+    linear_end_poc = math3d.subtract(linear_end, exit_circle_center)
+    exit_arc_end_poc = math3d.quaternion_rotate(exit_rot, linear_end_poc)
+    exit_arc_end = math3d.add(exit_arc_end_poc, exit_circle_center)
+
+    exit_retract_z = dig_point.z + RETRACT_DISTANCE
+
+    # all geometric parameters created, now the sequence can be planned
     sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop_tip')
     # place end-effector above trench position
     sequence.plan_to_named_joint_positions(
-      j_shou_yaw = _compute_workspace_shoulder_yaw(
-        trench_surface.x, trench_surface.y),
+      j_shou_yaw = yaw,
       j_shou_pitch = math.pi / 2,
       j_prox_pitch = -math.pi / 2,
       j_dist_pitch = 0.0,
-      j_hand_yaw = math.pi/2.2,
-      j_scoop_yaw = 0.0
+      j_hand_yaw = 0.0,
+      j_scoop_yaw = math.pi / 2
     )
-    # rotate hand so scoop bottom points down
-    sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
-    # rotate scoop to face radially out from lander
-    sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi / 2)
-    # retract scoop back so its blades face terrain
-    sequence.plan_to_named_joint_positions(j_dist_pitch = -math.pi / 2)
-    # place scoop at the trench side nearest to the lander
-    sequence.plan_to_position(center)
-    # TODO: what is this doing?
-    sequence.plan_to_named_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
-    # compute the far end of the trench
-    far_trench_pose = sequence.get_final_pose()
-    _, _, yaw = math3d.euler_from_quaternion(far_trench_pose.orientation)
-    far_trench_pose.position.x += goal.length * math.cos(yaw)
-    far_trench_pose.position.y += goal.length * math.sin(yaw)
+    # approach terrain while rotating into entry orientation
+    sequence.plan_to_pose(Pose(entry_approach, entry_orietation))
+    # place scoop tip at the start of the circular entry arc while maintaining
+    # entry orientation
+    sequence.plan_to_position(entry_arc_start)
+    # rotate scoop tip into terrain
+    sequence.plan_circular_path_to_pose(Pose(linear_start, digging_orientation),    entry_circle_center)
     # move the scoop along a linear path to the end of the trench
-    sequence.plan_linear_path_to_pose(far_trench_pose)
-    # pitch scoop upward to maintain sample
-    sequence.plan_to_named_joint_positions(j_dist_pitch = math.pi / 2)
+    sequence.plan_linear_path_to_pose(Pose(linear_end, digging_orientation))
+    # pitch scoop upward and out of the exit point
+    sequence.plan_circular_path_to_pose(Pose(exit_arc_end, exit_orientation),
+      exit_circle_center)
+    # retract up from terrain while maintaining exit orientation
+    # NOTE: only required for especially deep digs
+    if sequence.get_final_pose().position.z < exit_retract_z:
+      sequence.plan_to_z(exit_retract_z)
     return sequence.merge()
 
 
