@@ -790,11 +790,9 @@
     </inertial>
   </link>
   <joint name="l_grinder_tip_joint" type="fixed">
-    <origin xyz="-0.1550 -0.2684 0.0" rpy="1.5708 1.5708 -0.5236"/>
-
-    <!-- 1.5708 0 -0.5236 -->
-    <!-- fix to hand so it does not rotate with grinder -->
-    <parent link="l_hand"/>
+    <origin xyz="0.16 0 0" rpy="0 0 0"/>
+    <parent link="l_grinder"/>
+    <!-- <parent link="l_hand"/> -->
     <child link="l_grinder_tip"/>
   </joint>
   <gazebo reference="l_grinder_tip_joint">

@@ -227,63 +227,71 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
   def plan_trajectory(self, goal):
-    PREGRIND_HEIGHT = 0.25
 
-    point = Point(goal.x_start, goal.y_start, goal.ground_position)
-    depth = goal.depth
-    length = goal.length
-    parallel = goal.parallel
+    APPROACH_DISTANCE = 0.25 # meters
+    SEGMENT_SEPARATION_DISTANCE = 0.08 # meters
 
-    yaw = _compute_workspace_shoulder_yaw(point.x, point.y)
-    if parallel:
-      R = math.sqrt(point.x*point.x+point.y*point.y)
-      # adjust trench to fit scoop circular motion
-      dx = 0.04*R*math.sin(yaw)  # Center dig_circular in grind trench
-      dy = 0.04*R*math.cos(yaw)
-      # Move starting point back to avoid scoop-terrain collision
-      point.x = 0.9*(point.x + dx)
-      point.y = 0.9*(point.y - dy)
+    grind_point = Point(goal.x_start, goal.y_start, goal.ground_position)
+
+    yaw = _compute_workspace_shoulder_yaw(grind_point.x, grind_point.y)
+    trench_direction = Vector3(math.sin(yaw),0 -math.cos(yaw), 0.0)
+
+    grind_orientation = math3d.quaternion_from_euler(math.pi, math.pi / 2, 0)
+    segment1_offset_from_dig_point = Vector3(
+      -SEGMENT_SEPARATION_DISTANCE / 2, 0, 0)
+    segment_separation = Vector3(SEGMENT_SEPARATION_DISTANCE, 0, 0)
+
+    if goal.parallel:
+      rot_to_parallel = math3d.quaternion_from_euler(0, 0, math.pi / 2)
+      segment1_offset_from_dig_point = math3d.quaternion_rotate(
+        rot_to_parallel, segment1_offset_from_dig_point)
+      segment_separation = math3d.quaternion_rotate(rot_to_parallel,
+                                                    segment_separation)
+      trench_direction = math3d.quaternion_rotate(rot_to_parallel,
+                                                  trench_direction)
     else:
-      dx = 5*length/8*math.sin(yaw)
-      dy = 5*length/8*math.cos(yaw)
-      # Move starting point back to avoid scoop-terrain collision
-      point.x = 0.97*(point.x - dx)
-      point.y = 0.97*(point.y + dy)
+      # shift grind segments by half the length so that grind_point is in center
+      segment1_offset_from_dig_point = math3d.add(
+        segment1_offset_from_dig_point,
+        math3d.scalar_multiply(-goal.length / 2, trench_direction)
+      )
+
+    segment1_surface = math3d.add(grind_point, segment1_offset_from_dig_point)
+    entry_approach = math3d.add(segment1_surface,
+                                Vector3(0, 0, APPROACH_DISTANCE))
+    segment1_start_bottom = math3d.subtract(segment1_surface,
+                                            Vector3(0, 0, goal.depth))
+
+    segment1_end_bottom = math3d.add(segment1_start_bottom,
+      math3d.scalar_multiply(goal.length, trench_direction))
+    segment2_start_bottom = math3d.add(segment1_end_bottom,
+                                       segment_separation)
+    segment2_end_bottom = math3d.add(segment1_start_bottom, segment_separation)
+    exit_retract = math3d.add(entry_approach, segment_separation)
+
 
     sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_grinder, 'l_grinder')
+      self._arm.robot, self._arm.move_group_grinder, 'l_grinder_tip')
+
+    sequence.plan_to_named_joint_positions(
+      j_shou_yaw = yaw,
+      j_shou_pitch = math.pi / 2,
+      j_prox_pitch = -math.pi / 2,
+      j_dist_pitch = 0.0,
+      j_hand_yaw = -2 * math.pi / 3,
+      j_grinder = 0.0
+    )
+
     # place grinder above the start point
-    pregrind_position = math3d.add(point, Vector3(0, 0, PREGRIND_HEIGHT))
-    pregrind_pose = Pose(
-      position = pregrind_position,
-      orientation = Quaternion(0.70616885803, 0.0303977418722,
-                               -0.706723318474, 0.0307192507001)
-    )
-    sequence.plan_to_pose(pregrind_pose)
-    # enter terrain
-    trench_bottom = math3d.add(
-      point, Vector3(0, 0, constants.GRINDER_OFFSET - depth)
-    )
-    sequence.plan_to_z(trench_bottom.z)
-    # grinding ice forward
-    yaw_offset = 0 if parallel else -math.pi / 2
-    trench_segment = math3d.scalar_multiply(
-      length,
-      Vector3(math.cos(yaw + yaw_offset), math.sin(yaw + yaw_offset), 0)
-    )
-    sequence.plan_linear_translation(trench_segment)
-    # grind sideways
-    if parallel:
-      # NOTE: small angle approximation?
-      sequence.plan_to_named_joint_translations(j_shou_yaw = 0.08)
-    else:
-      sequence.plan_to_translation(math3d.scalar_multiply(0.08,
-          Vector3(math.cos(yaw), math.sin(yaw), 0)))
-    # grind backwards towards lander
-    sequence.plan_linear_translation(
-      math3d.scalar_multiply(-1, trench_segment))
-    # exit terrain
-    sequence.plan_to_z(pregrind_position.z)
+    sequence.plan_to_pose(Pose(entry_approach, grind_orientation))
+    sequence.plan_to_position(segment1_start_bottom)
+    sequence.plan_linear_path_to_pose(
+      Pose(segment1_end_bottom, grind_orientation))
+    sequence.plan_to_position(segment2_start_bottom)
+    sequence.plan_linear_path_to_pose(
+      Pose(segment2_end_bottom, grind_orientation))
+    sequence.plan_to_position(exit_retract)
+
     return sequence.merge()
 
 class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
