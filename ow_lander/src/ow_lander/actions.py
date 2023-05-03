@@ -409,8 +409,6 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     # orientations scoop will transition between
     digging_orientation = math3d.quaternion_from_euler(math.pi, 0, yaw)
     entry_orietation = math3d.quaternion_from_euler(math.pi, ENTRY_PITCH, yaw)
-    # exit_arc = self._compute_arc_for_circular_height_change(
-    #   goal.depth + RETRACT_DISTANCE, EXIT_RADIUS)
     exit_orientation = math3d.quaternion_from_euler(math.pi, EXIT_PITCH, yaw)
     # point under the surface where linear movement starts
     linear_start = math3d.add(dig_point, Vector3(0, 0, -goal.depth))

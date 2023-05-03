@@ -58,7 +58,10 @@ GRINDER_OFFSET = 0.16
 # Distance between scoop center of mass and lower blade
 SCOOP_HEIGHT = 0.076
 
-DEFAULT_GROUND_HEIGHT = -0.155
+# selected by using ArmFindSurface to interrogate several spots directly in
+# front of the lander in both atacama_y1a and europa_terminator_workspace and
+# averaging the results
+DEFAULT_GROUND_HEIGHT = -0.172
 
 X_DELIV = 0.2
 Y_DELIV = 0.2
