@@ -234,12 +234,13 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     grind_point = Point(goal.x_start, goal.y_start, goal.ground_position)
 
     yaw = _compute_workspace_shoulder_yaw(grind_point.x, grind_point.y)
-    trench_direction = Vector3(math.sin(yaw),0 -math.cos(yaw), 0.0)
+    trench_direction = Vector3(math.sin(yaw), -math.cos(yaw), 0.0)
 
     grind_orientation = math3d.quaternion_from_euler(math.pi, math.pi / 2, 0)
     segment1_offset_from_dig_point = Vector3(
       -SEGMENT_SEPARATION_DISTANCE / 2, 0, 0)
-    segment_separation = Vector3(SEGMENT_SEPARATION_DISTANCE, 0, 0)
+    segment_separation = math3d.scalar_multiply(
+      -SEGMENT_SEPARATION_DISTANCE, math3d.orthogonal(trench_direction))
 
     if goal.parallel:
       rot_to_parallel = math3d.quaternion_from_euler(0, 0, math.pi / 2)
