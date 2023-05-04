@@ -14,7 +14,7 @@ using MaterialID = uint8_t;
 
 struct Color
 {
-  uint8_t r, g, b;
+  double r, g, b;
 };
 
 struct Material
