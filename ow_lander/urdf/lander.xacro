@@ -85,6 +85,7 @@
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
       </plugin>
+      <plugin name="OWLightControlPlugin" filename="libOWLightControlPlugin.so" />
     </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
@@ -165,7 +166,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="2.6"/>
-    <limit effort="70.9" velocity="0.15" lower="-1.8" upper="1.8"/>
+    <limit effort="70.9" velocity="0.15" lower="-1.56" upper="1.43"/>
   </joint>
   <transmission name="shou_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -241,7 +242,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="4.6"/>
-    <limit effort="101.0" velocity="0.2" lower="0.05" upper="2.2"/>
+    <limit effort="101.0" velocity="0.2" lower="-0.4" upper="2.2"/>
   </joint>
   <transmission name="shou_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -317,7 +318,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="2.7"/>
-    <limit effort="73.0" velocity="0.2"/>
+    <limit effort="73.0" velocity="0.2" lower="-3.2" upper="3.2"/>
   </joint>
   <transmission name="prox_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -393,7 +394,7 @@
     <axis
       xyz="0 0 1" />
     <dynamics damping="50.0" friction="0.3"/>
-    <limit effort="25.7" velocity="0.2" />
+    <limit effort="25.7" velocity="0.2" lower="-2.2" upper="3.65" />
   </joint>
   <transmission name="dist_pitch_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -410,7 +411,7 @@
   <gazebo>
     <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
       <jointName>j_dist_pitch</jointName>
-      <topicName>/_original/ft_sensor_dist_pitch</topicName>
+      <topicName>/_original/arm_end_effector_force_torque</topicName>
       <updateRate>200</updateRate>  <!-- Barret F/T sensor runs at 250 Hz and has max update rate of 2500 Hz
                                          However, the gazebo_ros_ft_sensor plugin is only able to run at a max of 200 -->
       <gaussianNoise>0.2</gaussianNoise> <!-- estimated based on a profile of the barret ft sensor -->
@@ -493,7 +494,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="0.3"/>
-    <limit effort="25.7" velocity="0.2" />
+    <limit effort="25.7" velocity="0.2" lower="-3.2" upper="3.2"/>
   </joint>
   <transmission name="hand_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -653,7 +654,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" friction="0.5"/>
-    <limit effort="20.0" velocity="0.2" />
+    <limit effort="20.0" velocity="0.2" lower="-3.2" upper="3.2"/>
   </joint>
   <transmission name="scoop_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -767,7 +768,7 @@
     <child link="l_grinder" />
     <axis xyz="-1 0 0" />
     <dynamics damping="1" />
-    <limit effort="1.0" velocity="0.1" lower="-3.14" upper="3.14"/>
+    <limit effort="1.0" velocity="0.1" lower="-3.2" upper="3.2"/>
   </joint>
   <transmission name="grinder_yaw_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -844,7 +845,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="80.0" velocity="0.2" />
+    <limit effort="80.0" velocity="0.2" lower="-3.2" upper="3.2" />
   </joint>
   <transmission name="ant_pan_transmission">
     <type>transmission_interface/SimpleTransmission</type>
@@ -920,7 +921,7 @@
     <axis
       xyz="0 0 -1" />
     <dynamics damping="50.0" />
-    <limit effort="100.0" velocity="0.2" />
+    <limit effort="100.0" velocity="0.2" lower="-1.57" upper="1.57"/>
   </joint>
   <transmission name="ant_tilt_transmission">
     <type>transmission_interface/SimpleTransmission</type>

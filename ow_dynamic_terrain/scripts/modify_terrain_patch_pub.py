@@ -78,6 +78,6 @@ def publish_image(args):
 if __name__ == '__main__':
     args = parse_args()
     if not os.path.exists(args.image):
-        rospy.logerror("image file not found")
+        rospy.logerr("image file not found")
         quit()
     publish_image(args)

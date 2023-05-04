@@ -1,28 +1,32 @@
-These instructions cover the environment setup, installation, and build of
-OceanWATERS. Familiarity with Unix/Linux and the Bash shell command line is assumed.
+These instructions cover the environment setup, installation, and
+build of OceanWATERS. Familiarity with Unix/Linux and the Bash shell
+command line is assumed.
 
-If you have not yet done so, [install the prerequisites for OceanWATERS](setup_dev_env.md).
+If you have not yet done so, [install the prerequisites for
+OceanWATERS](setup_dev_env.md).
 
 ROS workspace setup
 -------------------
 
-Installation of OceanWATERS requires creation of a ROS *workspace* – a directory
-where you can build multiple, interdependent ROS packages
+Installation of OceanWATERS requires creation of a ROS *workspace* – a
+directory where you can build multiple, interdependent ROS packages
 ([*http://wiki.ros.org/catkin/workspaces*](http://wiki.ros.org/catkin/workspaces)).
-ROS provides custom tools, *catkin* and *wstool*, to manage, build, and install
-ROS packages in a workspace. [Catkin](https://wiki.ros.org/catkin) is a build system that sits on top of
-the CMake build system ([*https://cmake.org*](https://cmake.org)) and wstool is
-a meta–version control system tool that allows you to manage multiple source
-repositories.
+ROS provides custom tools, *catkin* and *wstool*, to manage, build,
+and install ROS packages in a
+workspace. [Catkin](https://wiki.ros.org/catkin) is a build system
+that sits on top of the CMake build system
+([*https://cmake.org*](https://cmake.org)) and `wstool` is a
+meta–version control system tool that allows you to manage multiple
+source repositories.
 
-Reading [Catkin documentation](https://wiki.ros.org/catkin) and going through some of
-the [tutorials](https://wiki.ros.org/catkin/Tutorials) is recommended if you've
-never used catkin.
+Reading [Catkin documentation](https://wiki.ros.org/catkin) and going
+through some of the [tutorials](https://wiki.ros.org/catkin/Tutorials)
+is recommended if you've never used catkin.
 
-wstool is quite straightforward and can be picked up easily. Basically, wstool
-will look at a .rosinstall file that contains the repos to check out or update.
-You can perform operations like update, diff, and status on multiple
-repositories at once.
+`wstool` is quite straightforward and can be picked up
+easily. Basically, `wstool` will look at a `.rosinstall` file that
+contains the repos to check out or update.  You can perform operations
+like update, diff, and status on multiple repositories at once.
 
 To create a ROS workspace for OceanWATERS first use the setup.bash script
 provided in the ROS installation to set required ROS environment variables:
@@ -45,8 +49,8 @@ Then checkout the top level OceanWATERS git repository:
 git clone https://github.com/nasa/ow_simulator.git
 ```
 
-ROS’ wstool will be used to checkout additional repositories containing the
-source code files making up OceanWATERS. The wstool utility will look for a
+ROS’s `wstool` will be used to checkout additional repositories containing the
+source code files making up OceanWATERS. The `wstool` utility will look for a
 file, `oceanwaters_ws/src/.rosinstall`, that contains a list of repositories to
 check out or update. The OceanWATERS repository contains a number of `.rosinstall`
 files for different uses. Create a link to the default repository list:
@@ -55,7 +59,7 @@ files for different uses. Create a link to the default repository list:
 ln -s ow_simulator/oceanwaters/workspaces/oceanwaters.rosinstall .rosinstall
 ```
 
-Now use wstool to checkout/update the source code:
+Now use `wstool` to checkout/update the source code:
 
 ```
 wstool update
@@ -76,9 +80,10 @@ cd ..
 catkin build
 ```
 
-The first build of OceanWATERS will take an extra long time as the build process downloads
-around 2 GB of 3rd party code and data. The code and data will be cached in the src/ tree,
-so subsequent builds should be much faster.
+The first build of OceanWATERS will take an extra long time as the
+build process downloads around 2 GB of 3rd party code and data. The
+code and data will be cached in the src/ tree, so subsequent builds
+should be much faster.
 
 Finally set OceanWATERS specific environment variables using the provided
 script:

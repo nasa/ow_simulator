@@ -8,18 +8,10 @@
 #include <iostream> 
 
 using namespace ow_lander;
+using namespace owl_msgs;
 
 using std::bitset;
 using std::string;
-
-constexpr bitset<10> FaultDetector::isCamExecutionError;
-constexpr bitset<10> FaultDetector::isPanTiltExecutionError;
-constexpr bitset<10> FaultDetector::isArmExecutionError;
-constexpr bitset<10> FaultDetector::isPowerSystemFault;
-
-constexpr bitset<3> FaultDetector::islowVoltageError;
-constexpr bitset<3> FaultDetector::isCapLossError;
-constexpr bitset<3> FaultDetector::isThermalError;
 
 FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
@@ -33,31 +25,29 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
                                                 10, 
-                                                &FaultDetector::camerTriggerCb, 
+                                                &FaultDetector::cameraTriggerCb, 
                                                 this);
   m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
                                    10, 
                                    &FaultDetector::cameraRawCb, 
                                    this);
   
-  m_camera_trigger_timer = nh.createTimer(ros::Duration(0.1), &FaultDetector::cameraTriggerPublishCb, this);
-
   //  power fault publishers and subs
-  m_power_soc_sub = nh.subscribe( "/power_system_node/state_of_charge",
+  m_power_soc_sub = nh.subscribe( "/battery_state_of_charge",
                                   10,
                                   &FaultDetector::powerSOCListener,
                                   this);
-  m_power_temperature_sub = nh.subscribe( "/power_system_node/battery_temperature",
+  m_power_temperature_sub = nh.subscribe( "/battery_temperature",
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);
 
-  // topics for JPL msgs: system fault messages, see Faults.msg, Arm.msg, Power.msg, PTFaults.msg
-  m_arm_fault_msg_pub = nh.advertise<ow_faults_detection::ArmFaults>("/faults/arm_faults_status", 10);
-  m_antenna_fault_msg_pub = nh.advertise<ow_faults_detection::PTFaults>("/faults/pt_faults_status", 10);
-  m_camera_fault_msg_pub = nh.advertise<ow_faults_detection::CamFaults>("/faults/cam_faults_status", 10);
-  m_power_fault_msg_pub = nh.advertise<ow_faults_detection::PowerFaults>("/faults/power_faults_status", 10);
-  m_system_fault_msg_pub = nh.advertise<ow_faults_detection::SystemFaults>("/faults/system_faults_status", 10);
+  // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
+  m_arm_faults_msg_pub = nh.advertise<ArmFaultsStatus>("/arm_faults_status", 10);
+  m_antenna_faults_msg_pub = nh.advertise<PanTiltFaultsStatus>("/pan_tilt_faults_status", 10);
+  m_camera_faults_msg_pub = nh.advertise<CameraFaultsStatus>("/camera_faults_status", 10);
+  m_power_faults_msg_pub = nh.advertise<PowerFaultsStatus>("/power_faults_status", 10);
+  m_system_faults_msg_pub = nh.advertise<SystemFaultsStatus>("/system_faults_status", 10);
 
 }
 
@@ -69,65 +59,20 @@ void FaultDetector::setFaultsMessageHeader(fault_msg& msg)
   msg.header.frame_id = "world";
 }
 
-template<typename bitsetFaultsMsg, typename bitmask>
-void FaultDetector::setBitsetFaultsMessage(bitsetFaultsMsg& msg, bitmask bm) 
+template<typename pub_t, typename msg_t, typename flags_t>
+void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flags_t fault_flags)
 {
-  setFaultsMessageHeader(msg);
-  msg.value = bm.to_ullong();
-}
-
-template<typename fault_msg>
-void FaultDetector::setComponentFaultsMessage(fault_msg& msg, ComponentFaults value) 
-{
-  setFaultsMessageHeader(msg);
-  msg.value = static_cast<uint>(value);
-}
-
-// publish system messages
-void FaultDetector::publishSystemFaultsMessage()
-{
-  ow_faults_detection::SystemFaults system_faults_msg;
-  setBitsetFaultsMessage(system_faults_msg, m_system_faults_bitset);
-  m_system_fault_msg_pub.publish(system_faults_msg);
-}
-
-//// Publish Camera Messages
-void FaultDetector::cameraTriggerPublishCb(const ros::TimerEvent& t)
-{
-  ow_faults_detection::CamFaults camera_faults_msg;
-  auto diff = m_cam_raw_time - m_cam_trigger_time;
-  if (m_cam_trigger_time <= m_cam_raw_time &&  
-    m_cam_raw_time <= m_cam_trigger_time + ros::Duration(2) || 
-    diff < ros::Duration(0) && ros::Duration(-1) < diff) {
-    m_system_faults_bitset &= ~isCamExecutionError;
+  setFaultsMessageHeader(fault_msg);
+  if (fault_flags) {
+    fault_msg.value |= fault_flags;
   } else {
-    m_system_faults_bitset |= isCamExecutionError;
-    setComponentFaultsMessage(camera_faults_msg, ComponentFaults::Hardware);
+    fault_msg.value &= ~fault_flags;
   }
-
-  publishSystemFaultsMessage();
-  m_camera_fault_msg_pub.publish(camera_faults_msg);
-}
-
-//// Publish Power Faults Messages
-void FaultDetector::publishPowerSystemFault()
-{
-  ow_faults_detection::PowerFaults power_faults_msg;
-  //update if fault
-  if (m_temperature_fault || m_soc_fault) {
-    //system
-    m_system_faults_bitset |= isPowerSystemFault;
-    //power
-    setComponentFaultsMessage(power_faults_msg, ComponentFaults::Hardware);
-  } else {
-    m_system_faults_bitset &= ~isPowerSystemFault;
-  }
-  publishSystemFaultsMessage();
-  m_power_fault_msg_pub.publish(power_faults_msg);
+  fault_pub.publish(fault_msg);
 }
 
 // Listeners
-// Arm listeners
+// Arm and Antenna listeners
 bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
 {
   unsigned int index;
@@ -156,32 +101,53 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
     }
   }
 
-  bool armFault = false;
+  // check for arm faults
+  bool isFault = false;
   auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
                   J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
-  //ant faults
-  m_pan_fault = isFlagSet( J_ANT_PAN, msg->flags);
-  m_tilt_fault = isFlagSet( J_ANT_TILT, msg->flags);
-  antPublishFaultMessages();
-
-  //arm faults
   for (auto& name : armList) {
-    armFault = armFault || isFlagSet( name, msg->flags);
+    isFault = isFault || isFlagSet( name, msg->flags);
   }
-
-  ow_faults_detection::ArmFaults arm_faults_msg;
-  if (armFault){
-    m_system_faults_bitset |= isArmExecutionError;
-    setComponentFaultsMessage(arm_faults_msg,  ComponentFaults::Hardware);
+  if (isFault) {
+    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    m_arm_faults_flags |= ArmFaultsStatus::HARDWARE;
   } else {
-    m_system_faults_bitset &= ~isArmExecutionError;
+    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+    m_arm_faults_flags &= ~ArmFaultsStatus::HARDWARE;
+  }
+  
+  // check for antenna faults
+  isFault = isFlagSet( J_ANT_PAN, msg->flags);
+  if (isFault) {
+    m_antenna_faults_flags |= PanTiltFaultsStatus::PAN_JOINT_LOCKED;
+  } else {
+    m_antenna_faults_flags &= ~PanTiltFaultsStatus::PAN_JOINT_LOCKED;
   }
 
-  m_arm_fault_msg_pub.publish(arm_faults_msg);
-  publishSystemFaultsMessage();
+  isFault = isFlagSet( J_ANT_TILT, msg->flags);
+  if (isFault) {
+    m_antenna_faults_flags |= PanTiltFaultsStatus::TILT_JOINT_LOCKED;
+  } else {
+    m_antenna_faults_flags &= ~PanTiltFaultsStatus::TILT_JOINT_LOCKED;
+  }
+
+  // update system faults
+  if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
+    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+  } else {
+    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
+  }
+  if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
+    m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
+  } else {
+    m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
+  }
+
+  // publish updated faults messages
+  publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
+  publishFaultsMessage(m_antenna_faults_msg_pub, PanTiltFaultsStatus(), m_antenna_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
-
-
 
 template<typename group_t, typename item_t>
 int FaultDetector::findPositionInGroup(const group_t& group, const item_t& item)
@@ -201,47 +167,89 @@ bool FaultDetector::findJointIndex(const unsigned int joint, unsigned int& out_i
   return true;
 }
 
-//// Antenna Listeners
-void FaultDetector::antPublishFaultMessages()
-{
-  ow_faults_detection::PTFaults ant_fault_msg;
-  if (m_pan_fault || m_tilt_fault) {
-    setComponentFaultsMessage(ant_fault_msg, ComponentFaults::Hardware);
-    m_system_faults_bitset |= isPanTiltExecutionError;
-  }else {
-    m_system_faults_bitset &= ~isPanTiltExecutionError;
-  }
-  publishSystemFaultsMessage();
-  m_antenna_fault_msg_pub.publish(ant_fault_msg);
-}
-
 //// Camera listeners
-void FaultDetector::camerTriggerCb(const std_msgs::Empty& msg)
+void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
 {
-  m_cam_trigger_time = ros::Time::now();
+  // fault if camera data is still pending when trigger is received
+  if (m_camera_data_pending) {
+    m_camera_faults_flags |= CameraFaultsStatus::NO_IMAGE;
+    m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
+
+    // publish updated faults messages (exonerated faults published in cameraRawCb)
+    publishFaultsMessage(m_camera_faults_msg_pub, CameraFaultsStatus(), m_camera_faults_flags);
+    publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
+  }
+  m_camera_data_pending = true;
 }
 
 void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 {
-  m_cam_raw_time = ros::Time::now();
+  // exonerate fault when camera_raw data is received
+  m_camera_faults_flags &= ~CameraFaultsStatus::NO_IMAGE;
+  m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
+  m_camera_data_pending = false;
+
+  // publish updated faults messages
+  publishFaultsMessage(m_camera_faults_msg_pub, CameraFaultsStatus(), m_camera_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
 
 //// Power Topic Listeners
-void FaultDetector::powerTemperatureListener(const std_msgs::Float64& msg)
+void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
 {
-  m_temperature_fault = msg.data > THERMAL_MAX;
-  publishPowerSystemFault();
+  // check for excessive battery temperature
+  if (msg.value > POWER_THERMAL_MAX) {
+    m_power_faults_flags |= PowerFaultsStatus::THERMAL_FAULT;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;
+  }
+
+  // update system faults
+  if (PowerFaultsStatus::NONE == m_power_faults_flags) {
+    m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
+  } else {
+    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
+  }
+
+  // publish updated faults messages
+  publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
  
-void FaultDetector::powerSOCListener(const std_msgs::Float64& msg)
+void FaultDetector::powerSOCListener(const BatteryStateOfCharge& msg)
 {
-  float newSOC = msg.data;
-  if (isnan(m_last_SOC)){
-    m_last_SOC = newSOC;
+  // set initial state of charge
+  float current_soc = msg.value;
+  if (isnan(m_last_soc)){
+    m_last_soc = current_soc;
   }
-  m_soc_fault = ((newSOC <= SOC_MIN)  ||
-                (!isnan(m_last_SOC) &&
-                ((abs(m_last_SOC - newSOC) / m_last_SOC) >= SOC_MAX_DIFF )));
-  publishPowerSystemFault();
-  m_last_SOC = newSOC;
+
+  // check for low state of charge
+  if (current_soc <= POWER_SOC_MIN) {
+    m_power_faults_flags |= PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::LOW_STATE_OF_CHARGE;
+  }
+
+  // check for excessive instant capacity loss
+  if ((abs(m_last_soc - current_soc) / m_last_soc) >= POWER_SOC_MAX_DIFF) {
+    m_power_faults_flags |= PowerFaultsStatus::INSTANTANEOUS_CAPACITY_LOSS;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::INSTANTANEOUS_CAPACITY_LOSS;
+  }
+  m_last_soc = current_soc;
+
+  // update system faults
+  if (PowerFaultsStatus::NONE == m_power_faults_flags) {
+    m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;
+  } else {
+    m_system_faults_flags |= SystemFaultsStatus::POWER_EXECUTION_ERROR;
+  }
+
+  // publish updated faults messages
+  publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
+
+
+

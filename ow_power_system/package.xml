@@ -36,6 +36,7 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>owl_msgs</depend>
   <build_depend>roslaunch</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>std_msgs</build_depend>
