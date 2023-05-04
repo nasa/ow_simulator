@@ -31,11 +31,14 @@
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
 
-// Change this value to modify the number of parallel battery nodes in the pack.
-// NOTE: The expected number of nodes (24) appears to take much longer than 2
-//       seconds to process. Currently unknown what the cause of this is, though
-//       it is likely related to GSAP's time required to process predictions and
-//       so it may not be addressable here.
+// NOTE: This is required as a compile-time constant, so it cannot be placed in
+//       a .cfg file. The simulation must be re-built if it is changed.
+// HACK ALERT (May 2023): High amounts of nodes seems to cause GSAP to eventually
+//                        return highly negative and invalid predictions well ahead
+//                        of an expected battery failure. On my setup, this happens
+//                        around the ~300s mark with 16 nodes, but did not occur at all
+//                        over a 45-minute test at 15 nodes or less.
+//                        No idea what the issue is yet.
 const int NUM_NODES = 8;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
@@ -90,7 +93,7 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
   bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  void publishPredictions();
+  void publishPredictions(bool update);
   std::string setNodeName(int node_num);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -162,6 +165,18 @@ private:
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
+
+  // Track the number of prognosers waiting for new data.
+  int m_waiting_buses = 0;
+
+  // Tracks if at least one set of predictions has returned.
+  bool m_publishing_ready = false;
+
+  // Values to be re-published during intervals where GSAP has not returned
+  // predictions yet.
+  int m_prev_rul;
+  double m_prev_soc;
+  double m_prev_tmp;
 };
 
 #endif
