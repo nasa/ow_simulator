@@ -41,9 +41,6 @@ public:
 private:
 
   inline size_t index(size_t const i, size_t const j, size_t const k) const {
-    assert(i < m_dimensions.X());
-    assert(j < m_dimensions.Y());
-    assert(k < m_dimensions.Z());
     return i + j * m_dimensions.X() + k * m_dimensions.X() * m_dimensions.Y();
   };
 
