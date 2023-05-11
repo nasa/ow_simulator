@@ -503,6 +503,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmMoveCartesianGoal
   feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianResult
+  component_id  = ow_lander.msg.ActionServiceState.ARM_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
