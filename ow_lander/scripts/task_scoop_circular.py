@@ -4,13 +4,13 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-from ow_lander import actions
-from ow_lander import node_helper
-from ow_lander import constants
+import argparse
 
 from geometry_msgs.msg import Point
 
-import argparse
+from ow_lander import actions
+from ow_lander import node_helper
+from ow_lander import constants
 
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -23,16 +23,16 @@ parser.add_argument('--frame', '-f', type=int, default=0,
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="Position will be interpreted as relative to the current position")
 parser.add_argument('-x', type=float, default=1.65,
-  help="X-coordinate on surface where trench starts")
+  help="X-coordinate on surface where trench is centered")
 parser.add_argument('-y', type=float, default=0,
-  help="Y-coordinate on surface where trench starts")
+  help="Y-coordinate on surface where trench is centered")
 parser.add_argument('-z', type=float, default=constants.DEFAULT_GROUND_HEIGHT,
-  help="Z-coordinate on surface where trench starts")
-parser.add_argument('--depth', '-d', type=float, default=0.01,
-  help="Desired scooping depth")
+  help="Estimate of ground position at point (x, y) in base_link frame")
+parser.add_argument('--depth', '-d', type=float, default=0.02,
+  help="Depth of scoop at the bottom of the circular arc")
 parser.add_argument('--perpendicular', '-p', action='store_true', default=False,
-  help="Dig a trench that is perpendicular to the vector that extends from "
-       "the arm's base to the end-effector. By default the trench will be "
+  help="The trench will be perpendicular to the vector that extends from "
+       "the lander's base to the end-effector. By default the trench will be "
        "aligned parallel with this vector.")
 args = parser.parse_args()
 
