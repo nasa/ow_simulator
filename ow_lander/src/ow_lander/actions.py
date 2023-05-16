@@ -227,19 +227,22 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
   def plan_trajectory(self, goal):
-
     APPROACH_DISTANCE = 0.25 # meters
     # distance between the backward and forward linear paths
     SEGMENT_SEPARATION_DISTANCE = 0.08 # meters
-
+    # NOTE: grind_point lies halfway between the two segments in the center of
+    #       the trench
     grind_point = Point(goal.x_start, goal.y_start, goal.ground_position)
     yaw = _compute_workspace_shoulder_yaw(grind_point.x, grind_point.y)
     # define variables in perpendicular configuration (left-to-right of lander)
     trench_direction = Vector3(math.sin(yaw), -math.cos(yaw), 0.0)
+    # NOTE: this grinder design can grind in any direction, so yaw can be zero
     grind_orientation = math3d.quaternion_from_euler(math.pi, math.pi / 2, 0)
-    # requested grind_point lies directly in between the two segments
-    segment1_offset_from_grind_point = Vector3(
-      -SEGMENT_SEPARATION_DISTANCE / 2, 0, 0)
+    # compute the start of segment1 from grind_point
+    segment1_offset_from_grind_point = math3d.add(
+      Vector3(-SEGMENT_SEPARATION_DISTANCE / 2, 0, 0),
+      math3d.scalar_multiply(-goal.length / 2, trench_direction)
+    )
     segment_separation = math3d.scalar_multiply(
       -SEGMENT_SEPARATION_DISTANCE, math3d.orthogonal(trench_direction))
     if goal.parallel:
@@ -251,17 +254,11 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
                                                     segment_separation)
       trench_direction = math3d.quaternion_rotate(rot_to_parallel,
                                                   trench_direction)
-    else:
-      # shift grind segments by half the length so that grind_point is in center
-      segment1_offset_from_grind_point = math3d.add(
-        segment1_offset_from_grind_point,
-        math3d.scalar_multiply(-goal.length / 2, trench_direction)
-      )
     # define entry position and positions for first segment of grind motion
-    segment1_surface = math3d.add(grind_point, segment1_offset_from_grind_point)
-    entry_approach = math3d.add(segment1_surface,
+    segment1_start_surface = math3d.add(grind_point, segment1_offset_from_grind_point)
+    entry_approach = math3d.add(segment1_start_surface,
                                 Vector3(0, 0, APPROACH_DISTANCE))
-    segment1_start_bottom = math3d.subtract(segment1_surface,
+    segment1_start_bottom = math3d.subtract(segment1_start_surface,
                                             Vector3(0, 0, goal.depth))
     segment1_end_bottom = math3d.add(segment1_start_bottom,
       math3d.scalar_multiply(goal.length, trench_direction))
