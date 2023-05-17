@@ -13,7 +13,7 @@ from ow_lander import constants
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   description="The grinder is used process the terrain for excavation.")
-parser.add_argument('-x', type=float, default=1.45,
+parser.add_argument('-x', type=float, default=1.75,
   help="X-coordinate of grinding starting point in base_link frame")
 parser.add_argument('-y', type=float, default=0.0,
   help="Y-coordinate of grinding starting point in base_link frame")

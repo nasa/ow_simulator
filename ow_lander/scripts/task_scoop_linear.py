@@ -22,7 +22,7 @@ parser.add_argument('--frame', '-f', type=int, default=0,
        + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="Position will be interpreted as relative to the current position")
-parser.add_argument('-x', type=float, default=1.55,
+parser.add_argument('-x', type=float, default=1.75,
   help="X-coordinate on surface where trench starts")
 parser.add_argument('-y', type=float, default=0,
   help="Y-coordinate on surface where trench starts")
@@ -30,7 +30,7 @@ parser.add_argument('-z', type=float, default=constants.DEFAULT_GROUND_HEIGHT,
   help="Estimate of ground position at point (x, y) in base_link frame")
 parser.add_argument('--depth', '-d', type=float, default=0.02,
   help="Depth of scoop during linear segment")
-parser.add_argument('--length', '-l', type=float, default=0.2,
+parser.add_argument('--length', '-l', type=float, default=0.25,
   help="Length of the linear segment of the scoop's trajectory")
 args = parser.parse_args()
 

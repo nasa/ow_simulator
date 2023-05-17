@@ -22,7 +22,7 @@ parser.add_argument('--frame', '-f', type=int, default=0,
        + str(constants.FRAME_ID_MAP))
 parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="Position will be interpreted as relative to the current position")
-parser.add_argument('-x', type=float, default=1.65,
+parser.add_argument('-x', type=float, default=1.75,
   help="X-coordinate on surface where trench is centered")
 parser.add_argument('-y', type=float, default=0,
   help="Y-coordinate on surface where trench is centered")
