@@ -227,19 +227,23 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
   def plan_trajectory(self, goal):
-
     APPROACH_DISTANCE = 0.25 # meters
     # distance between the backward and forward linear paths
     SEGMENT_SEPARATION_DISTANCE = 0.08 # meters
 
+    # NOTE: grind_point lies halfway between the two segments in the center of
+    #       the trench
     grind_point = Point(goal.x_start, goal.y_start, goal.ground_position)
     yaw = _compute_workspace_shoulder_yaw(grind_point.x, grind_point.y)
     # define variables in perpendicular configuration (left-to-right of lander)
     trench_direction = Vector3(math.sin(yaw), -math.cos(yaw), 0.0)
+    # NOTE: this grinder design can grind in any direction, so yaw can be zero
     grind_orientation = math3d.quaternion_from_euler(math.pi, math.pi / 2, 0)
-    # requested grind_point lies directly in between the two segments
-    segment1_offset_from_grind_point = Vector3(
-      -SEGMENT_SEPARATION_DISTANCE / 2, 0, 0)
+    # compute the start of segment1 from grind_point
+    segment1_offset_from_grind_point = math3d.add(
+      Vector3(-SEGMENT_SEPARATION_DISTANCE / 2, 0, 0),
+      math3d.scalar_multiply(-goal.length / 2, trench_direction)
+    )
     segment_separation = math3d.scalar_multiply(
       -SEGMENT_SEPARATION_DISTANCE, math3d.orthogonal(trench_direction))
     if goal.parallel:
@@ -251,17 +255,11 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
                                                     segment_separation)
       trench_direction = math3d.quaternion_rotate(rot_to_parallel,
                                                   trench_direction)
-    else:
-      # shift grind segments by half the length so that grind_point is in center
-      segment1_offset_from_grind_point = math3d.add(
-        segment1_offset_from_grind_point,
-        math3d.scalar_multiply(-goal.length / 2, trench_direction)
-      )
     # define entry position and positions for first segment of grind motion
-    segment1_surface = math3d.add(grind_point, segment1_offset_from_grind_point)
-    entry_approach = math3d.add(segment1_surface,
+    segment1_start_surface = math3d.add(grind_point, segment1_offset_from_grind_point)
+    entry_approach = math3d.add(segment1_start_surface,
                                 Vector3(0, 0, APPROACH_DISTANCE))
-    segment1_start_bottom = math3d.subtract(segment1_surface,
+    segment1_start_bottom = math3d.subtract(segment1_start_surface,
                                             Vector3(0, 0, goal.depth))
     segment1_end_bottom = math3d.add(segment1_start_bottom,
       math3d.scalar_multiply(goal.length, trench_direction))
@@ -318,17 +316,16 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     ARC = math.pi / 2
     RETRACT_DISTANCE = 0.2 # meters
 
-    trench_surface = self.transform_to_planning_frame(
+    # NOTE: dig point is on the surface in the center of the circular trench
+    dig_point = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
-    trench_bottom = Point(
-      trench_surface.x,
-      trench_surface.y,
-      trench_surface.z - goal.depth
-    )
+    # place end-effector above trench position
+    yaw = _compute_workspace_shoulder_yaw(dig_point.x, dig_point.y)
+    trench_bottom = Point(dig_point.x,
+                          dig_point.y,
+                          dig_point.z - goal.depth)
     # center of the circular arc
     center = math3d.add(trench_bottom, Vector3(0, 0, RADIUS))
-    # place end-effector above trench position
-    yaw = _compute_workspace_shoulder_yaw(trench_bottom.x, trench_bottom.y)
     # rotates a downward facing point of contact (POC) on the circle to the
     # start and end of the perpendicular downward arc trajectory
     rot_down_to_start = math3d.quaternion_from_euler(ARC / 2, 0, yaw)
@@ -372,7 +369,7 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     # move through downward circular arc and end with scoop pitched up
     sequence.plan_circular_path_to_pose(Pose(p2, o2), center)
     # retract out of the trench so the next arm movement can be made safely
-    sequence.plan_to_z(trench_surface.z + RETRACT_DISTANCE)
+    sequence.plan_to_z(dig_point.z + RETRACT_DISTANCE)
     return sequence.merge()
 
 
@@ -400,8 +397,8 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     # this pitch was picked to avoid hand collision with terrain
     EXIT_PITCH = -0.8 # radians
 
-    # the commanded dig point is on the surface directly above the start of the
-    # linear segment
+    # NOTE: commanded dig point is halfway between the start of the entry
+    #       circular trajectory and the start of the exit circular trajectory
     dig_point = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
     yaw = _compute_workspace_shoulder_yaw(dig_point.x, dig_point.y)
@@ -410,18 +407,24 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     digging_orientation = math3d.quaternion_from_euler(math.pi, 0, yaw)
     entry_orietation = math3d.quaternion_from_euler(math.pi, ENTRY_PITCH, yaw)
     exit_orientation = math3d.quaternion_from_euler(math.pi, EXIT_PITCH, yaw)
+    # point on the surface above where linear movement starts
+    linear_start_surface = math3d.add(dig_point,
+      math3d.scalar_multiply(-goal.length / 2, trench_direction))
     # point under the surface where linear movement starts
-    linear_start = math3d.add(dig_point, Vector3(0, 0, -goal.depth))
+    linear_start_bottom = math3d.add(linear_start_surface,
+                                     Vector3(0, 0, -goal.depth))
     # point under the surface where linear movement ends
-    linear_end = math3d.add(linear_start,
+    linear_end_bottom = math3d.add(linear_start_bottom,
       math3d.scalar_multiply(goal.length, trench_direction))
     # center of the circular entry arc
-    entry_circle_center = math3d.add(linear_start, Vector3(0, 0, ENTRY_RADIUS))
+    entry_circle_center = math3d.add(linear_start_bottom,
+                                     Vector3(0, 0, ENTRY_RADIUS))
     # center of the circular exit arc
-    exit_circle_center = math3d.add(linear_end, Vector3(0, 0, EXIT_RADIUS))
+    exit_circle_center = math3d.add(linear_end_bottom,
+                                    Vector3(0, 0, EXIT_RADIUS))
     # rotate around center by entry arc
     entry_rot = math3d.quaternion_from_euler(0, ENTRY_PITCH, yaw)
-    linear_start_poc = math3d.subtract(linear_start, entry_circle_center)
+    linear_start_poc = math3d.subtract(linear_start_bottom, entry_circle_center)
     entry_arc_start_poc = math3d.quaternion_rotate(entry_rot, linear_start_poc)
     entry_arc_start = math3d.add(entry_arc_start_poc, entry_circle_center)
     # place approach directly above the start of the entry arc
@@ -429,7 +432,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     entry_approach.z = dig_point.z + APPROACH_DISTANCE
     # rotate around center by exit arc
     exit_rot = math3d.quaternion_from_euler(0, EXIT_PITCH, yaw)
-    linear_end_poc = math3d.subtract(linear_end, exit_circle_center)
+    linear_end_poc = math3d.subtract(linear_end_bottom, exit_circle_center)
     exit_arc_end_poc = math3d.quaternion_rotate(exit_rot, linear_end_poc)
     exit_arc_end = math3d.add(exit_arc_end_poc, exit_circle_center)
     # z-position scoop will retract to after exit
@@ -452,12 +455,16 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     # entry orientation
     sequence.plan_to_position(entry_arc_start)
     # rotate scoop tip into terrain
-    sequence.plan_circular_path_to_pose(Pose(linear_start, digging_orientation),    entry_circle_center)
+    sequence.plan_circular_path_to_pose(
+      Pose(linear_start_bottom, digging_orientation),
+      entry_circle_center
+    )
     # move the scoop along a linear path to the end of the trench
-    sequence.plan_linear_path_to_pose(Pose(linear_end, digging_orientation))
+    sequence.plan_linear_path_to_pose(
+      Pose(linear_end_bottom, digging_orientation))
     # pitch scoop upward and out of the exit point
     sequence.plan_circular_path_to_pose(Pose(exit_arc_end, exit_orientation),
-      exit_circle_center)
+                                        exit_circle_center)
     # retract up from terrain while maintaining exit orientation
     # NOTE: only required for especially deep digs
     if sequence.get_final_pose().position.z < exit_retract_z:
