@@ -30,7 +30,7 @@ parser.add_argument('-z', type=float, default=constants.DEFAULT_GROUND_HEIGHT,
   help="Estimate of ground position at point (x, y) in base_link frame")
 parser.add_argument('--depth', '-d', type=float, default=0.02,
   help="Depth of scoop during linear segment")
-parser.add_argument('--length', '-l', type=float, default=0.25,
+parser.add_argument('--length', '-l', type=float, default=0.3,
   help="Length of the linear segment of the scoop's trajectory")
 args = parser.parse_args()
 
