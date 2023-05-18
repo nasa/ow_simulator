@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream> 
+#include <actionlib_msgs/GoalStatus.h>
 
 using namespace ow_lander;
 using namespace owl_msgs;
@@ -41,6 +42,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);
+  m_action_service_goal_state_sub = nh.subscribe( "/action_goal_states",
+                                                  10,
+                                                  &FaultDetector::actionGoalStateCb,
+                                                  this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_faults_msg_pub = nh.advertise<ArmFaultsStatus>("/arm_faults_status", 10);
@@ -72,6 +77,57 @@ void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flag
 }
 
 // Listeners
+
+void FaultDetector::actionGoalStateCb(const ActionGoalStatus& msg)
+{
+  // loop through the goal state array and update GOAL_ERROR flags
+  int goal_index = msg.UNSPECIFIED_GOAL;
+  while (goal_index < msg.NUM_GOAL_TYPES) {
+    auto goal_status = msg.status_list[goal_index].status;
+
+    // currently only suppporting 'aborted' goals as errors
+    if ( actionlib_msgs::GoalStatus::ABORTED == goal_status ) {
+      switch (goal_index) {
+        case msg.ARM_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::ARM_GOAL_ERROR;
+          break;
+        case msg.TASK_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::TASK_GOAL_ERROR;
+          break;
+        case msg.CAMERA_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::CAMERA_GOAL_ERROR;
+          break;
+        case msg.PAN_TILT_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_GOAL_ERROR;
+          break;
+        default:
+          break;
+      }
+    } else {
+      switch (goal_index) {
+        case msg.ARM_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
+          break;
+        case msg.TASK_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::TASK_GOAL_ERROR;
+          break;
+        case msg.CAMERA_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_GOAL_ERROR;
+          break;
+        case msg.PAN_TILT_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_GOAL_ERROR;
+          break;
+        default:
+          break;
+      }
+    }
+    goal_index++;
+  }
+
+  // publish updated faults messages
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
+}
+
 // Arm and Antenna listeners
 bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
 {

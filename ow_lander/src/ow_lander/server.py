@@ -14,7 +14,7 @@ class ActionServerBase(ABC):
   and logging for all OceanWATERS actions.
   """
 
-  ACTION_STATES_TOPIC = "/action_goal_states"
+  ACTION_GOAL_STATUS_TOPIC = "/action_goal_status"
   
   def __init__(self):
     self._server  = actionlib.SimpleActionServer(
@@ -24,11 +24,13 @@ class ActionServerBase(ABC):
       auto_start = False
     )
     self._goal_state_pub = rospy.Publisher(
-      self.ACTION_STATES_TOPIC, 
-      owl_msgs.msg.ActionServiceGoalState, queue_size=1
+      self.ACTION_GOAL_STATUS_TOPIC, 
+      owl_msgs.msg.ActionGoalStatus, queue_size=1
     )
-    # allocate and initialize the container for goal states
-    self._goal_state_array = [owl_msgs.msg.ActionServiceGoalState.UNSPECIFIED_GOAL]*owl_msgs.msg.ActionServiceGoalState.NUM_GOAL_STATES
+    # allocate and initialize the container for goal status msgs
+    #self._goal_status_array = [0]*owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES
+    self._goal_status_array = actionlib_msgs.GoalStatusArray()
+    self._goal_status_array.resize(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES)
 
   """The string the action server is registered under. Must be overridden!"""
   @property
@@ -145,9 +147,13 @@ class ActionServerBase(ABC):
   
   # @TODO should this be a static method?
   def __publish_state(self, status):
-    if self.component_id is not None:
-      self._goal_state_array[self.component_id] = status
-      self._goal_state_pub.publish(state_array=self._state_array)
+    if self.goal_group_id is not None:
+      msg = owl_msgs.ActionGoalStatus()
+      self._goal_status_array[self.goal_group_id].status = status
+      self._goal_status_array[self.goal_group_id].text   = self.name
+      msg.status_list = self._goal_status_array
+      # @TODO need header?
+      self._goal_state_pub.publish(msg)
 
   @staticmethod
   def __format_result_msg(prefix, msg=""):

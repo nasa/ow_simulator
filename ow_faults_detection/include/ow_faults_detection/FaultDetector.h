@@ -13,6 +13,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
+#include <owl_msgs/ActionGoalStatus.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
@@ -72,6 +73,8 @@ private:
   template<typename pub_t, typename msg_t, typename flags_t>
   void publishFaultsMessage(pub_t& faults_pub, msg_t faults_msg, flags_t faults_flags);
 
+  void actionGoalStateCb(const owl_msgs::ActionGoalStatus& msg);
+
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
@@ -82,6 +85,7 @@ private:
   ros::Publisher m_system_faults_msg_pub;
 
   // faults topic subscribers;
+  ros::Subscriber m_action_service_goal_state_sub;
   ros::Subscriber m_joint_states_sub; // for arm and antenna
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
