@@ -28,9 +28,9 @@ class ActionServerBase(ABC):
       owl_msgs.msg.ActionGoalStatus, queue_size=1
     )
     # allocate and initialize the container for goal status msgs
-    #self._goal_status_array = [0]*owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES
-    self._goal_status_array = actionlib_msgs.GoalStatusArray()
-    self._goal_status_array.resize(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES)
+    self._goal_status_array = []
+    for _ in range(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES):
+      self._goal_status_array.append(actionlib_msgs.msg.GoalStatus())
 
   """The string the action server is registered under. Must be overridden!"""
   @property
@@ -148,12 +148,10 @@ class ActionServerBase(ABC):
   # @TODO should this be a static method?
   def __publish_state(self, status):
     if self.goal_group_id is not None:
-      msg = owl_msgs.ActionGoalStatus()
       self._goal_status_array[self.goal_group_id].status = status
       self._goal_status_array[self.goal_group_id].text   = self.name
-      msg.status_list = self._goal_status_array
       # @TODO need header?
-      self._goal_state_pub.publish(msg)
+      self._goal_state_pub.publish(status_list=self._goal_status_array)
 
   @staticmethod
   def __format_result_msg(prefix, msg=""):
