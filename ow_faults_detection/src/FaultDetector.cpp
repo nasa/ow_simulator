@@ -42,7 +42,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);
-  m_action_service_goal_state_sub = nh.subscribe( "/action_goal_states",
+  m_action_service_goal_state_sub = nh.subscribe( "/action_goal_status",
                                                   10,
                                                   &FaultDetector::actionGoalStateCb,
                                                   this);
