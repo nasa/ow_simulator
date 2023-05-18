@@ -82,8 +82,7 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
 {
   // loop through the goal state array and update GOAL_ERROR flags
   ROS_INFO("-- in action goal cb --");
-  int goal_index = msg.UNSPECIFIED_GOAL;
-  while (goal_index < msg.NUM_GOAL_TYPES) {
+  for (int goal_index = 0; goal_index < msg.NUM_GOAL_TYPES; goal_index++ ) {
     auto goal_status = msg.status_list[goal_index].status;
     std::string goal_text = msg.status_list[goal_index].text;
     ROS_INFO("Processing: %s", goal_text.c_str());

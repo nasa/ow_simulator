@@ -854,7 +854,7 @@ class LightSetIntensityServer(ActionServerBase):
   goal_type     = owl_msgs.msg.LightSetIntensityGoal
   feedback_type = owl_msgs.msg.LightSetIntensityFeedback
   result_type   = owl_msgs.msg.LightSetIntensityResult
-  goal_group_id = owl_msgs.msg.ActionGoalStatus.UNSPECIFIED_GOAL
+  goal_group_id = None
 
   def __init__(self):
     super(LightSetIntensityServer, self).__init__()
@@ -970,7 +970,7 @@ class DockIngestSampleServer(ActionServerBase):
   goal_type     = ow_lander.msg.DockIngestSampleGoal
   feedback_type = ow_lander.msg.DockIngestSampleFeedback
   result_type   = ow_lander.msg.DockIngestSampleResult
-  goal_group_id = owl_msgs.msg.ActionGoalStatus.UNSPECIFIED_GOAL
+  goal_group_id = None
 
   def __init__(self):
     super(DockIngestSampleServer, self).__init__()
