@@ -5,27 +5,30 @@
 import rospy
 import actionlib
 import actionlib_msgs
-import ow_lander.msg
+import owl_msgs.msg
 
 from abc import ABC, abstractmethod
-from std_msgs.msg import String
 
 class ActionServerBase(ABC):
   """A base class that standardizes handling of action goals, results, feedback,
   and logging for all OceanWATERS actions.
   """
 
-  ACTION_STATES_TOPIC = "/action_service_states"
+  ACTION_STATES_TOPIC = "/action_goal_states"
   
   def __init__(self):
-    self._state_pub = rospy.Publisher(self.ACTION_STATES_TOPIC, ow_lander.msg.ActionServiceState, queue_size=1)
-    self._state_array = [ow_lander.msg.ActionServiceState.UNSPECIFIED_GOAL]*ow_lander.msg.ActionServiceState.NUM_GOAL_STATES
     self._server  = actionlib.SimpleActionServer(
       self.name,
       self.action_type,
       execute_cb = self.__on_action_called,
       auto_start = False
     )
+    self._goal_state_pub = rospy.Publisher(
+      self.ACTION_STATES_TOPIC, 
+      owl_msgs.msg.ActionServiceGoalState, queue_size=1
+    )
+    # allocate and initialize the container for goal states
+    self._goal_state_array = [owl_msgs.msg.ActionServiceGoalState.UNSPECIFIED_GOAL]*owl_msgs.msg.ActionServiceGoalState.NUM_GOAL_STATES
 
   """The string the action server is registered under. Must be overridden!"""
   @property
@@ -91,7 +94,7 @@ class ActionServerBase(ABC):
     rospy.loginfo(self.__format_result_msg(f"{self.name}: Succeeded", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_succeeded(result, msg)
-    self._publish_state(actionlib_msgs.msg.GoalStatus.SUCCEEDED)  
+    self.__publish_state(actionlib_msgs.msg.GoalStatus.SUCCEEDED)  
 
   def _set_preempted(self, msg, **kwargs):
     """Declare action was preempted, and publish its results.
@@ -104,7 +107,7 @@ class ActionServerBase(ABC):
     rospy.loginfo(self.__format_result_msg(f"{self.name}: Preempted", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_preempted(result, msg)
-    self._publish_state(actionlib_msgs.msg.GoalStatus.PREEMPTED)  
+    self.__publish_state(actionlib_msgs.msg.GoalStatus.PREEMPTED)  
 
   def _set_aborted(self, msg, **kwargs):
     """Declare action was aborted, and publish its results.
@@ -116,7 +119,7 @@ class ActionServerBase(ABC):
     rospy.logerr(self.__format_result_msg(f"{self.name}: Aborted", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_aborted(result, msg)
-    self._publish_state(actionlib_msgs.msg.GoalStatus.ABORTED)
+    self.__publish_state(actionlib_msgs.msg.GoalStatus.ABORTED)
 
 
   def __on_action_called(self, goal):
@@ -141,10 +144,10 @@ class ActionServerBase(ABC):
     return result, msg
   
   # @TODO should this be a static method?
-  def _publish_state(self, status):
+  def __publish_state(self, status):
     if self.component_id is not None:
-      self._state_array[self.component_id] = status
-      self._state_pub.publish(state_array=self._state_array)
+      self._goal_state_array[self.component_id] = status
+      self._goal_state_pub.publish(state_array=self._state_array)
 
   @staticmethod
   def __format_result_msg(prefix, msg=""):

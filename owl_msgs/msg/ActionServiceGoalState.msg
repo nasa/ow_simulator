@@ -1,5 +1,5 @@
 # Store and communicate the result state of Ow_Lander actions, organized by action 
-#  component/group. 
+#  component/group type. 
 
 Header header
 

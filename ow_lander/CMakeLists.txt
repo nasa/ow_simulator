@@ -26,7 +26,6 @@ add_action_files(
 add_message_files(
   FILES
   GuardedMoveFinalResult.msg
-  ActionServiceState.msg
 )
 
 generate_messages(
