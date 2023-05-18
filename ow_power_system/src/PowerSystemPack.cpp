@@ -33,17 +33,38 @@ void PowerSystemPack::InitAndRun()
   auto system_config_path = ros::package::getPath("ow_power_system")
     + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
+
+  // DEBUG CUSTOMIZATION
   m_print_debug_val = system_config.getString("print_debug");
   // See explanation of m_print_debug_val in the header file for why this
   // is needed for what is essentially a bool.
   if (m_print_debug_val == "true") 
   {
     m_print_debug = true;
+    
+    // Check the other debug flags (which are initialized to false).
+    m_print_debug_val = system_config.getString("timestamp_print_debug");
+    if (m_print_debug_val == "true")
+    {
+      m_timestamp_print_debug = true;
+    }
+    m_print_debug_val = system_config.getString("inputs_print_debug");
+    if (m_print_debug_val == "true")
+    {
+      m_inputs_print_debug = true;
+    }
+    m_print_debug_val = system_config.getString("outputs_print_debug");
+    if (m_print_debug_val == "true")
+    {
+      m_outputs_print_debug = true;
+    }
+    m_print_debug_val = system_config.getString("topics_print_debug");
+    if (m_print_debug_val == "true")
+    {
+      m_topics_print_debug = true;
+    }
   }
-  else
-  {
-    m_print_debug = false;
-  }
+  // If print_debug was false, then all flags remain false as initialized.
 
   m_max_horizon_secs = system_config.getInt32("max_horizon");
   m_num_samples = system_config.getInt32("num_samples");
@@ -157,7 +178,7 @@ void PowerSystemPack::InitAndRun()
     // Set up value modifiers in each node for injection later.
     injectFaults();
     // /* DEBUG PRINT
-    if (m_print_debug)
+    if (m_timestamp_print_debug)
     {
       ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS TO GSAP:");
     }
@@ -206,7 +227,7 @@ void PowerSystemPack::InitAndRun()
         }
 
         // /* DEBUG PRINT
-        if (m_print_debug && !(m_nodes[i].model.timestamp <= 0))
+        if (m_inputs_print_debug && !(m_nodes[i].model.timestamp <= 0))
         {
           std::string s;
           if (i < 10)
@@ -251,39 +272,22 @@ void PowerSystemPack::InitAndRun()
       all_buses_ready = true;
     }
 
-    // DEBUG PRINT
-    bool debug_predict_print = false;
     if (all_buses_ready)
     {
       // Reset all buses' waiting status to send in new data next cycle.
       std::fill_n(std::begin(m_waiting_buses), NUM_NODES, false);
-
-      // /* DEBUG PRINT
-      debug_predict_print = true;
-      if (m_print_debug)
-      {
-        ROS_INFO_STREAM("All predictions completed; updating publications!");
-      }
-      // */
-
       publishPredictions(true);
     }
     else
     {
       // Still waiting on some prognosers, so publish previous predictions.
-      // /* DEBUG PRINT
-      if (m_print_debug)
-      {
-        ROS_INFO_STREAM("Not all predictions completed.");
-      }
-      // */
       publishPredictions(false);
     }
 
     // DEBUG PRINT
-    if (m_print_debug)
+    if (m_outputs_print_debug)
     {
-      ROS_INFO_STREAM("END OF TIMESTAMP " << saved_timestamp << " CURRENT NODE DATA:");
+      ROS_INFO_STREAM("CURRENT NODE DATA:");
       for (int i = 0; i < NUM_NODES; i++)
       {
         std::string s;
@@ -295,18 +299,11 @@ void PowerSystemPack::InitAndRun()
         {
           s = "N";
         }
-        if (m_waiting_buses[i])
+        if (m_waiting_buses[i] || all_buses_ready)
         {
           ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                         << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
-                        << m_EoD_events[i].battery_temperature << ". WAITING");
-        }
-        else if (debug_predict_print)
-        {
-          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
-                        << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
-                        << m_EoD_events[i].battery_temperature
-                        << ". DONE");
+                        << m_EoD_events[i].battery_temperature << ". COMPLETE");
         }
         else
         {
@@ -745,7 +742,7 @@ void PowerSystemPack::publishPredictions(bool update)
   }
 
   // /* DEBUG PRINT
-  if (m_print_debug)
+  if (m_topics_print_debug)
       //&& ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
       //|| (m_nodes[0].model.timestamp >= (m_profile_increment * 5))))
   {

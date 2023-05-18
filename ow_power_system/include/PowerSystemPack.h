@@ -104,13 +104,17 @@ private:
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  // Flag that determines if debug output is printed regarding battery status
+  // Flags that determine if debug output is printed regarding battery status
   // during runtime. Overridden by system.cfg on startup.
   // NOTE: This is a string because of limitations with ConfigMap. There's no
   // function to get boolean variables from a config. Could benefit from an
   // update if such a function is added in the future.
   std::string m_print_debug_val = "false";
   bool m_print_debug = false;
+  bool m_timestamp_print_debug = false;
+  bool m_inputs_print_debug = false;
+  bool m_outputs_print_debug = false;
+  bool m_topics_print_debug = false;
 
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // Lower values mean faster performance in the event a RUL prediction would
