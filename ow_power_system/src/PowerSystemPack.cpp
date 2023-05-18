@@ -51,6 +51,7 @@ void PowerSystemPack::InitAndRun()
   m_initial_power = system_config.getDouble("initial_power");
   m_initial_voltage = system_config.getDouble("initial_voltage");
   m_initial_temperature = system_config.getDouble("initial_temperature");
+  m_initial_soc = system_config.getDouble("initial_soc");
 
   if (!initNodes())
   {
@@ -68,9 +69,10 @@ void PowerSystemPack::InitAndRun()
   for (int i = 0; i < NUM_NODES; i++)
   {
     m_nodes[i].previous_time = 0;
-    m_EoD_events[i].remaining_useful_life = -1;
-    m_EoD_events[i].state_of_charge = -1;
-    m_EoD_events[i].battery_temperature = -1;
+    m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
+    m_EoD_events[i].state_of_charge = m_initial_soc;
+    m_EoD_events[i].battery_temperature = m_initial_temperature;
+    m_waiting_buses[i] = true;
   }
 
   // Construct the prediction handlers.
@@ -81,7 +83,7 @@ void PowerSystemPack::InitAndRun()
                     m_EoD_events[i].remaining_useful_life,
                     m_EoD_events[i].state_of_charge,
                     m_EoD_events[i].battery_temperature,
-                    m_nodes[i].bus, m_nodes[i].name, i, m_waiting_buses
+                    m_nodes[i].bus, m_nodes[i].name, i, m_waiting_buses[i]
     );
   }
 
@@ -129,183 +131,159 @@ void PowerSystemPack::InitAndRun()
   // For debug prints.
   int saved_timestamp = -1;
 
-  // Loop through the PowerSystemNodes to update their values and send them to the bus
-  // to get predictions.
+  // Initialize the beginning outputs to publish before the first set of
+  // predictions have returned.
+  // As per Chetan, the starting placeholder predictions should be:
+  // RUL: MAX_HORIZON_SECS
+  // SoC: 95%
+  // TMP: m_initial_temperatrue
+  m_prev_rul = m_max_horizon_secs;
+  m_prev_soc = m_initial_soc;
+  m_prev_tmp = m_initial_temperature;
+
+
+  // Loop through the PowerSystemNodes to update their values and send them to
+  // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
-  bool send_in_data = true;
-  bool first_run = true;
+  int startLoops = 2 * NUM_NODES;
   while(ros::ok())
   {
     ros::spinOnce();
 
+    // /* DEBUG PRINT
     saved_timestamp = m_nodes[0].model.timestamp;
+    // */
 
-    // Check if all buses have returned.
-    if (m_waiting_buses == NUM_NODES)
+    // Set up value modifiers in each node for injection later.
+    injectFaults();
+    // /* DEBUG PRINT
+    if (m_print_debug)
     {
-      // Update the published values with the next set of predicted data.
-      // /* DEBUG PRINT
-      if (m_print_debug)
-      {
-        ROS_INFO_STREAM("All " << m_waiting_buses << " buses ready for new data!");
-      }
-      // */
-      m_waiting_buses = 0;
-      send_in_data = true;
-      publishPredictions(true);
-      m_publishing_ready = true;
+      ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS TO GSAP:");
     }
-    else
+    // */
+
+    // Cycle the power stats in the nodes.
+    for (int i = 0; i < NUM_NODES; i++)
     {
-      // Still waiting on some buses, so do not send in new data this loop
-      // and publish the previous predictions instead.
-      // /* DEBUG PRINT
-      if (m_print_debug)
+      m_nodes[i].node.RunOnce();
+      m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
+                                    m_nodes[i].model.voltage, m_nodes[i].model.temperature);
+      
+      // If the timestamp is the same as the previous one (happens during startup),
+      // do not publish the data to prevent crashes.
+      // Otherwise, do not send new data to the prognoser if its prediction is
+      // complete. Wait for other prognosers to finish.
+      if (m_nodes[i].previous_time != m_nodes[i].model.timestamp
+          && (!m_waiting_buses[i]))
       {
-        ROS_INFO_STREAM(m_waiting_buses << " out of " << NUM_NODES << " buses "
-                        << "waiting.");
-      }
-      if (m_publishing_ready)
-      {
-        // Re-publish previous predictions.
-        publishPredictions(false);
-        // /* DEBUG PRINT
-        if (m_print_debug)
+        auto timestamp = START_TIME + std::chrono::milliseconds(
+          static_cast<unsigned>(m_nodes[i].model.timestamp * 1000)
+        );
+        
+        // Compile a vector<shared_ptr<DoubleMessage>> and then individually
+        // publish each component.
+        std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
+        double input_power, input_tmp, input_voltage;
+
+        // HACK ALERT (May 2023):
+        // The first batch of data (sent in during startup) seems to be lost to 
+        // the void. This is a bandaid fix to send the initial data in twice
+        // for each node on the next loop.
+        if (startLoops > 0)
         {
-          ROS_INFO_STREAM("Published previous predictions.");
+          // The very first values sent in should be the init values.
+          input_power = m_initial_power;
+          input_voltage = m_initial_voltage;
+          input_tmp = m_initial_temperature;
+          startLoops--;
         }
-        // */
-      }
-      else
-      {
-        // No initial predictions have returned yet, so do not publish anything.
-        // /* DEBUG PRINT
-        if (m_print_debug)
+        else
         {
-          ROS_WARN_STREAM("No prediction data to publish yet!");
+          input_power = m_nodes[i].model.wattage;
+          input_voltage = m_nodes[i].model.voltage;
+          input_tmp = m_nodes[i].model.temperature;
         }
-        // */
-      }
 
-      // Increment every node's timestamp even if no data was sent.
-      for (int i = 0; i < NUM_NODES; i++)
-      {
-        m_nodes[i].node.TickTime();
-        m_nodes[i].model.timestamp = m_nodes[i].node.GetTimestamp();
-      }
-    }
-
-
-
-    if (send_in_data)
-    {
-      // Set up value modifiers in each node for injection later.
-      injectFaults();
-
-      // /* DEBUG PRINT
-      if (m_print_debug)
-      {
-        ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS TO GSAP:");
-      }
-      // */
-
-      for (int i = 0; i < NUM_NODES; i++)
-      {
-        m_nodes[i].node.RunOnce();
-        m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
-                                      m_nodes[i].model.voltage, m_nodes[i].model.temperature);
-
-        // If the timestamp is the same as the previous one (happens during startup),
-        // do not publish the data to prevent terminate crashes.
-        if (m_nodes[i].previous_time != m_nodes[i].model.timestamp)
+        // /* DEBUG PRINT
+        if (m_print_debug && !(m_nodes[i].model.timestamp <= 0))
         {
-          auto timestamp = START_TIME + std::chrono::milliseconds(
-            static_cast<unsigned>(m_nodes[i].model.timestamp * 1000));
-
-          // Compile a vector<shared_ptr<DoubleMessage>> and then individually publish
-          // each individual component.
-          std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
-          double input_power;
-          double input_tmp;
-          double input_voltage;
-
-          // Send in the initial data twice as part of the May '23 hack alert below.
-          if (first_run)
+          std::string s;
+          if (i < 10)
           {
-            // The very first values sent in should be the init values.
-            input_power = m_initial_power;
-            input_tmp = m_initial_temperature;
-            input_voltage = m_initial_voltage;
-          }
-          else if (firstLoop[i])
-          {
-            // The very first values sent in should be the init values.
-            input_power = m_initial_power;
-            input_tmp = m_initial_temperature;
-            input_voltage = m_initial_voltage;
-            firstLoop[i] = false;
+            s = "N0";
           }
           else
           {
-            input_power = m_nodes[i].model.wattage;
-            input_tmp = m_nodes[i].model.temperature;
-            input_voltage = m_nodes[i].model.voltage;
+            s = "N";
           }
+          ROS_INFO_STREAM(s << i << " power: " << input_power 
+                          << ".  volts: " << input_voltage
+                          << ".  tmp: " << input_tmp);
+        }
+        // */
 
-          // /* DEBUG PRINT
-          if (m_print_debug && !(m_nodes[i].model.timestamp <= 0))
-          {
-            std::string s;
-            if (i < 10)
-            {
-              s = "N0";
-            }
-            else
-            {
-              s = "N";
-            }
-            ROS_INFO_STREAM(s << i << " power: " << input_power 
-                            << ".  volts: " << input_voltage
-                            << ".  tmp: " << input_tmp);
-          }
-          // */
+        // Set up the input data that will be passed through the message bus
+        // to GSAP's asynchronous prognosers.
+        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+          MessageId::Watts, m_nodes[i].name, timestamp, input_power));
+        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+          MessageId::Centigrade, m_nodes[i].name, timestamp, input_tmp));
+        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+          MessageId::Volts, m_nodes[i].name, timestamp, input_voltage));
 
-          // Set up the input data that will be passed through the message bus
-          // to GSAP's asynchronous prognosers.
-          data_to_publish.push_back(
-            std::make_shared<DoubleMessage>(MessageId::Watts, m_nodes[i].name, timestamp, input_power));
-          data_to_publish.push_back(
-            std::make_shared<DoubleMessage>(MessageId::Centigrade, m_nodes[i].name, timestamp, input_tmp));
-          data_to_publish.push_back(
-            std::make_shared<DoubleMessage>(MessageId::Volts, m_nodes[i].name, timestamp, input_voltage));
+        m_nodes[i].previous_time = m_nodes[i].model.timestamp;
 
-        
-          m_nodes[i].previous_time = m_nodes[i].model.timestamp;
-          // Publish the data to GSAP's async prognosers, triggering a prediction.
-          for (const auto& info : data_to_publish)
-          {
-            m_nodes[i].bus.publish(info);
-          }
+        // Publish the data to GSAP's async prognosers, triggering or
+        // contributing to a prediction.
+        for (const auto& info : data_to_publish)
+        {
+          m_nodes[i].bus.publish(info);
         }
       }
-
-      // HACK ALERT (May 2023):
-      // The first batch of data (sent in during startup) seems to be lost to 
-      // the void. This is a bandaid fix to send a 2nd batch in on the next loop.
-      if (first_run)
-      {
-        first_run = false;
-      }
-      else
-      {
-        send_in_data = false;
-      }
     }
-    
-    // /* DEBUG PRINT
-    if (m_print_debug && m_publishing_ready)
+
+    // Check if all buses have returned, and update published data if so.
+    bool all_buses_ready = false;
+    if (std::all_of(std::begin(m_waiting_buses), std::end(m_waiting_buses),
+        [](bool i){return i;}))
     {
-      ROS_INFO_STREAM("TIMESTAMP " << saved_timestamp << " CURRENT NODE DATA:");
+      all_buses_ready = true;
+    }
+
+    // DEBUG PRINT
+    bool debug_predict_print = false;
+    if (all_buses_ready)
+    {
+      // Reset all buses' waiting status to send in new data next cycle.
+      std::fill_n(std::begin(m_waiting_buses), NUM_NODES, false);
+
+      // /* DEBUG PRINT
+      debug_predict_print = true;
+      if (m_print_debug)
+      {
+        ROS_INFO_STREAM("All predictions completed; updating publications!");
+      }
+      // */
+
+      publishPredictions(true);
+    }
+    else
+    {
+      // Still waiting on some prognosers, so publish previous predictions.
+      // /* DEBUG PRINT
+      if (m_print_debug)
+      {
+        ROS_INFO_STREAM("Not all predictions completed.");
+      }
+      // */
+      publishPredictions(false);
+    }
+
+    // DEBUG PRINT
+    if (m_print_debug)
+    {
+      ROS_INFO_STREAM("END OF TIMESTAMP " << saved_timestamp << " CURRENT NODE DATA:");
       for (int i = 0; i < NUM_NODES; i++)
       {
         std::string s;
@@ -317,16 +295,34 @@ void PowerSystemPack::InitAndRun()
         {
           s = "N";
         }
-        ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+        if (m_waiting_buses[i])
+        {
+          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                         << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
-                        << m_EoD_events[i].battery_temperature);
+                        << m_EoD_events[i].battery_temperature << ". WAITING");
+        }
+        else if (debug_predict_print)
+        {
+          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+                        << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
+                        << m_EoD_events[i].battery_temperature
+                        << ". DONE");
+        }
+        else
+        {
+          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+                        << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
+                        << m_EoD_events[i].battery_temperature
+                        << ". PREDICTING");          
+        }
+        
       }
       if (!(m_nodes[0].model.timestamp <= 0))
       {
         std::cout << std::endl;
       }
     }
-    // */
+    //
 
     // Sleep for any remaining time in the loop that would cause it to
     // complete before the set rate of GSAP.
@@ -748,6 +744,17 @@ void PowerSystemPack::publishPredictions(bool update)
     max_tmp = m_prev_tmp;
   }
 
+  // /* DEBUG PRINT
+  if (m_print_debug)
+      //&& ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
+      //|| (m_nodes[0].model.timestamp >= (m_profile_increment * 5))))
+  {
+    ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
+                    ", min_soc: " << std::to_string(min_soc) <<
+                    ", max_tmp: " << std::to_string(max_tmp));
+  }
+  // */
+
   // If either RUL or SoC have entered the negative, it indicates the battery
   // is in a fail state.
   // While it is possible sometimes for the battery to recover from this,
@@ -772,17 +779,6 @@ void PowerSystemPack::publishPredictions(bool update)
     min_soc = 0;
     max_tmp = 0;
   }
-
-  // /* DEBUG PRINT
-  if (m_print_debug
-      && ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
-      || (m_nodes[0].model.timestamp >= (m_profile_increment * 5))))
-  {
-    ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
-                    ", min_soc: " << std::to_string(min_soc) <<
-                    ", max_tmp: " << std::to_string(max_tmp));
-  }
-  // */
 
   // Publish the values for other components.
   rul_msg.value = min_rul;

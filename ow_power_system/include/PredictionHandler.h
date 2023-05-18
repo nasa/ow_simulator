@@ -25,7 +25,7 @@ class PredictionHandler : public IMessageProcessor
 {
 public:
   PredictionHandler(double& rul, double& soc, double& temp, MessageBus& bus,
-                    const std::string& src, int node_num, int& waiting_buses);
+                    const std::string& src, int node_num, bool& bus_status);
   ~PredictionHandler();
   // Copy constructor & assignment operator. Neither should be allowed given
   // how PredictionHandler uses references.
@@ -40,7 +40,7 @@ private:
   double& m_soc_ref;
   double& m_temp_ref;
   MessageBus& m_bus;
-  int& m_bus_wait_count;
+  bool& m_bus_status;
 
   std::string m_identifier;
   int m_node_number;

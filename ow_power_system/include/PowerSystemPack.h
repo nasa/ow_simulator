@@ -39,7 +39,7 @@ using PrognoserVector = std::vector<PrognoserMap>;
 //                        around the ~300s mark with 16 nodes, but did not occur at all
 //                        over a 45-minute test at 15 nodes or less.
 //                        No idea what the issue is yet.
-const int NUM_NODES = 8;
+const int NUM_NODES = 24;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
@@ -154,10 +154,11 @@ private:
   int m_profile_increment = 2;
 
   // The initial power/temperature/voltage readings used as the start values for
-  // the GSAP prognosers.
+  // the GSAP prognosers. Overwritten by the values in system.cfg.
   double m_initial_power = 0.0;
   double m_initial_temperature = 20.0;
   double m_initial_voltage = 4.1;
+  double m_initial_soc = 0.95;
 
   // End main system configuration.
   
@@ -166,11 +167,8 @@ private:
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
 
-  // Track the number of prognosers waiting for new data.
-  int m_waiting_buses = 0;
-
-  // Tracks if at least one set of predictions has returned.
-  bool m_publishing_ready = false;
+  // Track the prognosers waiting for new data.
+  bool m_waiting_buses[NUM_NODES];
 
   // Values to be re-published during intervals where GSAP has not returned
   // predictions yet.

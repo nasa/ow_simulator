@@ -198,7 +198,7 @@ void PowerSystemNode::applyValueMods(double& power, double& voltage, double& tem
 void PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  TickTime();
+  m_current_timestamp += m_profile_increment;
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
   m_wattage_estimate = electrical_power + m_baseline_wattage;
@@ -251,11 +251,6 @@ double PowerSystemNode::GetAvgMechanicalPower()
 double PowerSystemNode::GetTimestamp()
 {
   return m_current_timestamp;
-}
-
-void PowerSystemNode::TickTime()
-{
-  m_current_timestamp += m_profile_increment;
 }
 
 void PowerSystemNode::SetHighPowerDraw(double draw)
