@@ -81,12 +81,9 @@ void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flag
 void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
 {
   // loop through the goal state array and update GOAL_ERROR flags
-  ROS_INFO("-- in action goal cb --");
   for (int goal_index = 0; goal_index < msg.NUM_GOAL_TYPES; goal_index++ ) {
     auto goal_status = msg.status_list[goal_index].status;
     std::string goal_text = msg.status_list[goal_index].text;
-    ROS_INFO("Processing: %s", goal_text.c_str());
-    ROS_INFO("Goal Status: %d", goal_status);
 
     // currently only suppporting 'aborted' goals as errors
     if ( actionlib_msgs::GoalStatus::ABORTED == goal_status ) {
