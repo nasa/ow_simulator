@@ -85,7 +85,7 @@ private:
   ros::Publisher m_system_faults_msg_pub;
 
   // faults topic subscribers;
-  ros::Subscriber m_action_service_goal_state_sub;
+  ros::Subscriber m_action_goal_status_sub;
   ros::Subscriber m_joint_states_sub; // for arm and antenna
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;

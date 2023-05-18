@@ -42,10 +42,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);
-  m_action_service_goal_state_sub = nh.subscribe( "/action_goal_status",
-                                                  10,
-                                                  &FaultDetector::actionGoalStatusCb,
-                                                  this);
+  m_action_goal_status_sub = nh.subscribe( "/action_goal_status",
+                                            10,
+                                            &FaultDetector::actionGoalStatusCb,
+                                            this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_faults_msg_pub = nh.advertise<ArmFaultsStatus>("/arm_faults_status", 10);
