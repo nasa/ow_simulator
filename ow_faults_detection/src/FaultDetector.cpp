@@ -83,9 +83,8 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
   // loop through the goal state array and update GOAL_ERROR flags
   for (int goal_index = 0; goal_index < msg.NUM_GOAL_TYPES; goal_index++ ) {
     auto goal_status = msg.status_list[goal_index].status;
-    std::string goal_text = msg.status_list[goal_index].text;
 
-    // currently only suppporting 'aborted' goals as errors
+    // set/exonerate goal errors
     if ( actionlib_msgs::GoalStatus::ABORTED == goal_status ) {
       switch (goal_index) {
         case msg.ARM_GOAL:
@@ -103,7 +102,7 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
         default:
           break;
       }
-    } else {
+    } else if ( actionlib_msgs::GoalStatus::SUCCEEDED == goal_status ){
       switch (goal_index) {
         case msg.ARM_GOAL:
           m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
@@ -119,9 +118,8 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
           break;
         default:
           break;
-      }
+      } // else: other statuses not currently supported but should be in the future
     }
-    goal_index++;
   }
 
   // publish updated faults messages
