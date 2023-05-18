@@ -15,6 +15,10 @@ class ActionServerBase(ABC):
   """
 
   ACTION_GOAL_STATUS_TOPIC = "/action_goal_status"
+  # allocate and initialize the container for goal status msgs
+  _goal_status_array = []
+  for _ in range(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES):
+      _goal_status_array.append(actionlib_msgs.msg.GoalStatus())
   
   def __init__(self):
     self._server  = actionlib.SimpleActionServer(
@@ -27,10 +31,6 @@ class ActionServerBase(ABC):
       self.ACTION_GOAL_STATUS_TOPIC, 
       owl_msgs.msg.ActionGoalStatus, queue_size=1
     )
-    # allocate and initialize the container for goal status msgs
-    self._goal_status_array = []
-    for _ in range(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES):
-      self._goal_status_array.append(actionlib_msgs.msg.GoalStatus())
 
   """The string the action server is registered under. Must be overridden!"""
   @property
@@ -145,14 +145,23 @@ class ActionServerBase(ABC):
       msg += "\n" + attribute_err
     return result, msg
   
-  # @TODO should this be a static method?
   def __publish_state(self, status):
     if self.goal_group_id is not None:
-      self._goal_status_array[self.goal_group_id].status = status
-      self._goal_status_array[self.goal_group_id].text   = self.name
-      # @TODO need header?
-      print(f'publishing state for {self.name}, with status={status}')
-      self._goal_state_pub.publish(status_list=self._goal_status_array)
+      # update internal status list
+      timestamp = rospy.Time.now()
+      goal_id = str(self.goal_group_id) # ActionGoalStatus emum value to string
+      text = f'Last Reported Action: {self.name}'
+      self._goal_status_array[self.goal_group_id].goal_id.stamp = timestamp
+      self._goal_status_array[self.goal_group_id].goal_id.id    = goal_id
+      self._goal_status_array[self.goal_group_id].status        = status
+      self._goal_status_array[self.goal_group_id].text          = text
+           
+      # publish status
+      msg = owl_msgs.msg.ActionGoalStatus()
+      msg.header.stamp    = timestamp
+      msg.header.frame_id = "world"
+      msg.status_list     = self._goal_status_array
+      self._goal_state_pub.publish(msg)
 
   @staticmethod
   def __format_result_msg(prefix, msg=""):
