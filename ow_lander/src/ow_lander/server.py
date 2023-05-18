@@ -151,6 +151,7 @@ class ActionServerBase(ABC):
       self._goal_status_array[self.goal_group_id].status = status
       self._goal_status_array[self.goal_group_id].text   = self.name
       # @TODO need header?
+      print(f'publishing state for {self.name}, with status={status}')
       self._goal_state_pub.publish(status_list=self._goal_status_array)
 
   @staticmethod

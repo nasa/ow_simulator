@@ -44,7 +44,7 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           this);
   m_action_service_goal_state_sub = nh.subscribe( "/action_goal_status",
                                                   10,
-                                                  &FaultDetector::actionGoalStateCb,
+                                                  &FaultDetector::actionGoalStatusCb,
                                                   this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
@@ -78,12 +78,16 @@ void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flag
 
 // Listeners
 
-void FaultDetector::actionGoalStateCb(const ActionGoalStatus& msg)
+void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
 {
   // loop through the goal state array and update GOAL_ERROR flags
+  ROS_INFO("-- in action goal cb --");
   int goal_index = msg.UNSPECIFIED_GOAL;
   while (goal_index < msg.NUM_GOAL_TYPES) {
     auto goal_status = msg.status_list[goal_index].status;
+    std::string goal_text = msg.status_list[goal_index].text;
+    ROS_INFO("Processing: %s", goal_text.c_str());
+    ROS_INFO("Goal Status: %d", goal_status);
 
     // currently only suppporting 'aborted' goals as errors
     if ( actionlib_msgs::GoalStatus::ABORTED == goal_status ) {

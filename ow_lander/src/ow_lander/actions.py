@@ -84,7 +84,7 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmStopGoal
   feedback_type = owl_msgs.msg.ArmStopFeedback
   result_type   = owl_msgs.msg.ArmStopResult
-  goal_group_id = owl_msgs.msg.ActionGoalStatus.ARM_GOAL
+  goal_group_id = None
 
   def execute_action(self, _goal):
     if self._arm.stop_arm():

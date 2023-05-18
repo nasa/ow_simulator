@@ -73,7 +73,7 @@ private:
   template<typename pub_t, typename msg_t, typename flags_t>
   void publishFaultsMessage(pub_t& faults_pub, msg_t faults_msg, flags_t faults_flags);
 
-  void actionGoalStateCb(const owl_msgs::ActionGoalStatus& msg);
+  void actionGoalStatusCb(const owl_msgs::ActionGoalStatus& msg);
 
   // PUBLISHERS AND SUBSCRIBERS
   
