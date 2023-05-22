@@ -29,7 +29,7 @@ public:
   ~PowerSystemNode() = default;
   PowerSystemNode(const PowerSystemNode&) = default;
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
-  bool Initialize();
+  bool Initialize(int num_nodes);
   void RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
   double GetRawMechanicalPower();
@@ -72,6 +72,8 @@ private:
   double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
   double m_current_timestamp = 0.0;
+  int m_num_nodes = -1;                 // Number of async nodes running at once
+                                        // (overwritten during Initialize())
 
   // Baseline value for power drawn by continuously-running systems.
   // This initial value is overriden by the system config.

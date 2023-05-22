@@ -268,7 +268,7 @@ bool PowerSystemPack::initNodes()
   for (int i = 0; i < NUM_NODES; i++)
   {
     m_nodes[i].name = setNodeName(i);
-    if (!m_nodes[i].node.Initialize())
+    if (!m_nodes[i].node.Initialize(NUM_NODES))
     {
         return false;
     }
@@ -487,6 +487,9 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   //       I don't know why exactly this is the case. If they should happen
   //       to stop calling in this order, it could potentially cause problems.
   //       (~Liam, Summer 2022)
+
+  // DEBUG
+  ROS_INFO_STREAM("Pack cB called!");
   
   // Get the mechanical power values from each node.
   double raw_mechanical_values[NUM_NODES];

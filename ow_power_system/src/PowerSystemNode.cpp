@@ -21,8 +21,9 @@ using namespace std_msgs;
  * Called on creating a PowerSystemNode object. Sets up class variables
  * and initializes various other things.
  */
-bool PowerSystemNode::Initialize()
+bool PowerSystemNode::Initialize(int num_nodes)
 {
+  m_num_nodes = num_nodes;
   if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load PowerSystemNode system config.");
     return false;
@@ -100,6 +101,8 @@ bool PowerSystemNode::initCallback()
  */
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
+  // DEBUG
+  ROS_INFO_STREAM("Node cB called!");
   auto power_watts = 0.0;  // This includes the arm + antenna
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
@@ -111,13 +114,17 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw = power_watts;
   m_mechanical_power_avg = mean_mechanical_power;
 
-  m_unprocessed_mechanical_power = mean_mechanical_power;
+  m_unprocessed_mechanical_power = mean_mechanical_power / m_num_nodes;
 
   if (!m_processing_power_batch)
   {
     m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
     m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
     m_trigger_processing_new_power_batch = true;
+  }
+  else
+  {
+    ROS_WARN_STREAM("m_process_power_batch was false!");
   }
 }
 
@@ -223,6 +230,10 @@ void PowerSystemNode::RunOnce()
     m_processing_power_batch = true;
     runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
+  }
+  else
+  {
+    ROS_ERROR_STREAM("Node m_trigger was false!");
   }
 }
 
