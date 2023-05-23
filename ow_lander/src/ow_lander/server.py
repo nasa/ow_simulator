@@ -5,7 +5,7 @@
 import rospy
 import actionlib
 import actionlib_msgs
-import owl_msgs.msg
+import ow_lander.msg
 
 from abc import ABC, abstractmethod
 
@@ -16,9 +16,10 @@ class ActionServerBase(ABC):
 
   ACTION_GOAL_STATUS_TOPIC = "/action_goal_status"
   # allocate and initialize the container for goal status msgs
-  _goal_status_array = []
-  for _ in range(owl_msgs.msg.ActionGoalStatus.NUM_GOAL_TYPES):
-      _goal_status_array.append(actionlib_msgs.msg.GoalStatus())
+  _goal_status_array = [
+    actionlib_msgs.msg.GoalStatus() for _ in range(ow_lander.msg.ActionGoalStatus.NUM_GOAL_TYPES) 
+    ]
+
   
   def __init__(self):
     self._server  = actionlib.SimpleActionServer(
@@ -29,7 +30,7 @@ class ActionServerBase(ABC):
     )
     self._goal_state_pub = rospy.Publisher(
       self.ACTION_GOAL_STATUS_TOPIC, 
-      owl_msgs.msg.ActionGoalStatus, queue_size=1
+      ow_lander.msg.ActionGoalStatus, queue_size=1
     )
 
   """The string the action server is registered under. Must be overridden!"""
@@ -60,6 +61,13 @@ class ActionServerBase(ABC):
   @abstractmethod
   def result_type(self):
     pass
+  
+  """Component group (arm, camera, etc) for categorically reporting action goal status 
+  (Refer to `ow_lander/msg/ActionGoalStatus.msg` for supported group definitions/ids)
+  """
+  @property
+  def goal_group_id(self):
+    return None
 
   @abstractmethod
   def execute_action(self, goal):
@@ -157,7 +165,7 @@ class ActionServerBase(ABC):
       self._goal_status_array[self.goal_group_id].text          = text
            
       # publish status
-      msg = owl_msgs.msg.ActionGoalStatus()
+      msg = ow_lander.msg.ActionGoalStatus()
       msg.header.stamp    = timestamp
       msg.header.frame_id = "world"
       msg.status_list     = self._goal_status_array
