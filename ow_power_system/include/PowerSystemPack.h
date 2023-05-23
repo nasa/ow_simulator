@@ -31,12 +31,15 @@
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
 
-// Change this value to modify the number of parallel battery nodes in the pack.
-// NOTE: The expected number of nodes (24) appears to take much longer than 2
-//       seconds to process. Currently unknown what the cause of this is, though
-//       it is likely related to GSAP's time required to process predictions and
-//       so it may not be addressable here.
-const int NUM_NODES = 8;
+// NOTE: This is required as a compile-time constant, so it cannot be placed in
+//       a .cfg file. The simulation must be re-built if it is changed.
+// HACK ALERT (May 2023): High amounts of nodes seems to cause GSAP to eventually
+//                        return highly negative and invalid predictions well ahead
+//                        of an expected battery failure. On my setup, this happens
+//                        around the ~300s mark with 16 nodes, but did not occur at all
+//                        over a 45-minute test at 15 nodes or less.
+//                        No idea what the issue is yet.
+const int NUM_NODES = 24;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
@@ -90,7 +93,7 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
   bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  void publishPredictions();
+  void publishPredictions(bool update);
   std::string setNodeName(int node_num);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -101,13 +104,16 @@ private:
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  // Flag that determines if debug output is printed regarding battery status
+  // Flags that determine if debug output is printed regarding battery status
   // during runtime. Overridden by system.cfg on startup.
-  // NOTE: This is a string because of limitations with ConfigMap. There's no
-  // function to get boolean variables from a config. Could benefit from an
+  // NOTE: There's no function to get boolean variables from a config, so
+  // these bools have to be set via string comparisons. Could benefit from an
   // update if such a function is added in the future.
-  std::string m_print_debug_val = "false";
   bool m_print_debug = false;
+  bool m_timestamp_print_debug = false;
+  bool m_inputs_print_debug = false;
+  bool m_outputs_print_debug = false;
+  bool m_topics_print_debug = false;
 
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // Lower values mean faster performance in the event a RUL prediction would
@@ -151,10 +157,11 @@ private:
   int m_profile_increment = 2;
 
   // The initial power/temperature/voltage readings used as the start values for
-  // the GSAP prognosers.
+  // the GSAP prognosers. Overwritten by the values in system.cfg.
   double m_initial_power = 0.0;
   double m_initial_temperature = 20.0;
   double m_initial_voltage = 4.1;
+  double m_initial_soc = 0.95;
 
   // End main system configuration.
   
@@ -162,6 +169,15 @@ private:
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
+
+  // Track the prognosers waiting for new data.
+  bool m_waiting_buses[NUM_NODES];
+
+  // Values to be re-published during intervals where GSAP has not returned
+  // predictions yet.
+  int m_prev_rul;
+  double m_prev_soc;
+  double m_prev_tmp;
 };
 
 #endif

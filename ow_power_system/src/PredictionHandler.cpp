@@ -26,8 +26,11 @@ static constexpr int MODEL_TEMPERATURE_INDEX = 1;
  * bus.
  **/
 PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp,
-                                     MessageBus& bus, const std::string& src, int node_num) :
-                                     m_rul_ref(rul), m_soc_ref(soc), m_temp_ref(temp), m_bus(bus)
+                                     MessageBus& bus, const std::string& src,
+                                     int node_num, bool& bus_status) :
+                                     m_rul_ref(rul), m_soc_ref(soc),
+                                     m_temp_ref(temp), m_bus(bus),
+                                     m_bus_status(bus_status)
 {
   m_bus.subscribe(this, src, MessageId::BatteryEod);
   m_identifier = src;
@@ -115,6 +118,9 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   m_rul_ref = rul_median;
   m_soc_ref = soc_median;
   m_temp_ref = model_output[MODEL_TEMPERATURE_INDEX];
+
+  // Set the waiting status of this bus to true.
+  m_bus_status = true;
 }
 
 double PredictionHandler::findMedian(std::vector<double> samples)

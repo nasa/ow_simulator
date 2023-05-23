@@ -34,6 +34,7 @@ public:
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
+  double GetTimestamp();
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
   void SetCustomVoltageFault(double volts);

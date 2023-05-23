@@ -248,6 +248,11 @@ double PowerSystemNode::GetAvgMechanicalPower()
   return m_mechanical_power_avg;
 }
 
+double PowerSystemNode::GetTimestamp()
+{
+  return m_current_timestamp;
+}
+
 void PowerSystemNode::SetHighPowerDraw(double draw)
 {
   m_added_hpd = draw;
