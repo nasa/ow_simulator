@@ -93,7 +93,7 @@ private:
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
   bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  void publishPredictions(bool update);
+  void publishPredictions();
   std::string setNodeName(int node_num);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
@@ -147,6 +147,12 @@ private:
   // The matrix used to store EoD events.
   EoDValues m_EoD_events[NUM_NODES];
 
+  // Vector w/ supporting variables that stores the moving average of the
+  // past mechanical power values.
+  int m_moving_average_window = 25;
+  std::vector<double> m_power_values;
+  size_t m_power_values_index = 0;
+
   // GSAP's cycle time
   double m_gsap_rate_hz = 0.5;
 
@@ -173,12 +179,6 @@ private:
 
   // Track the prognosers waiting for new data.
   bool m_waiting_buses[NUM_NODES];
-
-  // Values to be re-published during intervals where GSAP has not returned
-  // predictions yet.
-  int m_prev_rul;
-  double m_prev_soc;
-  double m_prev_tmp;
 };
 
 #endif

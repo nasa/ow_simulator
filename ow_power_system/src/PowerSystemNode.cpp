@@ -34,11 +34,6 @@ bool PowerSystemNode::Initialize(int num_nodes)
 
   m_init_time = system_clock::now(); // Taken from initPrognoser()
 
-  if (!initCallback()) {
-    ROS_ERROR("Failed to initialize PowerSystemNode callback.");
-    return false;
-  }
-
   return true;
 }
 
@@ -74,57 +69,15 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-/*
- * Originally 'initTopics()', this function sets up the callback function
- * for the node handle. Published values are now handled in PowerSystemPack.
- */
-bool PowerSystemNode::initCallback()
+void PowerSystemNode::applyMechanicalPower(double mechanical_power)
 {
-  // Subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
-  return true;
-}
-
-/*
- * Callback function that runs once per cycle. Previously it published mechanical power,
- * but now simply prepares the PowerSystemNode for creating another set of input data.
- * 
- * NOTE: The raw and average mechanical power values seemed to always be 0 during
- * testing. I realize in hindsight that I didn't test using arm commands,
- * which generate mechanical power. Thus, this function may not work correctly.
- * 
- * Chetan should be consulted on how mechanical power should be handled on a
- * per-node basis. The main points to consider are that all nodes' callbacks
- * run before the PowerSystemPack's callback does, and the Pack callback is the
- * one that publishes mechanical power values. The mechanical values here are fed
- * into the individual nodes' input data. (~Liam, Summer 2022)
- */
-void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
-{
-  // DEBUG
-  ROS_INFO_STREAM("Node cB called!");
-  auto power_watts = 0.0;  // This includes the arm + antenna
-  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts += fabs(msg->velocity[i] * msg->effort[i]);
-
-  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
-  auto mean_mechanical_power =
-      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
-
-  m_mechanical_power_raw = power_watts;
-  m_mechanical_power_avg = mean_mechanical_power;
-
-  m_unprocessed_mechanical_power = mean_mechanical_power / m_num_nodes;
+  m_unprocessed_mechanical_power = mechanical_power;
 
   if (!m_processing_power_batch)
   {
     m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
     m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
     m_trigger_processing_new_power_batch = true;
-  }
-  else
-  {
-    ROS_WARN_STREAM("m_process_power_batch was false!");
   }
 }
 

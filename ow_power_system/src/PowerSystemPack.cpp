@@ -34,6 +34,10 @@ void PowerSystemPack::InitAndRun()
     + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
 
+  // Set up the moving average vector.
+  m_power_values.resize(m_moving_average_window);
+  std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
+
   // DEBUG CUSTOMIZATION
   m_print_debug_val = system_config.getString("print_debug");
   // See explanation of m_print_debug_val in the header file for why this
@@ -152,17 +156,6 @@ void PowerSystemPack::InitAndRun()
   // For debug prints.
   int saved_timestamp = -1;
 
-  // Initialize the beginning outputs to publish before the first set of
-  // predictions have returned.
-  // As per Chetan, the starting placeholder predictions should be:
-  // RUL: MAX_HORIZON_SECS
-  // SoC: 95%
-  // TMP: m_initial_temperatrue
-  m_prev_rul = m_max_horizon_secs;
-  m_prev_soc = m_initial_soc;
-  m_prev_tmp = m_initial_temperature;
-
-
   // Loop through the PowerSystemNodes to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
@@ -171,13 +164,11 @@ void PowerSystemPack::InitAndRun()
   {
     ros::spinOnce();
 
-    // /* DEBUG PRINT
-    saved_timestamp = m_nodes[0].model.timestamp;
-    // */
-
     // Set up value modifiers in each node for injection later.
     injectFaults();
+
     // /* DEBUG PRINT
+    saved_timestamp = m_nodes[0].model.timestamp;
     if (m_timestamp_print_debug)
     {
       ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS TO GSAP:");
@@ -195,8 +186,7 @@ void PowerSystemPack::InitAndRun()
       // do not publish the data to prevent crashes.
       // Otherwise, do not send new data to the prognoser if its prediction is
       // complete. Wait for other prognosers to finish.
-      if (m_nodes[i].previous_time != m_nodes[i].model.timestamp
-          && (!m_waiting_buses[i]))
+      if (m_nodes[i].previous_time != m_nodes[i].model.timestamp)
       {
         auto timestamp = START_TIME + std::chrono::milliseconds(
           static_cast<unsigned>(m_nodes[i].model.timestamp * 1000)
@@ -264,25 +254,8 @@ void PowerSystemPack::InitAndRun()
       }
     }
 
-    // Check if all buses have returned, and update published data if so.
-    bool all_buses_ready = false;
-    if (std::all_of(std::begin(m_waiting_buses), std::end(m_waiting_buses),
-        [](bool i){return i;}))
-    {
-      all_buses_ready = true;
-    }
-
-    if (all_buses_ready)
-    {
-      // Reset all buses' waiting status to send in new data next cycle.
-      std::fill_n(std::begin(m_waiting_buses), NUM_NODES, false);
-      publishPredictions(true);
-    }
-    else
-    {
-      // Still waiting on some prognosers, so publish previous predictions.
-      publishPredictions(false);
-    }
+    // Publish the predictions in EoD_events.
+    publishPredictions();
 
     // DEBUG PRINT
     if (m_outputs_print_debug)
@@ -299,11 +272,12 @@ void PowerSystemPack::InitAndRun()
         {
           s = "N";
         }
-        if (m_waiting_buses[i] || all_buses_ready)
+        if (m_waiting_buses[i])
         {
           ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                         << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
                         << m_EoD_events[i].battery_temperature << ". COMPLETE");
+          m_waiting_buses[i] = false;
         }
         else
         {
@@ -319,7 +293,6 @@ void PowerSystemPack::InitAndRun()
         std::cout << std::endl;
       }
     }
-    //
 
     // Sleep for any remaining time in the loop that would cause it to
     // complete before the set rate of GSAP.
@@ -549,45 +522,33 @@ void PowerSystemPack::injectFaults()
 }
 
 /*
- * Callback function that publishes mechanical power values.
+ * Callback function that publishes mechanical power values and sends
+ * mechanical power, which is converted into power draw, to each node in the
+ * pack. The mechanical power is distributed evenly amongst all nodes.
  */
 void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  // NOTE: This callback function appears to call after the nodes' callback
-  //       functions complete, every single time. This is quite convenient since
-  //       it depends on values determined from those callbacks, but
-  //       I don't know why exactly this is the case. If they should happen
-  //       to stop calling in this order, it could potentially cause problems.
-  //       (~Liam, Summer 2022)
+  double power_watts = 0.0;  // This includes the arm + antenna
+  for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
+    power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  // DEBUG
-  ROS_INFO_STREAM("Pack cB called!");
-  
-  // Get the mechanical power values from each node.
-  double raw_mechanical_values[NUM_NODES];
-  double avg_mechanical_values[NUM_NODES];
-  double avg_power = 0.0;
+  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
+  double mean_mechanical_power =
+      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
 
-  for (int i = 0; i < NUM_NODES; i++)
-  {
-    raw_mechanical_values[i] = m_nodes[i].node.GetRawMechanicalPower();
-    avg_mechanical_values[i] = m_nodes[i].node.GetAvgMechanicalPower();
-    avg_power += raw_mechanical_values[i];
-  }
-
-  // Publish the mechanical raw and average power values.
-  // Raw mechanical power should be averaged out, but the avg_power should
-  // already be the same value in every node.
-  avg_power = avg_power / NUM_NODES;
-
+  // Publish the total raw & average mechanical power.
   std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
-  mechanical_power_raw_msg.data = avg_power;
-
-  // Since all average mechanical power values should be identical, it doesn't
-  // matter which node's value we take.
-  mechanical_power_avg_msg.data = avg_mechanical_values[0];
+  mechanical_power_raw_msg.data = power_watts;
+  mechanical_power_avg_msg.data = mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+
+  // Send in mechanical power to each node, distributed evenly, to be converted
+  // into power draw.
+  for (int i = 0; i < NUM_NODES; i++)
+  {
+    m_nodes[i].node.applyMechanicalPower(mean_mechanical_power / NUM_NODES);
+  }
 }
 
 /*
@@ -694,60 +655,32 @@ bool PowerSystemPack::loadCustomFaultPowerProfile(std::string path, std::string 
  * Called at the end of a cycle, this publishes RUL/SoC/battery temperature
  * based on all prognoser predictions obtained.
  */
-void PowerSystemPack::publishPredictions(bool update)
+void PowerSystemPack::publishPredictions()
 {
   // Using EoD_events, publish the relevant values.
 
-  int min_rul = m_max_horizon_secs;
+  double min_rul = m_max_horizon_secs;
   double min_soc = 1;
   double max_tmp = -1;
   owl_msgs::BatteryRemainingUsefulLife rul_msg;
   owl_msgs::BatteryStateOfCharge soc_msg;
   owl_msgs::BatteryTemperature tmp_msg;
 
-  // Are there new values to publish, or should the previous ones be republished?
-  if (update)
+  // Calculate the min_rul, min_soc, and max_tmp from the new data.
+  for (int i = 0; i < NUM_NODES; i++)
   {
-    // Calculate the min_rul, min_soc, and max_tmp from the new data.
-    for (int i = 0; i < NUM_NODES; i++)
+    // If RUL is infinity, set it to the maximum horizon value instead.
+    if (isinf(m_EoD_events[i].remaining_useful_life))
     {
-      // If RUL is infinity, set it to the maximum horizon value instead.
-      if (isinf(m_EoD_events[i].remaining_useful_life))
-      {
-        m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
-      }
-
-      // Published RUL (remaining useful life) is defined as the minimum RUL of all EoDs.
-      if (m_EoD_events[i].remaining_useful_life < min_rul)
-      {
-        min_rul = m_EoD_events[i].remaining_useful_life;
-      }
-
-      // Published SoC (state of charge) is defined as the minimum SoC of all EoDs.
-      if (m_EoD_events[i].state_of_charge < min_soc)
-      {
-        min_soc = m_EoD_events[i].state_of_charge;
-      }
-      
-      // Published battery temperature is defined as the highest tmp of all EoDs.
-      if (m_EoD_events[i].battery_temperature > max_tmp)
-      {
-        max_tmp = m_EoD_events[i].battery_temperature;
-      }
+      m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
     }
-  }
-  else
-  {
-    // Simply set the current data to the previous publications.
-    min_rul = m_prev_rul;
-    min_soc = m_prev_soc;
-    max_tmp = m_prev_tmp;
+    min_rul = std::min(m_EoD_events[i].remaining_useful_life, min_rul);
+    min_soc = std::min(m_EoD_events[i].state_of_charge, min_soc);
+    max_tmp = std::max(m_EoD_events[i].battery_temperature, max_tmp);
   }
 
   // /* DEBUG PRINT
   if (m_topics_print_debug)
-      //&& ((!(min_rul < 0 || min_soc < 0 || max_tmp < 0))
-      //|| (m_nodes[0].model.timestamp >= (m_profile_increment * 5))))
   {
     ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
                     ", min_soc: " << std::to_string(min_soc) <<
@@ -796,11 +729,6 @@ void PowerSystemPack::publishPredictions(bool update)
   m_state_of_charge_pub.publish(soc_msg);
   m_remaining_useful_life_pub.publish(rul_msg);
   m_battery_temperature_pub.publish(tmp_msg);
-
-  // Set the previous publications using the current data, for future loops.
-  m_prev_rul = min_rul;
-  m_prev_soc = min_soc;
-  m_prev_tmp = max_tmp;
 }
 
 std::string PowerSystemPack::setNodeName(int node_num)

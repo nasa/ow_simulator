@@ -35,14 +35,15 @@ public:
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
   double GetTimestamp();
+  void applyMechanicalPower(double mechanical_power);
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
   void SetCustomVoltageFault(double volts);
   void SetCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
-  bool initCallback();
-  void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  //bool initCallback(); TEST
+  //void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg); TEST
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
