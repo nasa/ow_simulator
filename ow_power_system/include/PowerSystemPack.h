@@ -106,10 +106,9 @@ private:
 
   // Flags that determine if debug output is printed regarding battery status
   // during runtime. Overridden by system.cfg on startup.
-  // NOTE: This is a string because of limitations with ConfigMap. There's no
-  // function to get boolean variables from a config. Could benefit from an
+  // NOTE: There's no function to get boolean variables from a config, so
+  // these bools have to be set via string comparisons. Could benefit from an
   // update if such a function is added in the future.
-  std::string m_print_debug_val = "false";
   bool m_print_debug = false;
   bool m_timestamp_print_debug = false;
   bool m_inputs_print_debug = false;
