@@ -39,34 +39,16 @@ void PowerSystemPack::InitAndRun()
   std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
 
   // DEBUG CUSTOMIZATION
-  m_print_debug_val = system_config.getString("print_debug");
-  // See explanation of m_print_debug_val in the header file for why this
-  // is needed for what is essentially a bool.
-  if (m_print_debug_val == "true") 
+  // See explanation of m_print_debug in the header file for why this
+  // comparison is needed for what is essentially a bool.
+  m_print_debug = (system_config.getString("print_debug") == "true");
+
+  if (m_print_debug)
   {
-    m_print_debug = true;
-    
-    // Check the other debug flags (which are initialized to false).
-    m_print_debug_val = system_config.getString("timestamp_print_debug");
-    if (m_print_debug_val == "true")
-    {
-      m_timestamp_print_debug = true;
-    }
-    m_print_debug_val = system_config.getString("inputs_print_debug");
-    if (m_print_debug_val == "true")
-    {
-      m_inputs_print_debug = true;
-    }
-    m_print_debug_val = system_config.getString("outputs_print_debug");
-    if (m_print_debug_val == "true")
-    {
-      m_outputs_print_debug = true;
-    }
-    m_print_debug_val = system_config.getString("topics_print_debug");
-    if (m_print_debug_val == "true")
-    {
-      m_topics_print_debug = true;
-    }
+    m_timestamp_print_debug = (system_config.getString("timestamp_print_debug") == "true");
+    m_inputs_print_debug = (system_config.getString("inputs_print_debug") == "true");
+    m_outputs_print_debug = (system_config.getString("outputs_print_debug") == "true");
+    m_topics_print_debug = (system_config.getString("topics_print_debug") == "true");
   }
   // If print_debug was false, then all flags remain false as initialized.
 
@@ -674,9 +656,10 @@ void PowerSystemPack::publishPredictions()
     {
       m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
     }
-    min_rul = std::min(m_EoD_events[i].remaining_useful_life, min_rul);
-    min_soc = std::min(m_EoD_events[i].state_of_charge, min_soc);
-    max_tmp = std::max(m_EoD_events[i].battery_temperature, max_tmp);
+
+    min_rul = std::min(min_rul, m_EoD_events[i].remaining_useful_life);
+    min_soc = std::min(min_soc, m_EoD_events[i].state_of_charge);
+    max_tmp = std::max(max_tmp, m_EoD_events[i].battery_temperature);
   }
 
   // /* DEBUG PRINT
@@ -719,7 +702,6 @@ void PowerSystemPack::publishPredictions()
   tmp_msg.value = max_tmp;
 
   // Apply the most recent timestamp to each message header.
-  // MAY NOT WORK PROPERLY, depending on how ros::Time::now() works.
   auto timestamp = ros::Time::now();
   rul_msg.header.stamp = timestamp;
   soc_msg.header.stamp = timestamp;
