@@ -13,6 +13,8 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
+#include <ow_lander/ActionGoalStatus.h>
+#include <ow_lander/lander_joints.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
@@ -20,7 +22,6 @@
 #include <owl_msgs/PanTiltFaultsStatus.h>
 #include <owl_msgs/PowerFaultsStatus.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <control_msgs/JointControllerState.h>
@@ -72,6 +73,8 @@ private:
   template<typename pub_t, typename msg_t, typename flags_t>
   void publishFaultsMessage(pub_t& faults_pub, msg_t faults_msg, flags_t faults_flags);
 
+  void actionGoalStatusCb(const ow_lander::ActionGoalStatus& msg);
+
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
@@ -82,6 +85,7 @@ private:
   ros::Publisher m_system_faults_msg_pub;
 
   // faults topic subscribers;
+  ros::Subscriber m_action_goal_status_sub;
   ros::Subscriber m_joint_states_sub; // for arm and antenna
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
