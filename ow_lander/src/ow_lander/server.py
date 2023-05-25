@@ -18,7 +18,7 @@ class ActionServerBase(ABC):
   # allocate and initialize the container for goal status msgs
   _goal_status_array = [
     actionlib_msgs.msg.GoalStatus() for _ in range(ow_lander.msg.ActionGoalStatus.NUM_GOAL_TYPES) 
-    ]
+  ]
 
   
   def __init__(self):
