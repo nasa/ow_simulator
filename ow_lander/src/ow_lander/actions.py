@@ -115,18 +115,18 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
 
   def plan_trajectory(self, goal):
     sequence = TrajectorySequence(
-      'l_scoop', self._arm.robot, self._arm.move_group_scoop)
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
     # STUB: GROUND HEIGHT TO BE EXTRACTED FROM DEM
     targ_elevation = -0.2
-    if (goal.point.z+targ_elevation) == 0:
+    if (goal.start.z+targ_elevation) == 0:
       offset = goal.search_distance
     else:
-      offset = (goal.point.z*goal.search_distance)/(goal.point.z+targ_elevation)
+      offset = (goal.start.z*goal.search_distance)/(goal.start.z+targ_elevation)
     # Compute shoulder yaw angle to target
-    alpha = math.atan2((goal.point.y+goal.normal.y*offset)-constants.Y_SHOU,
-                       (goal.point.x+goal.normal.x*offset)-constants.X_SHOU)
-    h = math.sqrt(pow((goal.point.y+goal.normal.y*offset)-constants.Y_SHOU, 2) +
-                  pow((goal.point.x+goal.normal.x*offset)-constants.X_SHOU, 2))
+    alpha = math.atan2((goal.start.y+goal.normal.y*offset)-constants.Y_SHOU,
+                       (goal.start.x+goal.normal.x*offset)-constants.X_SHOU)
+    h = math.sqrt(pow((goal.start.y+goal.normal.y*offset)-constants.Y_SHOU, 2) +
+                  pow((goal.start.x+goal.normal.x*offset)-constants.X_SHOU, 2))
     l = constants.Y_SHOU - constants.HAND_Y_OFFSET
     beta = math.asin(l/h)
     # align scoop above target point
@@ -139,7 +139,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       j_scoop_yaw = 0.0
     )
     # once aligned to move goal and offset, place scoop tip at surface target offset
-    sequence.plan_to_position(goal.point)
+    sequence.plan_to_position(goal.start)
     # drive scoop along anti-normal vector by the search distance
     sequence.plan_to_translation(
         math3d.scalar_multiply(-goal.search_distance, goal.normal)
@@ -155,7 +155,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
     # define the callback locally to avoid making detector a member variable
     def ground_detect_cb():
       # publish feedback
-      self.publish_feedback_cb()
+      self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
       # check if ground has been detected
       if detector.was_ground_detected():
         self._arm.stop_trajectory_silently()
