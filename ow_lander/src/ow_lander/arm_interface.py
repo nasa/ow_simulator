@@ -107,7 +107,6 @@ class OWArmInterface(metaclass = Singleton):
     action_feedback_cb -- A function called at 100 Hz during execution of a
                           trajectory. Exists to publish the action's feedback
                           message. Handles no arguments.
-    returns True if plan was executed successfully and without preempt.
     """
 
     OWArmInterface._assert_arm_is_checked_out()
@@ -129,17 +128,26 @@ class OWArmInterface(metaclass = Singleton):
     # publish feedback while waiting for trajectory execution completion
     FEEDBACK_RATE = 100 # hertz
     rate = rospy.Rate(FEEDBACK_RATE)
-    timeout = plan.joint_trajectory.points[-1].time_from_start \
-              - plan.joint_trajectory.points[0].time_from_start
-    start_time = rospy.get_time()
-    while rospy.get_time() - start_time < timeout.to_sec() \
-          or self.__executor.is_active():
+    while self.__executor.is_active():
       if OWArmInterface._stopped:
         self.__executor.cease_execution()
         raise ArmExecutionError("Stop was called; trajectory execution ceased")
       if action_feedback_cb is not None:
         action_feedback_cb()
       rate.sleep()
+
+    result = self.__executor.result()
+    # NOTE: a None result is indicative that trajectory execution was ceased
+    #       intentionally by calling ceased_exectuion and does not mean there
+    #       was an error
+    if result is not None and result.error_code != 0:
+      # the follow_joint_trajectory action server does not cease trajectory
+      # execution when an error occurs, so do so manually
+      self.__executor.cease_execution()
+      raise ArmExecutionError("The follow_joint_trajectory action server for "
+                              f"{self.__executor.get_active_controller()} "
+                              f"resulted in error code {result.error_code} "
+                              f"with the message: {result.error_string}")
 
   def get_end_effector_pose(self, end_effector, frame_id,
                             timestamp=rospy.Time(0), timeout=rospy.Duration(0)):
