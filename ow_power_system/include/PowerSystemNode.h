@@ -42,8 +42,6 @@ public:
   void SetCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
-  //bool initCallback(); TEST
-  //void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg); TEST
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
@@ -52,10 +50,6 @@ private:
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
-
-  int m_moving_average_window = 25;
-  std::vector<double> m_power_values;
-  size_t m_power_values_index = 0;
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 

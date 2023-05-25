@@ -114,6 +114,7 @@ private:
   bool m_inputs_print_debug = false;
   bool m_outputs_print_debug = false;
   bool m_topics_print_debug = false;
+  bool m_mech_power_print_debug = false;
 
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // Lower values mean faster performance in the event a RUL prediction would

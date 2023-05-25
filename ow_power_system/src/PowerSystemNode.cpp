@@ -29,9 +29,6 @@ bool PowerSystemNode::Initialize(int num_nodes)
     return false;
   }
 
-  m_power_values.resize(m_moving_average_window);
-  std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
-
   m_init_time = system_clock::now(); // Taken from initPrognoser()
 
   return true;
@@ -57,7 +54,6 @@ bool PowerSystemNode::loadSystemConfig()
   m_baseline_wattage = system_config.getDouble("baseline_power");
   m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
   m_profile_increment = system_config.getInt32("profile_increment");
-  m_moving_average_window = system_config.getInt32("power_average_size");
 
   // The following variables are not used in PowerSystemNode anymore, but are 
   // left in as part of loading the full system config.
@@ -183,10 +179,6 @@ void PowerSystemNode::RunOnce()
     m_processing_power_batch = true;
     runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
-  }
-  else
-  {
-    ROS_ERROR_STREAM("Node m_trigger was false!");
   }
 }
 

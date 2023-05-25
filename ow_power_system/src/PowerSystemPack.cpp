@@ -49,6 +49,7 @@ void PowerSystemPack::InitAndRun()
     m_inputs_print_debug = (system_config.getString("inputs_print_debug") == "true");
     m_outputs_print_debug = (system_config.getString("outputs_print_debug") == "true");
     m_topics_print_debug = (system_config.getString("topics_print_debug") == "true");
+    m_mech_power_print_debug = (system_config.getString("mech_power_print_debug") == "true");
   }
   // If print_debug was false, then all flags remain false as initialized.
 
@@ -524,6 +525,16 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   mechanical_power_avg_msg.data = mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+
+  // /* DEBUG PRINT
+  if (m_mech_power_print_debug)
+  {
+    ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(power_watts));
+    ROS_INFO_STREAM("Applied power (with moving average): " << std::to_string(mean_mechanical_power));
+    ROS_INFO_STREAM("Result: " << std::to_string(mean_mechanical_power / NUM_NODES)
+                    << " power distributed to each node.");
+  }
+  // */
 
   // Send in mechanical power to each node, distributed evenly, to be converted
   // into power draw.
