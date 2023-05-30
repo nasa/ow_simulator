@@ -29,12 +29,9 @@ public:
   ~PowerSystemNode() = default;
   PowerSystemNode(const PowerSystemNode&) = default;
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
-  bool Initialize(int num_nodes);
+  bool Initialize();
   double RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
-  double GetRawMechanicalPower();
-  double GetAvgMechanicalPower();
-  double GetTimestamp();
   void applyMechanicalPower(double mechanical_power);
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
@@ -48,28 +45,19 @@ private:
 
   double runPrognoser(double electrical_power);
 
-  ros::NodeHandle m_nh;                        // Node Handle Initialization
-  ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
-
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
   // Main system configuration: these values are overriden by values
   // in ../config/system.cfg.
 
-  double m_initial_power = 0.0;         // This is probably always zero
-  double m_initial_temperature = 20.0;  // 20.0 deg. C
-  double m_initial_voltage = 4.1;       // Volts
   double m_min_temperature = 17.5;      // minimum temp = 17.5 deg. C
   double m_max_temperature = 21.5;      // maximum temp = 21.5 deg. C
   double m_battery_lifetime = 2738.0;   // Estimate of battery lifetime (seconds)
   double m_base_voltage = 3.2;          // [V] estimate
   double m_voltage_range = 0.1;         // [V]
   double m_efficiency = 0.9;            // default 90% efficiency
-  double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
   double m_current_timestamp = 0.0;
-  int m_num_nodes = -1;                 // Number of async nodes running at once
-                                        // (overwritten during Initialize())
 
   // Baseline value for power drawn by continuously-running systems.
   // This initial value is overriden by the system config.
@@ -117,9 +105,6 @@ private:
   bool m_trigger_processing_new_power_batch = false;
   double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;
-
-  double m_mechanical_power_raw = 0.0;
-  double m_mechanical_power_avg = 0.0;
 };
 
 #endif

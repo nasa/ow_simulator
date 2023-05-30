@@ -33,12 +33,8 @@ using PrognoserVector = std::vector<PrognoserMap>;
 
 // NOTE: This is required as a compile-time constant, so it cannot be placed in
 //       a .cfg file. The simulation must be re-built if it is changed.
-// HACK ALERT (May 2023): High amounts of nodes seems to cause GSAP to eventually
-//                        return highly negative and invalid predictions well ahead
-//                        of an expected battery failure. On my setup, this happens
-//                        around the ~300s mark with 16 nodes, but did not occur at all
-//                        over a 45-minute test at 15 nodes or less.
-//                        No idea what the issue is yet.
+// This is the number of parallel nodes that will be simulated at once. The
+// expected amount for the battery pack is 24.
 const int NUM_NODES = 24;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
@@ -126,24 +122,20 @@ private:
   double m_max_gsap_input_watts = 20;
 
   // The maximum RUL estimation output from the Monte Carlo prediction process.
+  // If the prediction hits this value, it stops immediately and returns infinity
+  // (which is processed later into the max value instead).
   // Lower values mean faster performance in the event a RUL prediction would
   // exceed the horizon value, but it also means the prognoser can't return RUL
   // values higher than this.
   // The current default value is 10000 (overridden by system.cfg's value), but 
-  // this is slow in situations where the prognoser predicts a value that high
-  // (or higher than that). Further testing and discussion is needed to 
-  // determine the ideal value for this.
+  // this may be too low for reasonable predictions. After all, the battery should
+  // probably last more than around 3 hours on a full charge.
   int m_max_horizon_secs = 10000;
   
   // Change this value to modify the number of samples each node creates during the
   // Monte Carlo prediction process. Lower values mean faster performance, but lower
   // accuracy (needs testing for confirmation).
-  // The default value is 100 (overridden by system.cfg), but this is very slow 
-  // and infeasible for the simulation.
-  // My computer reached similar speeds to the original simple prognoser at a sample
-  // value of 25, but this may vary from computer to computer, and it also varies
-  // depending on the value of the RUL prediction. Higher RULs take significantly longer
-  // to return. ~Liam
+  // The default value is 100 (overridden by system.cfg).
   int m_num_samples = 100;
 
   // Flag determining if the battery has reached a fail state.

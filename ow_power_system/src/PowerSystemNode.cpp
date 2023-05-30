@@ -21,9 +21,8 @@ using namespace std_msgs;
  * Called on creating a PowerSystemNode object. Sets up class variables
  * and initializes various other things.
  */
-bool PowerSystemNode::Initialize(int num_nodes)
+bool PowerSystemNode::Initialize()
 {
-  m_num_nodes = num_nodes;
   if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load PowerSystemNode system config.");
     return false;
@@ -55,13 +54,6 @@ bool PowerSystemNode::loadSystemConfig()
   m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
   m_profile_increment = system_config.getInt32("profile_increment");
 
-  // The following variables are not used in PowerSystemNode anymore, but are 
-  // left in as part of loading the full system config.
-  m_initial_power = system_config.getDouble("initial_power");
-  m_initial_voltage = system_config.getDouble("initial_voltage");
-  m_initial_temperature = system_config.getDouble("initial_temperature");
-  m_gsap_rate_hz = system_config.getDouble("gsap_rate");
-
   return true;
 }
 
@@ -78,18 +70,8 @@ void PowerSystemNode::applyMechanicalPower(double mechanical_power)
 }
 
 /*
- * Very straightforward, just returns a random value between the lower and upper
- * bounds of the random generator.
- * NOTE: This will likely need to be revamped in the future. As per Chris's
- *       discussion, ideally there are 3 options for voltage/temperature inputs:
- *       1. GSAP's prediction outputs (e.g. battery temperature) fed back in
- *          as inputs. More responsive, but testing GSAP against itself.
- *       2. Inputs from other sensor measurements in the simulation. Testing 
- *          against something else, but accuracy would be questionable and it
- *          would not respond to GSAP's predictions.
- *       3. Gather real data and feed that in here instead. Testing against
- *          real data is great, but needs to be pre-collected.
- *       (~Liam, Summer 2022)
+ * Returns a random value between the lower and upper bounds of the random
+ * generator, to mimic a sensor's temperature measurement.
  */
 double PowerSystemNode::generateTemperatureEstimate()
 {
@@ -99,12 +81,6 @@ double PowerSystemNode::generateTemperatureEstimate()
 /*
  * Calculates a voltage value with some variance to be used as a data input. Voltage
  * values will slowly drop over time.
- * NOTE: This will likely need to be revamped in the future to use real data, or
- *       the outputs from GSAP predictions, or other simulated sensor data.
- *       The voltage drop over time does not line up with GSAP's data if 
- *       faults/etc are applied.
- *       (see note for generateTemperatureEstimate)
- *       (~Liam, Summer 2022)
  */
 double PowerSystemNode::generateVoltageEstimate()
 {
@@ -198,21 +174,6 @@ void PowerSystemNode::GetPowerStats(double &time, double &power, double &volts, 
   power = m_wattage_estimate;
   volts = m_voltage_estimate;
   tmp = m_temperature_estimate;
-}
-
-double PowerSystemNode::GetRawMechanicalPower()
-{
-  return m_mechanical_power_raw;
-}
-
-double PowerSystemNode::GetAvgMechanicalPower()
-{
-  return m_mechanical_power_avg;
-}
-
-double PowerSystemNode::GetTimestamp()
-{
-  return m_current_timestamp;
 }
 
 void PowerSystemNode::SetHighPowerDraw(double draw)

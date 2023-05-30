@@ -127,15 +127,8 @@ void PowerSystemPack::InitAndRun()
   // This rate object is used to sync the cycles up to the provided Hz.
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
   //       necessarily occur, but the simulation will be out of sync with real
-  //       time. Ideally, values like num_samples and max_horizon_secs should be set
-  //       such that the cycle time is under the provided rate (currently 0.5Hz).
+  //       time.
   ros::Rate rate(m_gsap_rate_hz);
-
-  bool firstLoop[NUM_NODES];
-  for (int i = 0; i < NUM_NODES; i++)
-  {
-    firstLoop[i] = true;
-  }
 
   // Loop through the PowerSystemNodes to update their values and send them to
   // the bus each loop to trigger predictions.
@@ -242,18 +235,14 @@ void PowerSystemPack::InitAndRun()
         }
 
         // DEBUG PRINT
-        if (m_inputs_print_debug && !(m_nodes[i].model.timestamp <= 0))
+        if (m_inputs_print_debug && (m_nodes[i].model.timestamp > 0))
         {
-          std::string s;
+          std::string header = "N";
           if (i < 10)
           {
-            s = "N0";
+            header += "0";
           }
-          else
-          {
-            s = "N";
-          }
-          ROS_INFO_STREAM(s << i << " power: " << input_power 
+          ROS_INFO_STREAM(header << i << " power: " << input_power 
                           << ".  volts: " << input_voltage
                           << ".  tmp: " << input_tmp);
         }
@@ -348,7 +337,7 @@ bool PowerSystemPack::initNodes()
   for (int i = 0; i < NUM_NODES; i++)
   {
     m_nodes[i].name = setNodeName(i);
-    if (!m_nodes[i].node.Initialize(NUM_NODES))
+    if (!m_nodes[i].node.Initialize())
     {
         return false;
     }
@@ -466,7 +455,7 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
     {
       if (!end_fault_warning_displayed)
       {
-        ROS_WARN_STREAM
+        ROS_INFO_STREAM
           (saved_file << ": reached end of fault profile. "
            << "Fault disabled, but will restart if re-enabled.");
         end_fault_warning_displayed = true;
