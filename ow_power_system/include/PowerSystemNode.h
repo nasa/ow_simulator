@@ -29,32 +29,27 @@ public:
   ~PowerSystemNode() = default;
   PowerSystemNode(const PowerSystemNode&) = default;
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
-  bool Initialize();
-  void RunOnce();
+  bool Initialize(int num_nodes);
+  double RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
   double GetTimestamp();
+  void applyMechanicalPower(double mechanical_power);
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);
   void SetCustomVoltageFault(double volts);
   void SetCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
-  bool initCallback();
-  void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
 
-  void runPrognoser(double electrical_power);
+  double runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
-
-  int m_moving_average_window = 25;
-  std::vector<double> m_power_values;
-  size_t m_power_values_index = 0;
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
@@ -73,6 +68,8 @@ private:
   double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
 
   double m_current_timestamp = 0.0;
+  int m_num_nodes = -1;                 // Number of async nodes running at once
+                                        // (overwritten during Initialize())
 
   // Baseline value for power drawn by continuously-running systems.
   // This initial value is overriden by the system config.
@@ -85,7 +82,7 @@ private:
   // model is implemented and can handle any envisioned power draw.
   // This initial value is overriden by the system config.
   //
-  double m_max_gsap_input_watts = 30;
+  double m_max_gsap_input_watts = 20;
 
   // Number of lines in power fault profiles to skip, in order to
   // synchonize the consumption of the profile with GSAP's cycle rate

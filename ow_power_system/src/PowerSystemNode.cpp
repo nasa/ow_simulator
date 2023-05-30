@@ -21,22 +21,15 @@ using namespace std_msgs;
  * Called on creating a PowerSystemNode object. Sets up class variables
  * and initializes various other things.
  */
-bool PowerSystemNode::Initialize()
+bool PowerSystemNode::Initialize(int num_nodes)
 {
+  m_num_nodes = num_nodes;
   if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load PowerSystemNode system config.");
     return false;
   }
 
-  m_power_values.resize(m_moving_average_window);
-  std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
-
   m_init_time = system_clock::now(); // Taken from initPrognoser()
-
-  if (!initCallback()) {
-    ROS_ERROR("Failed to initialize PowerSystemNode callback.");
-    return false;
-  }
 
   return true;
 }
@@ -61,7 +54,6 @@ bool PowerSystemNode::loadSystemConfig()
   m_baseline_wattage = system_config.getDouble("baseline_power");
   m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
   m_profile_increment = system_config.getInt32("profile_increment");
-  m_moving_average_window = system_config.getInt32("power_average_size");
 
   // The following variables are not used in PowerSystemNode anymore, but are 
   // left in as part of loading the full system config.
@@ -73,45 +65,9 @@ bool PowerSystemNode::loadSystemConfig()
   return true;
 }
 
-/*
- * Originally 'initTopics()', this function sets up the callback function
- * for the node handle. Published values are now handled in PowerSystemPack.
- */
-bool PowerSystemNode::initCallback()
+void PowerSystemNode::applyMechanicalPower(double mechanical_power)
 {
-  // Subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
-  return true;
-}
-
-/*
- * Callback function that runs once per cycle. Previously it published mechanical power,
- * but now simply prepares the PowerSystemNode for creating another set of input data.
- * 
- * NOTE: The raw and average mechanical power values seemed to always be 0 during
- * testing. I realize in hindsight that I didn't test using arm commands,
- * which generate mechanical power. Thus, this function may not work correctly.
- * 
- * Chetan should be consulted on how mechanical power should be handled on a
- * per-node basis. The main points to consider are that all nodes' callbacks
- * run before the PowerSystemPack's callback does, and the Pack callback is the
- * one that publishes mechanical power values. The mechanical values here are fed
- * into the individual nodes' input data. (~Liam, Summer 2022)
- */
-void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
-{
-  auto power_watts = 0.0;  // This includes the arm + antenna
-  for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts += fabs(msg->velocity[i] * msg->effort[i]);
-
-  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
-  auto mean_mechanical_power =
-      accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
-
-  m_mechanical_power_raw = power_watts;
-  m_mechanical_power_avg = mean_mechanical_power;
-
-  m_unprocessed_mechanical_power = mean_mechanical_power;
+  m_unprocessed_mechanical_power = mechanical_power;
 
   if (!m_processing_power_batch)
   {
@@ -195,7 +151,7 @@ void PowerSystemNode::applyValueMods(double& power, double& voltage, double& tem
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemPack each cycle.
  */
-void PowerSystemNode::runPrognoser(double electrical_power)
+double PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_profile_increment;
@@ -205,25 +161,31 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
-    ROS_WARN_STREAM("Power system node computed excessive power input for GSAP, "
-                    << m_wattage_estimate << "W. Capping GSAP input at "
-                    << m_max_gsap_input_watts << "W.");
-      m_wattage_estimate = m_max_gsap_input_watts;
+    // Excessive power draw computed. Return the high draw amount to warn user, 
+    // but cap the draw at the max allowed value.
+    double temp = m_wattage_estimate;
+    m_wattage_estimate = m_max_gsap_input_watts;
+    return temp;
   }
+  return -1;
 }
 
 /*
  * Function called by PowerSystemPack to update input power/voltage/temp.
  */
-void PowerSystemNode::RunOnce()
+double PowerSystemNode::RunOnce()
 {
+  double excessiveDraw = -1;
   if (m_trigger_processing_new_power_batch)
   {
     m_trigger_processing_new_power_batch = false;
     m_processing_power_batch = true;
-    runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
+    excessiveDraw = runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
   }
+  // Returns -1 if no excessive draw was calculated, else returns
+  // the excessive draw amount for warning statement in the pack.
+  return excessiveDraw;
 }
 
 /*
