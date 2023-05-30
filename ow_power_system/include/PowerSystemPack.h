@@ -116,6 +116,15 @@ private:
   bool m_topics_print_debug = false;
   bool m_mech_power_print_debug = false;
 
+  // HACK ALERT.  The prognoser produced erratic/erroneous output when
+  // given too high a power input.  This made-up value protects
+  // against this, but is a temporary hack until a circuit breaker
+  // model is added to the power system, and/or the multi-pack battery
+  // model is implemented and can handle any envisioned power draw.
+  // This initial value is overriden by the system config.
+  //
+  double m_max_gsap_input_watts = 20;
+
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // Lower values mean faster performance in the event a RUL prediction would
   // exceed the horizon value, but it also means the prognoser can't return RUL

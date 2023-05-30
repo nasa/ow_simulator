@@ -30,7 +30,7 @@ public:
   PowerSystemNode(const PowerSystemNode&) = default;
   PowerSystemNode& operator=(const PowerSystemNode&) = default;
   bool Initialize(int num_nodes);
-  void RunOnce();
+  double RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
   double GetRawMechanicalPower();
   double GetAvgMechanicalPower();
@@ -46,7 +46,7 @@ private:
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
 
-  void runPrognoser(double electrical_power);
+  double runPrognoser(double electrical_power);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
@@ -82,7 +82,7 @@ private:
   // model is implemented and can handle any envisioned power draw.
   // This initial value is overriden by the system config.
   //
-  double m_max_gsap_input_watts = 30;
+  double m_max_gsap_input_watts = 20;
 
   // Number of lines in power fault profiles to skip, in order to
   // synchonize the consumption of the profile with GSAP's cycle rate

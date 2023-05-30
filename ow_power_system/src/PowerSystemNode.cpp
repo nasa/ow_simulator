@@ -151,7 +151,7 @@ void PowerSystemNode::applyValueMods(double& power, double& voltage, double& tem
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemPack each cycle.
  */
-void PowerSystemNode::runPrognoser(double electrical_power)
+double PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_profile_increment;
@@ -161,25 +161,31 @@ void PowerSystemNode::runPrognoser(double electrical_power)
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
-    ROS_WARN_STREAM("Power system node computed excessive power input for GSAP, "
-                    << m_wattage_estimate << "W. Capping GSAP input at "
-                    << m_max_gsap_input_watts << "W.");
-      m_wattage_estimate = m_max_gsap_input_watts;
+    // Excessive power draw computed. Return the high draw amount to warn user, 
+    // but cap the draw at the max allowed value.
+    double temp = m_wattage_estimate;
+    m_wattage_estimate = m_max_gsap_input_watts;
+    return temp;
   }
+  return -1;
 }
 
 /*
  * Function called by PowerSystemPack to update input power/voltage/temp.
  */
-void PowerSystemNode::RunOnce()
+double PowerSystemNode::RunOnce()
 {
+  double excessiveDraw = -1;
   if (m_trigger_processing_new_power_batch)
   {
     m_trigger_processing_new_power_batch = false;
     m_processing_power_batch = true;
-    runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
+    excessiveDraw = runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
   }
+  // Returns -1 if no excessive draw was calculated, else returns
+  // the excessive draw amount for warning statement in the pack.
+  return excessiveDraw;
 }
 
 /*

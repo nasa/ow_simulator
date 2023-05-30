@@ -60,6 +60,7 @@ void PowerSystemPack::InitAndRun()
   m_initial_voltage = system_config.getDouble("initial_voltage");
   m_initial_temperature = system_config.getDouble("initial_temperature");
   m_initial_soc = system_config.getDouble("initial_soc");
+  m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
 
   if (!initNodes())
   {
@@ -136,9 +137,6 @@ void PowerSystemPack::InitAndRun()
     firstLoop[i] = true;
   }
 
-  // For debug prints.
-  int saved_timestamp = -1;
-
   // Loop through the PowerSystemNodes to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
@@ -150,25 +148,69 @@ void PowerSystemPack::InitAndRun()
     // Set up value modifiers in each node for injection later.
     injectFaults();
 
-    // /* DEBUG PRINT
-    saved_timestamp = m_nodes[0].model.timestamp;
+    // DEBUG PRINT
     if (m_timestamp_print_debug)
     {
-      ROS_INFO_STREAM("Timestamp " << saved_timestamp << " INPUTS TO GSAP:");
+      ROS_INFO_STREAM("Timestamp " << m_nodes[0].model.timestamp << " INPUTS TO GSAP:");
     }
-    // */
+
+    // Warning message for excessive power draw.
+    std::string highDrawMsg = "";
+    int msgIndex = 0;
+    bool firstLine = true;
 
     // Cycle the power stats in the nodes.
     for (int i = 0; i < NUM_NODES; i++)
     {
-      m_nodes[i].node.RunOnce();
+      double excessiveDraw = m_nodes[i].node.RunOnce();
+      // Add to the warning message if the draw exceeded set limits (which returns
+      // a value greater than 0).
+      if (excessiveDraw > 0)
+      {
+        // Formatting for the warning message, to display up to 4 nodes
+        // per line for conciseness.
+        std::string header = "N";
+        if (i < 10)
+        {
+          header += "0";
+        }
+        header += std::to_string(i) + ": " + std::to_string(excessiveDraw) + "W";
+        switch(msgIndex)
+        {
+          case 0:
+            if (firstLine)
+            {
+              firstLine = false;
+            }
+            else
+            {
+              highDrawMsg += ",\n";
+            }
+            highDrawMsg += header;
+            msgIndex++;
+            break;
+          case 1:
+            highDrawMsg += ", " + header;
+            msgIndex++;
+            break;
+          case 2:
+            highDrawMsg += ", " + header;
+            msgIndex++;
+            break;
+          case 3:
+            highDrawMsg += ", " + header;
+            msgIndex = 0;
+            break;
+          default:
+            break;
+        }
+      }
+
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
                                     m_nodes[i].model.voltage, m_nodes[i].model.temperature);
       
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent crashes.
-      // Otherwise, do not send new data to the prognoser if its prediction is
-      // complete. Wait for other prognosers to finish.
       if (m_nodes[i].previous_time != m_nodes[i].model.timestamp)
       {
         auto timestamp = START_TIME + std::chrono::milliseconds(
@@ -199,7 +241,7 @@ void PowerSystemPack::InitAndRun()
           input_tmp = m_nodes[i].model.temperature;
         }
 
-        // /* DEBUG PRINT
+        // DEBUG PRINT
         if (m_inputs_print_debug && !(m_nodes[i].model.timestamp <= 0))
         {
           std::string s;
@@ -215,7 +257,6 @@ void PowerSystemPack::InitAndRun()
                           << ".  volts: " << input_voltage
                           << ".  tmp: " << input_tmp);
         }
-        // */
 
         // Set up the input data that will be passed through the message bus
         // to GSAP's asynchronous prognosers.
@@ -235,6 +276,17 @@ void PowerSystemPack::InitAndRun()
           m_nodes[i].bus.publish(info);
         }
       }
+    }
+
+    // Print a warning message if any nodes computed an excessive power draw.
+    if (highDrawMsg.length() > 0)
+    {
+      ROS_WARN_STREAM("Power system computed excessive power input for GSAP "
+                      << "in the following nodes:\n"
+                      << highDrawMsg
+                      << "\nGSAP input was capped at "
+                      << m_max_gsap_input_watts
+                      << "W for each node listed.");
     }
 
     // Publish the predictions in EoD_events.
