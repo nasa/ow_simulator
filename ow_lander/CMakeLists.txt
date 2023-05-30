@@ -25,6 +25,7 @@ add_action_files(
 
 add_message_files(
   FILES
+  ActionGoalStatus.msg
   GuardedMoveFinalResult.msg
 )
 

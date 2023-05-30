@@ -32,7 +32,9 @@ uniform vec4 pssmSplitPoints;
 uniform sampler2DShadow shadowMap0;
 uniform sampler2DShadow shadowMap1;
 uniform sampler2DShadow shadowMap2;
-uniform float inverseShadowmapSize[3];
+// We only need this measurement for one shadow map because Ogre uses the same
+// dimensions for all shadow maps.
+float inverseShadowMapSize = 1.0 / float(textureSize(shadowMap0, 0).x);
 in vec4 lsPos[3];
 
 uniform vec4 vsLightPos[3];
@@ -60,7 +62,7 @@ vec3 blendNormals(vec3 baseNormal, vec3 detailNormal, float detailStrength)
   return normalize((t / t.z) * dot(t, u) - u);
 }
 
-float calcDepthShadow(sampler2DShadow shadowMap, vec4 uv, float invShadowMapSize)
+float calcDepthShadow(sampler2DShadow shadowMap, vec4 uv, float invMapSize)
 {
   // Remove shadow outside shadow maps so that all that area appears lit
   if (uv.z < 0.0 || uv.z > 1.0)
@@ -87,7 +89,7 @@ float calcDepthShadow(sampler2DShadow shadowMap, vec4 uv, float invShadowMapSize
   for (int i = 0; i < poissonDisk.length(); i++)
   {
     vec4 newUV = uv;
-    newUV.xy += poissonDisk[i] * invShadowMapSize;
+    newUV.xy += poissonDisk[i] * invMapSize;
     newUV = newUV / newUV.w;
     shadow += texture(shadowMap, newUV.xyz);
   }
@@ -99,7 +101,6 @@ float calcDepthShadow(sampler2DShadow shadowMap, vec4 uv, float invShadowMapSize
 float calcPSSMDepthShadow(
   sampler2DShadow shadowMap0, sampler2DShadow shadowMap1, sampler2DShadow shadowMap2,
   vec4 lsPos0, vec4 lsPos1, vec4 lsPos2,
-  float invShadowmapSize0, float invShadowmapSize1, float invShadowmapSize2,
   vec4 pssmSplitPoints, float camDepth, float depthBias)
 {
   float shadow = 1.0;
@@ -107,15 +108,15 @@ float calcPSSMDepthShadow(
   // calculate shadow
   if (camDepth <= pssmSplitPoints.x)
   {
-    shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, invShadowmapSize0);
+    shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, inverseShadowMapSize);
   }
   else if (camDepth <= pssmSplitPoints.y)
   {
-    shadow = calcDepthShadow(shadowMap1, lsPos1 + bias, invShadowmapSize1);
+    shadow = calcDepthShadow(shadowMap1, lsPos1 + bias, inverseShadowMapSize);
   }
   else if (camDepth <= pssmSplitPoints.z)
   {
-    shadow = calcDepthShadow(shadowMap2, lsPos2 + bias, invShadowmapSize2);
+    shadow = calcDepthShadow(shadowMap2, lsPos2 + bias, inverseShadowMapSize);
   }
   return shadow;
 }
@@ -123,13 +124,12 @@ float calcPSSMDepthShadow(
 float calcPSSMDepthShadowDebug(
   sampler2DShadow shadowMap0, sampler2DShadow shadowMap1, sampler2DShadow shadowMap2,
   vec4 lsPos0, vec4 lsPos1, vec4 lsPos2,
-  float invShadowmapSize0, float invShadowmapSize1, float invShadowmapSize2,
   vec4 pssmSplitPoints, float camDepth, float depthBias)
 {
   float shadow = 1.0;
   vec4 bias = vec4(0.0, 0.0, depthBias, 0.0);
   // calculate shadow
-  shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, invShadowmapSize0);
+  shadow = calcDepthShadow(shadowMap0, lsPos0 + bias, inverseShadowMapSize);
   return shadow;
 }
 
@@ -195,7 +195,6 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   float bias = constantBias - slopeScaleBias;
   float shadow = calcPSSMDepthShadow(shadowMap0, shadowMap1, shadowMap2,
                                      lsPos[0], lsPos[1], lsPos[2],
-                                     inverseShadowmapSize[0], inverseShadowmapSize[1], inverseShadowmapSize[2],
                                      pssmSplitPoints, -vsPos.z, bias);
 
   // Only the highest parts of bumps should be lit when sun is at glancing angles
