@@ -144,7 +144,7 @@ void PowerSystemPack::InitAndRun()
     // DEBUG PRINT
     if (m_timestamp_print_debug)
     {
-      ROS_INFO_STREAM("Timestamp " << m_nodes[0].model.timestamp << " INPUTS TO GSAP:");
+      ROS_INFO_STREAM("Timestamp " << m_nodes[0].model.timestamp);
     }
 
     // Warning message for excessive power draw.
@@ -242,7 +242,7 @@ void PowerSystemPack::InitAndRun()
           {
             header += "0";
           }
-          ROS_INFO_STREAM(header << i << " power: " << input_power 
+          ROS_INFO_STREAM(header << i << " INPUT power: " << input_power 
                           << ".  volts: " << input_voltage
                           << ".  tmp: " << input_tmp);
         }
@@ -312,10 +312,12 @@ void PowerSystemPack::InitAndRun()
         }
         
       }
-      if (!(m_nodes[0].model.timestamp <= 0))
-      {
-        std::cout << std::endl;
-      }
+    }
+
+    // DEBUG PRINT FORMATTING
+    if (m_print_debug && !(m_nodes[0].model.timestamp <= 0))
+    {
+      std::cout << std::endl;
     }
 
     // Sleep for any remaining time in the loop that would cause it to
