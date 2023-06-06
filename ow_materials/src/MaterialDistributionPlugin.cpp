@@ -39,10 +39,10 @@ void MaterialDistributionPlugin::Load(rendering::VisualPtr parent,
   const auto corner_b = sdf->Get<Vector3d>(PARAMETER_CORNER_B);
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
-  m_grid = make_unique<AxisAlignedGrid<MaterialID>>(
+  m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(
     corner_a.X(), corner_a.Y(), corner_a.Z(),
     corner_b.X(), corner_b.Y(), corner_b.Z(),
-    cell_side_length, Material::id_min
+    cell_side_length, MaterialBlend()
   );
   const auto center = m_grid->getCenter();
   const auto diagonal = m_grid->getDiagonal();

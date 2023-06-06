@@ -26,7 +26,7 @@ class MaterialDistributionPlugin : public gazebo::VisualPlugin
 
   std::unique_ptr<MaterialDatabase> m_material_db;
 
-  std::unique_ptr<AxisAlignedGrid<MaterialID>> m_grid;
+  std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
 
 };
 

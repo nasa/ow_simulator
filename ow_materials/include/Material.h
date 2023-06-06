@@ -6,6 +6,7 @@
 #define MATERIAL_H
 
 #include <limits>
+#include <unordered_map>
 
 namespace ow_materials
 {
@@ -37,6 +38,17 @@ struct Material
   // double cohesion;
   // double friction_angle;
 
+};
+
+// STUB: The requirements for this class are unclear at this stage, will expand
+//       on later when they are better defined.
+// Possible Improvements:
+//   1. Shared contiguous memory for all instances (locality of reference)
+//   2. Cache commonly reference values, like blend hardness (computation)
+//   3. Encapsulation of blend map
+//   4. Blend maintenance functions like `normalize`
+struct MaterialBlend {
+  std::unordered_map<MaterialID, float> m_blend;
 };
 
 }
