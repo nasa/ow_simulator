@@ -21,8 +21,9 @@ JointsFaults::JointsFaults() :
 {
   m_node_handle = make_unique<ros::NodeHandle>("Joint_Faults_Flag");
   m_node_handle->setCallbackQueue(&m_callback_queue);
-
+  
   const char* joint_states_str = "/joint_states";
+  m_joint_states_sub = m_node_handle->subscribe(joint_states_str, 1, &JointsFaults::jointStateCb, this);
   m_joint_state_flags_pub = m_node_handle->advertise<ow_faults_detection::JointStatesFlag>(string("/flags") + joint_states_str, 10);
 
   m_JointsFaultsMap = {
@@ -48,6 +49,12 @@ JointsFaults::~JointsFaults()
 {
 }
 
+// republish joint states with updated fault flags (updated on sim ticks, republished at joint states rate)
+void JointsFaults::jointStateCb(const sensor_msgs::JointStateConstPtr& msg)
+{
+  m_joint_state_flags_pub.publish(m_flag_msg);
+}
+
 void JointsFaults::Load(physics::ModelPtr model, sdf::ElementPtr /* sdf */)
 {
   m_model = model;
@@ -63,8 +70,6 @@ void JointsFaults::onUpdate()
 {
   for (auto& kv : m_JointsFaultsMap)
     injectFault(kv.first, kv.second);
-
-  m_joint_state_flags_pub.publish(m_flag_msg);
 }
 
 void JointsFaults::injectFault(const std::string& joint_name, JointFaultInfo& jfi)
