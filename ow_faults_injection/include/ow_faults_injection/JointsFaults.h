@@ -60,6 +60,7 @@ private:
   std::unique_ptr<ros::NodeHandle> m_node_handle;
   ros::CallbackQueue m_callback_queue;
 
+  ros::Subscriber m_joint_states_sub;
   ros::Publisher m_joint_state_flags_pub;
 
   std::vector<unsigned int> m_joint_state_indices;

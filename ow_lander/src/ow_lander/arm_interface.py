@@ -175,9 +175,9 @@ class ArmFaultMonitor(metaclass=Singleton):
         fault flag.
         May raise TimeoutError if a server connection fails.
         """
-        SYSTEM__FAULTS_TOPIC = "/system__faults_status"
-        self._sub_system__faults = rospy.Subscriber(
-            SYSTEM__FAULTS_TOPIC,
+        SYSTEM_FAULTS_TOPIC = "/system_faults_status"
+        self._sub_system_faults = rospy.Subscriber(
+            SYSTEM_FAULTS_TOPIC,
             SystemFaultsStatus,
             self._system_faults_callback
         )

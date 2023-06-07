@@ -194,6 +194,8 @@ class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmUnstowGoal
   feedback_type = owl_msgs.msg.ArmUnstowFeedback
   result_type   = owl_msgs.msg.ArmUnstowResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
 
   def plan_trajectory(self, _goal):
     sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
@@ -208,6 +210,7 @@ class ArmStowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmStowGoal
   feedback_type = owl_msgs.msg.ArmStowFeedback
   result_type   = owl_msgs.msg.ArmStowResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def plan_trajectory(self, _goal):
     sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
@@ -222,6 +225,7 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.TaskGrindGoal
   feedback_type = owl_msgs.msg.TaskGrindFeedback
   result_type   = owl_msgs.msg.TaskGrindResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
   def publish_feedback_cb(self):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
@@ -303,6 +307,7 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   goal_type     = owl_msgs.msg.TaskScoopCircularGoal
   feedback_type = owl_msgs.msg.TaskScoopCircularFeedback
   result_type   = owl_msgs.msg.TaskScoopCircularResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -381,6 +386,7 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   goal_type     = owl_msgs.msg.TaskScoopLinearGoal
   feedback_type = owl_msgs.msg.TaskScoopLinearFeedback
   result_type   = owl_msgs.msg.TaskScoopLinearResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -480,6 +486,7 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   goal_type     = owl_msgs.msg.TaskDiscardSampleGoal
   feedback_type = owl_msgs.msg.TaskDiscardSampleFeedback
   result_type   = owl_msgs.msg.TaskDiscardSampleResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -544,6 +551,7 @@ class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.TaskDeliverSampleGoal
   feedback_type = owl_msgs.msg.TaskDeliverSampleFeedback
   result_type   = owl_msgs.msg.TaskDeliverSampleResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
   def plan_trajectory(self, _goal):
     self._arm.move_group_scoop.set_planner_id("RRTstar")
@@ -570,6 +578,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmMoveCartesianGoal
   feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -614,6 +623,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmMoveCartesianGuardedGoal
   feedback_type = owl_msgs.msg.ArmMoveCartesianGuardedFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -677,6 +687,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmFindSurfaceGoal
   feedback_type = owl_msgs.msg.ArmFindSurfaceFeedback
   result_type   = owl_msgs.msg.ArmFindSurfaceResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -808,6 +819,7 @@ class ArmMoveJointServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmMoveJointGoal
   feedback_type = owl_msgs.msg.ArmMoveJointFeedback
   result_type   = owl_msgs.msg.ArmMoveJointResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -827,6 +839,7 @@ class ArmMoveJointsServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmMoveJointsGoal
   feedback_type = owl_msgs.msg.ArmMoveJointsFeedback
   result_type   = owl_msgs.msg.ArmMoveJointsResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -849,6 +862,7 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
   goal_type     = owl_msgs.msg.ArmMoveJointsGuardedGoal
   feedback_type = owl_msgs.msg.ArmMoveJointsGuardedFeedback
   result_type   = owl_msgs.msg.ArmMoveJointsGuardedResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
   # redefine execute_action to enable FT monitor
   def execute_action(self, goal):
@@ -936,6 +950,7 @@ class CameraCaptureServer(ActionServerBase):
   goal_type     = owl_msgs.msg.CameraCaptureGoal
   feedback_type = owl_msgs.msg.CameraCaptureFeedback
   result_type   = owl_msgs.msg.CameraCaptureResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.CAMERA_GOAL
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
@@ -987,6 +1002,7 @@ class CameraSetExposureServer(ActionServerBase):
   goal_type     = owl_msgs.msg.CameraSetExposureGoal
   feedback_type = owl_msgs.msg.CameraSetExposureFeedback
   result_type   = owl_msgs.msg.CameraSetExposureResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.CAMERA_GOAL
 
   def __init__(self):
     super(CameraSetExposureServer, self).__init__()
@@ -1102,6 +1118,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.PanTiltMoveJointsGoal
   feedback_type = owl_msgs.msg.PanTiltMoveJointsFeedback
   result_type   = owl_msgs.msg.PanTiltMoveJointsResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos,
@@ -1129,6 +1146,7 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = ow_lander.msg.PanGoal
   feedback_type = ow_lander.msg.PanFeedback
   result_type   = ow_lander.msg.PanResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
   def publish_feedback_cb(self):
     self._publish_feedback(pan_position = self._pan_pos)
@@ -1153,6 +1171,7 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = ow_lander.msg.TiltGoal
   feedback_type = ow_lander.msg.TiltFeedback
   result_type   = ow_lander.msg.TiltResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
   def publish_feedback_cb(self):
     self._publish_feedback(tilt_position = self._tilt_pos)
@@ -1177,6 +1196,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.PanTiltMoveCartesianGoal
   feedback_type = owl_msgs.msg.PanTiltMoveCartesianFeedback
   result_type   = owl_msgs.msg.PanTiltMoveCartesianResult
+  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
