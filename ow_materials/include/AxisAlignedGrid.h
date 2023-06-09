@@ -23,9 +23,9 @@ public:
 template <typename T>
 class AxisAlignedGrid {
 public:
-  AxisAlignedGrid(double const x0, double const y0, double const z0,
-                  double const x1, double const y1, double const z1,
-                  double const side_length, T const initial_value);
+  AxisAlignedGrid(double x0, double y0, double z0,
+                  double x1, double y1, double z1,
+                  double side_length, T initial_value);
   ~AxisAlignedGrid() = default;
 
   AxisAlignedGrid() = delete;
@@ -37,18 +37,17 @@ public:
   const ignition::math::Vector3d &getMinCorner() const;
   const ignition::math::Vector3d &getCenter() const;
 
-  inline T &getCellValue(size_t const i, size_t const j, size_t const k) {
+  inline T &getCellValue(size_t i, size_t j, size_t k) {
     return m_cells[index(i, j, k)];
   };
 
-  inline T const &getCellValue(size_t const i, size_t const j,
-                               size_t const k) const {
+  inline T const &getCellValue(size_t i, size_t j, size_t k) const {
     return m_cells[index(i, j, k)];
   };
 
 private:
 
-  inline size_t index(size_t const i, size_t const j, size_t const k) const {
+  inline size_t index(size_t i, size_t j, size_t k) const {
     return i + j * m_dimensions.X() + k * m_dimensions.X() * m_dimensions.Y();
   };
 
