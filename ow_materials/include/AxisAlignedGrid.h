@@ -55,8 +55,6 @@ private:
 
   ignition::math::Vector3<size_t> m_dimensions;
 
-  double const m_side_length;
-
   std::vector<T> m_cells;
 };
 

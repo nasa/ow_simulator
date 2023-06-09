@@ -23,10 +23,13 @@ public:
   MaterialDatabase(const MaterialDatabase&) = delete;
   MaterialDatabase& operator=(const MaterialDatabase&) = delete;
 
-  void addMaterial(Material mat);
+  bool addMaterial(const Material &mat);
 
-  size_t size();
+  inline size_t size() {
+    return m_database.size();
+  }
 
+  // may throw std::out_of_range
   inline const Material &getMaterial(MaterialID id) const {
     return m_database.at(id);
   };

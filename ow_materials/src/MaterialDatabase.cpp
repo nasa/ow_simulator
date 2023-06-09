@@ -2,25 +2,25 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+#include <gazebo/common/common.hh>
+
 #include <MaterialDatabase.h>
 
 using namespace ow_materials;
 
-void MaterialDatabase::addMaterial(Material mat) {
+using std::endl;
+
+bool MaterialDatabase::addMaterial(const Material &mat) {
   static MaterialID id = Material::id_min;
   if (id == Material::id_max) {
-    // Unsure whether this should use gazebo or ROS logging, so both error
-    // message are left as TODOs for now
-    // TODO Error: Maximum number of unique materials has already been created.
-    return;
+    gzerr << "Database already contains maximum number of materials" << endl;
+    return false;
   }
   if (!m_database.insert({id, mat}).second) {
-    // TODO Error: An unknown error has occurred. This should never happen.
-    return;
+    gzerr << "Attempted to add a pre-existing material ID to the database. "
+             "This should never happen." << endl;
+    return false;
   }
   ++id;
-}
-
-size_t MaterialDatabase::size() {
-  return m_database.size();
+  return true;
 }

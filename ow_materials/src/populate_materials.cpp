@@ -20,16 +20,18 @@ using namespace ow_materials;
 static string join(const initializer_list<string> &args) {
   stringstream joined;
 
-  for (auto x = begin(args); x != end(args) - 1; ++x)
+  for (auto x = begin(args); x != end(args) - 1; ++x) {
     joined << *x << "/";
+  }
   joined << *(end(args) - 1);
   return joined.str();
 }
 
 template <typename T>
 static T get_param(const string &param_name) {
-  if (!ros::param::has(param_name))
+  if (!ros::param::has(param_name)) {
     throw MaterialConfigError("Required material parameter is missing!");
+  }
   T value;
   ros::param::get(param_name, value);
   return value;
@@ -51,8 +53,9 @@ uint8_t get_param<uint8_t>(const string &param_name) {
 void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
   // search for material names in namespace
   vector<string> param_names;
-  if (!ros::param::getParamNames(param_names))
-    throw runtime_error("Failed to communicate with parameter server!");
+  if (!ros::param::getParamNames(param_names)) {
+    throw MaterialConfigError("Failed to communicate with parameter server!");
+  }
   set<string> mat_names;
   for (const auto &pn : param_names) {
     if (pn.compare(0, ns.size(), ns) == 0) {
@@ -63,7 +66,7 @@ void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
   }
   // build and add all materials to database
   for (const auto &mat : mat_names) {
-    db_ptr->addMaterial(
+    const bool added = db_ptr->addMaterial(
       {
         mat,
         get_param<float>(join({ns, mat, "occurrence"})),
@@ -76,5 +79,8 @@ void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
         }
       }
     );
+    if (!added) {
+      throw MaterialConfigError("Failed to added a material to the database!");
+    }
   }
 }

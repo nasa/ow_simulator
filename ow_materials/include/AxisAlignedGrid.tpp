@@ -15,12 +15,11 @@ template <typename T>
 AxisAlignedGrid<T>::AxisAlignedGrid(
   double const x0, double const y0, double const z0,
   double const x1, double const y1, double const z1,
-  double const side_length, T const initial_value
-) : m_side_length(side_length)
+  double const side_length, T const initial_value)
 {
 
   // cannot have a negative/zero length
-  if (m_side_length <= 0) {
+  if (side_length <= 0) {
     throw GridConfigError("Side length of a cell must be positive!");
   }
 
@@ -33,18 +32,18 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   auto diagonal = max_corner - min_corner;
 
   // adjust diagonal so each dimension is a perfect multiple of the side length
-  increaseToNearestMultiple(diagonal.X(), m_side_length);
-  increaseToNearestMultiple(diagonal.Y(), m_side_length);
-  increaseToNearestMultiple(diagonal.Z(), m_side_length);
+  increaseToNearestMultiple(diagonal.X(), side_length);
+  increaseToNearestMultiple(diagonal.Y(), side_length);
+  increaseToNearestMultiple(diagonal.Z(), side_length);
 
   // reassign for adjusted diagonal
   max_corner = min_corner + diagonal;
 
   // compute number of cells in each dimension
   m_dimensions = ignition::math::Vector3<size_t>(
-    static_cast<size_t>(std::round(diagonal.X() / m_side_length)),
-    static_cast<size_t>(std::round(diagonal.Y() / m_side_length)),
-    static_cast<size_t>(std::round(diagonal.Z() / m_side_length))
+    static_cast<size_t>(std::round(diagonal.X() / side_length)),
+    static_cast<size_t>(std::round(diagonal.Y() / side_length)),
+    static_cast<size_t>(std::round(diagonal.Z() / side_length))
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow

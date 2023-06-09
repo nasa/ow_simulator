@@ -3,7 +3,9 @@
   <name>ow_materials</name>
   <version>0.1.0</version>
   <description>
-    <p>A Gazebo plugin that distributes a multitude of materials throughout a terrain that alter the terrain visually and terramechanically when operated on by an end-effector.</p>
+    <p>A Gazebo plugin that distributes a multitude of materials throughout a
+    terrain that alter the terrain visually and terramechanically when operated
+    on by an end-effector.</p>
   </description>
 
   <!-- One maintainer tag required, multiple allowed, one person per --> 
