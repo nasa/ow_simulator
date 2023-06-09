@@ -12,6 +12,14 @@
 
 namespace ow_materials {
 
+// thrown when configuration values for the grid are not correctly formatted
+class GridConfigError : public std::runtime_error
+{
+public:
+  GridConfigError(const std::string &what_arg)
+    : std::runtime_error(what_arg) { };
+};
+
 template <typename T>
 class AxisAlignedGrid {
 public:

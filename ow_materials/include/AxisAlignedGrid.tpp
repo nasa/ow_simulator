@@ -3,7 +3,7 @@
 // this repository.
 
 #include <cmath>
-#include <algorithm>
+#include <limits>
 
 namespace ow_materials {
 
@@ -18,6 +18,12 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   double const side_length, T const initial_value
 ) : m_side_length(side_length)
 {
+
+  // cannot have a negative/zero length
+  if (m_side_length <= 0) {
+    throw GridConfigError("Side length of a cell must be positive!");
+  }
+
   auto const min_corner = ignition::math::Vector3d(
     std::min(x0, x1), std::min(y0, y1), std::min(z0, z1)
   );
@@ -34,10 +40,6 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   // reassign for adjusted diagonal
   max_corner = min_corner + diagonal;
 
-  m_domain = std::make_unique<ignition::math::AxisAlignedBox>(
-    min_corner, max_corner
-  );
-
   // compute number of cells in each dimension
   m_dimensions = ignition::math::Vector3<size_t>(
     static_cast<size_t>(std::round(diagonal.X() / m_side_length)),
@@ -45,17 +47,28 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
     static_cast<size_t>(std::round(diagonal.Z() / m_side_length))
   );
 
-  // fill cells with initial value
-  // TODO: chance of int overflow?
-  auto total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
+  // restrict all dimensions to cube root of the max size_t to prevent overflow
+  const auto max_dimension = std::cbrt(std::numeric_limits<size_t>::max());
+  if (   m_dimensions.X() >= max_dimension
+      || m_dimensions.Y() >= max_dimension
+      || m_dimensions.Z() >= max_dimension) {
+    throw GridConfigError("Grid dimensions are too large to be encoded. Try a "
+                          "smaller domain or larger cell side length.");
+  }
 
+  m_domain = std::make_unique<ignition::math::AxisAlignedBox>(
+    min_corner, max_corner
+  );
+
+  // fill cells with initial value
+  auto total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
   m_cells.resize(total_cells, initial_value);
 
 }
 
 template <typename T>
 const ignition::math::Vector3d &AxisAlignedGrid<T>::getDiagonal() const {
-  static const ignition::math::Vector3 diagonal(
+  static const ignition::math::Vector3d diagonal(
     m_domain->XLength(), m_domain->YLength(), m_domain->ZLength()
   );
   return diagonal;
@@ -63,12 +76,14 @@ const ignition::math::Vector3d &AxisAlignedGrid<T>::getDiagonal() const {
 
 template <typename T>
 const ignition::math::Vector3d &AxisAlignedGrid<T>::getMaxCorner() const {
-  return m_domain->Max();
+  static const ignition::math::Vector3d max = m_domain->Max();
+  return max;
 };
 
 template <typename T>
 const ignition::math::Vector3d &AxisAlignedGrid<T>::getMinCorner() const {
-  return m_domain->Min();
+  static const ignition::math::Vector3d min = m_domain->Min();
+  return min;
 };
 
 template <typename T>

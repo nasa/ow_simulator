@@ -29,21 +29,31 @@ void MaterialDistributionPlugin::Load(rendering::VisualPtr parent,
   m_visual = parent;
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
-      || !sdf->HasElement(PARAMETER_CORNER_B))
-    gzthrow("Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B
-      << " parameters are required.");
-  if (!sdf->HasElement(PARAMETER_CELL_SIDE_LENGTH))
-    gzthrow(PARAMETER_CELL_SIDE_LENGTH << " is required.");
+      || !sdf->HasElement(PARAMETER_CORNER_B)) {
+    gzerr << "Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B
+          << " parameters are required." << endl;
+    return;
+  }
+  if (!sdf->HasElement(PARAMETER_CELL_SIDE_LENGTH)) {
+    gzerr << PARAMETER_CELL_SIDE_LENGTH << " is required." << endl;
+    return;
+  }
 
   const auto corner_a = sdf->Get<Vector3d>(PARAMETER_CORNER_A);
   const auto corner_b = sdf->Get<Vector3d>(PARAMETER_CORNER_B);
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
-  m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(
-    corner_a.X(), corner_a.Y(), corner_a.Z(),
-    corner_b.X(), corner_b.Y(), corner_b.Z(),
-    cell_side_length, MaterialBlend()
-  );
+  try {
+    m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(
+      corner_a.X(), corner_a.Y(), corner_a.Z(),
+      corner_b.X(), corner_b.Y(), corner_b.Z(),
+      cell_side_length, MaterialBlend()
+    );
+  } catch (const GridConfigError &e) {
+    gzerr << e.what() << endl;
+    return;
+  }
+
   const auto center = m_grid->getCenter();
   const auto diagonal = m_grid->getDiagonal();
   gzlog << PLUGIN_NAME << ": Material grid centered at (" << center.X() << ", "
@@ -57,8 +67,9 @@ void MaterialDistributionPlugin::Load(rendering::VisualPtr parent,
   // populate materials database
   try {
     populate_material_database(m_material_db.get(), NAMESPACE_MATERIALS);
-  } catch (const std::runtime_error &e) {
-    gzthrow(e.what());
+  } catch (const MaterialConfigError &e) {
+    gzerr << e.what() << endl;
+    return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
         << m_material_db->size() << " materials." << endl;
