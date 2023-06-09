@@ -62,7 +62,8 @@ public:
 
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
-  void onModDiffVisualMsg(const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+  void onModDiffVisualMsg(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
 private:
   // ROS interfaces

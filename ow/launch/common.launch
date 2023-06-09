@@ -95,6 +95,10 @@
     <param name="spawn_spacing" type="double" value="0.02"/>
   </node>
 
+  <!-- load materials file into ROS paramters -->
+  <rosparam command="load" ns="ow_materials"
+    file="$(find ow_materials)/materials/default.yaml"/>
+
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->
   <!--node pkg="rqt_gui" type="rqt_gui" name="rqt_gui"
