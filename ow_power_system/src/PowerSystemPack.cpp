@@ -55,7 +55,7 @@ void PowerSystemPack::InitAndRun()
 
   m_max_horizon_secs = system_config.getInt32("max_horizon");
   m_num_samples = system_config.getInt32("num_samples");
-  m_profile_increment = system_config.getInt32("profile_increment");
+  m_time_interval = system_config.getInt32("time_interval");
   m_initial_power = system_config.getDouble("initial_power");
   m_initial_voltage = system_config.getDouble("initial_voltage");
   m_initial_temperature = system_config.getDouble("initial_temperature");
@@ -484,7 +484,7 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
         m_nodes[i].node.SetCustomTemperatureFault(temperature);
       }
       
-      index += m_profile_increment;
+      index++;
     }
   }
 }
@@ -736,7 +736,7 @@ void PowerSystemPack::publishPredictions()
   // from triggering the fail state.
   if ((min_rul < 0 || min_soc < 0)
       && (!m_battery_failed)
-      && (m_nodes[0].model.timestamp >= (m_profile_increment * 5)))
+      && (m_nodes[0].model.timestamp >= (m_time_interval * 5)))
   {
     ROS_WARN_STREAM("The battery has reached a fail state. Flatlining "
                     << "all future published predictions");

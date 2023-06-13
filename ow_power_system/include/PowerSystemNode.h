@@ -72,12 +72,10 @@ private:
   //
   double m_max_gsap_input_watts = 20;
 
-  // Number of lines in power fault profiles to skip, in order to
-  // synchonize the consumption of the profile with GSAP's cycle rate
-  // (above).  This computation is left to the user for now, though
-  // note that the default values are not expected to change as of
-  // Release 9.  This initial value is overriden by the system config.
-  int m_profile_increment = 2;
+  // The expected time interval between publications. It is essentially the
+  // rate at which the main loop executes. It is overridden by the value in
+  // system.cfg.
+  int m_time_interval = 2;
 
   // The three main statistics relating to battery model health:
   // Power, Voltage, & Temperature.

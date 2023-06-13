@@ -52,7 +52,7 @@ bool PowerSystemNode::loadSystemConfig()
                                                          m_max_temperature);
   m_baseline_wattage = system_config.getDouble("baseline_power");
   m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
-  m_profile_increment = system_config.getInt32("profile_increment");
+  m_time_interval = system_config.getInt32("time_interval");
 
   return true;
 }
@@ -130,7 +130,7 @@ void PowerSystemNode::applyValueMods(double& power, double& voltage, double& tem
 double PowerSystemNode::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
-  m_current_timestamp += m_profile_increment;
+  m_current_timestamp += m_time_interval;
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
   m_wattage_estimate = electrical_power + m_baseline_wattage;
