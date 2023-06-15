@@ -39,20 +39,31 @@ bool PowerSystemNode::Initialize()
  */
 bool PowerSystemNode::loadSystemConfig()
 {
-  auto system_config_path = ros::package::getPath("ow_power_system")
-    + "/config/system.cfg";
-  auto system_config = ConfigMap(system_config_path);
-  m_base_voltage = system_config.getDouble("base_voltage");
-  m_voltage_range = system_config.getDouble("voltage_range");
-  m_min_temperature = system_config.getDouble("min_temperature");
-  m_max_temperature = system_config.getDouble("max_temperature");
-  m_battery_lifetime = system_config.getDouble("battery_lifetime");
-  m_efficiency = system_config.getDouble("efficiency");
-  m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
-                                                         m_max_temperature);
-  m_baseline_wattage = system_config.getDouble("baseline_power");
-  m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
-  m_time_interval = system_config.getInt32("time_interval");
+  try
+  {
+    auto system_config_path = ros::package::getPath("ow_power_system")
+      + "/config/system.cfg";
+    auto system_config = ConfigMap(system_config_path);
+    m_base_voltage = system_config.getDouble("base_voltage");
+    m_voltage_range = system_config.getDouble("voltage_range");
+    m_min_temperature = system_config.getDouble("min_temperature");
+    m_max_temperature = system_config.getDouble("max_temperature");
+    m_battery_lifetime = system_config.getDouble("battery_lifetime");
+    m_efficiency = system_config.getDouble("efficiency");
+    m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
+                                                          m_max_temperature);
+    m_baseline_wattage = system_config.getDouble("baseline_power");
+    m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
+    m_time_interval = system_config.getInt32("time_interval");
+  }
+  catch(const std::exception& err)
+  {
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what() 
+                     << " while attempting to read system.cfg in a node!\n"
+                     << "Ensure system.cfg is formatted properly before "
+                     << "restarting the simulation.");
+    return false;
+  }
 
   return true;
 }

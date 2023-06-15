@@ -37,42 +37,54 @@ void PowerSystemPack::initAndRun()
   const auto START_TIME       = MessageClock::now();
 
   // Read system.cfg for various parameters.
-  auto system_config_path = ros::package::getPath("ow_power_system")
-    + "/config/system.cfg";
-  auto system_config = ConfigMap(system_config_path);
-
-  // Set up the moving average vector.
-  m_power_values.resize(m_moving_average_window, 0.0);
-
-  // DEBUG CUSTOMIZATION
-  // See explanation of m_print_debug in the header file for why this
-  // comparison is needed for what is essentially a bool.
-  const std::string TRUE = "true";
-  m_print_debug = (system_config.getString("print_debug") == TRUE);
-
-  if (m_print_debug)
+  try
   {
-    m_timestamp_print_debug = (system_config.getString("timestamp_print_debug") == TRUE);
-    m_inputs_print_debug = (system_config.getString("inputs_print_debug") == TRUE);
-    m_outputs_print_debug = (system_config.getString("outputs_print_debug") == TRUE);
-    m_topics_print_debug = (system_config.getString("topics_print_debug") == TRUE);
-    m_mech_power_print_debug = (system_config.getString("mech_power_print_debug") == TRUE);
+    auto system_config_path = ros::package::getPath("ow_power_system")
+      + "/config/system.cfg";
+    auto system_config = ConfigMap(system_config_path);
+
+    // Set up the moving average vector.
+    m_power_values.resize(m_moving_average_window, 0.0);
+
+    // DEBUG CUSTOMIZATION
+    // See explanation of m_print_debug in the header file for why this
+    // comparison is needed for what is essentially a bool.
+    const std::string TRUE = "true";
+    m_print_debug = (system_config.getString("print_debug") == TRUE);
+
+    if (m_print_debug)
+    {
+      m_timestamp_print_debug = (system_config.getString("timestamp_print_debug") == TRUE);
+      m_inputs_print_debug = (system_config.getString("inputs_print_debug") == TRUE);
+      m_outputs_print_debug = (system_config.getString("outputs_print_debug") == TRUE);
+      m_topics_print_debug = (system_config.getString("topics_print_debug") == TRUE);
+      m_mech_power_print_debug = (system_config.getString("mech_power_print_debug") == TRUE);
+    }
+    // If print_debug was false, then all flags remain false as initialized.
+
+    m_max_horizon_secs = system_config.getInt32("max_horizon");
+    m_num_samples = system_config.getInt32("num_samples");
+    m_time_interval = system_config.getInt32("time_interval");
+    m_initial_power = system_config.getDouble("initial_power");
+    m_initial_voltage = system_config.getDouble("initial_voltage");
+    m_initial_temperature = system_config.getDouble("initial_temperature");
+    m_initial_soc = system_config.getDouble("initial_soc");
+    m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
+    m_gsap_rate_hz = system_config.getDouble("gsap_rate");
   }
-  // If print_debug was false, then all flags remain false as initialized.
-
-  m_max_horizon_secs = system_config.getInt32("max_horizon");
-  m_num_samples = system_config.getInt32("num_samples");
-  m_time_interval = system_config.getInt32("time_interval");
-  m_initial_power = system_config.getDouble("initial_power");
-  m_initial_voltage = system_config.getDouble("initial_voltage");
-  m_initial_temperature = system_config.getDouble("initial_temperature");
-  m_initial_soc = system_config.getDouble("initial_soc");
-  m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
-  m_gsap_rate_hz = system_config.getDouble("gsap_rate");
-
+  catch(const std::exception& err)
+  {
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what() 
+                     << " while attempting to read system.cfg in the pack!\n"
+                     << "Ensure system.cfg is formatted properly before "
+                     << "restarting the simulation.");
+    return;
+  }
+  
   if (!initNodes())
   {
-    ROS_ERROR_STREAM("Power system pack failed to initialize nodes");
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: "
+                     << "Failed to initialize nodes in the pack!");
     return;
   }
 
@@ -100,30 +112,45 @@ void PowerSystemPack::initAndRun()
     );
   }
 
-  // Get the asynchronous prognoser configuration and create a builder with it.
-  auto config_path = ros::package::getPath("ow_power_system") + "/config/async_prognoser.cfg";
-  ConfigMap config(config_path);
 
-  ModelBasedAsyncPrognoserBuilder builder(std::move(config));
-  builder.setModelName("Battery");
-  builder.setObserverName("UKF");
-  builder.setPredictorName("MC");
-  // There is a value in async_prognoser.cfg: "LoadEstimator.Window", which sets
-  // the number of values looked back on for the moving average. It is 1 by default
-  // (so the most recent prediction value is used for the estimation step), but
-  // may benefit from being increased in the future.
-  builder.setLoadEstimatorName("MovingAverage");
-  // To modify the number of samples & horizon (and thus change performance), see the
-  // constant declared in PowerSystemPack.h.
-  builder.setConfigParam("Predictor.SampleCount", std::to_string(m_num_samples));
-  builder.setConfigParam("Predictor.Horizon", std::to_string(m_max_horizon_secs));
-
-  // Create the prognosers using the builder that will send predictions using
-  // their corresponding message bus.
   std::vector<PCOE::AsyncPrognoser> prognosers;
-  for (int i = 0; i < NUM_NODES; i++)
+
+  // Get the asynchronous prognoser configuration and create a builder with it.
+  try
   {
-    prognosers.push_back(builder.build(m_nodes[i].bus, m_nodes[i].name, "trajectory"));
+    std::string config_path = ros::package::getPath("ow_power_system") + "/config/async_prognoser.cfg";
+
+    ConfigMap config(config_path);
+
+    ModelBasedAsyncPrognoserBuilder builder(std::move(config));
+    builder.setModelName("Battery");
+    builder.setObserverName("UKF");
+    builder.setPredictorName("MC");
+    // There is a value in async_prognoser.cfg: "LoadEstimator.Window", which sets
+    // the number of values looked back on for the moving average. It is 1 by default
+    // (so the most recent prediction value is used for the estimation step), but
+    // may benefit from being increased in the future.
+    builder.setLoadEstimatorName("MovingAverage");
+    // To modify the number of samples & horizon (and thus change performance), see the
+    // constant declared in PowerSystemPack.h.
+    builder.setConfigParam("Predictor.SampleCount", std::to_string(m_num_samples));
+    builder.setConfigParam("Predictor.Horizon", std::to_string(m_max_horizon_secs));
+
+    // Create the prognosers using the builder that will send predictions using
+    // their corresponding message bus.
+    for (int i = 0; i < NUM_NODES; i++)
+    {
+      prognosers.push_back(builder.build(m_nodes[i].bus, m_nodes[i].name, "trajectory"));
+    }
+  }
+  catch(const std::exception& err)
+  {
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what()
+                     << " while attempting to initialize asynchronous "
+                     << "prognosers!\nEnsure /config/async_prognoser.cfg exists "
+                     << "and is formatted properly before restarting the "
+                     << "simulation.");
+    return;
   }
 
   ROS_INFO_STREAM("Power system pack running.");
