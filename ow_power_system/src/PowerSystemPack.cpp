@@ -21,7 +21,6 @@
 
 using namespace PCOE;
 
-const auto START_TIME       = MessageClock::now();
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
 const int CUSTOM_FILE_EXPECTED_COLS           = 4;
@@ -33,29 +32,31 @@ const int ERR_CUSTOM_FILE_FORMAT              = -1;
  * The primary function with the loop that controls each cycle.
  * Initializes everything, then starts looping.
  */
-void PowerSystemPack::InitAndRun()
+void PowerSystemPack::initAndRun()
 {
+  const auto START_TIME       = MessageClock::now();
+
   // Read system.cfg for various parameters.
   auto system_config_path = ros::package::getPath("ow_power_system")
     + "/config/system.cfg";
   auto system_config = ConfigMap(system_config_path);
 
   // Set up the moving average vector.
-  m_power_values.resize(m_moving_average_window);
-  std::fill(m_power_values.begin(), m_power_values.end(), 0.0);
+  m_power_values.resize(m_moving_average_window, 0.0);
 
   // DEBUG CUSTOMIZATION
   // See explanation of m_print_debug in the header file for why this
   // comparison is needed for what is essentially a bool.
-  m_print_debug = (system_config.getString("print_debug") == "true");
+  const std::string TRUE = "true";
+  m_print_debug = (system_config.getString("print_debug") == TRUE);
 
   if (m_print_debug)
   {
-    m_timestamp_print_debug = (system_config.getString("timestamp_print_debug") == "true");
-    m_inputs_print_debug = (system_config.getString("inputs_print_debug") == "true");
-    m_outputs_print_debug = (system_config.getString("outputs_print_debug") == "true");
-    m_topics_print_debug = (system_config.getString("topics_print_debug") == "true");
-    m_mech_power_print_debug = (system_config.getString("mech_power_print_debug") == "true");
+    m_timestamp_print_debug = (system_config.getString("timestamp_print_debug") == TRUE);
+    m_inputs_print_debug = (system_config.getString("inputs_print_debug") == TRUE);
+    m_outputs_print_debug = (system_config.getString("outputs_print_debug") == TRUE);
+    m_topics_print_debug = (system_config.getString("topics_print_debug") == TRUE);
+    m_mech_power_print_debug = (system_config.getString("mech_power_print_debug") == TRUE);
   }
   // If print_debug was false, then all flags remain false as initialized.
 
@@ -75,11 +76,7 @@ void PowerSystemPack::InitAndRun()
     return;
   }
 
-  if (!initTopics())
-  {
-    ROS_ERROR_STREAM("Power system pack failed to initialize topics");
-    return;
-  }
+  initTopics();
 
   // Initialize EoD_events and previous_times.
   for (int i = 0; i < NUM_NODES; i++)
@@ -140,7 +137,7 @@ void PowerSystemPack::InitAndRun()
   // Loop through the PowerSystemNodes to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
-  int startLoops = 2 * NUM_NODES;
+  int start_loops = 2 * NUM_NODES;
   while(ros::ok())
   {
     ros::spinOnce();
@@ -154,56 +151,19 @@ void PowerSystemPack::InitAndRun()
       ROS_INFO_STREAM("Timestamp " << m_nodes[0].model.timestamp);
     }
 
-    // Warning message for excessive power draw.
-    std::string highDrawMsg = "";
-    int msgIndex = 0;
-    bool firstLine = true;
+    double excessive_draw = 0.0;
 
     // Cycle the power stats in the nodes.
     for (int i = 0; i < NUM_NODES; i++)
     {
-      double excessiveDraw = m_nodes[i].node.RunOnce();
-      // Add to the warning message if the draw exceeded set limits (which returns
-      // a value greater than 0).
-      if (excessiveDraw > 0)
+      double temp_draw = m_nodes[i].node.RunOnce();
+      // Signal the warning message to be displayed after the loop.
+      if (temp_draw > 0)
       {
-        // Formatting for the warning message, to display up to 4 nodes
-        // per line for conciseness.
-        std::string header = "N";
-        if (i < 10)
-        {
-          header += "0";
-        }
-        header += std::to_string(i) + ": " + std::to_string(excessiveDraw) + "W";
-        switch(msgIndex)
-        {
-          case 0:
-            if (firstLine)
-            {
-              firstLine = false;
-            }
-            else
-            {
-              highDrawMsg += ",\n";
-            }
-            highDrawMsg += header;
-            msgIndex++;
-            break;
-          case 1:
-            highDrawMsg += ", " + header;
-            msgIndex++;
-            break;
-          case 2:
-            highDrawMsg += ", " + header;
-            msgIndex++;
-            break;
-          case 3:
-            highDrawMsg += ", " + header;
-            msgIndex = 0;
-            break;
-          default:
-            break;
-        }
+        // Current implementation means if one input exceeds the draw limit,
+        // all inputs will exceed at the same amount, so it doesn't matter which
+        // cell input we take.
+        excessive_draw = temp_draw;
       }
 
       m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
@@ -226,13 +186,13 @@ void PowerSystemPack::InitAndRun()
         // The first batch of data (sent in during startup) seems to be lost to 
         // the void. This is a bandaid fix to send the initial data in twice
         // for each node on the next loop.
-        if (startLoops > 0)
+        if (start_loops > 0)
         {
           // The very first values sent in should be the init values.
           input_power = m_initial_power;
           input_voltage = m_initial_voltage;
           input_tmp = m_initial_temperature;
-          startLoops--;
+          start_loops--;
         }
         else
         {
@@ -244,6 +204,8 @@ void PowerSystemPack::InitAndRun()
         // DEBUG PRINT
         if (m_inputs_print_debug && (m_nodes[i].model.timestamp > 0))
         {
+          // Header is simply used for printout consistency between
+          // nodes 0-9 and 10+.
           std::string header = "N";
           if (i < 10)
           {
@@ -275,14 +237,13 @@ void PowerSystemPack::InitAndRun()
     }
 
     // Print a warning message if any nodes computed an excessive power draw.
-    if (highDrawMsg.length() > 0)
+    if (excessive_draw > 0)
     {
-      ROS_WARN_STREAM("Power system computed excessive power input for GSAP "
-                      << "in the following nodes:\n"
-                      << highDrawMsg
-                      << "\nGSAP input was capped at "
+      ROS_WARN_STREAM("Power system computed excessive power input of "
+                      << excessive_draw << "W for one or more GSAP "
+                      << "prognosers.\nInput was capped at "
                       << m_max_gsap_input_watts
-                      << "W for each node listed.");
+                      << "W for each node over the limit.");
     }
 
     // Publish the predictions in EoD_events.
@@ -358,7 +319,7 @@ bool PowerSystemPack::initNodes()
  * Initializes all publishers for other components in OceanWATERS to get battery
  * outputs from.
  */
-bool PowerSystemPack::initTopics()
+void PowerSystemPack::initTopics()
 {
   // Construct the PowerSystemNode publishers
   m_mechanical_power_raw_pub = m_nh.advertise<std_msgs::Float64>("mechanical_power/raw", 1);
@@ -368,7 +329,6 @@ bool PowerSystemPack::initTopics()
   m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemPack::jointStatesCb, this);
-  return true;
 }
 
 /*
@@ -385,7 +345,6 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
   std::string designated_file;
   static std::string saved_file;
   static bool custom_fault_ready = false;
-  static bool custom_warning_displayed = false;
   static bool end_fault_warning_displayed = false;
   bool fault_enabled = false;
 
@@ -452,14 +411,12 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
     }
     fault_activated = false;
     custom_fault_ready = false;
-    custom_warning_displayed = false;
   }
 
   if (fault_activated && fault_enabled && custom_fault_ready)
   {
     // TODO: There's no specification on how to handle reaching the end
-    // of a custom fault profile. For now, simply disable
-    // the fault.
+    // of a custom fault profile. For now, simply disable the fault.
     if (index >= sequence.size())
     {
       if (!end_fault_warning_displayed)
@@ -476,10 +433,9 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
 
       // Evenly distribute the power draw, voltage, and temperature values from
       // the custom fault profile across each node.
-      // Note this behavior may need to be updated
-      // in the future (e.g. unsure exactly how voltage and temperature
-      // affect predictions, as they do not directly add to the values
-      // like power does).
+      // NOTE this behavior may need to be updated in the future (e.g. unsure
+      // exactly how voltage and temperature affect predictions, as they do not
+      // directly add to the values like power does).
       double wattage = data[MessageId::Watts] / NUM_NODES;
       double voltage = data[MessageId::Volts] / NUM_NODES;
       double temperature = data[MessageId::Centigrade] / NUM_NODES;
@@ -502,7 +458,6 @@ void PowerSystemPack::injectCustomFault(bool& fault_activated,
 void PowerSystemPack::injectFault (const std::string& fault_name,
                                    bool& fault_activated)
 {
-  static bool warning_displayed = false;
   bool fault_enabled = false;
   double hpd_wattage = 0.0;
 
@@ -518,7 +473,6 @@ void PowerSystemPack::injectFault (const std::string& fault_name,
   {
     ROS_INFO_STREAM(fault_name << " deactivated!");
     fault_activated = false;
-    warning_displayed = false;
   }
 
   if (fault_activated && fault_enabled)
@@ -785,7 +739,7 @@ int main(int argc, char* argv[])
 
   PowerSystemPack pack;
 
-  pack.InitAndRun();
+  pack.initAndRun();
 
   return 0;
 }

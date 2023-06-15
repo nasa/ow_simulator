@@ -68,10 +68,10 @@ public:
   ~PowerSystemPack() = default;
   PowerSystemPack(const PowerSystemPack&) = delete;
   PowerSystemPack& operator=(const PowerSystemPack&) = delete;
-  void InitAndRun();
+  void initAndRun();
 private:
   bool initNodes();
-  bool initTopics();
+  void initTopics();
   void injectCustomFault(bool& fault_activated,
                          const PrognoserVector& sequence,
                          size_t& index);
@@ -97,12 +97,12 @@ private:
   // NOTE: There's no function to get boolean variables from a config, so
   // these bools have to be set via string comparisons. Could benefit from an
   // update if such a function is added in the future.
-  bool m_print_debug;
-  bool m_timestamp_print_debug;
-  bool m_inputs_print_debug;
-  bool m_outputs_print_debug;
-  bool m_topics_print_debug;
-  bool m_mech_power_print_debug;
+  bool m_print_debug = false;
+  bool m_timestamp_print_debug = false;
+  bool m_inputs_print_debug = false;
+  bool m_outputs_print_debug = false;
+  bool m_topics_print_debug = false;
+  bool m_mech_power_print_debug = false;
 
   // system.cfg variables:
 
