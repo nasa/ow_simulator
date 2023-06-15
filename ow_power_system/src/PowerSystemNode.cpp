@@ -101,7 +101,6 @@ double PowerSystemNode::generateVoltageEstimate()
 }
 
 /*
- * Formerly 'injectFaults()'.
  * Applies any modifiers to the input power/voltage/temperature values.
  * Currently the only source of these modifiers is power faults, but could be
  * expanded in the future.

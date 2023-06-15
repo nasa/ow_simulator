@@ -22,6 +22,12 @@
 using namespace PCOE;
 
 const auto START_TIME       = MessageClock::now();
+const std::string FAULT_NAME_HPD           = "high_power_draw";
+const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
+const int CUSTOM_FILE_EXPECTED_COLS           = 4;
+
+// Error flags.
+const int ERR_CUSTOM_FILE_FORMAT              = -1;
 
 /*
  * The primary function with the loop that controls each cycle.
@@ -61,6 +67,7 @@ void PowerSystemPack::InitAndRun()
   m_initial_temperature = system_config.getDouble("initial_temperature");
   m_initial_soc = system_config.getDouble("initial_soc");
   m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
+  m_gsap_rate_hz = system_config.getDouble("gsap_rate");
 
   if (!initNodes())
   {

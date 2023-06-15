@@ -27,8 +27,8 @@ class PowerSystemNode
 public:
   PowerSystemNode() = default;
   ~PowerSystemNode() = default;
-  PowerSystemNode(const PowerSystemNode&) = default;
-  PowerSystemNode& operator=(const PowerSystemNode&) = default;
+  PowerSystemNode(const PowerSystemNode&) = delete;
+  PowerSystemNode& operator=(const PowerSystemNode&) = delete;
   bool Initialize();
   double RunOnce();
   void GetPowerStats(double &time, double &power, double &volts, double &tmp);
@@ -50,18 +50,15 @@ private:
   // Main system configuration: these values are overriden by values
   // in ../config/system.cfg.
 
-  double m_min_temperature = 17.5;      // minimum temp = 17.5 deg. C
-  double m_max_temperature = 21.5;      // maximum temp = 21.5 deg. C
-  double m_battery_lifetime = 2738.0;   // Estimate of battery lifetime (seconds)
-  double m_base_voltage = 3.2;          // [V] estimate
-  double m_voltage_range = 0.1;         // [V]
-  double m_efficiency = 0.9;            // default 90% efficiency
+  double m_min_temperature;     // minimum temp = 17.5 deg. C
+  double m_max_temperature;     // maximum temp = 21.5 deg. C
+  double m_battery_lifetime;    // Estimate of battery lifetime (seconds)
+  double m_base_voltage;        // [V] estimate
+  double m_voltage_range;       // [V]
+  double m_efficiency;          // default 90% efficiency
+  double m_baseline_wattage;    // Base power drawn by continuously-running systems.
 
   double m_current_timestamp = 0.0;
-
-  // Baseline value for power drawn by continuously-running systems.
-  // This initial value is overriden by the system config.
-  double m_baseline_wattage = 1.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
   // given too high a power input.  This made-up value protects

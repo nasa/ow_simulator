@@ -37,14 +37,6 @@ using PrognoserVector = std::vector<PrognoserMap>;
 // expected amount for the battery pack is 24.
 const int NUM_NODES = 24;
 
-const std::string FAULT_NAME_HPD           = "high_power_draw";
-const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
-const int CUSTOM_FILE_EXPECTED_COLS           = 4;
-
-// Error flags.
-const int ERR_CUSTOM_FILE_FORMAT              = -1;
-
-
 // Struct that contains the information used for EoD predictions.
 struct ModelInfo {
   double timestamp;
@@ -74,8 +66,8 @@ class PowerSystemPack
 public:
   PowerSystemPack() = default;
   ~PowerSystemPack() = default;
-  PowerSystemPack(const PowerSystemPack&) = default;
-  PowerSystemPack& operator=(const PowerSystemPack&) = default;
+  PowerSystemPack(const PowerSystemPack&) = delete;
+  PowerSystemPack& operator=(const PowerSystemPack&) = delete;
   void InitAndRun();
 private:
   bool initNodes();
@@ -101,25 +93,26 @@ private:
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
   // Flags that determine if debug output is printed regarding battery status
-  // during runtime. Overridden by system.cfg on startup.
+  // during runtime.
   // NOTE: There's no function to get boolean variables from a config, so
   // these bools have to be set via string comparisons. Could benefit from an
   // update if such a function is added in the future.
-  bool m_print_debug = false;
-  bool m_timestamp_print_debug = false;
-  bool m_inputs_print_debug = false;
-  bool m_outputs_print_debug = false;
-  bool m_topics_print_debug = false;
-  bool m_mech_power_print_debug = false;
+  bool m_print_debug;
+  bool m_timestamp_print_debug;
+  bool m_inputs_print_debug;
+  bool m_outputs_print_debug;
+  bool m_topics_print_debug;
+  bool m_mech_power_print_debug;
+
+  // system.cfg variables:
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
-  // given too high a power input.  This made-up value protects
-  // against this, but is a temporary hack until a circuit breaker
-  // model is added to the power system, and/or the multi-pack battery
-  // model is implemented and can handle any envisioned power draw.
-  // This initial value is overriden by the system config.
-  //
-  double m_max_gsap_input_watts = 20;
+  // given too high a power input.  The value assigned to this in system.cfg,
+  // protects against this by capping the power input, but it is a temporary
+  // hack until a circuit breaker model is added to the power system, and/or 
+  // the multi-pack battery model is implemented and can handle any envisioned
+  // power draw.
+  double m_max_gsap_input_watts;
 
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // If the prediction hits this value, it stops immediately and returns infinity
@@ -127,16 +120,30 @@ private:
   // Lower values mean faster performance in the event a RUL prediction would
   // exceed the horizon value, but it also means the prognoser can't return RUL
   // values higher than this.
-  // The current default value is 10000 (overridden by system.cfg's value), but 
-  // this may be too low for reasonable predictions. After all, the battery should
-  // probably last more than around 3 hours on a full charge.
-  int m_max_horizon_secs = 10000;
+  int m_max_horizon_secs;
+
+  // The number of samples each node creates during the Monte Carlo prediction
+  // process. Lower values mean faster performance, but lower accuracy (needs
+  // testing for confirmation).
+  int m_num_samples;
+
+  // GSAP's cycle time.
+  double m_gsap_rate_hz;
+
+  // The expected time interval between publications. It is essentially the
+  // rate at which the main loop executes. It is overridden by the value in
+  // system.cfg.
+  int m_time_interval;
+
+  // The initial power/temperature/voltage readings used as the start values for
+  // the GSAP prognosers.
+  double m_initial_power;
+  double m_initial_temperature;
+  double m_initial_voltage;
+  double m_initial_soc;
   
-  // Change this value to modify the number of samples each node creates during the
-  // Monte Carlo prediction process. Lower values mean faster performance, but lower
-  // accuracy (needs testing for confirmation).
-  // The default value is 100 (overridden by system.cfg).
-  int m_num_samples = 100;
+  // End system.cfg variables.
+
 
   // Flag determining if the battery has reached a fail state.
   bool m_battery_failed = false;
@@ -150,27 +157,10 @@ private:
 
   // Vector w/ supporting variables that stores the moving average of the
   // past mechanical power values.
-  int m_moving_average_window = 25;
+  const int m_moving_average_window = 25;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
-  // GSAP's cycle time
-  double m_gsap_rate_hz = 0.5;
-
-  // The expected time interval between publications. It is essentially the
-  // rate at which the main loop executes. It is overridden by the value in
-  // system.cfg.
-  int m_time_interval = 2;
-
-  // The initial power/temperature/voltage readings used as the start values for
-  // the GSAP prognosers. Overwritten by the values in system.cfg.
-  double m_initial_power = 0.0;
-  double m_initial_temperature = 20.0;
-  double m_initial_voltage = 4.1;
-  double m_initial_soc = 0.95;
-
-  // End main system configuration.
-  
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
