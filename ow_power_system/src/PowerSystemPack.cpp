@@ -164,7 +164,7 @@ void PowerSystemPack::initAndRun()
   // Loop through the PowerSystemNodes to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
-  int start_loops = 2 * NUM_NODES;
+  int start_loops = NUM_NODES;
   while(ros::ok())
   {
     ros::spinOnce();
@@ -193,8 +193,7 @@ void PowerSystemPack::initAndRun()
         excessive_draw = temp_draw;
       }
 
-      m_nodes[i].node.GetPowerStats(m_nodes[i].model.timestamp, m_nodes[i].model.wattage,
-                                    m_nodes[i].model.voltage, m_nodes[i].model.temperature);
+      m_nodes[i].node.GetPowerStats(m_nodes[i].model);
       
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent crashes.
@@ -209,13 +208,10 @@ void PowerSystemPack::initAndRun()
         std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
         double input_power, input_tmp, input_voltage;
 
-        // HACK ALERT (May 2023):
-        // The first batch of data (sent in during startup) seems to be lost to 
-        // the void. This is a bandaid fix to send the initial data in twice
-        // for each node on the next loop.
         if (start_loops > 0)
         {
-          // The very first values sent in should be the init values.
+          // The very first values sent in to each prognoser
+          // should be the init values.
           input_power = m_initial_power;
           input_voltage = m_initial_voltage;
           input_tmp = m_initial_temperature;
@@ -245,21 +241,14 @@ void PowerSystemPack::initAndRun()
 
         // Set up the input data that will be passed through the message bus
         // to GSAP's asynchronous prognosers.
-        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+        m_nodes[i].bus.publish(std::make_shared<DoubleMessage>(
           MessageId::Watts, m_nodes[i].name, timestamp, input_power));
-        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+        m_nodes[i].bus.publish(std::make_shared<DoubleMessage>(
           MessageId::Centigrade, m_nodes[i].name, timestamp, input_tmp));
-        data_to_publish.push_back(std::make_shared<DoubleMessage>(
+        m_nodes[i].bus.publish(std::make_shared<DoubleMessage>(
           MessageId::Volts, m_nodes[i].name, timestamp, input_voltage));
 
         m_nodes[i].previous_time = m_nodes[i].model.timestamp;
-
-        // Publish the data to GSAP's async prognosers, triggering or
-        // contributing to a prediction.
-        for (const auto& info : data_to_publish)
-        {
-          m_nodes[i].bus.publish(info);
-        }
       }
     }
 
@@ -282,18 +271,14 @@ void PowerSystemPack::initAndRun()
       ROS_INFO_STREAM("CURRENT NODE DATA:");
       for (int i = 0; i < NUM_NODES; i++)
       {
-        std::string s;
+        std::string header = "N";
         if (i < 10)
         {
-          s = "N0";
-        }
-        else
-        {
-          s = "N";
+          header += "0";
         }
         if (m_waiting_buses[i])
         {
-          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
+          ROS_INFO_STREAM(header << i << " RUL: " << m_EoD_events[i].remaining_useful_life
                         << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
                         << m_EoD_events[i].battery_temperature << ". COMPLETE");
           m_waiting_buses[i] = false;

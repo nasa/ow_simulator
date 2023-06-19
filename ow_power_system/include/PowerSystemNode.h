@@ -22,6 +22,14 @@
 #include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
 
+// Struct that contains the information used for EoD predictions.
+struct ModelInfo {
+  double timestamp;
+  double wattage;
+  double voltage;
+  double temperature;
+};
+
 class PowerSystemNode
 {
 public:
@@ -31,7 +39,7 @@ public:
   PowerSystemNode& operator=(const PowerSystemNode&) = delete;
   bool Initialize();
   double RunOnce();
-  void GetPowerStats(double &time, double &power, double &volts, double &tmp);
+  void GetPowerStats(ModelInfo &model);
   void applyMechanicalPower(double mechanical_power);
   void SetHighPowerDraw(double draw);
   void SetCustomPowerDraw(double draw);

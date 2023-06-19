@@ -178,12 +178,12 @@ double PowerSystemNode::RunOnce()
  * Getter function that obtains all the input data currently stored in this
  * PowerSystemNode.
  */
-void PowerSystemNode::GetPowerStats(double &time, double &power, double &volts, double &tmp)
+void PowerSystemNode::GetPowerStats(ModelInfo &model)
 {
-  time = m_current_timestamp;
-  power = m_wattage_estimate;
-  volts = m_voltage_estimate;
-  tmp = m_temperature_estimate;
+  model.timestamp = m_current_timestamp;
+  model.wattage = m_wattage_estimate;
+  model.voltage = m_voltage_estimate;
+  model.temperature = m_temperature_estimate;
 }
 
 void PowerSystemNode::SetHighPowerDraw(double draw)

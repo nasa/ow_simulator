@@ -37,14 +37,6 @@ using PrognoserVector = std::vector<PrognoserMap>;
 // expected amount for the battery pack is 24.
 const int NUM_NODES = 24;
 
-// Struct that contains the information used for EoD predictions.
-struct ModelInfo {
-  double timestamp;
-  double wattage;
-  double voltage;
-  double temperature;
-};
-
 // Struct that groups the variables/classes used to handle PowerSystemNodes.
 struct PowerNode {
   std::string name;
