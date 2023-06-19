@@ -71,10 +71,24 @@ private:
                    bool& fault_activated);
   void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
-  PrognoserVector loadPowerProfile(const std::string& filename, std::string custom_file);
-  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
+  PrognoserVector loadPowerProfile(const std::string& filename,
+                                   std::string custom_file);
+  bool loadCustomFaultPowerProfile(std::string path,
+                                   std::string custom_file);
   void publishPredictions();
   std::string setNodeName(int node_num);
+  void printTimestamp(double timestamp);
+  void printPrognoserInputs(double power,
+                            double voltage,
+                            double temperature,
+                            int index);
+  void printPrognoserOutputs(double rul,
+                             double soc,
+                             double tmp,
+                             int index,
+                             bool status);
+  void printMechanicalPower(double raw, double mean);
+  void printTopics(double rul, double soc, double tmp);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw

@@ -175,7 +175,7 @@ void PowerSystemPack::initAndRun()
     // DEBUG PRINT
     if (m_timestamp_print_debug)
     {
-      ROS_INFO_STREAM("Timestamp " << m_nodes[0].model.timestamp);
+      printTimestamp(m_nodes[0].model.timestamp);
     }
 
     double excessive_draw = 0.0;
@@ -227,16 +227,7 @@ void PowerSystemPack::initAndRun()
         // DEBUG PRINT
         if (m_inputs_print_debug && (m_nodes[i].model.timestamp > 0))
         {
-          // Header is simply used for printout consistency between
-          // nodes 0-9 and 10+.
-          std::string header = "N";
-          if (i < 10)
-          {
-            header += "0";
-          }
-          ROS_INFO_STREAM(header << i << " INPUT power: " << input_power 
-                          << ".  volts: " << input_voltage
-                          << ".  tmp: " << input_tmp);
+          printPrognoserInputs(input_power, input_voltage, input_tmp, i);
         }
 
         // Set up the input data that will be passed through the message bus
@@ -271,26 +262,12 @@ void PowerSystemPack::initAndRun()
       ROS_INFO_STREAM("CURRENT NODE DATA:");
       for (int i = 0; i < NUM_NODES; i++)
       {
-        std::string header = "N";
-        if (i < 10)
-        {
-          header += "0";
-        }
-        if (m_waiting_buses[i])
-        {
-          ROS_INFO_STREAM(header << i << " RUL: " << m_EoD_events[i].remaining_useful_life
-                        << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
-                        << m_EoD_events[i].battery_temperature << ". COMPLETE");
-          m_waiting_buses[i] = false;
-        }
-        else
-        {
-          ROS_INFO_STREAM(s << i << " RUL: " << m_EoD_events[i].remaining_useful_life
-                        << ", SOC: " << m_EoD_events[i].state_of_charge << ", TMP: "
-                        << m_EoD_events[i].battery_temperature
-                        << ". PREDICTING");          
-        }
-        
+        printPrognoserOutputs(m_EoD_events[i].remaining_useful_life,
+                              m_EoD_events[i].state_of_charge,
+                              m_EoD_events[i].battery_temperature,
+                              i,
+                              m_waiting_buses[i]);
+        m_waiting_buses[i] = false;
       }
     }
 
@@ -542,15 +519,11 @@ void PowerSystemPack::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
-  // /* DEBUG PRINT
+  // DEBUG PRINT
   if (m_mech_power_print_debug)
   {
-    ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(power_watts));
-    ROS_INFO_STREAM("Applied power (with moving average): " << std::to_string(mean_mechanical_power));
-    ROS_INFO_STREAM("Result: " << std::to_string(mean_mechanical_power / NUM_NODES)
-                    << " power distributed to each node.");
+    printMechanicalPower(power_watts, mean_mechanical_power);
   }
-  // */
 
   // Send in mechanical power to each node, distributed evenly, to be converted
   // into power draw.
@@ -689,14 +662,11 @@ void PowerSystemPack::publishPredictions()
     max_tmp = std::max(max_tmp, m_EoD_events[i].battery_temperature);
   }
 
-  // /* DEBUG PRINT
+  // DEBUG PRINT
   if (m_topics_print_debug)
   {
-    ROS_INFO_STREAM("min_rul: " << std::to_string(min_rul) <<
-                    ", min_soc: " << std::to_string(min_soc) <<
-                    ", max_tmp: " << std::to_string(max_tmp));
+    printTopics(min_rul, min_soc, max_tmp);
   }
-  // */
 
   // If either RUL or SoC have entered the negative, it indicates the battery
   // is in a fail state.
@@ -743,6 +713,85 @@ void PowerSystemPack::publishPredictions()
 std::string PowerSystemPack::setNodeName(int node_num)
 {
   return "Node " + std::to_string(node_num);
+}
+
+/*
+ * Prints the timestamp of each cycle to the terminal.
+ * Output: 1 line per cycle.
+ */
+void PowerSystemPack::printTimestamp(double timestamp)
+{
+  ROS_INFO_STREAM("Timestamp " << timestamp);
+}
+
+/*
+ * Prints the input data sent to GSAP's asynchronous prognosers each cycle.
+ * Output: NUM_NODES lines per cycle.
+ */
+void PowerSystemPack::printPrognoserInputs(double power,
+                                           double voltage,
+                                           double temperature,
+                                           int index)
+{
+  // Header is simply used for printout consistency between
+  // nodes 0-9 and 10+.
+  std::string header = "N";
+  if (index < 10)
+  {
+    header += "0";
+  }
+  ROS_INFO_STREAM(header << index << " INPUT power: " << std::to_string(power) 
+                  << ".  volts: " << std::to_string(voltage)
+                  << ".  tmp: " << std::to_string(temperature));
+}
+
+/*
+ * Prints the information currently stored in all nodes each cycle.
+ * Output: NUM_NODES lines per cycle.
+ */
+void PowerSystemPack::printPrognoserOutputs(double rul,
+                                            double soc,
+                                            double tmp,
+                                            int index,
+                                            bool status)
+{
+  std::string header = "N";
+  if (index < 10)
+  {
+    header += "0";
+  }
+  std::string footer = "PREDICTING";
+  if (status)
+  {
+    footer = "COMPLETE";
+  }
+
+  ROS_INFO_STREAM(header << index << " RUL: " << std::to_string(rul)
+                  << ", SOC: " << std::to_string(soc) << ", TMP: "
+                  << std::to_string(tmp) << ". " << footer);
+}
+
+/*
+ * Prints the mechanical power calculated during jointStatesCb each cycle.
+ * Output: 3 lines per cycle.
+ */
+void PowerSystemPack::printMechanicalPower(double raw, double mean)
+{
+  ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(raw));
+  ROS_INFO_STREAM("Applied power (with moving average): " << std::to_string(mean));
+  ROS_INFO_STREAM("Result: " << std::to_string(mean / NUM_NODES)
+                  << " power distributed to each node.");
+}
+
+/*
+ * Prints the information that will be published via rostopics each cycle.
+ * Output: 1 line per cycle.
+ */
+void PowerSystemPack::printTopics(double rul, double soc, double tmp)
+{
+  ROS_INFO_STREAM("min_rul: " << std::to_string(rul) <<
+                  ", min_soc: " << std::to_string(soc) <<
+                  ", max_tmp: " << std::to_string(tmp));
 }
 
 int main(int argc, char* argv[]) 
