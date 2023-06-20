@@ -27,14 +27,12 @@ static constexpr int MODEL_TEMPERATURE_INDEX = 1;
  **/
 PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp,
                                      MessageBus& bus, const std::string& src,
-                                     int node_num, bool& bus_status) :
+                                     bool& bus_status) :
                                      m_rul_ref(rul), m_soc_ref(soc),
                                      m_temp_ref(temp), m_bus(bus),
                                      m_bus_status(bus_status)
 {
   m_bus.subscribe(this, src, MessageId::BatteryEod);
-  m_identifier = src;
-  m_node_number = node_num;
 }
 
 /**
@@ -91,7 +89,7 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   double soc_median = findMedian(currentSOC.getVec());
 
   // Determine the Battery Temperature
-  auto stateSamples = eod_event.getSystemState()[BATTERY_TEMPERATURE_INDEX];
+  auto stateSamples = eod_event.getSystemState()[0];
   std::vector<double> temperature_state;
   for (auto sample : stateSamples)
   {
@@ -110,7 +108,7 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   std::unique_ptr<PCOE::Prognoser> temp_prog =
     PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
-  auto& model = dynamic_cast<ModelBasedPrognoser*>(temp_prog.get())->getModel();
+  auto& model = static_cast<ModelBasedPrognoser*>(temp_prog.get())->getModel();
 
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
 

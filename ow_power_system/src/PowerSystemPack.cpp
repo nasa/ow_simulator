@@ -108,7 +108,7 @@ void PowerSystemPack::initAndRun()
                     m_EoD_events[i].remaining_useful_life,
                     m_EoD_events[i].state_of_charge,
                     m_EoD_events[i].battery_temperature,
-                    m_nodes[i].bus, m_nodes[i].name, i, m_waiting_buses[i]
+                    m_nodes[i].bus, m_nodes[i].name, m_waiting_buses[i]
     );
   }
 
