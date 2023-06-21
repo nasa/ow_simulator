@@ -17,7 +17,6 @@
 #include <ow_lander/lander_joints.h>
 
 #include "PowerSystemPack.h"
-#include "PredictionHandler.h"
 
 using namespace PCOE;
 
@@ -97,7 +96,6 @@ void PowerSystemPack::initAndRun()
     m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
     m_EoD_events[i].state_of_charge = m_initial_soc;
     m_EoD_events[i].battery_temperature = m_initial_temperature;
-    m_waiting_buses[i] = true;
   }
 
   // Construct the prediction handlers.
@@ -105,10 +103,7 @@ void PowerSystemPack::initAndRun()
   for (int i = 0; i < NUM_NODES; i++)
   {
     handlers[i] = std::make_unique<PredictionHandler>(
-                    m_EoD_events[i].remaining_useful_life,
-                    m_EoD_events[i].state_of_charge,
-                    m_EoD_events[i].battery_temperature,
-                    m_nodes[i].bus, m_nodes[i].name, m_waiting_buses[i]
+                    m_nodes[i].bus, m_nodes[i].name
     );
   }
 
@@ -253,6 +248,16 @@ void PowerSystemPack::initAndRun()
                       << "W for each node over the limit.");
     }
 
+    // Check if the prediction handlers have EoD predictions ready,
+    // and update EoD_events if so.
+    for (int i = 0; i < NUM_NODES; i++)
+    {
+      if (handlers[i]->getStatus())
+      {
+        m_EoD_events[i] = handlers[i]->getEoD();
+      }
+    }
+
     // Publish the predictions in EoD_events.
     publishPredictions();
 
@@ -265,9 +270,7 @@ void PowerSystemPack::initAndRun()
         printPrognoserOutputs(m_EoD_events[i].remaining_useful_life,
                               m_EoD_events[i].state_of_charge,
                               m_EoD_events[i].battery_temperature,
-                              i,
-                              m_waiting_buses[i]);
-        m_waiting_buses[i] = false;
+                              i);
       }
     }
 
@@ -752,23 +755,16 @@ void PowerSystemPack::printPrognoserInputs(double power,
 void PowerSystemPack::printPrognoserOutputs(double rul,
                                             double soc,
                                             double tmp,
-                                            int index,
-                                            bool status)
+                                            int index)
 {
   std::string header = "N";
   if (index < 10)
   {
     header += "0";
   }
-  std::string footer = "PREDICTING";
-  if (status)
-  {
-    footer = "COMPLETE";
-  }
-
   ROS_INFO_STREAM(header << index << " RUL: " << std::to_string(rul)
                   << ", SOC: " << std::to_string(soc) << ", TMP: "
-                  << std::to_string(tmp) << ". " << footer);
+                  << std::to_string(tmp));
 }
 
 /*

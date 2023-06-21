@@ -25,14 +25,11 @@ static constexpr int MODEL_TEMPERATURE_INDEX = 1;
  * predictions for the specified source and on the specified message
  * bus.
  **/
-PredictionHandler::PredictionHandler(double& rul, double& soc, double& temp,
-                                     MessageBus& bus, const std::string& src,
-                                     bool& bus_status) :
-                                     m_rul_ref(rul), m_soc_ref(soc),
-                                     m_temp_ref(temp), m_bus(bus),
-                                     m_bus_status(bus_status)
+PredictionHandler::PredictionHandler(MessageBus& bus, const std::string& src) :
+                                     m_bus(bus)
 {
   m_bus.subscribe(this, src, MessageId::BatteryEod);
+  m_event_ready = false;
 }
 
 /**
@@ -113,12 +110,31 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
 
   // Put the newly obtained data in the stored references.
-  m_rul_ref = rul_median;
-  m_soc_ref = soc_median;
-  m_temp_ref = model_output[MODEL_TEMPERATURE_INDEX];
+  m_curr_EoD.remaining_useful_life = rul_median;
+  m_curr_EoD.state_of_charge = soc_median;
+  m_curr_EoD.battery_temperature = model_output[MODEL_TEMPERATURE_INDEX];
 
-  // Set the waiting status of this bus to true.
-  m_bus_status = true;
+  // A new event is ready.
+  m_event_ready = true;
+}
+
+/**
+ * Returns the EoDValues struct currently stored and
+ * updates the bool.
+**/
+EoDValues PredictionHandler::getEoD()
+{
+  m_event_ready = false;
+  return m_curr_EoD;
+}
+
+/**
+ * Returns the bool representing the status of the bus
+ * (i.e. if it has a new EoD prediction ready to return).
+**/
+bool PredictionHandler::getStatus()
+{
+  return m_event_ready;
 }
 
 double PredictionHandler::findMedian(std::vector<double> samples)

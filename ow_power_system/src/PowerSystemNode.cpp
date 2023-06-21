@@ -70,7 +70,7 @@ bool PowerSystemNode::loadSystemConfig()
 
 void PowerSystemNode::applyMechanicalPower(double mechanical_power)
 {
-  m_unprocessed_mechanical_power = mechanical_power;
+  m_unprocessed_mechanical_power += mechanical_power;
 
   if (!m_processing_power_batch)
   {

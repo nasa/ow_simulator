@@ -22,6 +22,7 @@
 #include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
 #include "PowerSystemNode.h"
+#include "PredictionHandler.h"
 
 #include "Messages/MessageBus.h"
 #include "Messages/ProgEventMessage.h"
@@ -44,13 +45,6 @@ struct PowerNode {
   MessageBus bus;
   ModelInfo model;
   double previous_time;
-};
-
-// Struct that groups the end-of-discharge (EoD) prediction values.
-struct EoDValues {
-  double remaining_useful_life;
-  double state_of_charge;
-  double battery_temperature;
 };
 
 class PowerSystemPack
@@ -85,8 +79,7 @@ private:
   void printPrognoserOutputs(double rul,
                              double soc,
                              double tmp,
-                             int index,
-                             bool status);
+                             int index);
   void printMechanicalPower(double raw, double mean);
   void printTopics(double rul, double soc, double tmp);
 
@@ -171,9 +164,6 @@ private:
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
-
-  // Track the prognosers waiting for new data.
-  bool m_waiting_buses[NUM_NODES];
 };
 
 #endif

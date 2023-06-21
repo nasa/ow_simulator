@@ -19,28 +19,36 @@
 #include "Messages/ScalarMessage.h"
 #include "ModelBasedAsyncPrognoserBuilder.h"
 
+// Struct that groups the end-of-discharge (EoD) prediction values.
+struct EoDValues {
+  double remaining_useful_life;
+  double state_of_charge;
+  double battery_temperature;
+};
+
 // The PredictionHandler class subscribes to the battery EoD event message and
 // prints each event as it is received.
 class PredictionHandler : public IMessageProcessor
 {
 public:
-  PredictionHandler(double& rul, double& soc, double& temp, MessageBus& bus,
-                    const std::string& src, bool& bus_status);
+  PredictionHandler(MessageBus& bus,
+                    const std::string& src);
   ~PredictionHandler();
   // Copy constructor & assignment operator. Neither should be allowed given
   // how PredictionHandler uses references.
   PredictionHandler(const PredictionHandler&) = delete;
   PredictionHandler& operator=(const PredictionHandler&) = delete;
   void processMessage(const std::shared_ptr<Message>& message) override;
+  EoDValues getEoD();
+  bool getStatus();
 private:
   double findMedian(std::vector<double> samples);
 
-  // References used by other classes to process EoD predictions.
-  double& m_rul_ref;
-  double& m_soc_ref;
-  double& m_temp_ref;
+  // Data stored from the EoD predictions.
+  EoDValues m_curr_EoD;
+  bool m_event_ready;
+
   MessageBus& m_bus;
-  bool& m_bus_status;
 };
 
 #endif
