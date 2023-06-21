@@ -139,7 +139,8 @@ include_directories(
 add_executable(power_system_node
   src/PowerSystemPack.cpp
   src/PowerSystemNode.cpp
-  src/PredictionHandler.cpp)
+  src/PredictionHandler.cpp
+  src/main.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

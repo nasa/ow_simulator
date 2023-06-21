@@ -314,13 +314,27 @@ bool PowerSystemPack::initNodes()
 void PowerSystemPack::initTopics()
 {
   // Construct the PowerSystemNode publishers
-  m_mechanical_power_raw_pub = m_nh.advertise<std_msgs::Float64>("mechanical_power/raw", 1);
-  m_mechanical_power_avg_pub = m_nh.advertise<std_msgs::Float64>("mechanical_power/average", 1);
-  m_state_of_charge_pub = m_nh.advertise<owl_msgs::BatteryStateOfCharge>("/battery_state_of_charge", 1);
-  m_remaining_useful_life_pub = m_nh.advertise<owl_msgs::BatteryRemainingUsefulLife>("/battery_remaining_useful_life", 1);
-  m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
+  m_mechanical_power_raw_pub = m_nh.advertise
+                                  <std_msgs::Float64>(
+                                  "mechanical_power/raw", 1);
+  m_mechanical_power_avg_pub = m_nh.advertise
+                                  <std_msgs::Float64>(
+                                  "mechanical_power/average", 1);
+  m_state_of_charge_pub = m_nh.advertise
+                                  <owl_msgs::BatteryStateOfCharge>(
+                                  "/battery_state_of_charge", 1);
+  m_remaining_useful_life_pub = m_nh.advertise
+                                  <owl_msgs::BatteryRemainingUsefulLife>(
+                                  "/battery_remaining_useful_life", 1);
+  m_battery_temperature_pub = m_nh.advertise
+                                  <owl_msgs::BatteryTemperature>(
+                                  "/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemPack::jointStatesCb, this);
+  m_joint_states_sub = m_nh.subscribe(
+                        "/joint_states",
+                        1,
+                        &PowerSystemPack::jointStatesCb,
+                        this);
 }
 
 /*
@@ -644,9 +658,10 @@ void PowerSystemPack::publishPredictions()
 {
   // Using EoD_events, publish the relevant values.
 
+  // Start the values at either their maximum possible, or beyond the minimum.
   double min_rul = m_max_horizon_secs;
   double min_soc = 1;
-  double max_tmp = -1;
+  double max_tmp = -1000;
   owl_msgs::BatteryRemainingUsefulLife rul_msg;
   owl_msgs::BatteryStateOfCharge soc_msg;
   owl_msgs::BatteryTemperature tmp_msg;
@@ -788,15 +803,4 @@ void PowerSystemPack::printTopics(double rul, double soc, double tmp)
   ROS_INFO_STREAM("min_rul: " << std::to_string(rul) <<
                   ", min_soc: " << std::to_string(soc) <<
                   ", max_tmp: " << std::to_string(tmp));
-}
-
-int main(int argc, char* argv[]) 
-{
-  ros::init(argc, argv, "power_system_node");
-
-  PowerSystemPack pack;
-
-  pack.initAndRun();
-
-  return 0;
 }
