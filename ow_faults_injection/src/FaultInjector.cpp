@@ -40,7 +40,7 @@ FaultInjector::FaultInjector(ros::NodeHandle& nh)
                                    10, 
                                    &FaultInjector::cameraFaultInfoRepublishCb, 
                                    this);
-  m_camera_info_remapped_pub = nh.advertise<sensor_msgs::Image>(camera_info_str, 10);
+  m_camera_info_remapped_pub = nh.advertise<sensor_msgs::CameraInfo>(camera_info_str, 10);
 
   srand (static_cast <unsigned> (time(0)));
 }
