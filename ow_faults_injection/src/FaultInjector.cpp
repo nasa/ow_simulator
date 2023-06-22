@@ -27,13 +27,20 @@ FaultInjector::FaultInjector(ros::NodeHandle& nh)
                                              this);
   m_arm_end_effector_force_torque_sensor_pub = nh.advertise<owl_msgs::ArmEndEffectorForceTorque>(arm_end_effector_force_torque_str, 10);
 
-  //camera sub and repub for remapped topic
-  const char* image_raw_str = "/StereoCamera/left/image_raw";
-  m_camera_raw_sub = nh.subscribe( original_str + image_raw_str,
+  //camera subscribers and republishers for remapped topics
+  const char* camera_raw_str = "/StereoCamera/left/image_raw";
+  m_camera_raw_sub = nh.subscribe( original_str + camera_raw_str,
                                    10, 
-                                   &FaultInjector::cameraFaultRepublishCb, 
+                                   &FaultInjector::cameraFaultRawRepublishCb, 
                                    this);
-  m_camera_trigger_remapped_pub = nh.advertise<sensor_msgs::Image>(image_raw_str, 10);
+  m_camera_raw_remapped_pub = nh.advertise<sensor_msgs::Image>(camera_raw_str, 10);
+
+  const char* camera_info_str = "/StereoCamera/left/camera_info";
+  m_camera_info_sub = nh.subscribe( original_str + camera_info_str,
+                                   10, 
+                                   &FaultInjector::cameraFaultInfoRepublishCb, 
+                                   this);
+  m_camera_info_remapped_pub = nh.advertise<sensor_msgs::Image>(camera_info_str, 10);
 
   srand (static_cast <unsigned> (time(0)));
 }
@@ -47,10 +54,19 @@ void FaultInjector::faultsConfigCb(ow_faults_injection::FaultsConfig& faults, ui
   m_faults = faults;
 }
 
-void FaultInjector::cameraFaultRepublishCb(const sensor_msgs::Image& msg)
+void FaultInjector::cameraFaultRawRepublishCb(const sensor_msgs::Image& msg)
 {
-  if (!m_camera_fault) {// if no fault
-    m_camera_trigger_remapped_pub.publish(msg);
+  // only publish the camera topics if there is not a fault
+  if (!m_camera_fault) {
+    m_camera_raw_remapped_pub.publish(msg);
+  } 
+}
+
+void FaultInjector::cameraFaultInfoRepublishCb(const sensor_msgs::CameraInfo& msg)
+{
+  // only publish the camera topics if there is not a fault
+  if (!m_camera_fault) {
+    m_camera_info_remapped_pub.publish(msg);
   } 
 }
 
