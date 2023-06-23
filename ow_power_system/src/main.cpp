@@ -2,7 +2,7 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include "PowerSystemPack.h"
+#include "PowerSystemNode.h"
 
 using namespace std;
 
@@ -10,9 +10,9 @@ int main(int argc, char* argv[])
 {
   ros::init(argc, argv, "power_system_node");
 
-  PowerSystemPack pack;
+  PowerSystemNode node;
 
-  pack.initAndRun();
+  node.initAndRun();
 
   return 0;
 }
