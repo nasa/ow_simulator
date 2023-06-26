@@ -23,10 +23,10 @@ const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 
-void MaterialDistributionPlugin::Load(rendering::VisualPtr parent,
+void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
-  m_visual = parent;
+  m_model = model;
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {

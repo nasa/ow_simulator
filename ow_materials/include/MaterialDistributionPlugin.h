@@ -16,13 +16,13 @@
 namespace ow_materials
 {
 
-class MaterialDistributionPlugin : public gazebo::VisualPlugin
+class MaterialDistributionPlugin : public gazebo::ModelPlugin
 {
   public:
-  void Load(gazebo::rendering::VisualPtr parent, sdf::ElementPtr sdf);
+  void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
   private:
-  gazebo::rendering::VisualPtr m_visual;
+  gazebo::physics::ModelPtr m_model;
 
   std::unique_ptr<MaterialDatabase> m_material_db;
 
@@ -31,7 +31,7 @@ class MaterialDistributionPlugin : public gazebo::VisualPlugin
 };
 
   // Register this plugin with the simulator
-  GZ_REGISTER_VISUAL_PLUGIN(MaterialDistributionPlugin)
+  GZ_REGISTER_MODEL_PLUGIN(MaterialDistributionPlugin)
 }
 
 #endif // MATERIAL_DISTRIBUTION_PLUGIN_H
