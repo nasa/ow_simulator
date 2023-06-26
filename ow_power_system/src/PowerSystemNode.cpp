@@ -199,10 +199,7 @@ void PowerSystemNode::initAndRun()
         auto timestamp = START_TIME + std::chrono::milliseconds(
           static_cast<unsigned>(m_power_models[i].model_info.timestamp * 1000)
         );
-        
-        // Compile a vector<shared_ptr<DoubleMessage>> and then individually
-        // publish each component.
-        std::vector<std::shared_ptr<DoubleMessage>> data_to_publish;
+
         double input_power, input_tmp, input_voltage;
 
         if (start_loops > 0)
