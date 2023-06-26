@@ -8,7 +8,9 @@ import sys
 import rospy
 import roslib
 import unittest
+import ow_lander.constants
 import ow_lander.msg
+import owl_msgs.msg
 import argparse
 
 from action_testing import *
@@ -32,11 +34,11 @@ class ArmCheckAction(unittest.TestCase):
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
-  def test_01_unstow(self):
-    unstow_result = test_arm_action(self,
-      'Unstow', ow_lander.msg.UnstowAction,
-      ow_lander.msg.UnstowGoal(),
-      TEST_NAME, "test_01_unstow",
+  def test_01_arm_unstow(self):
+    arm_unstow_result = test_arm_action(self,
+      'ArmUnstow', owl_msgs.msg.ArmUnstowAction,
+      owl_msgs.msg.ArmUnstowGoal(),
+      TEST_NAME, "test_01_arm_unstow",
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
 
@@ -52,10 +54,10 @@ class ArmCheckAction(unittest.TestCase):
       server_timeout = 15.0
     )
 
-  def test_03_grind(self):
-    grind_result = test_arm_action(self,
-      'Grind', ow_lander.msg.GrindAction,
-      ow_lander.msg.GrindGoal(
+  def test_03_task_grind(self):
+    task_grind_result = test_arm_action(self,
+      'TaskGrind', owl_msgs.msg.TaskGrindAction,
+      owl_msgs.msg.TaskGrindGoal(
         x_start = 1.65,
         y_start = 0.0,
         depth = 0.05,
@@ -63,56 +65,59 @@ class ArmCheckAction(unittest.TestCase):
         parallel = True,
         ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      TEST_NAME, "test_03_grind"
+      TEST_NAME, "test_03_task_grind"
     )
 
-  def test_04_dig_circular(self):
-    dig_circular_result = test_arm_action(self,
-      'DigCircular', ow_lander.msg.DigCircularAction,
-      ow_lander.msg.DigCircularGoal(
-        x_start = 1.65,
-        y_start = 0.0,
-        depth = 0.01,
+  def test_04_task_scoop_circular(self):
+    task_scoop_circular_result = test_arm_action(self,
+      'TaskScoopCircular', owl_msgs.msg.TaskScoopCircularAction,
+      owl_msgs.msg.TaskScoopCircularGoal(
+        frame = 0,
+        relative =False,
+        point = Point(1.65, 0.0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
+        depth = 0.1,
         parallel = True,
-        ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      TEST_NAME, 'test_04_dig_circular'
+      TEST_NAME, 'test_04_task_scoop_circular'
     )
 
-  def test_05_discard(self):
-    discard_result = test_arm_action(self,
-      'Discard', ow_lander.msg.DiscardAction,
-      ow_lander.msg.DiscardGoal(
-        discard = Point(1.5, 0.8, 0.65)
+  def test_05_task_discard_sample(self):
+    task_discard_sample_result = test_arm_action(self,
+      'TaskDiscardSample', owl_msgs.msg.TaskDiscardSampleAction,
+      owl_msgs.msg.TaskDiscardSampleGoal(
+        frame = 0,
+        relative = False,
+        point = Point(1.5, 0.8, 0.65),
+        height = 0.0,
       ),
-      TEST_NAME, 'test_05_discard'
+      TEST_NAME, 'test_05_task_discard_sample'
     )
 
-  def test_06_dig_linear(self):
-    dig_linear_result = test_arm_action(self,
-      'DigLinear', ow_lander.msg.DigLinearAction,
-      ow_lander.msg.DigLinearGoal(
-        x_start = 1.46,
-        y_start = 0.0,
+  def test_06_task_scoop_linear(self):
+    task_scoop_linear_result = test_arm_action(self,
+      'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
+      owl_msgs.msg.TaskScoopLinearGoal(
+        frame = 0,
+        relative = False,
+        point = Point(1.46, 0.0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
         depth = 0.01,
         length = 0.1,
-        ground_position = DEFAULT_GROUND_HEIGHT
       ),
-      TEST_NAME, 'test_06_dig_linear'
+      TEST_NAME, 'test_06_task_scoop_linear'
     )
 
-  def test_07_deliver_sample(self):
-    deliver_result = test_arm_action(self,
-      'Deliver', ow_lander.msg.DeliverAction,
-      ow_lander.msg.DeliverGoal(),
-      TEST_NAME, 'test_07_deliver_sample'
+  def test_07_task_deliver_sample(self):
+    task_deliver_sample_result = test_arm_action(self,
+      'TaskDeliverSample', owl_msgs.msg.TaskDeliverSampleAction,
+      owl_msgs.msg.TaskDeliverSampleGoal(),
+      TEST_NAME, 'test_07_task_deliver_sample'
     )
 
-  def test_08_stow(self):
-    stow_result = test_arm_action(self,
-      'Stow', ow_lander.msg.StowAction,
-      ow_lander.msg.StowGoal(),
-      TEST_NAME, 'test_08_stow'
+  def test_08_arm_stow(self):
+    arm_stow_result = test_arm_action(self,
+      'ArmStow', owl_msgs.msg.ArmStowAction,
+      owl_msgs.msg.ArmStowGoal(),
+      TEST_NAME, 'test_08_arm_stow'
     )
 
 if __name__ == '__main__':
