@@ -17,6 +17,8 @@ from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
 
 import owl_msgs.msg
+import ow_lander.constants
+import ow_lander.msg
 
 from action_testing import *
 
@@ -229,11 +231,11 @@ class SampleCollection(unittest.TestCase):
   """
   Test the unstow action. Calling this first is standard operating procedure.
   """
-  def test_01_unstow(self):
+  def test_01_arm_unstow(self):
     unstow_result = test_arm_action(self,
       'ArmUnstow', owl_msgs.msg.ArmUnstowAction,
       owl_msgs.msg.ArmUnstowGoal(),
-      TEST_NAME, "test_01_unstow",
+      TEST_NAME, "test_01_arm_unstow",
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
 
@@ -241,7 +243,7 @@ class SampleCollection(unittest.TestCase):
   Tests an extra deep grind action and asserts no regolith is spawned during the
   operation.
   """
-  def test_02_grind(self):
+  def test_02_task_grind(self):
     grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
       owl_msgs.msg.TaskGrindGoal(
@@ -252,7 +254,7 @@ class SampleCollection(unittest.TestCase):
         parallel        = True,
         ground_position = GROUND_POSITION
       ),
-      TEST_NAME, "test_02_grind",
+      TEST_NAME, "test_02_task_grind",
       condition_check = self._assert_regolith_not_present
     )
 
@@ -260,17 +262,17 @@ class SampleCollection(unittest.TestCase):
   Tests a default dig linear action and asserts regolith does spawn during the
   operation and remains in the scoop until the end of it.
   """
-  def test_03_dig_linear(self):
-    dig_linear_result = test_arm_action(self,
+  def test_03_task_scoop_linear(self):
+    task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
         frame     = 0,
         relative  = False,
-        point     = Point(1.46, 0, 0),
+        point     = Point(1.46, 0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
         depth     = 0.01,
         length    = 0.1
       ),
-      TEST_NAME, "test_03_dig_linear",
+      TEST_NAME, "test_03_task_scoop_linear",
       condition_check = self._assert_scoop_regolith_containment
     )
 
@@ -281,16 +283,16 @@ class SampleCollection(unittest.TestCase):
   Discards material over the default discard position and asserts it leaves
   scoop and is cleaned up shortly after hitting the terrain.
   """
-  def test_04_discard(self):
-    discard_result = test_arm_action(self,
+  def test_04_task_discard_sample(self):
+    task_discard_result = test_arm_action(self,
       'TaskDiscardSample', owl_msgs.msg.TaskDiscardSampleAction,
-      owl_msgs.msg.TaskDiscardSampleAction(
+      owl_msgs.msg.TaskDiscardSampleGoal(
         frame = 0,
         relative = False,
         point = DISCARD_POSITION,
         height = 0.7
       ),
-      TEST_NAME, "test_04_discard",
+      TEST_NAME, "test_04_task_discard_sample",
       condition_check = self._assert_regolith_transports_and_discards
     )
 
@@ -304,10 +306,10 @@ class SampleCollection(unittest.TestCase):
   """
   Grind a new trench in a different location on the terrain.
   """
-  def test_05_grind(self):
-    grind_result = test_arm_action(self,
+  def test_05_task_grind(self):
+    task_grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
-      owl_msgs.msg.GrindGoal(
+      owl_msgs.msg.TaskGrindGoal(
         x_start         = 1.65,
         y_start         = 0.5,
         depth           = 0.05,
@@ -315,7 +317,7 @@ class SampleCollection(unittest.TestCase):
         parallel        = True,
         ground_position = GROUND_POSITION
       ),
-      TEST_NAME, "test_05_grind",
+      TEST_NAME, "test_05_task_grind",
       condition_check = self._assert_regolith_not_present
     )
 
@@ -323,17 +325,17 @@ class SampleCollection(unittest.TestCase):
   Dig for more material in the new trench, so we can then test delivery into
   the sample dock.
   """
-  def test_06_dig_circular(self):
-    dig_circular_result = test_arm_action(self,
+  def test_06_task_scoop_circular(self):
+    task_scoop_circular_result = test_arm_action(self,
       'TaskScoopCircular', owl_msgs.msg.TaskScoopCircularAction,
       owl_msgs.msg.TaskScoopCircularGoal(
         frame    = 0,
         relative = False,
-        point    = Point(1.65, 0.5, 0.01),
+        point    = Point(1.65, 0.5, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
         depth    = 0.01,
-        parallel = True
+        parallel = True,
       ),
-      TEST_NAME, "test_06_dig_circular",
+      TEST_NAME, "test_06_task_scoop_circular",
       condition_check = self._assert_scoop_regolith_containment
     )
 
@@ -361,22 +363,22 @@ class SampleCollection(unittest.TestCase):
   Test the unstow action.
   Calling this after an optertion is standard operating procedure.
   """
-  def test_08_unstow(self):
-    unstow_result = test_arm_action(self,
+  def test_08_arm_unstow(self):
+    arm_unstow_result = test_arm_action(self,
       'ArmUnstow', owl_msgs.msg.ArmUnstowAction,
       owl_msgs.msg.ArmUnstowGoal(),
-      TEST_NAME, "test_08_unstow"
+      TEST_NAME, "test_08_arm_unstow"
     )
 
   """
   Test the stow action.
   Calling this after an optertion is standard operating procedure.
   """
-  def test_09_stow(self):
-    stow_result = test_arm_action(self,
+  def test_09_arm_stow(self):
+    arm_stow_result = test_arm_action(self,
       'ArmStow', owl_msgs.msg.ArmStowAction,
       owl_msgs.msg.ArmStowGoal(),
-      TEST_NAME, "test_09_stow"
+      TEST_NAME, "test_09_arm_stow"
     )
 
   """
@@ -384,11 +386,11 @@ class SampleCollection(unittest.TestCase):
   the simulation.
   """
   @unittest.expectedFailure
-  def test_10_ingest_sample(self):
-    ingest_result = test_action(self,
-      'DockIngestSampleAction', owl_msgs.msg.DockIngestSampleAction,
+  def test_10_dock_ingest_sample(self):
+    dock_ingest_result = test_action(self,
+      'DockIngestSample', owl_msgs.msg.DockIngestSampleAction,
       owl_msgs.msg.DockIngestSampleGoal(),
-      TEST_NAME, "test_10_ingest_sample"
+      TEST_NAME, "test_10_dock_ingest_sample"
     )
 
     rospy.sleep(REGOLITH_CLEANUP_DELAY)
