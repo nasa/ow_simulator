@@ -106,9 +106,9 @@ private:
   // system.cfg variables:
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
-  // given too high a power input.  The value assigned to this in system.cfg,
+  // given too high a power input.  The value assigned to this in system.cfg
   // protects against this by capping the power input, but it is a temporary
-  // hack until a circuit breaker model is added to the power system, and/or 
+  // hack until a circuit breaker model is added to the power system and/or 
   // the multi-cell battery model is implemented and can handle any envisioned
   // power draw.
   double m_max_gsap_input_watts;

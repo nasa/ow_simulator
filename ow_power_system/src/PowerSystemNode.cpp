@@ -175,22 +175,30 @@ void PowerSystemNode::initAndRun()
       printTimestamp(m_power_models[0].model_info.timestamp);
     }
 
-    double excessive_draw = 0.0;
+    bool draw_warning_displayed = false;
 
-    // Cycle the power stats in the models.
     for (int i = 0; i < NUM_MODELS; i++)
     {
-      double temp_draw = m_power_models[i].model.RunOnce();
-      // Signal the warning message to be displayed after the loop.
-      if (temp_draw > 0)
+      // Cycle the inputs in each model.
+      // If excessive power draw was detected/corrected, display the warning
+      // if it hasn't already displayed once this cycle.
+      if (m_power_models[i].model.runOnce() && !draw_warning_displayed)
       {
-        // Current implementation means if one input exceeds the draw limit,
-        // all inputs will exceed at the same amount, so it doesn't matter which
-        // cell input we take.
-        excessive_draw = temp_draw;
+        // Current implementation means if one ModelHandler exceeds the draw
+        // limit, every ModelHandler will exceed at the same amount.
+        // So it doesn't matter which model triggers the warning as long as
+        // it displays once.
+        ROS_WARN_STREAM("Power system computed power input above the "
+                        << m_max_gsap_input_watts
+                        << "W cap for one or more GSAP prognosers.\n"
+                        << "Input was set to "
+                        << m_max_gsap_input_watts
+                        << "W for each model over the limit.");
+        // Prevent warning from repeating within the same cycle.
+        draw_warning_displayed = true;
       }
 
-      m_power_models[i].model.GetPowerStats(m_power_models[i].model_info);
+      m_power_models[i].model.getPowerStats(m_power_models[i].model_info);
       
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent crashes.
@@ -235,16 +243,6 @@ void PowerSystemNode::initAndRun()
 
         m_power_models[i].previous_time = m_power_models[i].model_info.timestamp;
       }
-    }
-
-    // Print a warning message if any models computed an excessive power draw.
-    if (excessive_draw > 0)
-    {
-      ROS_WARN_STREAM("Power system computed excessive power input of "
-                      << excessive_draw << "W for one or more GSAP "
-                      << "prognosers.\nInput was capped at "
-                      << m_max_gsap_input_watts
-                      << "W for each model over the limit.");
     }
 
     // Check if the prediction handlers have EoD predictions ready,
@@ -298,7 +296,7 @@ bool PowerSystemNode::initModels()
   for (int i = 0; i < NUM_MODELS; i++)
   {
     m_power_models[i].name = setModelName(i);
-    if (!m_power_models[i].model.Initialize())
+    if (!m_power_models[i].model.initialize())
     {
         return false;
     }
@@ -447,9 +445,9 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 
       for (int i = 0; i < NUM_MODELS; i++)
       {
-        m_power_models[i].model.SetCustomPowerDraw(wattage);
-        m_power_models[i].model.SetCustomVoltageFault(voltage);
-        m_power_models[i].model.SetCustomTemperatureFault(temperature);
+        m_power_models[i].model.setCustomPowerDraw(wattage);
+        m_power_models[i].model.setCustomVoltageFault(voltage);
+        m_power_models[i].model.setCustomTemperatureFault(temperature);
       }
       
       index++;
@@ -491,7 +489,7 @@ void PowerSystemNode::injectFault (const std::string& fault_name,
 
       for (int i = 0; i < NUM_MODELS; i++)
       {
-        m_power_models[i].model.SetHighPowerDraw(split_wattage);
+        m_power_models[i].model.setHighPowerDraw(split_wattage);
       }
     }
 
@@ -524,7 +522,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;   // [W]
   double mean_mechanical_power = accumulate(
       begin(m_power_values), end(m_power_values), 0.0)
       / m_power_values.size();

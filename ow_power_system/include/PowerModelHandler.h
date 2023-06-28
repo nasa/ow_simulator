@@ -37,21 +37,21 @@ public:
   ~PowerModelHandler() = default;
   PowerModelHandler(const PowerModelHandler&) = delete;
   PowerModelHandler& operator=(const PowerModelHandler&) = delete;
-  bool Initialize();
-  double RunOnce();
-  void GetPowerStats(ModelInfo &model);
+  bool initialize();
+  bool runOnce();
+  void getPowerStats(ModelInfo &model);
   void applyMechanicalPower(double mechanical_power);
-  void SetHighPowerDraw(double draw);
-  void SetCustomPowerDraw(double draw);
-  void SetCustomVoltageFault(double volts);
-  void SetCustomTemperatureFault(double tmp);
+  void setHighPowerDraw(double draw);
+  void setCustomPowerDraw(double draw);
+  void setCustomVoltageFault(double volts);
+  void setCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
 
-  double runPrognoser(double electrical_power);
+  bool runPrognoser(double electrical_power);
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 

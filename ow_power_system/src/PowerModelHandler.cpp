@@ -21,7 +21,7 @@ using namespace std_msgs;
  * Called on creating a PowerModelHandler object. Sets up class variables
  * and initializes various other things.
  */
-bool PowerModelHandler::Initialize()
+bool PowerModelHandler::initialize()
 {
   if (!loadSystemConfig()) {
     ROS_ERROR("Failed to load PowerModelHandler system config!");
@@ -140,7 +140,7 @@ void PowerModelHandler::applyValueMods(double& power,
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemNode each cycle.
  */
-double PowerModelHandler::runPrognoser(double electrical_power)
+bool PowerModelHandler::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
@@ -150,38 +150,36 @@ double PowerModelHandler::runPrognoser(double electrical_power)
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
-    // Excessive power draw computed. Return the high draw amount to warn user, 
-    // but cap the draw at the max allowed value.
-    double temp = m_wattage_estimate;
+    // Excessive power draw computed. Cap the power draw and
+    // return true to trigger a warning message in PowerSystemNode.
     m_wattage_estimate = m_max_gsap_input_watts;
-    return temp;
+    return true;
   }
-  return -1;
+  return false;
 }
 
 /*
  * Function called by PowerSystemNode to update input power/voltage/temp.
  */
-double PowerModelHandler::RunOnce()
+bool PowerModelHandler::runOnce()
 {
-  double excessiveDraw = -1;
+  bool draw_warning = false;
   if (m_trigger_processing_new_power_batch)
   {
     m_trigger_processing_new_power_batch = false;
     m_processing_power_batch = true;
-    excessiveDraw = runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
+    draw_warning = runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
   }
-  // Returns -1 if no excessive draw was calculated, else returns
-  // the excessive draw amount for warning statement in the node.
-  return excessiveDraw;
+  // Returns false if no warning should be displayed, true otherwise.
+  return draw_warning;
 }
 
 /*
  * Getter function that obtains all the input data currently stored in this
  * PowerModelHandler.
  */
-void PowerModelHandler::GetPowerStats(ModelInfo &model)
+void PowerModelHandler::getPowerStats(ModelInfo &model)
 {
   model.timestamp = m_current_timestamp;
   model.wattage = m_wattage_estimate;
@@ -189,22 +187,22 @@ void PowerModelHandler::GetPowerStats(ModelInfo &model)
   model.temperature = m_temperature_estimate;
 }
 
-void PowerModelHandler::SetHighPowerDraw(double draw)
+void PowerModelHandler::setHighPowerDraw(double draw)
 {
   m_added_hpd = draw;
 }
 
-void PowerModelHandler::SetCustomPowerDraw(double draw)
+void PowerModelHandler::setCustomPowerDraw(double draw)
 {
   m_added_cpd = draw;
 }
 
-void PowerModelHandler::SetCustomVoltageFault(double volts)
+void PowerModelHandler::setCustomVoltageFault(double volts)
 {
   m_voltage_modifier = volts;
 }
 
-void PowerModelHandler::SetCustomTemperatureFault(double tmp)
+void PowerModelHandler::setCustomTemperatureFault(double tmp)
 {
   m_temperature_modifier = tmp;
 }
