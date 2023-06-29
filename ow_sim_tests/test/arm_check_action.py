@@ -8,14 +8,12 @@ import sys
 import rospy
 import roslib
 import unittest
-import ow_lander.constants
 import ow_lander.msg
 import owl_msgs.msg
 import argparse
 
 from action_testing import *
-
-DEFAULT_GROUND_HEIGHT  = -0.155
+from ow_lander import constants
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_check_action'
@@ -63,7 +61,7 @@ class ArmCheckAction(unittest.TestCase):
         depth = 0.05,
         length = 0.6,
         parallel = True,
-        ground_position = DEFAULT_GROUND_HEIGHT
+        ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
       TEST_NAME, "test_03_task_grind"
     )
@@ -74,9 +72,9 @@ class ArmCheckAction(unittest.TestCase):
       owl_msgs.msg.TaskScoopCircularGoal(
         frame = 0,
         relative =False,
-        point = Point(1.65, 0.0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
+        point = Point(1.65, 0.0, constants.DEFAULT_GROUND_HEIGHT),
         depth = 0.1,
-        parallel = True,
+        parallel = True
       ),
       TEST_NAME, 'test_04_task_scoop_circular'
     )
@@ -87,8 +85,8 @@ class ArmCheckAction(unittest.TestCase):
       owl_msgs.msg.TaskDiscardSampleGoal(
         frame = 0,
         relative = False,
-        point = Point(1.5, 0.8, 0.65),
-        height = 0.0,
+        point = Point(1.5, 0.8, constants.DEFAULT_GROUND_HEIGHT),
+        height = 0.7
       ),
       TEST_NAME, 'test_05_task_discard_sample'
     )
@@ -99,9 +97,9 @@ class ArmCheckAction(unittest.TestCase):
       owl_msgs.msg.TaskScoopLinearGoal(
         frame = 0,
         relative = False,
-        point = Point(1.46, 0.0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
+        point = Point(1.46, 0.0, constants.DEFAULT_GROUND_HEIGHT),
         depth = 0.01,
-        length = 0.1,
+        length = 0.1
       ),
       TEST_NAME, 'test_06_task_scoop_linear'
     )

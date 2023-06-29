@@ -17,8 +17,8 @@ from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Point
 
 import owl_msgs.msg
-import ow_lander.constants
 import ow_lander.msg
+from ow_lander import constants
 
 from action_testing import *
 
@@ -26,8 +26,7 @@ PKG = 'ow_sim_tests'
 TEST_NAME = 'sample_collection'
 roslib.load_manifest(PKG)
 
-GROUND_POSITION = -0.155
-DISCARD_POSITION = Point(1.5, 0.8, GROUND_POSITION) # default for discard action
+DISCARD_POSITION = Point(1.5, 0.8, constants.DEFAULT_GROUND_HEIGHT) # default for discard action
 REGOLITH_CLEANUP_DELAY = 5.0 # seconds
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
@@ -252,7 +251,7 @@ class SampleCollection(unittest.TestCase):
         depth           = 0.15, # grind deep so terrain is modified
         length          = 0.7,
         parallel        = True,
-        ground_position = GROUND_POSITION
+        ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
       TEST_NAME, "test_02_task_grind",
       condition_check = self._assert_regolith_not_present
@@ -268,7 +267,7 @@ class SampleCollection(unittest.TestCase):
       owl_msgs.msg.TaskScoopLinearGoal(
         frame     = 0,
         relative  = False,
-        point     = Point(1.46, 0, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
+        point     = Point(1.46, 0, constants.DEFAULT_GROUND_HEIGHT),
         depth     = 0.01,
         length    = 0.1
       ),
@@ -315,7 +314,7 @@ class SampleCollection(unittest.TestCase):
         depth           = 0.05,
         length          = 0.6,
         parallel        = True,
-        ground_position = GROUND_POSITION
+        ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
       TEST_NAME, "test_05_task_grind",
       condition_check = self._assert_regolith_not_present
@@ -331,9 +330,9 @@ class SampleCollection(unittest.TestCase):
       owl_msgs.msg.TaskScoopCircularGoal(
         frame    = 0,
         relative = False,
-        point    = Point(1.65, 0.5, ow_lander.constants.DEFAULT_GROUND_HEIGHT),
+        point    = Point(1.65, 0.5, constants.DEFAULT_GROUND_HEIGHT),
         depth    = 0.01,
-        parallel = True,
+        parallel = True
       ),
       TEST_NAME, "test_06_task_scoop_circular",
       condition_check = self._assert_scoop_regolith_containment
