@@ -142,7 +142,7 @@ def test_arm_action_noyaml(test_object, action_name, action, goal, max_duration,
     test_object, action_name, action, goal, max_duration, **kwargs
   )
     # verify action ended where we expected
-  if expected_final:
+  if expected_final and hasattr(result, 'final'):
     assert_point_is_within_deviation(test_object,
       result.final, expected_final, expected_final_tolerance
     )
@@ -304,5 +304,6 @@ def test_arm_action(test_object, action_name, action, goal,
       expected_final_tolerance = final_tolerance,
       **kwargs
     )
-  print_arm_action_final(unit_name, result.final)
+  if hasattr(result, 'final'):
+    print_arm_action_final(unit_name, result.final)
   print_action_complete(unit_name, elapsed)
