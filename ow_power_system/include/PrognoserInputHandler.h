@@ -2,14 +2,14 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// This is the header file for the PowerModelHandler class, which handles
-// the simulation of a single model within a PowerSystemNode. It stores the
+// This is the header file for the PrognoserInputHandler class, which controls
+// the inputs to a single prognoser within a PowerSystemNode. It stores the
 // data used as inputs to a GSAP asynchronous prognoser and generates the next
 // input set (including any value modifications from faults or other functions) 
 // to be sent to GSAP.
 
-#ifndef __POWER_MODEL_HANDLER_H__
-#define __POWER_MODEL_HANDLER_H__
+#ifndef __PROGNOSER_INPUT_HANDLER_H__
+#define __PROGNOSER_INPUT_HANDLER_H__
 
 #include <vector>
 #include <map>
@@ -22,24 +22,24 @@
 #include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
 
-// Struct that contains the information used for EoD predictions.
-struct ModelInfo {
+// Struct that contains the input information used for EoD predictions.
+struct InputInfo {
   double timestamp;
   double wattage;
   double voltage;
   double temperature;
 };
 
-class PowerModelHandler
+class PrognoserInputHandler
 {
 public:
-  PowerModelHandler() = default;
-  ~PowerModelHandler() = default;
-  PowerModelHandler(const PowerModelHandler&) = delete;
-  PowerModelHandler& operator=(const PowerModelHandler&) = delete;
+  PrognoserInputHandler() = default;
+  ~PrognoserInputHandler() = default;
+  PrognoserInputHandler(const PrognoserInputHandler&) = delete;
+  PrognoserInputHandler& operator=(const PrognoserInputHandler&) = delete;
   bool initialize();
   bool runOnce();
-  void getPowerStats(ModelInfo &model);
+  void getPowerStats(InputInfo &inputs);
   void applyMechanicalPower(double mechanical_power);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);

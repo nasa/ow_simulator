@@ -3,10 +3,10 @@
 // this repository.
 
 // This is the header file for the PowerSystemNode class, which handles
-// the creation and managing of several PowerModelHandler objects (each
-// simulating part of a battery). It gathers the data used as 
-// input to GSAP's asynchronous prognosers from each PowerModelHandler, sends
-// it off, stores GSAP's predictions, and publishes them after manipulations.
+// the creation and managing of several PrognoserInputHandler objects (each
+// simulating inputs to part of a battery). It gathers the data from each object
+// and sends it to GSAP's asynchronous prognosers, receives GSAP's predictions,
+// and publishes them after manipulations.
 
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
@@ -21,7 +21,7 @@
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
-#include "PowerModelHandler.h"
+#include "PrognoserInputHandler.h"
 #include "PredictionHandler.h"
 
 #include "Messages/MessageBus.h"
@@ -34,16 +34,17 @@ using PrognoserVector = std::vector<PrognoserMap>;
 
 // NOTE: This is required as a compile-time constant, so it cannot be placed in
 //       a .cfg file. The simulation must be re-built if it is changed.
-// This is the number of parallel models that will be simulated at once. The
-// expected amount for the battery pack is 24.
+// This is the number of parallel inputs and outputs that will be simulated at
+// once. The expected amount for the battery pack (when using single-cell
+// models) is 24.
 const int NUM_MODELS = 24;
 
-// Struct that groups the variables/classes used to handle PowerModelHandlers.
+// Struct that groups the variables/classes used to handle PrognoserInputHandlers.
 struct PowerModel {
   std::string name;
-  PowerModelHandler model;
+  PrognoserInputHandler model;
   MessageBus bus;
-  ModelInfo model_info;
+  InputInfo input_info;
   double previous_time;
 };
 

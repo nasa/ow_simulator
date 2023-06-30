@@ -138,7 +138,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(power_system_node
   src/PowerSystemNode.cpp
-  src/PowerModelHandler.cpp
+  src/PrognoserInputHandler.cpp
   src/PredictionHandler.cpp
   src/main.cpp)
 

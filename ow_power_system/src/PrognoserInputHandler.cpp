@@ -2,7 +2,7 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-// See PowerModelHandler.h for a summary of the purpose of this file.
+// See PrognoserInputHandler.h for a summary of the purpose of this file.
 
 #include <numeric>
 #include <fstream>
@@ -11,20 +11,20 @@
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
 #include <ow_lander/lander_joints.h>
-#include "PowerModelHandler.h"
+#include "PrognoserInputHandler.h"
 
 using namespace std;
 using namespace std::chrono;
 using namespace std_msgs;
 
 /*
- * Called on creating a PowerModelHandler object. Sets up class variables
+ * Called on creating a PrognoserInputHandler object. Sets up class variables
  * and initializes various other things.
  */
-bool PowerModelHandler::initialize()
+bool PrognoserInputHandler::initialize()
 {
   if (!loadSystemConfig()) {
-    ROS_ERROR("Failed to load PowerModelHandler system config!");
+    ROS_ERROR("Failed to load PrognoserInputHandler system config!");
     return false;
   }
 
@@ -37,7 +37,7 @@ bool PowerModelHandler::initialize()
  * Called from Initialize(). Reads the system.cfg file within ow_power_system
  * and stores its information in relevant class variables.
  */
-bool PowerModelHandler::loadSystemConfig()
+bool PrognoserInputHandler::loadSystemConfig()
 {
   try
   {
@@ -60,7 +60,7 @@ bool PowerModelHandler::loadSystemConfig()
   {
     ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what() 
                      << " while attempting to read system.cfg"
-                     << " in a model handler!\n"
+                     << " in an input handler!\n"
                      << "Ensure system.cfg is formatted properly before "
                      << "restarting the simulation.");
     return false;
@@ -69,7 +69,7 @@ bool PowerModelHandler::loadSystemConfig()
   return true;
 }
 
-void PowerModelHandler::applyMechanicalPower(double mechanical_power)
+void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
 {
   m_unprocessed_mechanical_power += mechanical_power;
 
@@ -85,7 +85,7 @@ void PowerModelHandler::applyMechanicalPower(double mechanical_power)
  * Returns a random value between the lower and upper bounds of the random
  * generator, to mimic a sensor's temperature measurement.
  */
-double PowerModelHandler::generateTemperatureEstimate()
+double PrognoserInputHandler::generateTemperatureEstimate()
 {
   return m_temperature_dist(m_random_generator);
 }
@@ -94,7 +94,7 @@ double PowerModelHandler::generateTemperatureEstimate()
  * Calculates a voltage value with some variance to be used as a data input. Voltage
  * values will slowly drop over time.
  */
-double PowerModelHandler::generateVoltageEstimate()
+double PrognoserInputHandler::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
   double timelapse = duration<double>(system_clock::now() - m_init_time).count();               // [s]
@@ -117,7 +117,7 @@ double PowerModelHandler::generateVoltageEstimate()
  * Currently the only source of these modifiers is power faults, but could be
  * expanded in the future.
  */
-void PowerModelHandler::applyValueMods(double& power,
+void PrognoserInputHandler::applyValueMods(double& power,
                                        double& voltage,
                                        double& temperature)
 {
@@ -140,7 +140,7 @@ void PowerModelHandler::applyValueMods(double& power,
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemNode each cycle.
  */
-bool PowerModelHandler::runPrognoser(double electrical_power)
+bool PrognoserInputHandler::runPrognoser(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
@@ -161,7 +161,7 @@ bool PowerModelHandler::runPrognoser(double electrical_power)
 /*
  * Function called by PowerSystemNode to update input power/voltage/temp.
  */
-bool PowerModelHandler::runOnce()
+bool PrognoserInputHandler::runOnce()
 {
   bool draw_warning = false;
   if (m_trigger_processing_new_power_batch)
@@ -177,32 +177,32 @@ bool PowerModelHandler::runOnce()
 
 /*
  * Getter function that obtains all the input data currently stored in this
- * PowerModelHandler.
+ * PrognoserInputHandler.
  */
-void PowerModelHandler::getPowerStats(ModelInfo &model)
+void PrognoserInputHandler::getPowerStats(InputInfo &inputs)
 {
-  model.timestamp = m_current_timestamp;
-  model.wattage = m_wattage_estimate;
-  model.voltage = m_voltage_estimate;
-  model.temperature = m_temperature_estimate;
+  inputs.timestamp = m_current_timestamp;
+  inputs.wattage = m_wattage_estimate;
+  inputs.voltage = m_voltage_estimate;
+  inputs.temperature = m_temperature_estimate;
 }
 
-void PowerModelHandler::setHighPowerDraw(double draw)
+void PrognoserInputHandler::setHighPowerDraw(double draw)
 {
   m_added_hpd = draw;
 }
 
-void PowerModelHandler::setCustomPowerDraw(double draw)
+void PrognoserInputHandler::setCustomPowerDraw(double draw)
 {
   m_added_cpd = draw;
 }
 
-void PowerModelHandler::setCustomVoltageFault(double volts)
+void PrognoserInputHandler::setCustomVoltageFault(double volts)
 {
   m_voltage_modifier = volts;
 }
 
-void PowerModelHandler::setCustomTemperatureFault(double tmp)
+void PrognoserInputHandler::setCustomTemperatureFault(double tmp)
 {
   m_temperature_modifier = tmp;
 }

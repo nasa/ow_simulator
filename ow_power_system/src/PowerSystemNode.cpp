@@ -158,7 +158,7 @@ void PowerSystemNode::initAndRun()
   //       time.
   ros::Rate rate(m_gsap_rate_hz);
 
-  // Loop through the PowerModelHandlers to update their values and send them to
+  // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
   int start_loops = NUM_MODELS;
@@ -172,7 +172,7 @@ void PowerSystemNode::initAndRun()
     // DEBUG PRINT
     if (m_timestamp_print_debug)
     {
-      printTimestamp(m_power_models[0].model_info.timestamp);
+      printTimestamp(m_power_models[0].input_info.timestamp);
     }
 
     bool draw_warning_displayed = false;
@@ -198,14 +198,14 @@ void PowerSystemNode::initAndRun()
         draw_warning_displayed = true;
       }
 
-      m_power_models[i].model.getPowerStats(m_power_models[i].model_info);
+      m_power_models[i].model.getPowerStats(m_power_models[i].input_info);
       
       // If the timestamp is the same as the previous one (happens during startup),
       // do not publish the data to prevent crashes.
-      if (m_power_models[i].previous_time != m_power_models[i].model_info.timestamp)
+      if (m_power_models[i].previous_time != m_power_models[i].input_info.timestamp)
       {
         auto timestamp = START_TIME + std::chrono::milliseconds(
-          static_cast<unsigned>(m_power_models[i].model_info.timestamp * 1000)
+          static_cast<unsigned>(m_power_models[i].input_info.timestamp * 1000)
         );
 
         double input_power, input_tmp, input_voltage;
@@ -221,13 +221,13 @@ void PowerSystemNode::initAndRun()
         }
         else
         {
-          input_power = m_power_models[i].model_info.wattage;
-          input_voltage = m_power_models[i].model_info.voltage;
-          input_tmp = m_power_models[i].model_info.temperature;
+          input_power = m_power_models[i].input_info.wattage;
+          input_voltage = m_power_models[i].input_info.voltage;
+          input_tmp = m_power_models[i].input_info.temperature;
         }
 
         // DEBUG PRINT
-        if (m_inputs_print_debug && (m_power_models[i].model_info.timestamp > 0))
+        if (m_inputs_print_debug && (m_power_models[i].input_info.timestamp > 0))
         {
           printPrognoserInputs(input_power, input_voltage, input_tmp, i);
         }
@@ -241,7 +241,7 @@ void PowerSystemNode::initAndRun()
         m_power_models[i].bus.publish(std::make_shared<DoubleMessage>(
           MessageId::Volts, m_power_models[i].name, timestamp, input_voltage));
 
-        m_power_models[i].previous_time = m_power_models[i].model_info.timestamp;
+        m_power_models[i].previous_time = m_power_models[i].input_info.timestamp;
       }
     }
 
@@ -272,7 +272,7 @@ void PowerSystemNode::initAndRun()
     }
 
     // DEBUG PRINT FORMATTING
-    if (m_print_debug && !(m_power_models[0].model_info.timestamp <= 0))
+    if (m_print_debug && !(m_power_models[0].input_info.timestamp <= 0))
     {
       std::cout << std::endl;
     }
@@ -287,7 +287,7 @@ void PowerSystemNode::initAndRun()
 }
 
 /* 
- * Initializes every PowerModelHandler by calling their respective Initialize()
+ * Initializes every PrognoserInputHandler by calling their respective Initialize()
  * functions.
  */
 bool PowerSystemNode::initModels()
@@ -310,7 +310,7 @@ bool PowerSystemNode::initModels()
  */
 void PowerSystemNode::initTopics()
 {
-  // Construct the PowerModelHandler publishers
+  // Construct the PrognoserInputHandler publishers
   m_mechanical_power_raw_pub = m_nh.advertise
                                   <std_msgs::Float64>(
                                   "mechanical_power/raw", 1);
@@ -696,7 +696,7 @@ void PowerSystemNode::publishPredictions()
   // from triggering the fail state.
   if ((min_rul < 0 || min_soc < 0)
       && (!m_battery_failed)
-      && (m_power_models[0].model_info.timestamp >= (m_time_interval * 5)))
+      && (m_power_models[0].input_info.timestamp >= (m_time_interval * 5)))
   {
     ROS_WARN_STREAM("The battery has reached a fail state. Flatlining "
                     << "all future published predictions");
