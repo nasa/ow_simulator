@@ -137,7 +137,10 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(power_system_node
-  src/PowerSystemNode.cpp)
+  src/PowerSystemNode.cpp
+  src/PrognoserInputHandler.cpp
+  src/PredictionHandler.cpp
+  src/main.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
