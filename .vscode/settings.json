@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/honghao/oceanwaters_ws/devel/lib/python3/dist-packages",
+        "/home/honghao/interbotix_ws/devel/lib/python3/dist-packages",
+        "/home/honghao/me326_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/honghao/oceanwaters_ws/devel/lib/python3/dist-packages",
+        "/home/honghao/interbotix_ws/devel/lib/python3/dist-packages",
+        "/home/honghao/me326_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+}

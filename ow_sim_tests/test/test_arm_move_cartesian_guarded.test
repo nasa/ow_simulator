@@ -9,7 +9,7 @@
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
-    <test test-name="arm_move_cartesian" pkg="ow_sim_tests"
-        type="arm_move_cartesian.py" time-limit="700.0"/>
+    <test test-name="arm_move_cartesian_guarded" pkg="ow_sim_tests"
+        type="test_arm_move_cartesian_guarded.py" time-limit="700.0"/>
     
 </launch>

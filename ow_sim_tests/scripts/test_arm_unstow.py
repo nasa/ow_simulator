@@ -13,13 +13,12 @@ import owl_msgs.msg
 import argparse
 
 from action_testing import *
-from ow_lander import constants
 
 PKG = 'ow_sim_tests'
-TEST_NAME = 'arm_unstow_action'
+TEST_NAME = 'arm_unstow'
 roslib.load_manifest(PKG)
 
-class ArmUnstowAction(unittest.TestCase):
+class TestArmUnstow(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
@@ -46,4 +45,4 @@ class ArmUnstowAction(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, 'arm_unstow_action', ArmUnstowAction)
+  rostest.rosrun(PKG, TEST_NAME, TestArmUnstow)

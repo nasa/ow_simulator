@@ -17,14 +17,14 @@ from ow_lander import constants
 from geometry_msgs.msg import Vector3, Pose, Quaternion
 
 PKG = 'ow_sim_tests'
-TEST_NAME = 'arm_move_cartesian_action'
+TEST_NAME = 'arm_move_cartesian_guarded'
 roslib.load_manifest(PKG)
 
-class ArmMoveCartesianAction(unittest.TestCase):
+class TestArmMoveCartesianGuarded(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    rospy.init_node("arm_unstow_test")
+    rospy.init_node("test_arm_move_cartesian_guarded")
 
     set_ignore_action_checks(True)
     # proceed with test only when ros clock has been initialized
@@ -62,7 +62,7 @@ class ArmMoveCartesianAction(unittest.TestCase):
         frame = 0,
         relative = False,
         pose= Pose(
-          position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT - 0.3),
+          position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT - 0.1),
           orientation = Quaternion(1, 0.005, 0.053, 0.029)
         ),
         force_threshold = 200,
@@ -78,14 +78,46 @@ class ArmMoveCartesianAction(unittest.TestCase):
         frame = 0,
         relative = False,
         pose= Pose(
-          position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT),
-          orientation = Quaternion(2, 1, 0.053, 0.029)
+          position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT + 0.2),
+          orientation = Quaternion(1, 0.005, 0.053, 0.029)
         ),
         force_threshold = 200,
         torque_threshold = 100
       ),
       TEST_NAME, 'test_04_arm_move_cartesian_guarded'
     )
+
+  def test_05_arm_move_cartesian_guarded(self):
+    arm_move_cartesian_guarded_result = test_arm_action(self,
+      'ArmMoveCartesianGuarded', owl_msgs.msg.ArmMoveCartesianGuardedAction,
+      owl_msgs.msg.ArmMoveCartesianGuardedGoal(
+        frame = 0,
+        relative = False,
+        pose= Pose(
+          position = Point(1.935, 0.261, 0.135),
+          orientation = Quaternion(-0.496, 0.538, 0.502, 0.461)
+        ),
+        force_threshold = 200,
+        torque_threshold = 100
+      ),
+      TEST_NAME, 'test_05_arm_move_cartesian_guarded'
+    )
+
+  # def test_06_arm_move_cartesian_guarded(self):
+  #   arm_move_cartesian_guarded_result = test_arm_action(self,
+  #     'ArmMoveCartesianGuarded', owl_msgs.msg.ArmMoveCartesianGuardedAction,
+  #     owl_msgs.msg.ArmMoveCartesianGuardedGoal(
+  #       frame = 0,
+  #       relative = False,
+  #       pose= Pose(
+  #         position = Point(1.935, 0.261, -0.131),
+  #         orientation = Quaternion(-0.7, 0.7, 0, 0)
+  #       ),
+  #       force_threshold = 200,
+  #       torque_threshold = 100
+  #     ),
+  #     TEST_NAME, 'test_06_arm_move_cartesian_guarded'
+  #   )
 
   def test_07_arm_stow(self):
     arm_stow_result = test_arm_action(self,
@@ -96,4 +128,4 @@ class ArmMoveCartesianAction(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, TEST_NAME, ArmMoveCartesianAction)
+  rostest.rosrun(PKG, TEST_NAME, TestArmMoveCartesianGuarded)

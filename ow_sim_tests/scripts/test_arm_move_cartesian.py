@@ -8,23 +8,20 @@ import sys
 import rospy
 import roslib
 import unittest
-import ow_lander.msg
 import owl_msgs.msg
-import argparse
 
 from action_testing import *
-from ow_lander import constants
-from geometry_msgs.msg import Vector3, Pose, Quaternion
+from geometry_msgs.msg import Pose, Quaternion
 
 PKG = 'ow_sim_tests'
-TEST_NAME = 'arm_move_cartesian_action'
+TEST_NAME = 'arm_move_cartesian'
 roslib.load_manifest(PKG)
 
-class ArmMoveCartesianAction(unittest.TestCase):
+class TestArmMoveCartesian(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    rospy.init_node("arm_unstow_test")
+    rospy.init_node("arm_move_cartesian_unit_test")
 
     set_ignore_action_checks(True)
     # proceed with test only when ros clock has been initialized
@@ -118,4 +115,4 @@ class ArmMoveCartesianAction(unittest.TestCase):
 
 if __name__ == '__main__':
   import rostest
-  rostest.rosrun(PKG, TEST_NAME, ArmMoveCartesianAction)
+  rostest.rosrun(PKG, TEST_NAME, TestArmMoveCartesian)

@@ -9,7 +9,7 @@
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
-    <test test-name="arm_find_surface" pkg="ow_sim_tests"
-        type="arm_find_surface_action.py" time-limit="700.0"/>
+    <test test-name="test_arm_find_surface" pkg="ow_sim_tests"
+        type="test_arm_find_surface.py" time-limit="700.0"/>
     
 </launch>
