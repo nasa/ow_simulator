@@ -36,6 +36,7 @@ class TestArmUnstow(unittest.TestCase):
       TEST_NAME, "test_01_arm_unstow",
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
+    
   def test_02_arm_stow(self):
     arm_stow_result = test_arm_action(self,
       'ArmStow', owl_msgs.msg.ArmStowAction,
