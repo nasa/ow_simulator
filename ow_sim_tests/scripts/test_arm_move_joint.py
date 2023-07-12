@@ -4,17 +4,12 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import sys
 import rospy
 import roslib
 import unittest
-import ow_lander.msg
 import owl_msgs.msg
-import argparse
 
 from action_testing import *
-from ow_lander import constants
-from geometry_msgs.msg import Vector3, Pose, Quaternion
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_move_joint'
@@ -29,7 +24,7 @@ class TestArmMoveJoint(unittest.TestCase):
     set_ignore_action_checks(True)
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
-      rospy.sleep(0.1)
+      rospy.sleep(10.0)
 
   def test_01_arm_move_joint(self):
     arm_move_joint_result = test_arm_action(self,
@@ -98,12 +93,72 @@ class TestArmMoveJoint(unittest.TestCase):
       TEST_NAME, 'test_06_arm_move_joint'
     )
 
-  def test_07_arm_stow(self):
-    arm_stow_result = test_arm_action(self,
-      'ArmStow', owl_msgs.msg.ArmStowAction,
-      owl_msgs.msg.ArmStowGoal(),
-      TEST_NAME, 'test_07_arm_stow'
+  def test_07_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 5,
+        angle = 0.261799
+      ),
+      TEST_NAME, 'test_07_arm_move_joint'
     )
+
+  def test_08_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 4,
+        angle = -0.436332
+      ),
+      TEST_NAME, 'test_08_arm_move_joint'
+    )
+
+  def test_09_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 3,
+        angle = -0.314159
+      ),
+      TEST_NAME, 'test_09_arm_move_joint'
+    )
+
+  def test_10_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 2,
+        angle = 0.314159
+      ),
+      TEST_NAME, 'test_09_arm_move_joint'
+    )
+
+  def test_11_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 1,
+        angle = 0.174533
+      ),
+      TEST_NAME, 'test_11_arm_move_joint'
+    )
+
+  def test_12_arm_move_joint(self):
+    arm_move_joint_result = test_arm_action(self,
+      'ArmMoveJoint', owl_msgs.msg.ArmMoveJointAction,
+      owl_msgs.msg.ArmMoveJointGoal(
+        relative = True,
+        joint = 0,
+        angle = 0.174533
+      ),
+      TEST_NAME, 'test_12_arm_move_joint'
+    )
+
 
 if __name__ == '__main__':
   import rostest

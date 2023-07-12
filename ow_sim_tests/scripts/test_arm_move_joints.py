@@ -4,13 +4,10 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-import sys
 import rospy
 import roslib
 import unittest
-import ow_lander.msg
 import owl_msgs.msg
-import argparse
 
 from action_testing import *
 
@@ -80,15 +77,16 @@ class TestArmMoveJoints(unittest.TestCase):
       TEST_NAME, 'test_05_arm_move_joints'
     )
 
-  def test_99_arm_move_joints(self):
+  def test_06_arm_move_joints(self):
     arm_move_joints_result = test_arm_action(self,
       'ArmMoveJoints', owl_msgs.msg.ArmMoveJointsAction,
       owl_msgs.msg.ArmMoveJointsGoal(
         relative = False,
         angles = [-1.50098, 1.5708, -2.6529, 2.89725, 0, 0]
       ),
-      TEST_NAME, 'test_99_arm_move_joints'
+      TEST_NAME, 'test_06_arm_move_joints'
     )
+    
 if __name__ == '__main__':
   import rostest
   rostest.rosrun(PKG, TEST_NAME, TestArmMoveJoints)
