@@ -405,22 +405,22 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # orient scoop so that the bottom points in the opposite to the normal
     # NOTE: regardless of frame parameter orientation is in the base_link frame
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
-    start = goal.position
+    estimated_surface_pos = goal.position
     if relative:
-      start = FrameTransformer().transform_present(start,
-        constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
-      if start is None:
+      estimated_surface_pos = FrameTransformer().transform_present(
+        estimated_surface_pos, constants.FRAME_ID_BASE, constants.FRAME_ID_TOOL)
+      if estimated_surface_pos is None:
         self._set_aborted("Failed to perform necessary frame transforms for " \
                           "trajectory planning.")
         return
-    max_distance = goal.distance + goal.overdrive
-    displacement = math3d.scalar_multiply(max_distance, normal)
-    end = math3d.add(start, displacement)
     # pose before end-effector is driven towards surface
     pose1 = PoseStamped(
       header=create_most_recent_header(constants.FRAME_ID_BASE),
       pose=Pose(
-        position=start,
+        position=math3d.add(
+          estimated_surface_pos,
+          math3d.scalar_multiply(-goal.distance, normal)
+        ),
         orientation=orientation
       )
     )
@@ -429,7 +429,10 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     pose2 = PoseStamped(
       header=create_most_recent_header(constants.FRAME_ID_BASE),
       pose=Pose(
-        position=end,
+        position=math3d.add(
+          estimated_surface_pos,
+          math3d.scalar_multiply(goal.overdrive, normal)
+        ),
         orientation=orientation
       )
     )
@@ -464,7 +467,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # local function to compute progress of the action during surface approach
     def compute_distance():
       pose = self.get_end_effector_pose().pose
-      d = math3d.subtract(pose.position, start)
+      d = math3d.subtract(pose.position, estimated_surface_pos)
       return math3d.norm(d)
     # setup F/T monitor and its callback
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
