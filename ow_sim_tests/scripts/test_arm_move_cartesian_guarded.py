@@ -196,7 +196,7 @@ class TestArmMoveCartesianGuarded(unittest.TestCase):
           orientation = Quaternion(0, 0, 0, 1)
         ),
       ),
-      TEST_NAME, 'test_04_arm_move_cartesian'
+      TEST_NAME, 'test_11_arm_move_cartesian'
     )
   
   def test_12_arm_move_cartesian_guarded(self):

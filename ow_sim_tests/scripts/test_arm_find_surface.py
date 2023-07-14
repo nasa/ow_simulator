@@ -40,10 +40,11 @@ class TestArmFindSurface(unittest.TestCase):
         force_threshold = 200,
         torque_threshold = 200
       ),
-      TEST_NAME, 'test_02_arm_find_surface',
+      TEST_NAME, 'test_01_arm_find_surface',
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
 
+   # Uisng arm_move_cartesian after every arm_find_surface to get the arm off the ground
   def test_02_arm_move_cartesian(self):
     arm_move_cartesian_result = test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
@@ -56,7 +57,6 @@ class TestArmFindSurface(unittest.TestCase):
         )
       ),
       TEST_NAME, 'test_02_arm_move_cartesian'
-      # The arm_move_cartesian after every arm_find_surface is to get the arm off the ground
     )
 
   def test_03_arm_find_surface(self):

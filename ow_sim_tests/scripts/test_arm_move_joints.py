@@ -86,6 +86,16 @@ class TestArmMoveJoints(unittest.TestCase):
       ),
       TEST_NAME, 'test_06_arm_move_joints'
     )
+
+  def test_07_arm_move_joints(self):
+    arm_move_joints_result = test_arm_action(self,
+      'ArmMoveJoints', owl_msgs.msg.ArmMoveJointsAction,
+      owl_msgs.msg.ArmMoveJointsGoal(
+        relative = True,
+        angles = [1.50098, 0, 1.0829, -2.89725, 1.5708, 0]
+      ),
+      TEST_NAME, 'test_07_arm_move_joints'
+    )
     
 if __name__ == '__main__':
   import rostest
