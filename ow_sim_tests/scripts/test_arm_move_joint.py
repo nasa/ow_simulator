@@ -25,8 +25,8 @@ class TestArmMoveJoint(unittest.TestCase):
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
-      # NOTE: This additional sleep is necessary due to an issue with a topic subscriber (see OW-1182)
-      rospy.sleep(10)
+    # NOTE: This additional sleep is necessary due to an issue with a topic subscriber (see OW-1182)
+    rospy.sleep(10)
 
   def test_01_arm_move_joint(self):
     arm_move_joint_result = test_arm_action(self,
