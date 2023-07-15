@@ -4,11 +4,12 @@
     <arg name="gzclient" default="true" />
 
     <include file="$(find ow)/launch/europa_terminator_workspace.launch">
-        <arg name="rqt_gui" value="false" />
+        <arg name="rqt_gui" value="true" />
         <arg name="use_rviz" value="false"/>
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
-    <test test-name="arm_check_service" pkg="ow_sim_tests" type="arm_check_service.py" time-limit="700.0" />
-
+    <test test-name="test_camera_capture" pkg="ow_sim_tests"
+        type="test_camera_capture.py" time-limit="700.0"/>
+    
 </launch>
