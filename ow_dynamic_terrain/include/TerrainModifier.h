@@ -63,6 +63,7 @@ private:
                                     const std::function<float(int, int)>& get_height_value,
                                     const std::function<void(int, int, float)>& set_height_value,
                                     const std::function<float(float, float)>& merge_method,
+                                    cv_bridge::CvImage& out_result_image,
                                     cv_bridge::CvImage& out_diff_image);
 };
 }  // namespace ow_dynamic_terrain
