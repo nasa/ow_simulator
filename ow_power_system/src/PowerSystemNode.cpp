@@ -198,7 +198,7 @@ bool PowerSystemNode::initTopics()
   m_battery_remaining_useful_life_pub = m_nh.advertise<owl_msgs::BatteryRemainingUsefulLife>("/battery_remaining_useful_life", 1);
   m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
+  m_joint_states_sub = m_nh.subscribe("/joint_states", 100, &PowerSystemNode::jointStatesCb, this);
   return true;
 }
 
@@ -211,12 +211,6 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
   auto mean_mechanical_power =
       accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
-
-  Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
-  mechanical_power_raw_msg.data = power_watts;
-  mechanical_power_avg_msg.data = mean_mechanical_power;
-  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
-  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
   m_unprocessed_mechanical_power = mean_mechanical_power;
 
@@ -519,7 +513,26 @@ void PowerSystemNode::Run()
 
   while (ros::ok())
   {
+    // Run all callbacks in queue (in particular, 100 jointStatesCb msgs)
     ros::spinOnce();
+    // Publish mechanical raw & average power from jointStatesCb calculations.
+    Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+    // Take the last entry in the moving average window.
+    // NOTE: This is not ideal behavior, and instead lines up with previous
+    //       behavior where only one /joint_states message out of every 100 was
+    //       processed. Unless publishing 100 raw values at once is preferred,
+    //       this is the better option until asynchronous GSAP prognosers are
+    //       implemented (see OW-994 for the pack model).
+    auto power_watts = m_power_values[m_power_values.size() - 1];
+    mechanical_power_raw_msg.data = power_watts;
+    // Get the average of all mechanical power values since last loop.
+    auto mean_mechanical_power =
+      accumulate(begin(m_power_values), end(m_power_values), 0.0)
+                 / m_power_values.size();
+    mechanical_power_avg_msg.data = mean_mechanical_power;
+    m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+    m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+
 
     if (m_trigger_processing_new_power_batch)
     {

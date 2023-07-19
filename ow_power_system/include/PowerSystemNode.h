@@ -61,7 +61,7 @@ private:
   ros::Publisher m_battery_temperature_pub;           // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;                 // Mechanical Power Subscriber
 
-  int m_moving_average_window = 25;
+  int m_moving_average_window = 100;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
