@@ -1,4 +1,4 @@
- // The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
@@ -6,6 +6,8 @@
 #define MATERIAL_DISTRIBUTION_PLUGIN_H
 
 #include <memory>
+
+#include <ros/ros.h>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/common/common.hh>
@@ -18,15 +20,20 @@ namespace ow_materials
 
 class MaterialDistributionPlugin : public gazebo::ModelPlugin
 {
-  public:
+public:
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
-  private:
-  gazebo::physics::ModelPtr m_model;
+private:
+
+  // gazebo::physics::ModelPtr m_model;
+
+  std::shared_ptr<ros::NodeHandle> m_node_handle;
 
   std::unique_ptr<MaterialDatabase> m_material_db;
-
   std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
+
+  // std::unique_ptr<MaterialIntegrator> m_visual_integrator;
+  // std::unique_ptr<MaterialIntegrator> m_collision_integrator;
 
 };
 

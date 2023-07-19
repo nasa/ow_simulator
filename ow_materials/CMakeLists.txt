@@ -12,6 +12,7 @@ endif()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  ow_dynamic_terrain
 )
 
 include(FindPkgConfig)
@@ -69,6 +70,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    CATKIN_DEPENDS
+   ow_dynamic_terrain
 )
 
 ###########

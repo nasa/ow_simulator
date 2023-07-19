@@ -9,7 +9,7 @@
 
 #include <populate_materials.h>
 
-using std::string, std::make_unique, std::endl;
+using std::string, std::make_unique, std::make_shared, std::endl;
 using ignition::math::Vector3d;
 
 using namespace ow_materials;
@@ -19,6 +19,8 @@ const string PLUGIN_NAME = "MaterialDistributionPlugin";
 
 const string NAMESPACE_MATERIALS = "/ow_materials";
 
+const string NODE_NAMES = "/ow_materials/material_distribution_plugin";
+
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
@@ -26,7 +28,7 @@ const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
-  m_model = model;
+  m_node_handle = make_shared<ros::NodeHandle>(NODE_NAMES);
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
@@ -61,7 +63,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                                           << center.Z() << ") "
         << "with dimensions " << diagonal.X() << " x "
                               << diagonal.Y() << " x "
-                              << diagonal.Z() << " meters. " << endl;
+                              << diagonal.Z() << " meters.\n";
 
   m_material_db = make_unique<MaterialDatabase>();
   // populate materials database
@@ -72,7 +74,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
-        << m_material_db->size() << " materials." << endl;
+        << m_material_db->size() << " materials.\n";
 
   gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
 
