@@ -198,7 +198,7 @@ bool PowerSystemNode::initTopics()
   m_battery_remaining_useful_life_pub = m_nh.advertise<owl_msgs::BatteryRemainingUsefulLife>("/battery_remaining_useful_life", 1);
   m_battery_temperature_pub = m_nh.advertise<owl_msgs::BatteryTemperature>("/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
-  m_joint_states_sub = m_nh.subscribe("/joint_states", 100, &PowerSystemNode::jointStatesCb, this);
+  m_joint_states_sub = m_nh.subscribe("/joint_states", 1, &PowerSystemNode::jointStatesCb, this);
   return true;
 }
 
@@ -208,16 +208,35 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
+  // Add the current power_watts value to the moving average window, overwriting
+  // the oldest entry. Calculate the average mechanical power within the window.
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;   // [W]
   auto mean_mechanical_power =
       accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
 
+  // Set the current unprocessed value to the current average.
+  // It's not accumulating, just storing the most recent average.
   m_unprocessed_mechanical_power = mean_mechanical_power;
 
+  // Publish mechanical raw & average power from jointStatesCb calculations.
+  Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
+  mechanical_power_raw_msg.data = power_watts;
+  mechanical_power_avg_msg.data = mean_mechanical_power;
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+
+  // If the prognoser is ready for a new batch of data, signal the average
+  // mechanical power to be sent in. Otherwise (if the prognoser is currently
+  // processing), discard the current average from this callback.
+  // NOTE: This behavior is not ideal, but since only one batch of data can be
+  //       sent into GSAP's simple prognoser per 0.5Hz prediction, message data
+  //       has to be discarded. Once the pack model with its asynchronous
+  //       prognosers is implemented, all data can be sent in regardless of the
+  //       prediction speed of GSAP.
   if (!m_processing_power_batch)
   {
     m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
-    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
+    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator(?)
     m_trigger_processing_new_power_batch = true;
   }
 }
@@ -508,32 +527,17 @@ void PowerSystemNode::Run()
 {
   ROS_INFO("Power system node running.");
 
+  // Start the asynchronous spinner, which will call jointStatesCb as the
+  // joint_states topic is published (50Hz).
+  ros::AsyncSpinner spinner(4);
+  spinner.start();
+
   // For simplicity, we run the power node at the same rate as GSAP.
   ros::Rate rate(m_gsap_rate_hz);
 
   while (ros::ok())
   {
-    // Run all callbacks in queue (in particular, 100 jointStatesCb msgs)
-    ros::spinOnce();
-    // Publish mechanical raw & average power from jointStatesCb calculations.
-    Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
-    // Take the last entry in the moving average window.
-    // NOTE: This is not ideal behavior, and instead lines up with previous
-    //       behavior where only one /joint_states message out of every 100 was
-    //       processed. Unless publishing 100 raw values at once is preferred,
-    //       this is the better option until asynchronous GSAP prognosers are
-    //       implemented (see OW-994 for the pack model).
-    auto power_watts = m_power_values[m_power_values.size() - 1];
-    mechanical_power_raw_msg.data = power_watts;
-    // Get the average of all mechanical power values since last loop.
-    auto mean_mechanical_power =
-      accumulate(begin(m_power_values), end(m_power_values), 0.0)
-                 / m_power_values.size();
-    mechanical_power_avg_msg.data = mean_mechanical_power;
-    m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
-    m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
-
-
+    // If there is a new mechanical power average ready to send to GSAP, do so.
     if (m_trigger_processing_new_power_batch)
     {
       m_trigger_processing_new_power_batch = false;
