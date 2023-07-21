@@ -211,7 +211,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 
   // Add the current power_watts value to the moving average window, overwriting
   // the oldest entry. Calculate the average mechanical power within the window.
-  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;   // [W]
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;
   auto mean_mechanical_power =
       accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
 
@@ -549,7 +549,7 @@ void PowerSystemNode::Run()
 
     rate.sleep();
   }
-  
+
   spinner.stop();
 }
 
