@@ -103,6 +103,11 @@ private:
   // Release 9.  This initial value is overriden by the system config.
   int m_profile_increment = 2;
 
+  // Number of threads to use for the asynchronous ROS spinning in the main
+  // loop (to allow jointStatesCb to run at 50Hz separate from the 0.5Hz main
+  // loop).
+  int m_spinner_threads = 4;
+
   // End main system configuration.
 
   // Utilize a Mersenne Twister pseudo-random generation.

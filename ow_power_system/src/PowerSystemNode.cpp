@@ -74,6 +74,7 @@ bool PowerSystemNode::loadSystemConfig()
   m_gsap_rate_hz = system_config.getDouble("gsap_rate");
   m_profile_increment = system_config.getInt32("profile_increment");
   m_moving_average_window = system_config.getInt32("power_average_size");
+  m_spinner_threads = system_config.getInt32("spinner_threads");
   return true;
 }
 
@@ -529,7 +530,7 @@ void PowerSystemNode::Run()
 
   // Start the asynchronous spinner, which will call jointStatesCb as the
   // joint_states topic is published (50Hz).
-  ros::AsyncSpinner spinner(4);
+  ros::AsyncSpinner spinner(m_spinner_threads);
   spinner.start();
 
   // For simplicity, we run the power node at the same rate as GSAP.
@@ -548,6 +549,8 @@ void PowerSystemNode::Run()
 
     rate.sleep();
   }
+  
+  spinner.stop();
 }
 
 int main(int argc, char* argv[])
