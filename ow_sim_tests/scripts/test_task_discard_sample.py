@@ -112,6 +112,18 @@ class TestTaskDiscardSample(unittest.TestCase):
       TEST_NAME, "test_07_task_discard_sample"
     )
 
+  def test_08_task_discard_sample(self):
+    task_discard_sample_result = test_arm_action(self,
+      'TaskDiscardSample', owl_msgs.msg.TaskDiscardSampleAction,
+      owl_msgs.msg.TaskDiscardSampleGoal(
+        frame = 0,
+        relative = False,
+        point = Point(1.5, 0.8, constants.DEFAULT_GROUND_HEIGHT),
+        height = 0.7
+      ),
+      TEST_NAME, "test_08_task_discard_sample"
+    )
+
 if __name__ == '__main__':
   import rostest
   rostest.rosrun(PKG, TEST_NAME, TestTaskDiscardSample)

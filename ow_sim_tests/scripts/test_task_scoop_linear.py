@@ -27,43 +27,43 @@ class TestTaskScoopLinear(unittest.TestCase):
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
-  def test_01_task_grind(self):
-    task_grind_result = test_arm_action(self,
-      'TaskGrind', owl_msgs.msg.TaskGrindAction,
-      owl_msgs.msg.TaskGrindGoal(
-        x_start = 1.65,
-        y_start = 0.0,
-        depth = 0.15,
-        length = 0.7,
-        parallel = True,
-        ground_position = constants.DEFAULT_GROUND_HEIGHT
-      ),
-      TEST_NAME, "test_01_task_grind",
-      server_timeout = 50.0 # (seconds) first action call needs longer timeout
-    )
-  
-  def test_02_task_scoop_linear(self):
+  def test_01_task_scoop_linear(self):
     task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
         frame = 0,
         relative = False,
-        point = Point(1.45, 0.0, constants.DEFAULT_GROUND_HEIGHT),
+        point = Point(1.1, 0.0, 0.1),
         depth = 0.01,
-        length = 0.15
+        length = 0.5
       ),
-      TEST_NAME, "test_02_task_scoop_linear"
+      TEST_NAME, "test_01_task_scoop_linear",
+      server_timeout = 50.0 # (seconds) first action call needs longer timeout
     )
 
+  def test_02_task_grind(self):
+    task_grind_result = test_arm_action(self,
+      'TaskGrind', owl_msgs.msg.TaskGrindAction,
+      owl_msgs.msg.TaskGrindGoal(
+        x_start = 1.6,
+        y_start = 0.0,
+        depth = 0.15,
+        length = 0.8,
+        parallel = True,
+        ground_position = constants.DEFAULT_GROUND_HEIGHT
+      ),
+      TEST_NAME, "test_02_task_grind",
+    )
+  
   def test_03_task_scoop_linear(self):
     task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
         frame = 0,
-        relative = True,
-        point = Point(-0.856, 0.095, -0.337),
-        depth = 0.02,
-        length = 0.05
+        relative = False,
+        point = Point(1.4, 0.0, constants.DEFAULT_GROUND_HEIGHT),
+        depth = 0.01,
+        length = 0.3
       ),
       TEST_NAME, "test_03_task_scoop_linear"
     )
@@ -72,16 +72,29 @@ class TestTaskScoopLinear(unittest.TestCase):
     task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
-        frame = 1,
+        frame = 0,
         relative = True,
-        point = Point(-0.8, 0.0, -0.4),
-        depth = 0.01,
-        length = 0.05
+        point = Point(-1.081, -0.01, -0.52),
+        depth = 0.02,
+        length = 0.2
       ),
       TEST_NAME, "test_04_task_scoop_linear"
     )
 
-  def test_05_task_grind(self):
+  def test_05_task_scoop_linear(self):
+    task_scoop_linear_result = test_arm_action(self,
+      'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
+      owl_msgs.msg.TaskScoopLinearGoal(
+        frame = 1,
+        relative = True,
+        point = Point(-0.9, -0.05, -0.5),
+        depth = 0.01,
+        length = 0.05
+      ),
+      TEST_NAME, "test_05_task_scoop_linear"
+    )
+
+  def test_06_task_grind(self):
     task_grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
       owl_msgs.msg.TaskGrindGoal(
@@ -92,10 +105,10 @@ class TestTaskScoopLinear(unittest.TestCase):
         parallel = True,
         ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
-      TEST_NAME, "test_05_task_grind"
+      TEST_NAME, "test_06_task_grind"
     )
 
-  def test_06_task_scoop_linear(self):
+  def test_07_task_scoop_linear(self):
     task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
@@ -105,10 +118,10 @@ class TestTaskScoopLinear(unittest.TestCase):
         depth = 0.01,
         length = 0.1
       ),
-      TEST_NAME, "test_06_task_scoop_linear"
+      TEST_NAME, "test_07_task_scoop_linear"
     )
 
-  def test_07_task_grind(self):
+  def test_08_task_grind(self):
     task_grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
       owl_msgs.msg.TaskGrindGoal(
@@ -119,10 +132,10 @@ class TestTaskScoopLinear(unittest.TestCase):
         parallel = True,
         ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
-      TEST_NAME, "test_07_task_grind"
+      TEST_NAME, "test_08_task_grind"
     )
 
-  def test_08_task_scoop_linear(self):
+  def test_09_task_scoop_linear(self):
     task_scoop_linear_result = test_arm_action(self,
       'TaskScoopLinear', owl_msgs.msg.TaskScoopLinearAction,
       owl_msgs.msg.TaskScoopLinearGoal(
@@ -132,7 +145,7 @@ class TestTaskScoopLinear(unittest.TestCase):
         depth = 0.01,
         length = 0.03
       ),
-      TEST_NAME, "test_08_task_scoop_linear"
+      TEST_NAME, "test_09_task_scoop_linear"
     )
 
 if __name__ == '__main__':

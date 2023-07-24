@@ -25,12 +25,14 @@ class TestCameraSetExposure(unittest.TestCase):
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
-  
+      # NOTE: additional sleep is required due to CameraCapture failing if called too early (see OW-1186)
+    rospy.sleep(10.0)
+    
   def test_01_camera_set_exposure(self):
     camera_set_exposure_result = test_action(self,
       'CameraSetExposure', owl_msgs.msg.CameraSetExposureAction,
       owl_msgs.msg.CameraSetExposureGoal(
-        automatic = True,
+        automatic = False,
         exposure = -1
       ),
       TEST_NAME, 'test_01_camera_set_exposure',
@@ -54,6 +56,7 @@ class TestCameraSetExposure(unittest.TestCase):
       owl_msgs.msg.CameraCaptureGoal(),
       TEST_NAME, 'test_03_camera_capture'
     )
+    rospy.sleep(3.0)
 
   def test_04_camera_set_exposure(self):
     camera_set_exposure_result = test_action(self,
@@ -71,6 +74,7 @@ class TestCameraSetExposure(unittest.TestCase):
       owl_msgs.msg.CameraCaptureGoal(),
       TEST_NAME, 'test_05_camera_capture'
     )
+    rospy.sleep(3.0)
 
   def test_06_camera_set_exposure(self):
     camera_set_exposure_result = test_action(self,
@@ -88,6 +92,7 @@ class TestCameraSetExposure(unittest.TestCase):
       owl_msgs.msg.CameraCaptureGoal(),
       TEST_NAME, 'test_07_camera_capture'
     )
+    rospy.sleep(3.0)
 
   def test_08_camera_set_exposure(self):
     camera_set_exposure_result = test_action(self,
@@ -105,6 +110,7 @@ class TestCameraSetExposure(unittest.TestCase):
       owl_msgs.msg.CameraCaptureGoal(),
       TEST_NAME, 'test_09_camera_capture'
     )
+    rospy.sleep(3.0)
 
   def test_10_camera_set_exposure(self):
     camera_set_exposure_result = test_action(self,
@@ -115,6 +121,14 @@ class TestCameraSetExposure(unittest.TestCase):
       ),
       TEST_NAME, 'test_10_camera_set_exposure'
     )
+
+  def test_11_camera_capture(self):
+    camera_capture_result = test_action(self,
+      'CameraCapture', owl_msgs.msg.CameraCaptureAction,
+      owl_msgs.msg.CameraCaptureGoal(),
+      TEST_NAME, 'test_11_camera_capture'
+    )
+    rospy.sleep(3.0)
 
 if __name__ == '__main__':
   import rostest

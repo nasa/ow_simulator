@@ -67,6 +67,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_04_light_set_intensity'
     )
+    rospy.sleep(3.0)
 
   def test_05_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -77,6 +78,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_05_light_set_intensity'
     )
+    rospy.sleep(3.0)
   
   def test_06_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -87,6 +89,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_06_light_set_intensity'
     )
+    rospy.sleep(3.0)
 
   def test_07_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -97,6 +100,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_07_light_set_intensity'
     )
+    rospy.sleep(3.0)
 
   def test_08_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -107,6 +111,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_08_light_set_intensity'
     )
+    rospy.sleep(3.0)
 
   def test_09_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -117,6 +122,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_09_light_set_intensity'
     )
+    rospy.sleep(3.0)
   
   def test_10_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -127,6 +133,7 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_10_light_set_intensity'
     )
+    rospy.sleep(3.0)
 
   def test_11_light_set_intensity(self):
     light_set_intensity_result = test_action(self,
@@ -137,6 +144,29 @@ class TestLightSetIntensity(unittest.TestCase):
       ),
       TEST_NAME, 'test_11_light_set_intensity'
     )
+    rospy.sleep(3.0)
+
+  def test_12_light_set_intensity(self):
+    light_set_intensity_result = test_action(self,
+      'LightSetIntensity', owl_msgs.msg.LightSetIntensityAction,
+      owl_msgs.msg.LightSetIntensityGoal(
+        name = 'left',
+        intensity = 0.0
+      ),
+      TEST_NAME, 'test_12_light_set_intensity'
+    )
+    rospy.sleep(3.0)
+
+  def test_13_light_set_intensity(self):
+    light_set_intensity_result = test_action(self,
+      'LightSetIntensity', owl_msgs.msg.LightSetIntensityAction,
+      owl_msgs.msg.LightSetIntensityGoal(
+        name = 'right',
+        intensity = 0.0
+      ),
+      TEST_NAME, 'test_13_light_set_intensity'
+    )
+    rospy.sleep(3.0)
     
 if __name__ == '__main__':
   import rostest
