@@ -166,7 +166,7 @@ private:
 
   // Vector w/ supporting variables that stores the moving average of the
   // past mechanical power values.
-  const int m_moving_average_window = 25;
+  int m_moving_average_window = 100;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 

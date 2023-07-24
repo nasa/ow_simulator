@@ -42,9 +42,6 @@ void PowerSystemNode::initAndRun()
       + "/config/system.cfg";
     auto system_config = ConfigMap(system_config_path);
 
-    // Set up the moving average vector.
-    m_power_values.resize(m_moving_average_window, 0.0);
-
     // DEBUG CUSTOMIZATION
     // See explanation of m_print_debug in the header file for why this
     // comparison is needed for what is essentially a bool.
@@ -64,6 +61,7 @@ void PowerSystemNode::initAndRun()
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_time_interval = system_config.getInt32("time_interval");
+    m_moving_average_window = system_config.getInt32("power_average_size");
     m_initial_power = system_config.getDouble("initial_power");
     m_initial_voltage = system_config.getDouble("initial_voltage");
     m_initial_temperature = system_config.getDouble("initial_temperature");
@@ -87,6 +85,9 @@ void PowerSystemNode::initAndRun()
                      << "Failed to initialize power models!");
     return;
   }
+
+  // Set up the moving average vector.
+  m_power_values.resize(m_moving_average_window, 0.0);
 
   initTopics();
 
@@ -533,7 +534,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;   // [W]
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;
   double mean_mechanical_power = accumulate(
       begin(m_power_values), end(m_power_values), 0.0)
       / m_power_values.size();
@@ -800,9 +801,8 @@ void PowerSystemNode::printPrognoserOutputs(double rul,
 void PowerSystemNode::printMechanicalPower(double raw, double mean)
 {
   ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(raw));
-  ROS_INFO_STREAM("Applied power (with moving average): " << std::to_string(mean));
-  ROS_INFO_STREAM("Result: " << std::to_string(mean / NUM_MODELS)
-                  << " power distributed to each model.");
+  ROS_INFO_STREAM("Average of last " << std::to_string(m_moving_average_window)
+                  << " values: " << std::to_string(mean));
 }
 
 /*
