@@ -69,14 +69,17 @@ bool PrognoserInputHandler::loadSystemConfig()
   return true;
 }
 
-void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
+void PrognoserInputHandler::applyMechanicalPower(double mechanical_power,
+                                                 bool process_lock)
 {
-  m_unprocessed_mechanical_power += mechanical_power;
+  // Set the current unprocessed mechanical power to the most recent value
+  // from jointStatesCb.
+  m_unprocessed_mechanical_power = mechanical_power;
 
-  if (!m_processing_power_batch)
+  if ((!process_lock) && (!m_processing_power_batch))
   {
     m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
-    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
+    m_unprocessed_mechanical_power = 0.0;
     m_trigger_processing_new_power_batch = true;
   }
 }
@@ -140,7 +143,7 @@ void PrognoserInputHandler::applyValueMods(double& power,
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemNode each cycle.
  */
-bool PrognoserInputHandler::runPrognoser(double electrical_power)
+bool PrognoserInputHandler::cyclePrognoserInputs(double electrical_power)
 {
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
@@ -168,7 +171,7 @@ bool PrognoserInputHandler::runOnce()
   {
     m_trigger_processing_new_power_batch = false;
     m_processing_power_batch = true;
-    draw_warning = runPrognoser(m_mechanical_power_to_be_processed / m_efficiency);
+    draw_warning = cyclePrognoserInputs(m_mechanical_power_to_be_processed / m_efficiency);
     m_processing_power_batch = false;
   }
   // Returns false if no warning should be displayed, true otherwise.

@@ -127,6 +127,15 @@ private:
   // testing for confirmation).
   int m_num_samples;
 
+  // Number of threads to use for the asynchronous ROS spinning in the main
+  // loop (to allow jointStatesCb to run at 50Hz separate from the 0.5Hz main
+  // loop).
+  int m_spinner_threads = 4;
+
+  // Signifies if the main power loop is in the process of sending data
+  // to GSAP prognosers.
+  bool m_processing_power_batch = false;
+
   // GSAP's cycle time.
   double m_gsap_rate_hz;
 

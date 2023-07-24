@@ -70,6 +70,7 @@ void PowerSystemNode::initAndRun()
     m_initial_soc = system_config.getDouble("initial_soc");
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_gsap_rate_hz = system_config.getDouble("gsap_rate");
+    m_spinner_threads = system_config.getInt32("spinner_threads");
   }
   catch(const std::exception& err)
   {
@@ -158,14 +159,17 @@ void PowerSystemNode::initAndRun()
   //       time.
   ros::Rate rate(m_gsap_rate_hz);
 
+  // Start the asynchronous spinner, which will call jointStatesCb as the
+  // joint_states topic is published (50Hz).
+  ros::AsyncSpinner spinner(m_spinner_threads);
+  spinner.start();
+
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
   int start_loops = NUM_MODELS;
   while(ros::ok())
   {
-    ros::spinOnce();
-
     // Set up value modifiers in each model handler for injection later.
     injectFaults();
 
@@ -177,6 +181,11 @@ void PowerSystemNode::initAndRun()
 
     bool draw_warning_displayed = false;
 
+    // Cycle the inputs in each model and send the data sets to the
+    // corresponding prognoser via its message bus. The power system is
+    // locked during this, preventing callback functions from altering
+    // related variables mid-loop.
+    m_processing_power_batch = true;
     for (int i = 0; i < NUM_MODELS; i++)
     {
       // Cycle the inputs in each model.
@@ -244,6 +253,8 @@ void PowerSystemNode::initAndRun()
         m_power_models[i].previous_time = m_power_models[i].input_info.timestamp;
       }
     }
+    // Unlock the power system.
+    m_processing_power_batch = false;
 
     // Check if the prediction handlers have EoD predictions ready,
     // and update EoD_events if so.
@@ -545,7 +556,8 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < NUM_MODELS; i++)
   {
     m_power_models[i].model.applyMechanicalPower(
-                                          mean_mechanical_power / NUM_MODELS);
+                                          (mean_mechanical_power / NUM_MODELS),
+                                          m_processing_power_batch);
   }
 }
 
