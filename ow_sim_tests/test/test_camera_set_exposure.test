@@ -9,8 +9,8 @@
         <arg name="use_rviz" value="false"/>
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
-    
-    <test test-name="test_camera_capture" pkg="ow_sim_tests"
-        type="test_camera_capture.py" time-limit="700.0"/>
+
+    <test test-name="test_camera_set_exposure" pkg="ow_sim_tests"
+        type="test_camera_set_exposure.py" time-limit="700.0"/>
     
 </launch>
