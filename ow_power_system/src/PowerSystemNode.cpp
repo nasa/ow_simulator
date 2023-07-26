@@ -42,9 +42,6 @@ void PowerSystemNode::initAndRun()
       + "/config/system.cfg";
     auto system_config = ConfigMap(system_config_path);
 
-    // Set up the moving average vector.
-    m_power_values.resize(m_moving_average_window, 0.0);
-
     // DEBUG CUSTOMIZATION
     // See explanation of m_print_debug in the header file for why this
     // comparison is needed for what is essentially a bool.
@@ -64,12 +61,14 @@ void PowerSystemNode::initAndRun()
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_time_interval = system_config.getInt32("time_interval");
+    m_moving_average_window = system_config.getInt32("power_average_size");
     m_initial_power = system_config.getDouble("initial_power");
     m_initial_voltage = system_config.getDouble("initial_voltage");
     m_initial_temperature = system_config.getDouble("initial_temperature");
     m_initial_soc = system_config.getDouble("initial_soc");
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_gsap_rate_hz = system_config.getDouble("gsap_rate");
+    m_spinner_threads = system_config.getInt32("spinner_threads");
   }
   catch(const std::exception& err)
   {
@@ -86,6 +85,9 @@ void PowerSystemNode::initAndRun()
                      << "Failed to initialize power models!");
     return;
   }
+
+  // Set up the moving average vector.
+  m_power_values.resize(m_moving_average_window, 0.0);
 
   initTopics();
 
@@ -158,14 +160,17 @@ void PowerSystemNode::initAndRun()
   //       time.
   ros::Rate rate(m_gsap_rate_hz);
 
+  // Start the asynchronous spinner, which will call jointStatesCb as the
+  // joint_states topic is published (50Hz).
+  ros::AsyncSpinner spinner(m_spinner_threads);
+  spinner.start();
+
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
   // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
   int start_loops = NUM_MODELS;
   while(ros::ok())
   {
-    ros::spinOnce();
-
     // Set up value modifiers in each model handler for injection later.
     injectFaults();
 
@@ -177,6 +182,11 @@ void PowerSystemNode::initAndRun()
 
     bool draw_warning_displayed = false;
 
+    // Cycle the inputs in each model and send the data sets to the
+    // corresponding prognoser via its message bus. The power system is
+    // locked during this, preventing callback functions from altering
+    // related variables mid-loop.
+    m_processing_power_batch = true;
     for (int i = 0; i < NUM_MODELS; i++)
     {
       // Cycle the inputs in each model.
@@ -244,6 +254,8 @@ void PowerSystemNode::initAndRun()
         m_power_models[i].previous_time = m_power_models[i].input_info.timestamp;
       }
     }
+    // Unlock the power system.
+    m_processing_power_batch = false;
 
     // Check if the prediction handlers have EoD predictions ready,
     // and update EoD_events if so.
@@ -522,7 +534,7 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;   // [W]
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;
   double mean_mechanical_power = accumulate(
       begin(m_power_values), end(m_power_values), 0.0)
       / m_power_values.size();
@@ -545,7 +557,8 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < NUM_MODELS; i++)
   {
     m_power_models[i].model.applyMechanicalPower(
-                                          mean_mechanical_power / NUM_MODELS);
+                                          (mean_mechanical_power / NUM_MODELS),
+                                          m_processing_power_batch);
   }
 }
 
@@ -788,9 +801,8 @@ void PowerSystemNode::printPrognoserOutputs(double rul,
 void PowerSystemNode::printMechanicalPower(double raw, double mean)
 {
   ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(raw));
-  ROS_INFO_STREAM("Applied power (with moving average): " << std::to_string(mean));
-  ROS_INFO_STREAM("Result: " << std::to_string(mean / NUM_MODELS)
-                  << " power distributed to each model.");
+  ROS_INFO_STREAM("Average of last " << std::to_string(m_moving_average_window)
+                  << " values: " << std::to_string(mean));
 }
 
 /*

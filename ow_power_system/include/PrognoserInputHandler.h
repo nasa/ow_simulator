@@ -40,7 +40,7 @@ public:
   bool initialize();
   bool runOnce();
   void getPowerStats(InputInfo &inputs);
-  void applyMechanicalPower(double mechanical_power);
+  void applyMechanicalPower(double mechanical_power, bool process_lock);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
   void setCustomVoltageFault(double volts);
@@ -51,7 +51,7 @@ private:
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
 
-  bool runPrognoser(double electrical_power);
+  bool cyclePrognoserInputs(double electrical_power);
 
   std::chrono::time_point<std::chrono::system_clock> m_init_time;
 
