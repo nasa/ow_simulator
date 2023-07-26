@@ -243,7 +243,6 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Poin
     return false;
   }
 
-  int heightmap_size = static_cast<int>(terrain->getSize());
   int left = center.x - image.cols / 2;
   int top = center.y - image.rows / 2;
   int right = left + image.cols - 1;
