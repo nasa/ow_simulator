@@ -257,7 +257,9 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Poin
     {
       // Using bottom - y instead of y - top because cv::Mat has a different
       // layout than Ogre Heightmaps.
-      auto pixel_value = image.at<float>(bottom - y, x - left);
+      auto cv_index_y = bottom - y;
+      auto cv_index_x = x - left;
+      auto pixel_value = image.at<float>(cv_index_y, cv_index_x);
       if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
         continue;
 
@@ -268,7 +270,7 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Poin
         continue; // no change is necessary
 
       set_height_value(x, y, new_height);
-      diff.at<float>(y - top, x - left) = new_height - old_height;
+      diff.at<float>(cv_index_y, cv_index_x) = new_height - old_height;
       
       // if we make it here, flag that a change has occurred
       change_occurred = true;
