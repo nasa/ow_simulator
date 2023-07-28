@@ -8,6 +8,7 @@ import rospy
 import roslib
 import unittest
 import owl_msgs.msg
+import actionlib
 
 from action_testing import *
 
@@ -25,19 +26,16 @@ class TestArmStop(unittest.TestCase):
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
-    
+
+  # GoalStatus as ABORTED because arm_stop is not stop any action
   def test_01_arm_stop(self):
-
-    client_stop = actionlib.SimpleActionClient('ArmStop', owl_msgs.msg.ArmStopAction)
-
-    connected_stop = client_stop.wait_for_server(timeout = rospy.Duration(50))
-
-    client_stop.send_goal(owl_msgs.msg.ArmStopGoal())
-    client_stop.wait_for_result()
-
-    result = client_stop.get_result()
-
-    self.assertTrue(result, "No arm trajectory to stop")
+    arm_stop_result = test_arm_action(self,
+      'ArmStop', owl_msgs.msg.ArmStopAction,
+      owl_msgs.msg.ArmStopGoal(),
+      TEST_NAME, "test_01_arm_stop",
+      server_timeout = 50.0, # (seconds) first action call needs longer timeout,
+      expected_end_state = actionlib.GoalStatus.ABORTED
+    )
 
   def test_02_arm_unstow_and_stop(self):
 
@@ -55,7 +53,7 @@ class TestArmStop(unittest.TestCase):
 
     result = client_stop.get_result()
 
-    self.assertTrue(result, "Arm trajectory stopped")
+    self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
   def test_03_task_deliver_sample_and_stop(self):
 
@@ -73,7 +71,7 @@ class TestArmStop(unittest.TestCase):
 
     result = client_stop.get_result()
 
-    self.assertTrue(result, "Arm trajectory stopped")
+    self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
   def test_04_arm_stow_and_stop(self):
 
@@ -91,7 +89,7 @@ class TestArmStop(unittest.TestCase):
 
     result = client_stop.get_result()
 
-    self.assertTrue(result, "Arm trajectory stopped")
+    self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
 if __name__ == '__main__':
   import rostest
