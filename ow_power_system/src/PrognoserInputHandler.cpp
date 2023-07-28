@@ -39,6 +39,7 @@ bool PrognoserInputHandler::initialize()
  */
 bool PrognoserInputHandler::loadSystemConfig()
 {
+  double loop_rate;
   try
   {
     auto system_config_path = ros::package::getPath("ow_power_system")
@@ -54,7 +55,7 @@ bool PrognoserInputHandler::loadSystemConfig()
                                                           m_max_temperature);
     m_baseline_wattage = system_config.getDouble("baseline_power");
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
-    m_time_interval = system_config.getInt32("time_interval");
+    m_time_interval = 1 / (system_config.getDouble("loop_rate"));
   }
   catch(const std::exception& err)
   {

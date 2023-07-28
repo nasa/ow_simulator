@@ -35,9 +35,9 @@ using PrognoserVector = std::vector<PrognoserMap>;
 // NOTE: This is required as a compile-time constant, so it cannot be placed in
 //       a .cfg file. The simulation must be re-built if it is changed.
 // This is the number of parallel inputs and outputs that will be simulated at
-// once. The expected amount for the battery pack (when using single-cell
-// models) is 24.
-const int NUM_MODELS = 24;
+// once. The expected amount of cells in the battery pack is 24. The 6S1P model
+// simulates 6 cells at once, so only 4 models are needed.
+const int NUM_MODELS = 4;
 
 // Struct that groups the variables/classes used to handle PrognoserInputHandlers.
 struct PowerModel {
@@ -130,19 +130,14 @@ private:
   // Number of threads to use for the asynchronous ROS spinning in the main
   // loop (to allow jointStatesCb to run at 50Hz separate from the 0.5Hz main
   // loop).
-  int m_spinner_threads = 4;
+  int m_spinner_threads;
 
   // Signifies if the main power loop is in the process of sending data
   // to GSAP prognosers.
   bool m_processing_power_batch = false;
 
-  // GSAP's cycle time.
-  double m_gsap_rate_hz;
-
-  // The expected time interval between publications. It is essentially the
-  // rate at which the main loop executes. It is overridden by the value in
-  // system.cfg.
-  int m_time_interval;
+  // The cycle time of the main system loop.
+  double m_loop_rate_hz;
 
   // The initial power/temperature/voltage readings used as the start values for
   // the GSAP prognosers.
@@ -153,6 +148,17 @@ private:
   
   // End system.cfg variables.
 
+  // The rate at which /joint_states is expected to publish. If this is changed,
+  // this variable will need to change as well.
+  int m_joint_states_rate = 50;
+
+  // Vector w/ supporting variables that stores the moving average of the
+  // past mechanical power values.
+  int m_moving_average_window;
+
+  // The expected time interval between publications. It is essentially the
+  // inverse of the rate of the main loop.
+  double m_time_interval;
 
   // Flag determining if the battery has reached a fail state.
   bool m_battery_failed = false;
@@ -164,9 +170,6 @@ private:
   // The matrix used to store EoD events.
   EoDValues m_EoD_events[NUM_MODELS];
 
-  // Vector w/ supporting variables that stores the moving average of the
-  // past mechanical power values.
-  int m_moving_average_window = 100;
   std::vector<double> m_power_values;
   size_t m_power_values_index = 0;
 
@@ -174,6 +177,10 @@ private:
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
+
+  // Used for mechanical power debug printouts.
+  double m_power_watts;
+  double m_mean_mechanical_power;
 };
 
 #endif

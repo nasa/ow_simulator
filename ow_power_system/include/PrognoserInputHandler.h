@@ -73,14 +73,11 @@ private:
   // against this, but is a temporary hack until a circuit breaker
   // model is added to the power system, and/or the multi-cell battery
   // model is implemented and can handle any envisioned power draw.
-  // This initial value is overriden by the system config.
-  //
-  double m_max_gsap_input_watts = 20;
+  double m_max_gsap_input_watts;
 
   // The expected time interval between publications. It is essentially the
-  // rate at which the main loop executes. It is overridden by the value in
-  // system.cfg.
-  int m_time_interval = 2;
+  // inverse of the rate at which the main loop executes.
+  double m_time_interval;
 
   // The three main statistics relating to battery model health:
   // Power, Voltage, & Temperature.

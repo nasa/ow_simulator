@@ -60,14 +60,12 @@ void PowerSystemNode::initAndRun()
 
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
-    m_time_interval = system_config.getInt32("time_interval");
-    m_moving_average_window = system_config.getInt32("power_average_size");
     m_initial_power = system_config.getDouble("initial_power");
     m_initial_voltage = system_config.getDouble("initial_voltage");
     m_initial_temperature = system_config.getDouble("initial_temperature");
     m_initial_soc = system_config.getDouble("initial_soc");
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
-    m_gsap_rate_hz = system_config.getDouble("gsap_rate");
+    m_loop_rate_hz = system_config.getDouble("loop_rate");
     m_spinner_threads = system_config.getInt32("spinner_threads");
   }
   catch(const std::exception& err)
@@ -85,6 +83,10 @@ void PowerSystemNode::initAndRun()
                      << "Failed to initialize power models!");
     return;
   }
+
+  // Set up the time interval & moving average size.
+  m_time_interval = 1 / m_loop_rate_hz;
+  m_moving_average_window = floor(m_joint_states_rate / m_loop_rate_hz);
 
   // Set up the moving average vector.
   m_power_values.resize(m_moving_average_window, 0.0);
@@ -112,10 +114,11 @@ void PowerSystemNode::initAndRun()
 
   std::vector<PCOE::AsyncPrognoser> prognosers;
 
-  // Get the asynchronous prognoser configuration and create a builder with it.
+  // Get the prognoser configuration and create a builder with it.
   try
   {
-    std::string config_path = ros::package::getPath("ow_power_system") + "/config/async_prognoser.cfg";
+    std::string config_path = ros::package::getPath("ow_power_system")
+                            + "/config/prognoser.cfg";
 
     ConfigMap config(config_path);
 
@@ -128,8 +131,6 @@ void PowerSystemNode::initAndRun()
     // (so the most recent prediction value is used for the estimation step), but
     // may benefit from being increased in the future.
     builder.setLoadEstimatorName("MovingAverage");
-    // To modify the number of samples & horizon (and thus change performance), see the
-    // constant declared in PowerSystemNode.h.
     builder.setConfigParam("Predictor.SampleCount", std::to_string(m_num_samples));
     builder.setConfigParam("Predictor.Horizon", std::to_string(m_max_horizon_secs));
 
@@ -158,7 +159,7 @@ void PowerSystemNode::initAndRun()
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
   //       necessarily occur, but the simulation will be out of sync with real
   //       time.
-  ros::Rate rate(m_gsap_rate_hz);
+  ros::Rate rate(m_loop_rate_hz);
 
   // Start the asynchronous spinner, which will call jointStatesCb as the
   // joint_states topic is published (50Hz).
@@ -254,6 +255,13 @@ void PowerSystemNode::initAndRun()
         m_power_models[i].previous_time = m_power_models[i].input_info.timestamp;
       }
     }
+
+    // DEBUG PRINT
+    if (m_mech_power_print_debug)
+    {
+      printMechanicalPower(m_power_watts, m_mean_mechanical_power);
+    }
+
     // Unlock the power system.
     m_processing_power_batch = false;
 
@@ -530,34 +538,28 @@ void PowerSystemNode::injectFaults()
  */
 void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
 {
-  double power_watts = 0.0;  // This includes the arm + antenna
+  m_power_watts = 0.0;  // This includes the arm + antenna
   for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
-    power_watts += fabs(msg->velocity[i] * msg->effort[i]);
+    m_power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;
-  double mean_mechanical_power = accumulate(
+  m_power_values[m_power_values_index++ % m_power_values.size()] = m_power_watts;
+  m_mean_mechanical_power = accumulate(
       begin(m_power_values), end(m_power_values), 0.0)
       / m_power_values.size();
 
   // Publish the total raw & average mechanical power.
   std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
-  mechanical_power_raw_msg.data = power_watts;
-  mechanical_power_avg_msg.data = mean_mechanical_power;
+  mechanical_power_raw_msg.data = m_power_watts;
+  mechanical_power_avg_msg.data = m_mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
-
-  // DEBUG PRINT
-  if (m_mech_power_print_debug)
-  {
-    printMechanicalPower(power_watts, mean_mechanical_power);
-  }
 
   // Send in mechanical power to each model, distributed evenly, to be converted
   // into power draw.
   for (int i = 0; i < NUM_MODELS; i++)
   {
     m_power_models[i].model.applyMechanicalPower(
-                                          (mean_mechanical_power / NUM_MODELS),
+                                          (m_mean_mechanical_power / NUM_MODELS),
                                           m_processing_power_batch);
   }
 }
@@ -796,13 +798,13 @@ void PowerSystemNode::printPrognoserOutputs(double rul,
 
 /*
  * Prints the mechanical power calculated during jointStatesCb each cycle.
- * Output: 3 lines per cycle.
+ * Output: 2 lines per cycle.
  */
 void PowerSystemNode::printMechanicalPower(double raw, double mean)
 {
-  ROS_INFO_STREAM("Raw mechanical power: " << std::to_string(raw));
+  ROS_INFO_STREAM("Most recent raw mechanical power: " << std::to_string(raw));
   ROS_INFO_STREAM("Average of last " << std::to_string(m_moving_average_window)
-                  << " values: " << std::to_string(mean));
+                  << " raw values: " << std::to_string(mean));
 }
 
 /*
