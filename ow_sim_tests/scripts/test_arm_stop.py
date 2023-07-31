@@ -51,8 +51,6 @@ class TestArmStop(unittest.TestCase):
     client_stop.send_goal(owl_msgs.msg.ArmStopGoal())
     client_stop.wait_for_result()
 
-    result = client_stop.get_result()
-
     self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
   def test_03_task_deliver_sample_and_stop(self):
@@ -69,8 +67,6 @@ class TestArmStop(unittest.TestCase):
     client_stop.send_goal(owl_msgs.msg.ArmStopGoal())
     client_stop.wait_for_result()
 
-    result = client_stop.get_result()
-
     self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
   def test_04_arm_stow_and_stop(self):
@@ -86,8 +82,6 @@ class TestArmStop(unittest.TestCase):
 
     client_stop.send_goal(owl_msgs.msg.ArmStopGoal())
     client_stop.wait_for_result()
-
-    result = client_stop.get_result()
 
     self.assertEqual(client_stop.get_goal_status_text(), "Arm trajectory stopped")
 
