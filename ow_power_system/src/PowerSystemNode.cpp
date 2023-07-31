@@ -304,6 +304,8 @@ void PowerSystemNode::initAndRun()
     // time.
     rate.sleep();
   }
+
+  spinner.stop();
 }
 
 /* 

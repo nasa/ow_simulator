@@ -1,5 +1,6 @@
 import rospy
 import time
+import moveit_commander
 from moveit_msgs.srv import GetPositionFK
 from moveit_msgs.msg import RobotTrajectory, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -111,7 +112,11 @@ class TrajectorySequence:
     if len(joint_positions) != self._joints_count:
       raise ArmPlanningError("Incorrect number of joints for arm move group")
     self._group.set_start_state(self._most_recent_state)
-    self._group.set_joint_value_target(joint_positions)
+    try:
+      self._group.set_joint_value_target(joint_positions)
+    except moveit_commander.exception.MoveItCommanderException as err:
+      raise ArmPlanningError(
+        f"MoveIt planning failed with the following exception: {err}")
     self._plan()
 
   def plan_to_joint_translations(self, joint_translations):
