@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 
+#include <gazebo/common/Assert.hh>
+
 #include <ignition/math/AxisAlignedBox.hh>
 
 namespace ow_materials {
@@ -25,7 +27,7 @@ class AxisAlignedGrid {
 public:
   AxisAlignedGrid(double x0, double y0, double z0,
                   double x1, double y1, double z1,
-                  double side_length, T initial_value);
+                  double cell_side_length, T initial_value);
   ~AxisAlignedGrid() = default;
 
   AxisAlignedGrid() = delete;
@@ -37,19 +39,26 @@ public:
   const ignition::math::Vector3d &getMinCorner() const;
   const ignition::math::Vector3d &getCenter() const;
 
-  inline T &getCellValue(size_t i, size_t j, size_t k) {
-    return m_cells[index(i, j, k)];
-  };
+  const T &getCellValueAtPoint(double x, double y, double z) const;
 
-  inline T const &getCellValue(size_t i, size_t j, size_t k) const {
-    return m_cells[index(i, j, k)];
-  };
+  inline bool containsPoint(double x, double y, double z) const {
+    return m_domain->Contains(ignition::math::Vector3d(x, y, z));
+  }
 
 private:
 
+  inline const T &getCellValue(size_t i, size_t j, size_t k) const {
+    return m_cells[index(i, j, k)];
+  };
+
   inline size_t index(size_t i, size_t j, size_t k) const {
+    GZ_ASSERT(i < m_dimensions.X(), "x is out of bounds");
+    GZ_ASSERT(j < m_dimensions.Y(), "y is out of bounds");
+    GZ_ASSERT(k < m_dimensions.Z(), "z is out of bounds");
     return i + j * m_dimensions.X() + k * m_dimensions.X() * m_dimensions.Y();
   };
+
+  double m_cell_length;
 
   std::unique_ptr<ignition::math::AxisAlignedBox> m_domain;
 

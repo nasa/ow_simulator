@@ -14,6 +14,7 @@
 
 #include <AxisAlignedGrid.h>
 #include <MaterialDatabase.h>
+#include <MaterialIntegrator.h>
 
 namespace ow_materials
 {
@@ -23,17 +24,21 @@ class MaterialDistributionPlugin : public gazebo::ModelPlugin
 public:
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
+  void handleVisualBulk(MaterialBlend const &blend);
+
+  void handleCollisionBulk(MaterialBlend const &blend);
+
 private:
 
   // gazebo::physics::ModelPtr m_model;
 
-  std::shared_ptr<ros::NodeHandle> m_node_handle;
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
 
   std::unique_ptr<MaterialDatabase> m_material_db;
   std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
 
-  // std::unique_ptr<MaterialIntegrator> m_visual_integrator;
-  // std::unique_ptr<MaterialIntegrator> m_collision_integrator;
+  std::unique_ptr<MaterialIntegrator> m_visual_integrator;
+  std::unique_ptr<MaterialIntegrator> m_collision_integrator;
 
 };
 

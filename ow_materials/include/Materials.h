@@ -2,8 +2,8 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef MATERIALS_H
+#define MATERIALS_H
 
 #include <limits>
 #include <unordered_map>
@@ -48,9 +48,24 @@ struct Material
 //   3. Encapsulation of blend map
 //   4. Blend maintenance functions like `normalize`
 struct MaterialBlend {
-  std::unordered_map<MaterialID, float> m_blend;
+  MaterialBlend() = default;
+
+  using BlendType = std::unordered_map<MaterialID, float>;
+
+  BlendType m_blend;
+
+  void merge(MaterialBlend const &other);
+
+  void normalize();
+
+  void divideElementWise(float denominator);
+
+  bool isNormalized();
+
+private:
+  float sumConcentrations();
 };
 
 }
 
-#endif // MATERIAL_H
+#endif // MATERIALS_H

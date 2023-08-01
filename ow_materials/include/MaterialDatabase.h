@@ -9,7 +9,7 @@
 #include <ostream>
 #include <unordered_map>
 
-#include <Material.h>
+#include <Materials.h>
 
 namespace ow_materials
 {

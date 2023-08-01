@@ -13,6 +13,11 @@ endif()
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   ow_dynamic_terrain
+  cv_bridge
+)
+
+find_package(OpenCV REQUIRED
+  core
 )
 
 include(FindPkgConfig)
@@ -26,11 +31,13 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
+  ${OpenCV_LIBRARY_DIRS}
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
@@ -98,7 +105,9 @@ add_library(MaterialDistributionPlugin
   SHARED
   src/MaterialDistributionPlugin.cpp
   src/MaterialDatabase.cpp
+  src/Materials.cpp
   src/populate_materials.cpp
+  src/MaterialIntegrator.cpp
 )
 add_dependencies(MaterialDistributionPlugin
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 

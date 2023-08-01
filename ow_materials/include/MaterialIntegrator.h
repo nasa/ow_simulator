@@ -5,20 +5,27 @@
 #ifndef MATERIAL_INTEGRATOR_H
 #define MATERIAL_INTEGRATOR_H
 
-#include <memory>
+#include <functional>
 
 #include <ros/ros.h>
+
+#include <AxisAlignedGrid.h>
+#include <Materials.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
 
 namespace ow_materials
 {
 
+using HandleBulkCallback = std::function<void(MaterialBlend const &)>;
+
 class MaterialIntegrator
 {
 public:
-  MaterialIntegrator(std::shared_ptr<ros::NodeHandle> node_handle,
-                     const gazebo::physics::ModelPtr& model);
+  MaterialIntegrator(ros::NodeHandle *node_handle,
+                    const std::string &modification_topic,
+                    AxisAlignedGrid<MaterialBlend> const *grid,
+                    HandleBulkCallback handle_bulk_cb);
   ~MaterialIntegrator() = default;
 
   MaterialIntegrator() = delete;
@@ -26,17 +33,18 @@ public:
   MaterialIntegrator& operator=(const MaterialIntegrator&) = delete;
 
 private:
-  std::shared_ptr<ros::NodeHandle> m_node_handle;
-  ros::Subscriber m_sub_visual_modification;
-  ros::Subscriber m_sub_collision_modification;
+  const HandleBulkCallback m_handle_bulk_cb;
 
-  gazebo::physics::ModelPtr m_model;
-  gazebo::physics::HeigtMapShapePtr m_terrain_shape;
+  ros::NodeHandle *m_node_handle;
+
+  AxisAlignedGrid<MaterialBlend> const *m_grid;
+
+  ros::Subscriber m_sub_modification_diff;
 
   void onModification(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
-}
+};
 
 }
 
