@@ -39,6 +39,8 @@ public:
   const ignition::math::Vector3d &getMinCorner() const;
   const ignition::math::Vector3d &getCenter() const;
 
+  inline double getCellLength() const { return m_cell_length; }
+
   const T &getCellValueAtPoint(double x, double y, double z) const;
 
   inline bool containsPoint(double x, double y, double z) const {

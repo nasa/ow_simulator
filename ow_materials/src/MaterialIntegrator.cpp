@@ -4,6 +4,9 @@
 
 #include <MaterialIntegrator.h>
 
+#include <cmath>
+#include <algorithm>
+
 #include <gazebo/gazebo.hh>
 
 #include <cv_bridge/cv_bridge.h>
@@ -48,6 +51,9 @@ void MaterialIntegrator::onModification(
 
   // float volume_displaced = 0.0;
 
+  // TODO: use a binding rectangle/box to early return if there is no overlap
+  //       between it and the axis-aligned box
+
   MaterialBlend bulk_blend;
   uint merges = 0;
 
@@ -58,28 +64,42 @@ void MaterialIntegrator::onModification(
   //   c) All voxels are of the same volume.
 
   // estimate the total volume displaced using a Riemann sum over the image
+  // FIXME: make float-double usage uniform
   for (auto y = 0; y < rows; ++y) {
     for (auto x = 0; x < cols; ++x) {
-      auto diff_px = diff_handle->image.at<float>(y, x);
-      if (diff_px < 0) {
-        const auto volume = diff_px * pixel_area;
+      // change in height at pixel (x, y)
+      auto dz = diff_handle->image.at<float>(y, x);
+      if (dz < 0.0) {
+        // const float zz = msg->position.z;
+        // const auto volume = diff_px * pixel_area;
         // compute location in grid
         const float xx = (msg->position.x - msg->width / 2)
                           + x / rows * msg->height;
         const float yy = (msg->position.y - msg->height / 2)
                           + y / cols * msg->width;
-        const float zz = msg->position.z;
-        // FIXME: implicit conversion to double parameters
-        if (m_grid->containsPoint(xx, yy, zz)) {
-          auto blend = m_grid->getCellValueAtPoint(xx, yy, zz);
-          bulk_blend.merge(blend);
-          ++merges;
+        // starting layer position; next loop will iterate up to the original z
+        auto z_result = result_handle->image.at<float>(y, x);
+        // implicit float truncation
+        // FIXME: float / double
+        // if dz is less than the cell side length, it is still counted as
+        // one full cell
+        const std::size_t layers = std::min(
+          std::size_t(1),
+          static_cast<std::size_t>(dz / m_grid->getCellLength())
+        );
+        for (std::size_t i = 0; i != layers; ++i) {
+          const auto zz = z_result + i * m_grid->getCellLength();
+          if (m_grid->containsPoint(xx, yy, zz)) {
+            const auto blend = m_grid->getCellValueAtPoint(xx, yy, zz);
+            bulk_blend.merge(blend);
+            ++merges;
+          }
         }
       }
     }
   }
 
-  // gzlog << "merges = " << merges << std::endl;
+  gzlog << "merges = " << merges << std::endl;
 
   if (merges == 0) {
     return;

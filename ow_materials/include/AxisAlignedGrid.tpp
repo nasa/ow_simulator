@@ -51,7 +51,7 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
-  const auto max_dimension = std::cbrt(
+  constexpr auto max_dimension = std::cbrt(
     static_cast<float>(std::numeric_limits<size_t>::max())
   );
   if (   m_dimensions.X() >= max_dimension
