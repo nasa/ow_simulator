@@ -12,8 +12,6 @@
 
 #include "PredictionHandler.h"
 
-using namespace PCOE;
-
 // The indices use to access temperature information.
 // This might change to median SOC or RUL index or fixed percentile.
 // (predecessor comment to Summer 2022, unsure exactly what it means)
@@ -50,7 +48,8 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   // The prediction handler only ever subscribes to the BatteryEoD message
   // id, which should always be a ProgEventMessage, so this should always
   // succeed.
-  auto prediction_msg = dynamic_cast<ProgEventMessage*>(message.get());
+  ProgEventMessage* prediction_msg = 
+                      dynamic_cast<ProgEventMessage*>(message.get());
   if (prediction_msg == nullptr)
   {
     ROS_ERROR("Failed to cast prediction message to expected type");
@@ -100,14 +99,16 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
   // would be much more ideal and more efficient.
 
   // Construct a simple prognoser to get the battery model.
-  auto prognoser_config_path = ros::package::getPath("ow_power_system") + "/config/prognoser.cfg";
+  auto prognoser_config_path = ros::package::getPath("ow_power_system")
+                             + "/config/prognoser.cfg";
   ConfigMap prognoser_config(prognoser_config_path);
   std::unique_ptr<PCOE::Prognoser> temp_prog =
     PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 
   auto& model = static_cast<ModelBasedPrognoser*>(temp_prog.get())->getModel();
 
-  auto model_output = model.outputEqn(now_s.count(), static_cast<PrognosticsModel::state_type>(temperature_state));
+  auto model_output = model.outputEqn(now_s.count(),
+                       static_cast<PrognosticsModel::state_type>(temperature_state));
 
   // Put the newly obtained data in the stored references.
   m_curr_EoD.remaining_useful_life = rul_median;

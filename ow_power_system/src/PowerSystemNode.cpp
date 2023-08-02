@@ -570,7 +570,8 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
  * Function called during custom fault injection that attempts to
  * load the specified file and its data.
  */
-PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename, std::string custom_file)
+PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
+                                                  std::string custom_file)
 {
   std::ifstream file(filename);
 
@@ -648,8 +649,9 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename, s
   catch(...) // Many possible different errors could result from reading an improperly formatted file.
   {
     ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << std::endl <<
-                     "Improper formatting detected on line " << line_number << "." << std::endl << 
-                     "Confirm " << custom_file << " follows the exact format of example_fault.csv before retrying.");
+                     "Improper formatting detected on line " << line_number << 
+                     "." << std::endl << "Confirm " << custom_file << 
+                     " follows the exact format of example_fault.csv before retrying.");
     return PrognoserVector();
   }
   return result;
