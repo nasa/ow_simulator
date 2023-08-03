@@ -16,6 +16,10 @@ PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_stop'
 roslib.load_manifest(PKG)
 
+# NOTE: Running this test at 3x real-time factor results in a slightly different
+# log outcome, but otherwise the test still succeeds. This should be fixed by
+# OW-1193
+
 class TestArmStop(unittest.TestCase):
 
   @classmethod
