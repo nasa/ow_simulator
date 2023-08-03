@@ -14,6 +14,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/mat.hpp>
 
+/// DEBUG
+#include <pcl_visualize.h>
+
 using namespace ow_materials;
 
 MaterialIntegrator::MaterialIntegrator(ros::NodeHandle *node_handle,
@@ -57,6 +60,9 @@ void MaterialIntegrator::onModification(
   MaterialBlend bulk_blend;
   uint merges = 0;
 
+  // DEBUG
+  std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> points;
+
   // The following code makes these assumptions:
   //   a) Each voxel the modification touches acquires the entirety of that
   //      voxel. In other words, volume intersections are not factored in.
@@ -65,45 +71,67 @@ void MaterialIntegrator::onModification(
 
   // estimate the total volume displaced using a Riemann sum over the image
   // FIXME: make float-double usage uniform
-  for (auto y = 0; y < rows; ++y) {
-    for (auto x = 0; x < cols; ++x) {
+  for (std::size_t i = 0; i != cols; ++i) {
+    for (std::size_t j = 0; j != rows; ++j) {
       // change in height at pixel (x, y)
-      auto dz = diff_handle->image.at<float>(y, x);
+      auto dz = diff_handle->image.at<float>(i, j);
       if (dz < 0.0) {
         // const float zz = msg->position.z;
         // const auto volume = diff_px * pixel_area;
         // compute location in grid
-        const float xx = (msg->position.x - msg->width / 2)
-                          + x / rows * msg->height;
-        const float yy = (msg->position.y - msg->height / 2)
-                          + y / cols * msg->width;
+        const float x = (msg->position.x - msg->width / 2)
+                          + static_cast<float>(i) / cols * msg->width;
+        // +j and +y are in opposite directions, so flip signs
+        const float y = (msg->position.y + msg->height / 2)
+                          - static_cast<float>(j) / rows * msg->height;
         // starting layer position; next loop will iterate up to the original z
-        auto z_result = result_handle->image.at<float>(y, x);
-        // implicit float truncation
+        auto z_result = result_handle->image.at<float>(i, j);
         // FIXME: float / double
         // if dz is less than the cell side length, it is still counted as
         // one full cell
-        const std::size_t layers = std::min(
+        const std::size_t layers = std::max(
           std::size_t(1),
-          static_cast<std::size_t>(dz / m_grid->getCellLength())
+          // implicit float truncation
+          static_cast<std::size_t>(-dz / m_grid->getCellLength())
         );
-        for (std::size_t i = 0; i != layers; ++i) {
-          const auto zz = z_result + i * m_grid->getCellLength();
-          if (m_grid->containsPoint(xx, yy, zz)) {
-            const auto blend = m_grid->getCellValueAtPoint(xx, yy, zz);
+        for (std::size_t k = 0; k != layers; ++k) {
+          const auto z = z_result + k * m_grid->getCellLength();
+          if (m_grid->containsPoint(x, y, z)) {
+            const auto blend = m_grid->getCellValueAtPoint(x, y, z);
             bulk_blend.merge(blend);
             ++merges;
+
+            // DEBUG
+            // WORKAROUND: for only atacama_y1a
+            // An offset is required to see the points in the correct position
+            // this may indicate a bug in the rviz configuration or tf
+            static float ATACAMA_Y1A_OFFSET_X = -1.0f;
+            static float ATACAMA_Y1A_OFFSET_Y = 0.0f;
+            static float ATACAMA_Y1A_OFFSET_Z = 0.37f;
+            points.push_back(pcl::PointXYZ(
+              x - ATACAMA_Y1A_OFFSET_X,
+              y - ATACAMA_Y1A_OFFSET_Y,
+              z - ATACAMA_Y1A_OFFSET_Z
+            ));
           }
         }
       }
     }
   }
 
+  // points.push_back(pcl::PointXYZ(0, 0, -0.2));
+
   gzlog << "merges = " << merges << std::endl;
 
   if (merges == 0) {
     return;
   }
+
+  // DEBUG
+  static ros::Publisher DEBUG_points_publisher = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+    "/ow_materials/dug_points2", 1
+  );
+  publish_points_as_cloud(&DEBUG_points_publisher, points);
 
   // normalize the bulk by the number of blends that were merged into it
   bulk_blend.normalize();

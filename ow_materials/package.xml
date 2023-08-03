@@ -25,5 +25,6 @@
   <depend>roscpp</depend>
   <depend>gazebo</depend>
   <depend>ow_dynamic_terrain</depend>
+  <depend>pcl_ros</depend>
 
 </package>

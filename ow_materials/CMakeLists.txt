@@ -20,6 +20,12 @@ find_package(OpenCV REQUIRED
   core
 )
 
+find_package(PCL 1.3 REQUIRED COMPONENTS
+  common
+  io
+  conversions
+)
+
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
@@ -32,13 +38,17 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
+  ${PCL_LIBRARY_DIRS}
 )
+
+add_definitions(${PCL_DEFINITIONS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
