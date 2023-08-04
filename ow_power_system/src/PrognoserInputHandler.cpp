@@ -28,8 +28,6 @@ bool PrognoserInputHandler::initialize()
     return false;
   }
 
-  m_init_time = system_clock::now(); // Taken from initPrognoser()
-
   return true;
 }
 
@@ -101,9 +99,10 @@ double PrognoserInputHandler::generateTemperatureEstimate()
 double PrognoserInputHandler::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-  double timelapse = duration<double>(system_clock::now() - m_init_time).count();               // [s]
-  double min_V = m_base_voltage + (m_battery_lifetime - timelapse) / m_battery_lifetime * 0.8;  // [V]
-  double max_V = min_V + m_voltage_range;                                                       // [V]
+  double timelapse = ros::Time::now().toSec() - m_init_time;            // s
+  double min_V = m_base_voltage + (m_battery_lifetime - timelapse)      // [V]
+                 / m_battery_lifetime * 0.8;
+  double max_V = min_V + m_voltage_range;                               // [V]
 
   // If voltage limits dip below baseline, set to baseline values
   if (min_V < m_base_voltage)
@@ -167,6 +166,13 @@ bool PrognoserInputHandler::cyclePrognoserInputs(double electrical_power)
  */
 bool PrognoserInputHandler::runOnce()
 {
+  // Initialize the start time on the first call of the function.
+  // Note it cannot be initialized before this point (before ROS is
+  // running properly), else it will start at 0 which is not valid.
+  if (m_init_time == 0)
+  {
+    m_init_time = ros::Time::now().toSec();
+  }
   bool draw_warning = false;
   if (m_trigger_processing_new_power_batch)
   {

@@ -53,7 +53,7 @@ private:
 
   bool cyclePrognoserInputs(double electrical_power);
 
-  std::chrono::time_point<std::chrono::system_clock> m_init_time;
+  double m_init_time = 0;
 
   // Main system configuration: these values are overriden by values
   // in ../config/system.cfg.
