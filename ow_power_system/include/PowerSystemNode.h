@@ -104,9 +104,10 @@ private:
   bool m_topics_print_debug = false;
   bool m_mech_power_print_debug = false;
 
+
   // system.cfg variables:
 
-  // HACK ALERT.  The prognoser produced erratic/erroneous output when
+  // HACK ALERT.  The prognoser produces erratic/erroneous output when
   // given too high a power input.  The value assigned to this in system.cfg
   // protects against this by capping the power input, but it is a temporary
   // hack until a circuit breaker model is added to the power system and/or 
@@ -117,24 +118,16 @@ private:
   // The maximum RUL estimation output from the Monte Carlo prediction process.
   // If the prediction hits this value, it stops immediately and returns infinity
   // (which is processed later into the max value instead).
-  // Lower values mean faster performance in the event a RUL prediction would
-  // exceed the horizon value, but it also means the prognoser can't return RUL
-  // values higher than this.
   int m_max_horizon_secs;
 
   // The number of samples each model creates during the Monte Carlo prediction
-  // process. Lower values mean faster performance, but lower accuracy (needs
-  // testing for confirmation).
+  // process. Lower values mean faster prediction returns, but lower accuracy
+  // (needs testing for confirmation).
   int m_num_samples;
 
   // Number of threads to use for the asynchronous ROS spinning in the main
-  // loop (to allow jointStatesCb to run at 50Hz separate from the 0.5Hz main
-  // loop).
+  // loop.
   int m_spinner_threads;
-
-  // Signifies if the main power loop is in the process of sending data
-  // to GSAP prognosers.
-  bool m_processing_power_batch = false;
 
   // The cycle time of the main system loop.
   double m_loop_rate_hz;
@@ -148,16 +141,21 @@ private:
   
   // End system.cfg variables.
 
+
+  // Signifies if the main power loop is in the process of sending data
+  // to GSAP prognosers.
+  bool m_processing_power_batch = false;
+
   // The rate at which /joint_states is expected to publish. If this is changed,
   // this variable will need to change as well.
-  int m_joint_states_rate = 50;
+  const int m_joint_states_rate = 50;
 
   // Vector w/ supporting variables that stores the moving average of the
   // past mechanical power values.
   int m_moving_average_window;
 
-  // The expected time interval between publications. It is essentially the
-  // inverse of the rate of the main loop.
+  // The expected time interval between publications. It is equal to the
+  // reciprocal of the main loop rate.
   double m_time_interval;
 
   // Flag determining if the battery has reached a fail state.

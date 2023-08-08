@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <numeric>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
@@ -86,7 +86,7 @@ void PowerSystemNode::initAndRun()
 
   // Set up the time interval & moving average size.
   m_time_interval = 1 / m_loop_rate_hz;
-  m_moving_average_window = floor(m_joint_states_rate / m_loop_rate_hz);
+  m_moving_average_window = static_cast<int>(std::floor(m_joint_states_rate / m_loop_rate_hz));
 
   // Set up the moving average vector.
   m_power_values.resize(m_moving_average_window, 0.0);
@@ -96,7 +96,7 @@ void PowerSystemNode::initAndRun()
   // Initialize EoD_events and previous_times.
   for (int i = 0; i < NUM_MODELS; i++)
   {
-    m_power_models[i].previous_time = 0;
+    m_power_models[i].previous_time = 0.0;
     m_EoD_events[i].remaining_useful_life = m_max_horizon_secs;
     m_EoD_events[i].state_of_charge = m_initial_soc;
     m_EoD_events[i].battery_temperature = m_initial_temperature;
@@ -168,7 +168,6 @@ void PowerSystemNode::initAndRun()
 
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
-  // This loop should run at 0.5Hz, publishing predictions every 2 seconds via rostopics.
   int start_loops = NUM_MODELS;
   while(ros::ok())
   {
@@ -181,8 +180,6 @@ void PowerSystemNode::initAndRun()
       printTimestamp(m_power_models[0].input_info.timestamp);
     }
 
-    bool draw_warning_displayed = false;
-
     // Cycle the inputs in each model and send the data sets to the
     // corresponding prognoser via its message bus. The power system is
     // locked during this, preventing callback functions from altering
@@ -193,20 +190,19 @@ void PowerSystemNode::initAndRun()
       // Cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      if (m_power_models[i].model.runOnce() && !draw_warning_displayed)
+      if (m_power_models[i].model.runOnce())
       {
         // Current implementation means if one ModelHandler exceeds the draw
         // limit, every ModelHandler will exceed at the same amount.
         // So it doesn't matter which model triggers the warning as long as
         // it displays once.
-        ROS_WARN_STREAM("Power system computed power input above the "
+        ROS_WARN_STREAM_THROTTLE(m_time_interval,
+                           "Power system computed power input above the "
                         << m_max_gsap_input_watts
                         << "W cap for one or more GSAP prognosers.\n"
                         << "Input was set to "
                         << m_max_gsap_input_watts
                         << "W for each model over the limit.");
-        // Prevent warning from repeating within the same cycle.
-        draw_warning_displayed = true;
       }
 
       m_power_models[i].model.getPowerStats(m_power_models[i].input_info);
