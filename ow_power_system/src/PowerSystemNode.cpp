@@ -164,7 +164,18 @@ void PowerSystemNode::initAndRun()
   // Start the asynchronous spinner, which will call jointStatesCb as the
   // joint_states topic is published (50Hz).
   ros::AsyncSpinner spinner(m_spinner_threads);
-  spinner.start();
+  try
+  {
+    spinner.start();
+  }
+  catch(const std::runtime_error& e)
+  {
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: Encountered a std::runtime_error"
+                    << " while starting up asynchronous ROS spinner threads!");
+    return;
+  }
+  
+
 
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
@@ -288,17 +299,21 @@ void PowerSystemNode::initAndRun()
     }
 
     // DEBUG PRINT FORMATTING
-    if (m_print_debug && !(m_power_models[0].input_info.timestamp <= 0))
+    if (m_print_debug && m_power_models[0].input_info.timestamp > 0)
     {
       std::cout << std::endl;
     }
 
     // Sleep for any remaining time in the loop that would cause it to
-    // complete before the set rate of GSAP.
-    // NOTE: Currently there is no catch for if the loop takes longer than the
-    // specified ROS rate. If this occurs, the simulation will lag behind real
-    // time.
-    rate.sleep();
+    // complete before the set rate of GSAP. Warn the user if the loop somehow
+    // took longer than the expected time interval.
+    if (!rate.sleep())
+    {
+      ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: Main power system loop took"
+                      << " longer than "
+                      << std::to_string(m_time_interval)
+                      << "s to complete a cycle, falling behind real-time!");
+    }
   }
 
   spinner.stop();
@@ -313,7 +328,7 @@ bool PowerSystemNode::initModels()
   // Initialize the models.
   for (int i = 0; i < NUM_MODELS; i++)
   {
-    m_power_models[i].name = setModelName(i);
+    m_power_models[i].name = formatModelName(i);
     if (!m_power_models[i].model.initialize())
     {
         return false;
@@ -436,8 +451,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 
   if (fault_activated && fault_enabled && custom_fault_ready)
   {
-    // TODO: There's no specification on how to handle reaching the end
-    // of a custom fault profile. For now, simply disable the fault.
+    // Disable the fault upon reaching the end of the sequence.
     if (index >= sequence.size())
     {
       if (!end_fault_warning_displayed)
@@ -742,7 +756,7 @@ void PowerSystemNode::publishPredictions()
   m_battery_temperature_pub.publish(tmp_msg);
 }
 
-std::string PowerSystemNode::setModelName(int model_num)
+std::string PowerSystemNode::formatModelName(int model_num)
 {
   return "model " + std::to_string(model_num);
 }

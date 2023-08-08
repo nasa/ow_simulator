@@ -71,7 +71,7 @@ private:
   bool loadCustomFaultPowerProfile(std::string path,
                                    std::string custom_file);
   void publishPredictions();
-  std::string setModelName(int model_num);
+  std::string formatModelName(int model_num);
   void printTimestamp(double timestamp);
   void printPrognoserInputs(double power,
                             double voltage,
