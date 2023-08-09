@@ -43,8 +43,6 @@ public:
   void applyMechanicalPower(double mechanical_power, bool process_lock);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
-  void setCustomVoltageFault(double volts);
-  void setCustomTemperatureFault(double tmp);
 private:
   bool loadSystemConfig();
   double generateTemperatureEstimate();

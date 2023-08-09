@@ -466,20 +466,13 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     {
       auto data = sequence[index];
 
-      // Evenly distribute the power draw, voltage, and temperature values from
+      // Evenly distribute the power draw from
       // the custom fault profile across each model.
-      // NOTE this behavior may need to be updated in the future (e.g. unsure
-      // exactly how voltage and temperature affect predictions, as they do not
-      // directly add to the values like power does).
       double wattage = data[MessageId::Watts] / NUM_MODELS;
-      double voltage = data[MessageId::Volts] / NUM_MODELS;
-      double temperature = data[MessageId::Centigrade] / NUM_MODELS;
 
       for (int i = 0; i < NUM_MODELS; i++)
       {
         m_power_models[i].model.setCustomPowerDraw(wattage);
-        m_power_models[i].model.setCustomVoltageFault(voltage);
-        m_power_models[i].model.setCustomTemperatureFault(temperature);
       }
       
       index++;

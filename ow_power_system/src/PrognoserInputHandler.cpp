@@ -206,13 +206,3 @@ void PrognoserInputHandler::setCustomPowerDraw(double draw)
 {
   m_added_cpd = draw;
 }
-
-void PrognoserInputHandler::setCustomVoltageFault(double volts)
-{
-  m_voltage_modifier = volts;
-}
-
-void PrognoserInputHandler::setCustomTemperatureFault(double tmp)
-{
-  m_temperature_modifier = tmp;
-}
