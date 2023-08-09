@@ -22,7 +22,7 @@ using namespace PCOE;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
-const int CUSTOM_FILE_EXPECTED_COLS           = 4;
+const int CUSTOM_FILE_EXPECTED_COLS           = 2;
 
 // Error flags.
 const int ERR_CUSTOM_FILE_FORMAT              = -1;
@@ -312,7 +312,7 @@ void PowerSystemNode::initAndRun()
       ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: Main power system loop took"
                       << " longer than "
                       << std::to_string(m_time_interval)
-                      << "s to complete a cycle, falling behind real-time!");
+                      << "s to complete a cycle.");
     }
   }
 
@@ -626,11 +626,6 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
       }
 
       // Get the time index and power values.
-
-      // NOTE: The voltage and temperature values of a PrognoserVector have much
-      //       different functions as GSAP inputs than power does. It's not fully
-      //       understood what exactly they do yet, but they seem to affect the
-      //       estimation step rather than the prediction step.
       getline(line_stream, cell, ',');
       double file_time = std::stod(cell);
       auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
@@ -639,12 +634,16 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
       Datum<double> power(std::stod(cell));
       power.setTime(timestamp);
 
-      getline(line_stream, cell, ',');
-      Datum<double> temperature(std::stod(cell));
+      // HACK ALERT: The PrognoserMap expects an entry for wattage, voltage,
+      //             and temperature, but voltage & temperature inputs are not
+      //             used by the prognosers beyond initialization. As such,
+      //             fault profiles don't contain voltage or temperature
+      //             columns. However, there still needs to be an entry for
+      //             these in the PrognoserMap, so simply set them to 0.
+      Datum<double> temperature(0.0);
       temperature.setTime(timestamp);
 
-      getline(line_stream, cell, ',');
-      Datum<double> voltage(std::stod(cell));
+      Datum<double> voltage(0.0);
       voltage.setTime(timestamp);
 
       data.insert({ MessageId::Watts, power });
