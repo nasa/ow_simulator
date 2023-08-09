@@ -86,7 +86,9 @@ void PowerSystemNode::initAndRun()
 
   // Set up the time interval & moving average size.
   m_time_interval = 1 / m_loop_rate_hz;
-  m_moving_average_window = static_cast<int>(std::floor(m_joint_states_rate / m_loop_rate_hz));
+  m_moving_average_window = static_cast<int>(
+                              std::floor(m_joint_states_rate / m_loop_rate_hz)
+                            );
 
   // Set up the moving average vector.
   m_power_values.resize(m_moving_average_window, 0.0);
@@ -372,9 +374,7 @@ void PowerSystemNode::initTopics()
  * function handles getting the relevant information from the file and activating
  * the fault. Also handles deactivation and any errors that might arise.
  */
-void PowerSystemNode::injectCustomFault(bool& fault_activated,
-                                        const PrognoserVector& sequence,
-                                        size_t& index)
+void PowerSystemNode::injectCustomFault()
 {
   static std::string saved_fault_path = "N/A";
   std::string current_fault_path;
@@ -387,7 +387,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
   // Get the value of fault_enabled.
   ros::param::getCached("/faults/activate_custom_fault", fault_enabled);
 
-  if (!fault_activated && fault_enabled)
+  if (!m_custom_power_fault_activated && fault_enabled)
   {
     // Multiple potential points of failure, so alert user the process has started.
     ROS_INFO_STREAM("Attempting custom fault activation...");
@@ -396,7 +396,9 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     ros::param::getCached("/faults/custom_fault_profile", designated_file);
 
     // Append the current fault directory to the stored file path.
-    current_fault_path = ros::package::getPath("ow_power_system") + "/profiles/" + designated_file;
+    current_fault_path = ros::package::getPath("ow_power_system")
+                                         + "/profiles/" 
+                                         + designated_file;
     
     // Attempt to load/reload the designated file.
     if (designated_file == saved_file)
@@ -405,15 +407,22 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     }
     else if (saved_fault_path != "N/A")
     {
-      ROS_INFO_STREAM("Loading " << designated_file << " and unloading " << saved_file << "...");
+      ROS_INFO_STREAM("Loading " << designated_file 
+                      << " and unloading " << saved_file << "...");
     }
     else
     {
       ROS_INFO_STREAM("Loading " << designated_file << "...");
     }
-    if (loadCustomFaultPowerProfile(current_fault_path, designated_file))
+
+    // Attempt to load the profile.
+    m_custom_power_fault_sequence = loadPowerProfile(current_fault_path, designated_file);
+
+    if (m_custom_power_fault_sequence.size() > 0)
     {
-      ROS_WARN_STREAM_ONCE("Custom power faults may exhibit unexpected results. Caution is advised.");
+      ROS_WARN_STREAM_ONCE(
+        "Custom power faults may exhibit unexpected results. Caution is advised."
+      );
       if (designated_file == saved_file)
       {
         ROS_INFO_STREAM(designated_file << " reactivated!");
@@ -426,16 +435,16 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
       end_fault_warning_displayed = false;
       saved_fault_path = current_fault_path;
       saved_file = designated_file;
-      index = 0;
+      m_custom_power_fault_sequence_index = 0;
     }
     else
     {
       // Custom fault failed to load correctly.
       custom_fault_ready = false;
     }        
-    fault_activated = true;
+    m_custom_power_fault_activated = true;
   }
-  else if (fault_activated && !fault_enabled)
+  else if (m_custom_power_fault_activated && !fault_enabled)
   {
     if (custom_fault_ready)
     {
@@ -445,14 +454,14 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     {
       ROS_INFO_STREAM("Custom fault deactivated!");
     }
-    fault_activated = false;
+    m_custom_power_fault_activated = false;
     custom_fault_ready = false;
   }
 
-  if (fault_activated && fault_enabled && custom_fault_ready)
+  if (m_custom_power_fault_activated && fault_enabled && custom_fault_ready)
   {
     // Disable the fault upon reaching the end of the sequence.
-    if (index >= sequence.size())
+    if (m_custom_power_fault_sequence_index >= m_custom_power_fault_sequence.size())
     {
       if (!end_fault_warning_displayed)
       {
@@ -464,7 +473,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
     }
     else
     {
-      auto data = sequence[index];
+      auto data = m_custom_power_fault_sequence[m_custom_power_fault_sequence_index];
 
       // Evenly distribute the power draw from
       // the custom fault profile across each model.
@@ -475,7 +484,7 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
         m_power_models[i].model.setCustomPowerDraw(wattage);
       }
       
-      index++;
+      m_custom_power_fault_sequence_index++;
     }
   }
 }
@@ -483,27 +492,26 @@ void PowerSystemNode::injectCustomFault(bool& fault_activated,
 /*
  * Handles defined faults within the RQT window (currently only high power draw).
  */
-void PowerSystemNode::injectFault (const std::string& fault_name,
-                                   bool& fault_activated)
+void PowerSystemNode::injectFault (const std::string& fault_name)
 {
-  bool fault_enabled = false;
+  bool fault_enabled;
   double hpd_wattage = 0.0;
 
   // Get the value of fault_enabled.
   ros::param::getCached("/faults/" + fault_name, fault_enabled);
 
-  if (!fault_activated && fault_enabled)
+  if (!m_high_power_draw_activated && fault_enabled)
   {
     ROS_INFO_STREAM(fault_name << " activated!");
-    fault_activated = true;
+    m_high_power_draw_activated = true;
   }
-  else if (fault_activated && !fault_enabled)
+  else if (m_high_power_draw_activated && !fault_enabled)
   {
     ROS_INFO_STREAM(fault_name << " deactivated!");
-    fault_activated = false;
+    m_high_power_draw_activated = false;
   }
 
-  if (fault_activated && fault_enabled)
+  if (m_high_power_draw_activated && fault_enabled)
   {
     // If the current fault being utilized is high_power_draw,
     // simply update wattage based on the current value of the HPD slider.
@@ -529,11 +537,8 @@ void PowerSystemNode::injectFault (const std::string& fault_name,
  */
 void PowerSystemNode::injectFaults()
 {
-  injectFault(FAULT_NAME_HPD_ACTIVATE,
-              m_high_power_draw_activated);
-  injectCustomFault(m_custom_power_fault_activated,
-                    m_custom_power_fault_sequence,
-                    m_custom_power_fault_sequence_index);
+  injectFault(FAULT_NAME_HPD_ACTIVATE);
+  injectCustomFault();
 }
 
 /*
@@ -621,7 +626,9 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
       // Get the time index and power values.
       getline(line_stream, cell, ',');
       double file_time = std::stod(cell);
-      auto timestamp = now + std::chrono::milliseconds(static_cast<unsigned>(file_time * 1000));
+      auto timestamp = now + std::chrono::milliseconds(
+                              static_cast<unsigned>(file_time * 1000)
+                             );
 
       getline(line_stream, cell, ',');
       Datum<double> power(std::stod(cell));
@@ -648,8 +655,8 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
       line_number++;
     }
   }
-  catch(...) // Many possible different errors could result from reading an improperly formatted file.
-  {
+  catch(...) // Many possible different errors could result
+  {          // from reading an improperly formatted file.
     ROS_ERROR_STREAM("Failed to read " << custom_file << ":" << std::endl <<
                      "Improper formatting detected on line " << line_number << 
                      "." << std::endl << "Confirm " << custom_file << 
@@ -657,17 +664,6 @@ PrognoserVector PowerSystemNode::loadPowerProfile(const std::string& filename,
     return PrognoserVector();
   }
   return result;
-}
-
-/*
- * Attempts to call loadPowerProfile and returns true or false depending on its success.
- */
-bool PowerSystemNode::loadCustomFaultPowerProfile(std::string path, std::string custom_file)
-{
-  m_custom_power_fault_sequence = loadPowerProfile(path, custom_file);
-
-  // Return false if the sequence was not properly initialized.
-  return (m_custom_power_fault_sequence.size() > 0);
 }
 
 /*
@@ -713,8 +709,12 @@ void PowerSystemNode::publishPredictions()
   // implemented yet.
   // For now, treat all fail states as permanent and flatline all future
   // publications.
-  // The timestamp stipulation is to prevent odd/invalid values during startup
-  // from triggering the fail state.
+  // HACK ALERT: Because the power loop seems to run at least once during
+  //             startup before everything is fully initialized, this
+  //             fail state can trigger prematurely when everything is set
+  //             to 0. As such, we prevent a fail state from triggering
+  //             during the first few cycles of the battery loop by simply
+  //             ignoring the battery status during that time.
   if ((min_rul < 0 || min_soc < 0)
       && (!m_battery_failed)
       && (m_power_models[0].input_info.timestamp >= (m_time_interval * 5)))

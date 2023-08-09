@@ -37,7 +37,7 @@ using PrognoserVector = std::vector<PrognoserMap>;
 // This is the number of parallel inputs and outputs that will be simulated at
 // once. The expected amount of cells in the battery pack is 24. The 6S1P model
 // simulates 6 cells at once, so only 4 models are needed.
-const int NUM_MODELS = 4;
+constexpr int NUM_MODELS = 4;
 
 // Struct that groups the variables/classes used to handle PrognoserInputHandlers.
 struct PowerModel {
@@ -59,16 +59,11 @@ public:
 private:
   bool initModels();
   void initTopics();
-  void injectCustomFault(bool& fault_activated,
-                         const PrognoserVector& sequence,
-                         size_t& index);
-  void injectFault(const std::string& power_fault_name,
-                   bool& fault_activated);
+  void injectCustomFault();
+  void injectFault(const std::string& power_fault_name);
   void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   PrognoserVector loadPowerProfile(const std::string& filename,
-                                   std::string custom_file);
-  bool loadCustomFaultPowerProfile(std::string path,
                                    std::string custom_file);
   void publishPredictions();
   std::string formatModelName(int model_num);
