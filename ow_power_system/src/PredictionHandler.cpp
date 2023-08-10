@@ -18,6 +18,8 @@
 static constexpr int BATTERY_TEMPERATURE_INDEX = 0;
 static constexpr int MODEL_TEMPERATURE_INDEX = 1;
 
+static double findMedian(std::vector<double> samples);
+
 /**
  * Constructs a new prediction handler that subscribes to battery EoD
  * predictions for the specified source and on the specified message
@@ -28,6 +30,17 @@ PredictionHandler::PredictionHandler(MessageBus& bus, const std::string& src) :
 {
   m_bus.subscribe(this, src, MessageId::BatteryEod);
   m_event_ready = false;
+
+  // HACK ALERT (as of Sept '22):
+  // GSAP's asynchronous prognoser does not have a function to get its model like
+  // the simple prognoser does. As such, one can instantiate a simple prognoser
+  // and get its model instead later; it should be identical. However, a getter 
+  // function would be much more ideal and more efficient.
+  auto prognoser_config_path = ros::package::getPath("ow_power_system")
+                             + "/config/prognoser.cfg";
+  ConfigMap prognoser_config(prognoser_config_path);
+  m_temp_prog =
+    PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
 }
 
 /**
@@ -92,20 +105,9 @@ void PredictionHandler::processMessage(const std::shared_ptr<Message>& message)
     temperature_state.push_back(sample[BATTERY_TEMPERATURE_INDEX]);
   }
 
-  // HACK ALERT (as of Sept '22):
-  // GSAP's asynchronous prognoser does not have a function to get its model like
-  // the simple prognoser does. As such, one can instantiate a simple prognoser
-  // and get its model instead; it should be identical. However, a getter function
-  // would be much more ideal and more efficient.
-
-  // Construct a simple prognoser to get the battery model.
-  auto prognoser_config_path = ros::package::getPath("ow_power_system")
-                             + "/config/prognoser.cfg";
-  ConfigMap prognoser_config(prognoser_config_path);
-  std::unique_ptr<PCOE::Prognoser> temp_prog =
-    PrognoserFactory::instance().Create("ModelBasedPrognoser", prognoser_config);
-
-  auto& model = static_cast<ModelBasedPrognoser*>(temp_prog.get())->getModel();
+  // Get the battery model for temperature outputs (see the hack alert in the
+  // constructor for details).
+  auto& model = static_cast<ModelBasedPrognoser*>(m_temp_prog.get())->getModel();
 
   auto model_output = model.outputEqn(now_s.count(),
                        static_cast<PrognosticsModel::state_type>(temperature_state));
@@ -138,7 +140,7 @@ bool PredictionHandler::getStatus()
   return m_event_ready;
 }
 
-double PredictionHandler::findMedian(std::vector<double> samples)
+static double findMedian(std::vector<double> samples)
 {
   std::nth_element(samples.begin(), (samples.begin() + (samples.size() / 2)),
                    samples.end());

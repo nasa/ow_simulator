@@ -66,18 +66,6 @@ private:
   PrognoserVector loadPowerProfile(const std::string& filename,
                                    std::string custom_file);
   void publishPredictions();
-  std::string formatModelName(int model_num);
-  void printTimestamp(double timestamp);
-  void printPrognoserInputs(double power,
-                            double voltage,
-                            double temperature,
-                            int index);
-  void printPrognoserOutputs(double rul,
-                             double soc,
-                             double tmp,
-                             int index);
-  void printMechanicalPower(double raw, double mean);
-  void printTopics(double rul, double soc, double tmp);
 
   ros::NodeHandle m_nh;                        // Node Handle Initialization
   ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw

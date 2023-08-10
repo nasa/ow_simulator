@@ -41,12 +41,12 @@ public:
   void processMessage(const std::shared_ptr<Message>& message) override;
   EoDValues getEoD();
   bool getStatus();
-private:
-  double findMedian(std::vector<double> samples);
 
+private:
   // Data stored from the EoD predictions.
   EoDValues m_curr_EoD;
   bool m_event_ready;
+  std::unique_ptr<PCOE::Prognoser> m_temp_prog;
 
   MessageBus& m_bus;
 };

@@ -27,6 +27,20 @@ const int CUSTOM_FILE_EXPECTED_COLS           = 2;
 // Error flags.
 const int ERR_CUSTOM_FILE_FORMAT              = -1;
 
+// Static function declarations.
+static std::string formatModelName(int model_num);
+static void printTimestamp(double timestamp);
+static void printPrognoserInputs(double power,
+                                 double voltage,
+                                 double temperature,
+                                 int index);
+static void printPrognoserOutputs(double rul,
+                                  double soc,
+                                  double tmp,
+                                  int index);
+static void printMechanicalPower(double raw, double mean, int window);
+static void printTopics(double rul, double soc, double tmp);
+
 /*
  * The primary function with the loop that controls each cycle.
  * Initializes everything, then starts looping.
@@ -272,7 +286,9 @@ void PowerSystemNode::initAndRun()
     // DEBUG PRINT
     if (m_mech_power_print_debug)
     {
-      printMechanicalPower(m_power_watts, m_mean_mechanical_power);
+      printMechanicalPower(m_power_watts,
+                           m_mean_mechanical_power,
+                           m_moving_average_window);
     }
 
     // Check if the prediction handlers have EoD predictions ready,
@@ -754,7 +770,7 @@ void PowerSystemNode::publishPredictions()
   m_battery_temperature_pub.publish(tmp_msg);
 }
 
-std::string PowerSystemNode::formatModelName(int model_num)
+static std::string formatModelName(int model_num)
 {
   return "model " + std::to_string(model_num);
 }
@@ -763,7 +779,7 @@ std::string PowerSystemNode::formatModelName(int model_num)
  * Prints the timestamp of each cycle to the terminal.
  * Output: 1 line per cycle.
  */
-void PowerSystemNode::printTimestamp(double timestamp)
+static void printTimestamp(double timestamp)
 {
   ROS_INFO_STREAM("Timestamp " << timestamp);
 }
@@ -772,10 +788,10 @@ void PowerSystemNode::printTimestamp(double timestamp)
  * Prints the input data sent to GSAP's asynchronous prognosers each cycle.
  * Output: NUM_MODELS lines per cycle.
  */
-void PowerSystemNode::printPrognoserInputs(double power,
-                                           double voltage,
-                                           double temperature,
-                                           int index)
+static void printPrognoserInputs(double power,
+                                 double voltage,
+                                 double temperature,
+                                 int index)
 {
   // Header is simply used for printout consistency between
   // models 0-9 and 10+.
@@ -793,10 +809,10 @@ void PowerSystemNode::printPrognoserInputs(double power,
  * Prints the information currently stored in all models each cycle.
  * Output: NUM_MODELS lines per cycle.
  */
-void PowerSystemNode::printPrognoserOutputs(double rul,
-                                            double soc,
-                                            double tmp,
-                                            int index)
+static void printPrognoserOutputs(double rul,
+                                  double soc,
+                                  double tmp,
+                                  int index)
 {
   std::string header = "M";
   if (index < 10)
@@ -812,10 +828,10 @@ void PowerSystemNode::printPrognoserOutputs(double rul,
  * Prints the mechanical power calculated during jointStatesCb each cycle.
  * Output: 2 lines per cycle.
  */
-void PowerSystemNode::printMechanicalPower(double raw, double mean)
+static void printMechanicalPower(double raw, double mean, int window)
 {
   ROS_INFO_STREAM("Most recent raw mechanical power: " << std::to_string(raw));
-  ROS_INFO_STREAM("Average of last " << std::to_string(m_moving_average_window)
+  ROS_INFO_STREAM("Average of last " << std::to_string(window)
                   << " raw values: " << std::to_string(mean));
 }
 
@@ -823,7 +839,7 @@ void PowerSystemNode::printMechanicalPower(double raw, double mean)
  * Prints the information that will be published via rostopics each cycle.
  * Output: 1 line per cycle.
  */
-void PowerSystemNode::printTopics(double rul, double soc, double tmp)
+static void printTopics(double rul, double soc, double tmp)
 {
   ROS_INFO_STREAM("min_rul: " << std::to_string(rul) <<
                   ", min_soc: " << std::to_string(soc) <<

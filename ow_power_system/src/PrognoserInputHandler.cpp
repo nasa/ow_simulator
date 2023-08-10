@@ -6,7 +6,6 @@
 
 #include <numeric>
 #include <fstream>
-#include <math.h>
 #include <algorithm>
 #include <ros/package.h>
 #include <std_msgs/Float64.h>
@@ -91,15 +90,11 @@ double PrognoserInputHandler::generateVoltageEstimate()
 {
   // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
   double timelapse = ros::Time::now().toSec() - m_init_time;            // s
-  double min_V = m_base_voltage + (m_battery_lifetime - timelapse)      // [V]
-                 / m_battery_lifetime * 0.8;
+  // If min_V dips below baseline, set to baseline values.
+  double min_V = std::max(m_base_voltage + (m_battery_lifetime - timelapse)
+                          / m_battery_lifetime * 0.8,
+                          m_base_voltage);                              // [V]
   double max_V = min_V + m_voltage_range;                               // [V]
-
-  // If voltage limits dip below baseline, set to baseline values
-  if (min_V < m_base_voltage)
-  {
-    min_V = m_base_voltage;
-  }
 
   // Voltage estimate based on pseudorandom noise and moving range
   uniform_real_distribution<double> voltage_dist(min_V, max_V);
