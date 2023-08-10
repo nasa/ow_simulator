@@ -68,19 +68,10 @@ bool PrognoserInputHandler::loadSystemConfig()
   return true;
 }
 
-void PrognoserInputHandler::applyMechanicalPower(double mechanical_power,
-                                                 bool process_lock)
+void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
 {
-  // Set the current unprocessed mechanical power to the most recent value
-  // from jointStatesCb.
-  m_unprocessed_mechanical_power = mechanical_power;
-
-  if ((!process_lock) && (!m_processing_power_batch))
-  {
-    m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
-    m_unprocessed_mechanical_power = 0.0;
-    m_trigger_processing_new_power_batch = true;
-  }
+  // Set the current unprocessed mechanical power.
+  m_mechanical_power_to_be_processed = mechanical_power;
 }
 
 /*
@@ -143,8 +134,18 @@ void PrognoserInputHandler::applyValueMods(double& power,
  * Compiles the input values of power/voltage/temperature to be sent into GSAP
  * by the PowerSystemNode each cycle.
  */
-bool PrognoserInputHandler::cyclePrognoserInputs(double electrical_power)
+bool PrognoserInputHandler::cyclePrognoserInputs()
 {
+  // Initialize the start time on the first call of the function.
+  // Note it cannot be initialized before this point (before ROS is
+  // running properly), else it will start at 0 which is not valid.
+  if (m_init_time == 0)
+  {
+    m_init_time = ros::Time::now().toSec();
+  }
+  // Calculate actual power applied to the system.
+  double electrical_power = m_mechanical_power_to_be_processed / m_efficiency;
+
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
   m_temperature_estimate = generateTemperatureEstimate();
@@ -159,30 +160,6 @@ bool PrognoserInputHandler::cyclePrognoserInputs(double electrical_power)
     return true;
   }
   return false;
-}
-
-/*
- * Function called by PowerSystemNode to update input power/voltage/temp.
- */
-bool PrognoserInputHandler::runOnce()
-{
-  // Initialize the start time on the first call of the function.
-  // Note it cannot be initialized before this point (before ROS is
-  // running properly), else it will start at 0 which is not valid.
-  if (m_init_time == 0)
-  {
-    m_init_time = ros::Time::now().toSec();
-  }
-  bool draw_warning = false;
-  if (m_trigger_processing_new_power_batch)
-  {
-    m_trigger_processing_new_power_batch = false;
-    m_processing_power_batch = true;
-    draw_warning = cyclePrognoserInputs(m_mechanical_power_to_be_processed / m_efficiency);
-    m_processing_power_batch = false;
-  }
-  // Returns false if no warning should be displayed, true otherwise.
-  return draw_warning;
 }
 
 /*

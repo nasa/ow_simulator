@@ -136,11 +136,6 @@ private:
   
   // End system.cfg variables.
 
-
-  // Signifies if the main power loop is in the process of sending data
-  // to GSAP prognosers.
-  bool m_processing_power_batch = false;
-
   // The rate at which /joint_states is expected to publish. If this is changed,
   // this variable will need to change as well.
   const int m_joint_states_rate = 50;
@@ -163,9 +158,6 @@ private:
   // The matrix used to store EoD events.
   EoDValues m_EoD_events[NUM_MODELS];
 
-  std::vector<double> m_power_values;
-  size_t m_power_values_index = 0;
-
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
@@ -174,6 +166,9 @@ private:
   // Used for mechanical power debug printouts.
   double m_power_watts;
   double m_mean_mechanical_power;
+  double m_sum_mechanical_power = 0;
+  int m_queue_size = 0;
+  std::deque<double> m_power_values;
 };
 
 #endif

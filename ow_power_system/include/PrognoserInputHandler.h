@@ -38,9 +38,9 @@ public:
   PrognoserInputHandler(const PrognoserInputHandler&) = delete;
   PrognoserInputHandler& operator=(const PrognoserInputHandler&) = delete;
   bool initialize();
-  bool runOnce();
+  bool cyclePrognoserInputs();
   void getPowerStats(InputInfo &inputs);
-  void applyMechanicalPower(double mechanical_power, bool process_lock);
+  void applyMechanicalPower(double mechanical_power);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
 private:
@@ -48,8 +48,6 @@ private:
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
-
-  bool cyclePrognoserInputs(double electrical_power);
 
   double m_init_time = 0;
 
@@ -97,11 +95,6 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  // Flag that indicates that the prognoser is handling current batch.
-  bool m_processing_power_batch = false;
-
-  bool m_trigger_processing_new_power_batch = false;
-  double m_unprocessed_mechanical_power = 0.0;
   double m_mechanical_power_to_be_processed = 0.0;
 };
 

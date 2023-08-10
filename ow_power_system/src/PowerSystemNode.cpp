@@ -90,9 +90,6 @@ void PowerSystemNode::initAndRun()
                               std::floor(m_joint_states_rate / m_loop_rate_hz)
                             );
 
-  // Set up the moving average vector.
-  m_power_values.resize(m_moving_average_window, 0.0);
-
   initTopics();
 
   // Initialize EoD_events and previous_times.
@@ -194,16 +191,23 @@ void PowerSystemNode::initAndRun()
     }
 
     // Cycle the inputs in each model and send the data sets to the
-    // corresponding prognoser via its message bus. The power system is
-    // locked during this, preventing callback functions from altering
-    // related variables mid-loop.
-    m_processing_power_batch = true;
+    // corresponding prognoser via its message bus.
+    // Save the current average mechanical power, in case jointStatesCb runs
+    // while processing which would update m_mean_mechanical_power mid-loop.
+    double mech_power = m_mean_mechanical_power;
+    // Publish the average mechanical power since this is the value that will
+    // actually be used by the power system.
+    std_msgs::Float64 mechanical_power_avg_msg;
+    mechanical_power_avg_msg.data = mech_power;
+    m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
     for (int i = 0; i < NUM_MODELS; i++)
     {
-      // Cycle the inputs in each model.
+      // Apply mechanical power, then cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      if (m_power_models[i].model.runOnce())
+      m_power_models[i].model.applyMechanicalPower(mech_power
+                                                   / NUM_MODELS);
+      if (m_power_models[i].model.cyclePrognoserInputs())
       {
         // Current implementation means if one ModelHandler exceeds the draw
         // limit, every ModelHandler will exceed at the same amount.
@@ -270,9 +274,6 @@ void PowerSystemNode::initAndRun()
     {
       printMechanicalPower(m_power_watts, m_mean_mechanical_power);
     }
-
-    // Unlock the power system.
-    m_processing_power_batch = false;
 
     // Check if the prediction handlers have EoD predictions ready,
     // and update EoD_events if so.
@@ -552,26 +553,31 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (int i = 0; i < ow_lander::NUM_JOINTS; ++i)
     m_power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[m_power_values_index++ % m_power_values.size()] = m_power_watts;
-  m_mean_mechanical_power = accumulate(
-      begin(m_power_values), end(m_power_values), 0.0)
-      / m_power_values.size();
-
-  // Publish the total raw & average mechanical power.
-  std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
-  mechanical_power_raw_msg.data = m_power_watts;
-  mechanical_power_avg_msg.data = m_mean_mechanical_power;
-  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
-  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
-
-  // Send in mechanical power to each model, distributed evenly, to be converted
-  // into power draw.
-  for (int i = 0; i < NUM_MODELS; i++)
+  // Remove the oldest value from the queue and add the newest one, though only
+  // if the queue has already been populated up to the proper window size.
+  double oldest_value = 0;
+  if (m_queue_size == m_moving_average_window)
   {
-    m_power_models[i].model.applyMechanicalPower(
-                                          (m_mean_mechanical_power / NUM_MODELS),
-                                          m_processing_power_batch);
+    oldest_value = m_power_values.front();
+    m_power_values.pop_front();
+    m_power_values.push_back(m_power_watts);
   }
+  else
+  {
+    // Queue is not fully populated yet, so just add the next value.
+    m_power_values.push_back(m_power_watts);
+    m_queue_size++;
+  }
+
+  // Update the sum & average by removing the previous value
+  // and adding the new one.
+  m_sum_mechanical_power +=  (m_power_watts - oldest_value);
+  m_mean_mechanical_power = m_sum_mechanical_power / m_queue_size;
+
+  // Publish raw mechanical power.
+  std_msgs::Float64 mechanical_power_raw_msg;
+  mechanical_power_raw_msg.data = m_power_watts;
+  m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
 }
 
 /*
