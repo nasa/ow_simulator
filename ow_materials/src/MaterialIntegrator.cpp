@@ -101,6 +101,17 @@ void MaterialIntegrator::onModification(
             bulk_blend.merge(blend);
             ++merges;
 
+            // DEMONSTRATION
+            // merge colors
+            // auto c = Color({0.0, 0.0, 0.0});
+            // Color c[3];
+            // c[0] = Color({0.0, 255.0, 0.0});
+            // c[1] = Color({0.0, 0.0, 255.0});
+            // c[2] = Color({255.0, 0.0, 0.0});
+            // for (auto const &b : bulk_blend) {
+            //   c.r += c[b.second];
+            // }
+
             // DEBUG
             // WORKAROUND: for only atacama_y1a
             // An offset is required to see the points in the correct position
@@ -108,6 +119,10 @@ void MaterialIntegrator::onModification(
             static float ATACAMA_Y1A_OFFSET_X = -1.0f;
             static float ATACAMA_Y1A_OFFSET_Y = 0.0f;
             static float ATACAMA_Y1A_OFFSET_Z = 0.37f;
+            // static float ATACAMA_Y1A_OFFSET_X = 0.0f;
+            // static float ATACAMA_Y1A_OFFSET_Y = 0.0f;
+            // static float ATACAMA_Y1A_OFFSET_Z = 0.0f;
+
             points.push_back(pcl::PointXYZ(
               x - ATACAMA_Y1A_OFFSET_X,
               y - ATACAMA_Y1A_OFFSET_Y,
@@ -118,8 +133,6 @@ void MaterialIntegrator::onModification(
       }
     }
   }
-
-  // points.push_back(pcl::PointXYZ(0, 0, -0.2));
 
   gzlog << "merges = " << merges << std::endl;
 

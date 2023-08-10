@@ -69,6 +69,22 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   auto total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
   m_cells.resize(total_cells, initial_value);
 
+  // DEMONSTRATION
+  // m_cells.resize(total_cells);
+  // for (size_t i = 0; i != m_dimensions.X(); ++i) {
+  //   for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+  //     for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+  //       m_cells[index(i, j, k)] = {
+  //         {
+  //           static_cast<uint8_t>(
+  //             (i > m_dimensions.X() / 2) + (i > m_dimensions.Y() / 2)
+  //           ), 1.0f
+  //         }
+  //       };
+  //     }
+  //   }
+  // }
+
 };
 
 template <typename T>
