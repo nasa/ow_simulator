@@ -72,6 +72,7 @@ void PowerSystemNode::initAndRun()
     }
     // If print_debug was false, then all flags remain false as initialized.
 
+    m_performance_mode = (system_config.getString("performance_mode") == TRUE);
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_initial_power = system_config.getDouble("initial_power");
@@ -90,6 +91,17 @@ void PowerSystemNode::initAndRun()
                      << "restarting the simulation.");
     return;
   }
+
+  // Set m_active_nodes.
+  if (m_performance_mode)
+  {
+    m_active_models = 1;
+  }
+  else
+  {
+    m_active_models = NUM_MODELS;
+  }
+  m_deactivated_models = 0;
   
   if (!initModels())
   {
@@ -149,7 +161,7 @@ void PowerSystemNode::initAndRun()
 
     // Create the prognosers using the builder that will send predictions using
     // their corresponding message bus.
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       prognosers.push_back(builder.build(m_power_models[i].bus,
                                          m_power_models[i].name,
@@ -167,6 +179,14 @@ void PowerSystemNode::initAndRun()
   }
 
   ROS_INFO_STREAM("Power system node running.");
+
+  // Notify the user if performance mode is enabled.
+  if (m_performance_mode)
+  {
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Performance mode activated. This"
+                    << " means only one GSAP model will run predictions."
+                    << " Intra-battery faults may not work properly.");
+  }
 
   // This rate object is used to sync the cycles up to the provided Hz.
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
@@ -192,7 +212,7 @@ void PowerSystemNode::initAndRun()
 
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
-  int start_loops = NUM_MODELS;
+  int start_loops = m_active_models;
   while(ros::ok())
   {
     // Set up value modifiers in each model handler for injection later.
@@ -209,13 +229,14 @@ void PowerSystemNode::initAndRun()
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
     double mech_power = m_mean_mechanical_power;
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      m_power_models[i].model.applyMechanicalPower(mech_power
-                                                   / NUM_MODELS);
+      m_power_models[i].model.applyMechanicalPower(
+                                      mech_power
+                                      / (NUM_MODELS - m_deactivated_models));
       if (m_power_models[i].model.cyclePrognoserInputs())
       {
         // Current implementation means if one ModelHandler exceeds the draw
@@ -288,7 +309,7 @@ void PowerSystemNode::initAndRun()
 
     // Check if the prediction handlers have EoD predictions ready,
     // and update EoD_events if so.
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       if (handlers[i]->getStatus())
       {
@@ -303,7 +324,7 @@ void PowerSystemNode::initAndRun()
     if (m_outputs_print_debug)
     {
       ROS_INFO_STREAM("CURRENT MODEL DATA:");
-      for (int i = 0; i < NUM_MODELS; i++)
+      for (int i = 0; i < m_active_models; i++)
       {
         printPrognoserOutputs(m_EoD_events[i].remaining_useful_life,
                               m_EoD_events[i].state_of_charge,
@@ -343,7 +364,7 @@ void PowerSystemNode::initAndRun()
 bool PowerSystemNode::initModels()
 {
   // Initialize the models.
-  for (int i = 0; i < NUM_MODELS; i++)
+  for (int i = 0; i < m_active_models; i++)
   {
     m_power_models[i].name = formatModelName(i);
     if (!m_power_models[i].model.initialize())
@@ -492,9 +513,10 @@ void PowerSystemNode::injectCustomFault()
 
       // Evenly distribute the power draw from
       // the custom fault profile across each model.
-      double wattage = data[MessageId::Watts] / NUM_MODELS;
+      double wattage = data[MessageId::Watts] 
+                        / (NUM_MODELS - m_deactivated_models);
 
-      for (int i = 0; i < NUM_MODELS; i++)
+      for (int i = 0; i < m_active_models; i++)
       {
         m_power_models[i].model.setCustomPowerDraw(wattage);
       }
@@ -533,9 +555,9 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
     if (fault_name == FAULT_NAME_HPD_ACTIVATE)
     {
       ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
-      double split_wattage = hpd_wattage / NUM_MODELS;
+      double split_wattage = hpd_wattage / (NUM_MODELS - m_deactivated_models);
 
-      for (int i = 0; i < NUM_MODELS; i++)
+      for (int i = 0; i < m_active_models; i++)
       {
         m_power_models[i].model.setHighPowerDraw(split_wattage);
       }
@@ -705,7 +727,7 @@ void PowerSystemNode::publishPredictions()
   owl_msgs::BatteryTemperature tmp_msg;
 
   // Calculate the min_rul, min_soc, and max_tmp from the new data.
-  for (int i = 0; i < NUM_MODELS; i++)
+  for (int i = 0; i < m_active_models; i++)
   {
     // If RUL is infinity, set it to the maximum horizon value instead.
     if (isinf(m_EoD_events[i].remaining_useful_life))
@@ -786,7 +808,7 @@ static void printTimestamp(double timestamp)
 
 /*
  * Prints the input data sent to GSAP's asynchronous prognosers each cycle.
- * Output: NUM_MODELS lines per cycle.
+ * Output: m_active_models lines per cycle.
  */
 static void printPrognoserInputs(double power,
                                  double voltage,
@@ -807,7 +829,7 @@ static void printPrognoserInputs(double power,
 
 /*
  * Prints the information currently stored in all models each cycle.
- * Output: NUM_MODELS lines per cycle.
+ * Output: m_active_models lines per cycle.
  */
 static void printPrognoserOutputs(double rul,
                                   double soc,

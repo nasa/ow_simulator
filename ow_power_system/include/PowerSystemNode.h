@@ -90,6 +90,12 @@ private:
 
   // system.cfg variables:
 
+  // Whether or not to run the power system in performance mode, which
+  // sets the number of simulated prognosers to 1. This prevents the possibility
+  // of simulating various intra-battery faults, but dramatically improves
+  // performance.
+  bool m_performance_mode;
+
   // HACK ALERT.  The prognoser produces erratic/erroneous output when
   // given too high a power input.  The value assigned to this in system.cfg
   // protects against this by capping the power input, but it is a temporary
@@ -123,6 +129,16 @@ private:
   double m_initial_soc;
   
   // End system.cfg variables.
+
+  // The number of currently simulated models. Typically equal to NUM_MODELS,
+  // it can change mid-simulation by intra-battery faults (or by enabling
+  // performance mode in system.cfg).
+  int m_active_models;
+
+  // The number of models deactivated via faults. Used separately from
+  // m_active_models to allow performance mode to distribute power draw as if
+  // there were more models running at once.
+  int m_deactivated_models;
 
   // The rate at which /joint_states is expected to publish. If this is changed,
   // this variable will need to change as well.
