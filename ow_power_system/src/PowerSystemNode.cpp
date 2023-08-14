@@ -209,11 +209,6 @@ void PowerSystemNode::initAndRun()
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
     double mech_power = m_mean_mechanical_power;
-    // Publish the average mechanical power since this is the value that will
-    // actually be used by the power system.
-    std_msgs::Float64 mechanical_power_avg_msg;
-    mechanical_power_avg_msg.data = mech_power;
-    m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
     for (int i = 0; i < NUM_MODELS; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
@@ -324,9 +319,12 @@ void PowerSystemNode::initAndRun()
     }
 
     // Sleep for any remaining time in the loop that would cause it to
-    // complete before the set rate of GSAP. Warn the user if the loop somehow
+    // complete before the set rate. Warn the user if the loop somehow
     // took longer than the expected time interval.
-    if (!rate.sleep())
+    // This will almost always happen during initialization, so suppress the
+    // warning during the first few loops.
+    if (!rate.sleep() 
+        && (m_power_models[0].input_info.timestamp > m_time_interval * 2))
     {
       ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: Main power system loop took"
                       << " longer than "
@@ -590,10 +588,12 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_sum_mechanical_power +=  (m_power_watts - oldest_value);
   m_mean_mechanical_power = m_sum_mechanical_power / m_queue_size;
 
-  // Publish raw mechanical power.
-  std_msgs::Float64 mechanical_power_raw_msg;
+  // Publish raw & average mechanical power.
+  std_msgs::Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
   mechanical_power_raw_msg.data = m_power_watts;
+  mechanical_power_avg_msg.data = m_mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
+  m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 }
 
 /*
