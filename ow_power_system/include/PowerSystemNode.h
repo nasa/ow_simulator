@@ -164,6 +164,7 @@ private:
 
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
+  bool m_disconnect_battery_nodes_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
 

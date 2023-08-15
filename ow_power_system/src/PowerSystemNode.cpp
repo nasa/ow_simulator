@@ -22,6 +22,8 @@ using namespace PCOE;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
+const std::string FAULT_NAME_DBN           = "battery_nodes_to_disconnect";
+const std::string FAULT_NAME_DBN_ACTIVATE  = "disconnect_battery_nodes";
 const int CUSTOM_FILE_EXPECTED_COLS           = 2;
 
 // Error flags.
@@ -216,7 +218,12 @@ void PowerSystemNode::initAndRun()
   while(ros::ok())
   {
     // Set up value modifiers in each model handler for injection later.
-    injectFaults();
+    // Skip the first loop to prevent activation/deactivation messages from
+    // printing during startup.
+    if (m_power_models[0].input_info.timestamp > 0)
+    {
+      injectFaults();
+    }
 
     // DEBUG PRINT
     if (m_timestamp_print_debug)
@@ -533,27 +540,30 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
 {
   bool fault_enabled;
   double hpd_wattage = 0.0;
+  int dbn_nodes = 0;
 
   // Get the value of fault_enabled.
   ros::param::getCached("/faults/" + fault_name, fault_enabled);
 
-  if (!m_high_power_draw_activated && fault_enabled)
+  // High power draw case
+  if (fault_name == FAULT_NAME_HPD_ACTIVATE)
   {
-    ROS_INFO_STREAM(fault_name << " activated!");
-    m_high_power_draw_activated = true;
-  }
-  else if (m_high_power_draw_activated && !fault_enabled)
-  {
-    ROS_INFO_STREAM(fault_name << " deactivated!");
-    m_high_power_draw_activated = false;
-  }
-
-  if (m_high_power_draw_activated && fault_enabled)
-  {
-    // If the current fault being utilized is high_power_draw,
-    // simply update wattage based on the current value of the HPD slider.
-    if (fault_name == FAULT_NAME_HPD_ACTIVATE)
+    // Check if the fault has switched.
+    if (!m_high_power_draw_activated && fault_enabled)
     {
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_high_power_draw_activated = true;
+    }
+    else if (m_high_power_draw_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      m_high_power_draw_activated = false;
+    }
+
+    // Continual behavior with HPD fault.
+    if (m_high_power_draw_activated && fault_enabled)
+    {
+      // Update wattage based on the current value of the HPD slider.
       ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
       double split_wattage = hpd_wattage / (NUM_MODELS - m_deactivated_models);
 
@@ -562,11 +572,49 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
         m_power_models[i].model.setHighPowerDraw(split_wattage);
       }
     }
-
-    // NOTE: If other faults are added to the RQT window in the future,
-    // this is where their related flags/logic would be checked/used
-    // in a similar manner to the above code block with high power draw.
   }
+
+  // Disconnect battery nodes case
+  if (fault_name == FAULT_NAME_DBN_ACTIVATE)
+  {
+    // Check if the fault has switched, and disconnect nodes if it was turned
+    // on. There is no continuous behavior to monitor.
+    if (!m_disconnect_battery_nodes_fault_activated && fault_enabled)
+    {
+      ros::param::getCached("/faults/" + FAULT_NAME_DBN, dbn_nodes);
+
+      ROS_INFO_STREAM(fault_name << " activated! Disconnecting "
+                      << std::to_string(dbn_nodes) << " nodes...");
+
+      m_disconnect_battery_nodes_fault_activated = true;
+
+      // Warn the user if they tried to reduce the number of deactivated nodes
+      // from a previous fault activation.
+      if (m_deactivated_models > dbn_nodes)
+      {
+        ROS_WARN_STREAM("Attempted to disconnect " << std::to_string(dbn_nodes)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " nodes when there are already "
+                        << std::to_string(m_deactivated_models)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " disconnected. Behavior has not changed.");
+      }
+
+      // Update the number of active and deactivated nodes.
+      m_deactivated_models = std::max(m_deactivated_models, dbn_nodes);
+      m_active_models = std::min(m_active_models,
+                                (NUM_MODELS - m_deactivated_models));
+    }
+    else if (m_disconnect_battery_nodes_fault_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      ROS_WARN_STREAM_ONCE("Note that disconnected battery nodes cannot "
+                    << "be reconnected, even if the fault is deactivated.");
+      m_disconnect_battery_nodes_fault_activated = false;
+    }
+  }
+
+
 }
 
 /*
@@ -575,6 +623,7 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
 void PowerSystemNode::injectFaults()
 {
   injectFault(FAULT_NAME_HPD_ACTIVATE);
+  injectFault(FAULT_NAME_DBN_ACTIVATE);
   injectCustomFault();
 }
 
