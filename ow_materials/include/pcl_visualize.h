@@ -19,23 +19,35 @@
 
 void publish_points_as_cloud(ros::Publisher *pub,
     // const std::vector<pcl::PointXYZ> &points) {
-    const std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> &points) {
-  pcl::PointCloud<pcl::PointXYZ> msg;
-  msg.header.frame_id = "world";
-  pcl_conversions::toPCL(ros::Time::now(), msg.header.stamp);
-  msg.height = 1;
-  msg.width = points.size();
+    // const std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> &points) {
+    pcl::PointCloud<pcl::PointXYZRGB> &cloud ) {
+
+  cloud.header.frame_id = "world";
+  pcl_conversions::toPCL(ros::Time::now(), cloud.header.stamp);
+  // cloud.height = 1;
+  // cloud.width = cloud.size();
+
+  sensor_msgs::PointCloud2 msg;
+
+  pcl::toROSMsg(cloud, msg);
+
+  // msg.header.frame_id = "world";
+  // pcl_conversions::toPCL(ros::Time::now(), msg.header.stamp);
+  // msg.height = 1;
+  // msg.width = points.size();
   // msg.points.resize(msg.points.size());
   // std::copy(msg.points.begin(), points.begin(), points.end());
   // msg.points = points;
-  for (auto const &p : points)
-    msg.points.push_back(p);
+  // for (auto const &p : points)
+  //   msg.points.push_back(p);
 
-  sensor_msgs::PointCloud2 ros_msg;
+  // sensor_msgs::PointCloud2 ros_msg;
 
-  pcl::toROSMsg(msg, ros_msg);
+  // pcl::toROSMsg(msg, ros_msg);
 
-  pub->publish(ros_msg);
+  // pub->publish(ros_msg);
+  pub->publish(msg);
+
 }
 
 #endif // PCL_VISUALIZE_H

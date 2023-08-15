@@ -28,6 +28,8 @@ public:
 
   void handleCollisionBulk(MaterialBlend const &blend);
 
+  Color interpolateColor(MaterialBlend const &blend) const;
+
 private:
 
   // gazebo::physics::ModelPtr m_model;

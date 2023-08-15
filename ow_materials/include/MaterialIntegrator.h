@@ -19,13 +19,16 @@ namespace ow_materials
 
 using HandleBulkCallback = std::function<void(MaterialBlend const &)>;
 
+using ColorizerCallback = std::function<Color(MaterialBlend const &)>;
+
 class MaterialIntegrator
 {
 public:
   MaterialIntegrator(ros::NodeHandle *node_handle,
                     const std::string &modification_topic,
                     AxisAlignedGrid<MaterialBlend> const *grid,
-                    HandleBulkCallback handle_bulk_cb);
+                    HandleBulkCallback handle_bulk_cb,
+                    ColorizerCallback colorizer_cb);
   ~MaterialIntegrator() = default;
 
   MaterialIntegrator() = delete;
@@ -34,6 +37,8 @@ public:
 
 private:
   const HandleBulkCallback m_handle_bulk_cb;
+
+  const ColorizerCallback m_colorizer_cb;
 
   ros::NodeHandle *m_node_handle;
 

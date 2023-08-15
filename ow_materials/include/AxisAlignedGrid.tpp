@@ -5,8 +5,11 @@
 #include <cmath>
 #include <limits>
 
-// #include <iostream>
-// #include <gazebo/gazebo.hh>
+// DEBUG
+#include <iostream>
+#include <gazebo/gazebo.hh>
+
+using std::min, std::max, std::round, std::floor, std::ceil, std::size_t;
 
 namespace ow_materials {
 
@@ -28,10 +31,10 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
   }
 
   auto const min_corner = ignition::math::Vector3d(
-    std::min(x0, x1), std::min(y0, y1), std::min(z0, z1)
+    min(x0, x1), min(y0, y1), min(z0, z1)
   );
   auto max_corner = ignition::math::Vector3d(
-    std::max(x0, x1), std::max(y0, y1), std::max(z0, z1)
+    max(x0, x1), max(y0, y1), max(z0, z1)
   );
   auto diagonal = max_corner - min_corner;
 
@@ -45,9 +48,9 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
 
   // compute number of cells in each dimension
   m_dimensions = ignition::math::Vector3<size_t>(
-    static_cast<size_t>(std::round(diagonal.X() / m_cell_length)),
-    static_cast<size_t>(std::round(diagonal.Y() / m_cell_length)),
-    static_cast<size_t>(std::round(diagonal.Z() / m_cell_length))
+    static_cast<size_t>(round(diagonal.X() / m_cell_length)),
+    static_cast<size_t>(round(diagonal.Y() / m_cell_length)),
+    static_cast<size_t>(round(diagonal.Z() / m_cell_length))
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
@@ -113,17 +116,77 @@ const ignition::math::Vector3d &AxisAlignedGrid<T>::getCenter() const {
   return center;
 };
 
+// template <typename T>
+// const T &AxisAlignedGrid<T>::getCellValueAtPoint(PositionType v) const
+// {
+//   auto grid_coord = v - getMinCorner();
+//   // gzlog << "grid_coord = " << grid_coord.X() << " x "
+//   //                   << grid_coord.Y() << " x "
+//   //                   << grid_coord.Z() << " meters." << std::endl;
+//   return getCellValue(convertPositionToIndex(grid_coord));
+// };
+
 template <typename T>
-const T &AxisAlignedGrid<T>::getCellValueAtPoint(double const x, double const y,
-                                                 double const z) const
+auto AxisAlignedGrid<T>::convertPositionToIndex(
+  PositionType grid_coords) const
 {
-  auto grid_coord = ignition::math::Vector3d(x, y, z) - getMinCorner();
-  // gzlog << "grid_coord = " << grid_coord.X() << " x "
-  //                   << grid_coord.Y() << " x "
-  //                   << grid_coord.Z() << " meters." << std::endl;
-  return getCellValue(std::floor(grid_coord.X() / m_cell_length),
-                      std::floor(grid_coord.Y() / m_cell_length),
-                      std::floor(grid_coord.Z() / m_cell_length));
+  return IndexType(
+    static_cast<size_t>(floor(grid_coords.X() / m_cell_length)),
+    static_cast<size_t>(floor(grid_coords.Y() / m_cell_length)),
+    static_cast<size_t>(floor(grid_coords.Z() / m_cell_length))
+  );
+};
+
+template <typename T>
+auto AxisAlignedGrid<T>::getCellCenter(IndexType i) const
+{
+  // return getMinCorner() + static_cast<PositionType>(i;
+  PositionType grid_coord = PositionType(
+    (static_cast<double>(i.X()) + 0.5) * m_cell_length,
+    (static_cast<double>(i.Y()) + 0.5) * m_cell_length,
+    (static_cast<double>(i.Z()) + 0.5) * m_cell_length);
+  return grid_coord + getMinCorner();
+};
+
+template <typename T>
+void AxisAlignedGrid<T>::runForEachInRectangle(
+  PositionType v0, PositionType v1,
+  // void(*f)(T, PositionType))
+  std::function<void(T, PositionType)> f) const
+{
+  auto grid_min = ignition::math::Vector3d(min(v0.X(), v1.X()),
+                                           min(v0.Y(), v1.Y()),
+                                           min(v0.Z(), v1.Z())) - getMinCorner();
+  auto grid_max = ignition::math::Vector3d(max(v0.X(), v1.X()),
+                                           max(v0.Y(), v1.Y()),
+                                           max(v0.Z(), v1.Z())) - getMinCorner();
+
+  // auto idx_min = convertPositionToIndex(grid_min);
+  auto idx_min = IndexType(
+    static_cast<size_t>(max(grid_min.X() / m_cell_length, 0.0)),
+    static_cast<size_t>(max(grid_min.Y() / m_cell_length, 0.0)),
+    static_cast<size_t>(max(grid_min.Z() / m_cell_length, 0.0))
+  );
+  auto idx_max = IndexType(
+    min(static_cast<size_t>(
+      ceil(grid_max.X() / m_cell_length)), m_dimensions.X()),
+    min(static_cast<size_t>(
+      ceil(grid_max.Y() / m_cell_length)), m_dimensions.Y()),
+    min(static_cast<size_t>(
+      ceil(grid_max.Z() / m_cell_length)), m_dimensions.Z())
+  );
+
+  gzlog << "min = (" << idx_min.X() << "," << idx_min.Y() << "," << idx_min.Z() << ")\n";
+  gzlog << "max = (" << idx_max.X() << "," << idx_max.Y() << "," << idx_max.Z() << std::endl;
+
+  for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
+    for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
+      for (auto z = idx_min.Z(); z != idx_max.Z(); ++z) {
+        auto i = IndexType(x, y, z);
+        f(getCellValue(i), getCellCenter(i));
+      }
+    }
+  }
 };
 
 }

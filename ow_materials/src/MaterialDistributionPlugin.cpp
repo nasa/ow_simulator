@@ -82,11 +82,15 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   m_visual_integrator = make_unique<MaterialIntegrator>(m_node_handle.get(),
     "/ow_dynamic_terrain/modification_differential/visual", m_grid.get(),
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
+      std::placeholders::_1),
+    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
   m_collision_integrator = make_unique<MaterialIntegrator>(m_node_handle.get(),
     "/ow_dynamic_terrain/modification_differential/collision", m_grid.get(),
     std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
+      std::placeholders::_1),
+    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
 
@@ -143,4 +147,24 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
   for (auto const &x : blend.m_blend)
     s << "\t" << x.second << "%% of " << static_cast<float>(x.first) << "\n";
   gzlog << s.str() << endl;
+}
+
+Color MaterialDistributionPlugin::interpolateColor(MaterialBlend const &blend) const
+{
+  Color c = std::accumulate(blend.m_blend.begin(), blend.m_blend.end(),
+    Color({0.0, 0.0, 0.0}),
+    [this]
+    (Color value, MaterialBlend::BlendType::value_type const &p) {
+      const auto m = m_material_db->getMaterial(p.first);
+      return Color(
+        {
+          value.r + p.second * m.color.r,
+          value.g + p.second * m.color.g,
+          value.b + p.second * m.color.b
+        }
+      );
+    }
+  );
+  const auto s = blend.m_blend.size();
+  return Color({c.r / s, c.g / s, c.b / s});
 }

@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include <gazebo/common/Assert.hh>
 
@@ -34,37 +35,50 @@ public:
   AxisAlignedGrid(const AxisAlignedGrid&) = delete;
   AxisAlignedGrid& operator=(const AxisAlignedGrid&) = delete;
 
-  const ignition::math::Vector3d &getDiagonal() const;
-  const ignition::math::Vector3d &getMaxCorner() const;
-  const ignition::math::Vector3d &getMinCorner() const;
-  const ignition::math::Vector3d &getCenter() const;
+  using PositionType = ignition::math::Vector3d;
+  using IndexType = ignition::math::Vector3<size_t>;
+
+  const PositionType &getDiagonal() const;
+  const PositionType &getMaxCorner() const;
+  const PositionType &getMinCorner() const;
+  const PositionType &getCenter() const;
 
   inline double getCellLength() const { return m_cell_length; }
 
-  const T &getCellValueAtPoint(double x, double y, double z) const;
+  // const T &getCellValueAtPoint(double x, double y, double z) const;
 
   inline bool containsPoint(double x, double y, double z) const {
     return m_domain->Contains(ignition::math::Vector3d(x, y, z));
   }
 
+  void runForEachInRectangle(PositionType v0, PositionType v1,
+    // void(*f)(const &T, PositionType));
+    std::function<void(T, PositionType)> f) const;
+
 private:
 
-  inline const T &getCellValue(size_t i, size_t j, size_t k) const {
-    return m_cells[index(i, j, k)];
+  inline const T &getCellValue(IndexType i) const {
+    return m_cells[index(i)];
   };
 
-  inline size_t index(size_t i, size_t j, size_t k) const {
-    GZ_ASSERT(i < m_dimensions.X(), "x is out of bounds");
-    GZ_ASSERT(j < m_dimensions.Y(), "y is out of bounds");
-    GZ_ASSERT(k < m_dimensions.Z(), "z is out of bounds");
-    return i + j * m_dimensions.X() + k * m_dimensions.X() * m_dimensions.Y();
+  auto convertPositionToIndex(PositionType grid_coords) const;
+
+  auto getCellCenter(IndexType i) const;
+
+  inline size_t index(IndexType i) const {
+    GZ_ASSERT(i.X() < m_dimensions.X(), "x is out of bounds");
+    GZ_ASSERT(i.Y() < m_dimensions.Y(), "y is out of bounds");
+    GZ_ASSERT(i.Z() < m_dimensions.Z(), "z is out of bounds");
+    return   i.X()
+           + i.Y() * m_dimensions.X()
+           + i.Z() * m_dimensions.X() * m_dimensions.Y();
   };
 
   double m_cell_length;
 
   std::unique_ptr<ignition::math::AxisAlignedBox> m_domain;
 
-  ignition::math::Vector3<size_t> m_dimensions;
+  IndexType m_dimensions;
 
   std::vector<T> m_cells;
 };
