@@ -150,6 +150,31 @@ auto AxisAlignedGrid<T>::getCellCenter(IndexType i) const
 };
 
 template <typename T>
+void AxisAlignedGrid<T>::runForEach(
+  std::function<void(T, PositionType)> f) const
+{
+  // for (const c : m_cells) {
+  //   size_t i = c - m_cells.begin(); // position in m_cells
+  //   auto idx = IndexType(
+  //     min(i),
+  //     min(i % m.dimensions.X(), m_dimensions.Y() - 1),
+  //     min(i % (m.dimensions.X() * m_dimensions.Y()), m_dimensions.Z() - 1)
+  //   )
+  //   f(m_cells, )
+  // }
+
+  for (auto x = size_t(0); x != m_dimensions.X(); ++x) {
+    for (auto y = size_t(0); y != m_dimensions.Y(); ++y) {
+      for (auto z = size_t(0); z != m_dimensions.Z(); ++z) {
+        auto i = IndexType(x, y, z);
+        f(getCellValue(i), getCellCenter(i));
+      }
+    }
+  }
+}
+
+
+template <typename T>
 void AxisAlignedGrid<T>::runForEachInRectangle(
   PositionType v0, PositionType v1,
   // void(*f)(T, PositionType))
@@ -190,4 +215,16 @@ void AxisAlignedGrid<T>::runForEachInRectangle(
   }
 };
 
+template <typename T>
+size_t AxisAlignedGrid<T>::index(IndexType i) const
+{
+  GZ_ASSERT(i.X() < m_dimensions.X(), "x is out of bounds");
+  GZ_ASSERT(i.Y() < m_dimensions.Y(), "y is out of bounds");
+  GZ_ASSERT(i.Z() < m_dimensions.Z(), "z is out of bounds");
+  return   i.X()
+         + i.Y() * m_dimensions.X()
+         + i.Z() * m_dimensions.X() * m_dimensions.Y();
+};
+
 }
+

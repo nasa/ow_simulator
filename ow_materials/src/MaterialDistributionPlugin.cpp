@@ -8,6 +8,12 @@
 
 #include <MaterialDistributionPlugin.h>
 
+// #include <pcl_visualize.h>
+
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include <populate_materials.h>
 
 using std::string, std::make_unique, std::endl;
@@ -94,6 +100,40 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       std::placeholders::_1)
   );
 
+
+  pcl::PointCloud<pcl::PointXYZRGB> grid_points;
+  // TODO: spin-off this process in another thread, it takes 6 seconds
+  // publish and latch grid data as a point cloud for visualization
+  m_grid->runForEach(
+    [&grid_points, this]
+    (MaterialBlend b, AxisAlignedGrid<MaterialBlend>::PositionType center) {
+      const Color c = interpolateColor(b);
+      grid_points.emplace_back(
+        static_cast<std::uint8_t>(c.r), // truncates double to int (<256)
+        static_cast<std::uint8_t>(c.g),
+        static_cast<std::uint8_t>(c.b)
+      );
+
+      // WORKAROUND for OW-1194, TF has an incorrect transform for
+      //            base_link (specific for atacama_y1a)
+      center -= AxisAlignedGrid<MaterialBlend>::PositionType(-1.0, 0.0, 0.37);
+
+      grid_points.back().x = static_cast<float>(center.X());
+      grid_points.back().y = static_cast<float>(center.Y());
+      grid_points.back().z = static_cast<float>(center.Z());
+    }
+  );
+  // publish latched, because points will never change
+  static ros::Publisher DEBUG_grid_points_pub
+      = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+    "/ow_materials/grid_points2", 1, true
+  );
+  grid_points.header.frame_id = "world";
+  pcl_conversions::toPCL(ros::Time::now(), grid_points.header.stamp);
+  sensor_msgs::PointCloud2 msg;
+  pcl::toROSMsg(grid_points, msg);
+  DEBUG_grid_points_pub.publish(msg);
+
   gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
 
   // DEBUG
@@ -139,7 +179,7 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
 
-  
+
 
   // TODO: publish points2 topic with bulk color
 

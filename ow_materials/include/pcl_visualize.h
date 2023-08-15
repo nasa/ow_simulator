@@ -18,10 +18,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 void publish_points_as_cloud(ros::Publisher *pub,
-    // const std::vector<pcl::PointXYZ> &points) {
-    // const std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> &points) {
-    pcl::PointCloud<pcl::PointXYZRGB> &cloud ) {
-
+                             pcl::PointCloud<pcl::PointXYZRGB> &cloud)
+{
   cloud.header.frame_id = "world";
   pcl_conversions::toPCL(ros::Time::now(), cloud.header.stamp);
   // cloud.height = 1;

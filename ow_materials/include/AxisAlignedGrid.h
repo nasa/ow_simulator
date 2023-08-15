@@ -51,6 +51,8 @@ public:
     return m_domain->Contains(ignition::math::Vector3d(x, y, z));
   }
 
+  void runForEach(std::function<void(T, PositionType)> f) const;
+
   void runForEachInRectangle(PositionType v0, PositionType v1,
     // void(*f)(const &T, PositionType));
     std::function<void(T, PositionType)> f) const;
@@ -69,14 +71,7 @@ private:
 
   auto getCellCenter(IndexType i) const;
 
-  inline size_t index(IndexType i) const {
-    GZ_ASSERT(i.X() < m_dimensions.X(), "x is out of bounds");
-    GZ_ASSERT(i.Y() < m_dimensions.Y(), "y is out of bounds");
-    GZ_ASSERT(i.Z() < m_dimensions.Z(), "z is out of bounds");
-    return   i.X()
-           + i.Y() * m_dimensions.X()
-           + i.Z() * m_dimensions.X() * m_dimensions.Y();
-  };
+  size_t index(IndexType i) const;
 
   double m_cell_length;
 

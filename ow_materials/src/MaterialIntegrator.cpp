@@ -27,7 +27,6 @@ MaterialIntegrator::MaterialIntegrator(ros::NodeHandle *node_handle,
   : m_node_handle(node_handle), m_grid(grid), m_handle_bulk_cb(handle_bulk_cb),
     m_colorizer_cb(colorizer_cb)
 {
-  gzlog << "MaterialIntegrator constructor called" << std::endl;
   m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 10,
     &MaterialIntegrator::onModification, this);
 }
@@ -109,8 +108,10 @@ void MaterialIntegrator::onModification(
               static_cast<std::uint8_t>(c.b)
             );
 
-            // WORKAROUND for OW-1194, TF has an incorrect transform for base_link
+            // WORKAROUND for OW-1194, TF has an incorrect transform for
+            //            base_link (specific for atacama_y1a)
             center -= PositionType(-1.0, 0.0, 0.37);
+
             points.back().x = static_cast<float>(center.X());
             points.back().y = static_cast<float>(center.Y());
             points.back().z = static_cast<float>(center.Z());
