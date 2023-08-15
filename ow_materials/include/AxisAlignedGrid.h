@@ -61,6 +61,10 @@ private:
     return m_cells[index(i)];
   };
 
+  inline T &getCellValue(IndexType i) {
+    return m_cells[index(i)];
+  };
+
   auto convertPositionToIndex(PositionType grid_coords) const;
 
   auto getCellCenter(IndexType i) const;

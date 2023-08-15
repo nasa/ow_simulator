@@ -138,6 +138,11 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
   for (auto const &x : blend.m_blend)
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
+
+  
+
+  // TODO: publish points2 topic with bulk color
+
 }
 
 void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)

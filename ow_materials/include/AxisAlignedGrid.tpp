@@ -8,6 +8,7 @@
 // DEBUG
 #include <iostream>
 #include <gazebo/gazebo.hh>
+#include <Materials.h>
 
 using std::min, std::max, std::round, std::floor, std::ceil, std::size_t;
 
@@ -70,23 +71,23 @@ AxisAlignedGrid<T>::AxisAlignedGrid(
 
   // fill cells with initial value
   auto total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
-  m_cells.resize(total_cells, initial_value);
+  // m_cells.resize(total_cells, initial_value);
 
   // DEMONSTRATION
-  // m_cells.resize(total_cells);
-  // for (size_t i = 0; i != m_dimensions.X(); ++i) {
-  //   for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-  //     for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-  //       m_cells[index(i, j, k)] = {
-  //         {
-  //           static_cast<uint8_t>(
-  //             (i > m_dimensions.X() / 2) + (i > m_dimensions.Y() / 2)
-  //           ), 1.0f
-  //         }
-  //       };
-  //     }
-  //   }
-  // }
+  m_cells.resize(total_cells);
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        getCellValue(IndexType(i, j, k)).m_blend = {
+          {
+            static_cast<uint8_t>(
+              (i > m_dimensions.X() / 2) + (j > m_dimensions.Y() / 2)),
+            1.0f
+          }
+        };
+      }
+    }
+  }
 
 };
 
@@ -176,8 +177,8 @@ void AxisAlignedGrid<T>::runForEachInRectangle(
       ceil(grid_max.Z() / m_cell_length)), m_dimensions.Z())
   );
 
-  gzlog << "min = (" << idx_min.X() << "," << idx_min.Y() << "," << idx_min.Z() << ")\n";
-  gzlog << "max = (" << idx_max.X() << "," << idx_max.Y() << "," << idx_max.Z() << std::endl;
+  // gzlog << "min = (" << idx_min.X() << "," << idx_min.Y() << "," << idx_min.Z() << ")\n";
+  // gzlog << "max = (" << idx_max.X() << "," << idx_max.Y() << "," << idx_max.Z() << std::endl;
 
   for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
     for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
