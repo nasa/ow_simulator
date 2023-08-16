@@ -74,7 +74,7 @@ void PowerSystemNode::initAndRun()
     }
     // If print_debug was false, then all flags remain false as initialized.
 
-    m_performance_mode = (system_config.getString("performance_mode") == TRUE);
+    m_full_battery_simulation = (system_config.getString("full_battery_simulation") == TRUE);
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_initial_power = system_config.getDouble("initial_power");
@@ -94,14 +94,14 @@ void PowerSystemNode::initAndRun()
     return;
   }
 
-  // Set m_active_nodes.
-  if (m_performance_mode)
+  // Set m_active_nodes depending on the full_battery_simulation flag.
+  if (m_full_battery_simulation)
   {
-    m_active_models = 1;
+    m_active_models = NUM_MODELS;
   }
   else
   {
-    m_active_models = NUM_MODELS;
+    m_active_models = 1;
   }
   m_deactivated_models = 0;
   
@@ -182,12 +182,21 @@ void PowerSystemNode::initAndRun()
 
   ROS_INFO_STREAM("Power system node running.");
 
-  // Notify the user if performance mode is enabled.
-  if (m_performance_mode)
+  // Notify the user of the state of the battery simulation.
+  if (m_full_battery_simulation)
   {
-    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Performance mode activated. This"
-                    << " means only one GSAP model will run predictions."
-                    << " Intra-battery faults may not work properly.");
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Full battery simulation active. "
+                    << "This means " << std::to_string(NUM_MODELS)
+                    << " prognosers are running battery predictions at once. "
+                    << "Intra-battery faults are possible to model with this, "
+                    << "but CPU load will be much higher.");
+  }
+  else
+  {
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Not simulating full battery. "
+                    << "This means only one GSAP model will run predictions to "
+                    << "keep performance optimal, but intra-battery faults "
+                    << "may not work properly.");
   }
 
   // This rate object is used to sync the cycles up to the provided Hz.
