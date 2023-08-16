@@ -14,21 +14,21 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/mat.hpp>
 
-/// DEBUG
-#include <pcl_visualize.h>
+#include <point_cloud_util.h>
 
 using namespace ow_materials;
 
-MaterialIntegrator::MaterialIntegrator(ros::NodeHandle *node_handle,
-                                       const std::string &modification_topic,
-                                       AxisAlignedGrid<MaterialBlend> const *grid,
-                                       HandleBulkCallback handle_bulk_cb,
-                                       ColorizerCallback colorizer_cb)
+MaterialIntegrator::MaterialIntegrator(
+  ros::NodeHandle *node_handle, AxisAlignedGrid<MaterialBlend> const *grid,
+  const std::string &modification_topic, const std::string &dug_points_topic,
+  HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid), m_handle_bulk_cb(handle_bulk_cb),
     m_colorizer_cb(colorizer_cb)
 {
   m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 10,
     &MaterialIntegrator::onModification, this);
+  m_dug_points_pub = m_node_handle
+    ->advertise<sensor_msgs::PointCloud2>(dug_points_topic, 10);
 }
 
 void MaterialIntegrator::onModification(
@@ -54,7 +54,7 @@ void MaterialIntegrator::onModification(
   const auto cols = diff_handle->image.cols;
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
-  const auto pixel_area = pixel_height * pixel_height;
+  // const auto pixel_area = pixel_height * pixel_height;
 
   // float volume_displaced = 0.0;
 
@@ -63,7 +63,6 @@ void MaterialIntegrator::onModification(
 
   MaterialBlend bulk_blend;
   pcl::PointCloud<pcl::PointXYZRGB> points;
-  uint merges = 0;
 
   // The following code makes these assumptions:
   //   a) Each voxel the modification touches acquires the entirety of that
@@ -78,7 +77,6 @@ void MaterialIntegrator::onModification(
       // change in height at pixel (x, y)
       auto dz = diff_handle->image.at<float>(i, j);
       if (dz < 0.0) {
-        // const float zz = msg->position.z;
         // const auto volume = diff_px * pixel_area;
         // compute location in grid
         const float x = (msg->position.x - msg->width / 2)
@@ -97,21 +95,13 @@ void MaterialIntegrator::onModification(
         m_grid->runForEachInRectangle(box_min, box_max,
           // FIXME: do this without static cast
           static_cast<std::function<void(MaterialBlend, PositionType)>>(
-          [&bulk_blend, &points, &merges, this]
+          [&bulk_blend, &points, this]
           (MaterialBlend b, PositionType center) {
             bulk_blend.merge(b);
-            ++merges;
-            const Color c = m_colorizer_cb(b);
-            points.emplace_back(
-              static_cast<std::uint8_t>(c.r), // truncates double to int (<256)
-              static_cast<std::uint8_t>(c.g),
-              static_cast<std::uint8_t>(c.b)
-            );
-
             // WORKAROUND for OW-1194, TF has an incorrect transform for
             //            base_link (specific for atacama_y1a)
             center -= PositionType(-1.0, 0.0, 0.37);
-
+            points.emplace_back();
             points.back().x = static_cast<float>(center.X());
             points.back().y = static_cast<float>(center.Y());
             points.back().z = static_cast<float>(center.Z());
@@ -121,28 +111,31 @@ void MaterialIntegrator::onModification(
     }
   }
 
-  gzlog << "point count = " << points.size() << "\n";
-  gzlog << "points[0] = (" << points[0].x << "," << points[0].y << "," << points[0].z << ")\n";
-  gzlog << "points[0] color = (" << (uint)points[0].r << "," << (uint)points[0].g << "," << (uint)points[0].b << ")\n";
-
-  gzlog << "merges = " << merges << std::endl;
-
-  if (merges == 0) {
+  if (points.size() == 0) {
     return;
   }
-
-  // DEBUG
-  static ros::Publisher DEBUG_points_publisher = m_node_handle->advertise<sensor_msgs::PointCloud2>(
-    "/ow_materials/dug_points2", 10
-  );
-  publish_points_as_cloud(&DEBUG_points_publisher, points);
 
   // normalize the bulk by the number of blends that were merged into it
   bulk_blend.normalize();
 
-  if (!bulk_blend.isNormalized()) {
-    gzwarn << "Bulk is not normalized" << std::endl;
+  Color bulk_color = m_colorizer_cb(bulk_blend);
+  std::uint32_t temp_rgb = static_cast<std::uint32_t>(bulk_color.r) << 16
+                         | static_cast<std::uint32_t>(bulk_color.g) << 8
+                         | static_cast<std::uint32_t>(bulk_color.b);
+  float bulk_rgb = *reinterpret_cast<float*>(&temp_rgb);
+  for (auto &p : points) {
+    p.rgb = bulk_rgb;
   }
+
+  // gzlog << "point count = " << points.size() << "\n";
+  // gzlog << "points[0] = (" << points[0].x << "," << points[0].y << "," << points[0].z << ")\n";
+  // gzlog << "points[0] color = (" << (uint)points[0].r << ","
+  //                                << (uint)points[0].g << ","
+  //                                << (uint)points[0].b << ")\n";
+
+  // gzlog << "merges = " << points.size() << std::endl;
+
+  publishPointCloud(&m_dug_points_pub, points);
 
   m_handle_bulk_cb(bulk_blend);
 }

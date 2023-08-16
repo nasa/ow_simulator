@@ -6,6 +6,7 @@
 #define MATERIAL_INTEGRATOR_H
 
 #include <functional>
+#include <memory>
 
 #include <ros/ros.h>
 
@@ -25,10 +26,11 @@ class MaterialIntegrator
 {
 public:
   MaterialIntegrator(ros::NodeHandle *node_handle,
-                    const std::string &modification_topic,
-                    AxisAlignedGrid<MaterialBlend> const *grid,
-                    HandleBulkCallback handle_bulk_cb,
-                    ColorizerCallback colorizer_cb);
+                     AxisAlignedGrid<MaterialBlend> const *grid,
+                     const std::string &modification_topic,
+                     const std::string &dug_points_topic,
+                     HandleBulkCallback handle_bulk_cb,
+                     ColorizerCallback colorizer_cb);
   ~MaterialIntegrator() = default;
 
   MaterialIntegrator() = delete;
@@ -36,15 +38,17 @@ public:
   MaterialIntegrator& operator=(const MaterialIntegrator&) = delete;
 
 private:
+  ros::NodeHandle *m_node_handle;
+
+  ros::Subscriber m_sub_modification_diff;
+
+  ros::Publisher m_dug_points_pub;
+
   const HandleBulkCallback m_handle_bulk_cb;
 
   const ColorizerCallback m_colorizer_cb;
 
-  ros::NodeHandle *m_node_handle;
-
   AxisAlignedGrid<MaterialBlend> const *m_grid;
-
-  ros::Subscriber m_sub_modification_diff;
 
   void onModification(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);

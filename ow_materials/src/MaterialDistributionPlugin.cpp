@@ -8,11 +8,12 @@
 
 #include <MaterialDistributionPlugin.h>
 
-// #include <pcl_visualize.h>
-
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
+// DEBUG
+// #include <sstream>
+// #include <pcl_ros/point_cloud.h>
+// #include <pcl/point_types.h>
+// #include <pcl_conversions/pcl_conversions.h>
+#include <point_cloud_util.h>
 
 #include <populate_materials.h>
 
@@ -85,24 +86,40 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   gzlog << PLUGIN_NAME << ": Materials database populated with "
         << m_material_db->size() << " materials.\n";
 
-  m_visual_integrator = make_unique<MaterialIntegrator>(m_node_handle.get(),
-    "/ow_dynamic_terrain/modification_differential/visual", m_grid.get(),
+  m_visual_integrator = make_unique<MaterialIntegrator>(
+    m_node_handle.get(), m_grid.get(),
+    "/ow_dynamic_terrain/modification_differential/visual",
+    "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
       std::placeholders::_1),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
-  m_collision_integrator = make_unique<MaterialIntegrator>(m_node_handle.get(),
-    "/ow_dynamic_terrain/modification_differential/collision", m_grid.get(),
+  m_collision_integrator = make_unique<MaterialIntegrator>(
+    m_node_handle.get(), m_grid.get(),
+    "/ow_dynamic_terrain/modification_differential/collision",
+    "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
       std::placeholders::_1),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
 
+  // publish latched, because points will never change
+  m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+    "/ow_materials/grid_points2", 1, true);
+  // the process takes about 6 seconds, so we spin it off in its own thread to
+  // not hold up loading the rest of Gazebo
+  std::thread t(&MaterialDistributionPlugin::publishGrid, this);
+  t.detach();
 
+  gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
+
+}
+
+void MaterialDistributionPlugin::publishGrid()
+{
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
-  // TODO: spin-off this process in another thread, it takes 6 seconds
   // publish and latch grid data as a point cloud for visualization
   m_grid->runForEach(
     [&grid_points, this]
@@ -123,53 +140,16 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       grid_points.back().z = static_cast<float>(center.Z());
     }
   );
-  // publish latched, because points will never change
-  static ros::Publisher DEBUG_grid_points_pub
-      = m_node_handle->advertise<sensor_msgs::PointCloud2>(
-    "/ow_materials/grid_points2", 1, true
-  );
-  grid_points.header.frame_id = "world";
-  pcl_conversions::toPCL(ros::Time::now(), grid_points.header.stamp);
-  sensor_msgs::PointCloud2 msg;
-  pcl::toROSMsg(grid_points, msg);
-  DEBUG_grid_points_pub.publish(msg);
-
-  gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
+  // grid_points.header.frame_id = "world";
+  // pcl_conversions::toPCL(ros::Time::now(), grid_points.header.stamp);
+  // sensor_msgs::PointCloud2 msg;
+  // pcl::toROSMsg(grid_points, msg);
+  // DEBUG_grid_points_pub.publish(msg);
+  publishPointCloud(&m_grid_pub, grid_points);
 
   // DEBUG
-  // auto a = m_grid->getCenter();
-  // gzlog << "a = " << a.X() << " x "
-  //                   << a.Y() << " x "
-  //                   << a.Z() << " meters.\n";
-  // if (m_grid->containsPoint(a.X(), a.Y(), a.Z())) {
-  //   auto blend_000 = m_grid->getCellValueAtPoint(a.X(), a.Y(), a.Z());
-  //   gzlog << PLUGIN_NAME << "0, 0, 0 cell contents:";
-  //   for (const auto &p : blend_000.m_blend) {
-  //     gzlog << "  " << static_cast<int>(p.first) << ": " << p.second;
-  //   }
-  //   gzlog << endl;
-  // } else {
-  //   gzlog << "DOES NOT CONTAIN" << endl;
-  // }
-
-
-  // if (m_grid->containsPoint(a.X(), a.Y(), a.Z())) {
-  //   auto blend_000 = m_grid->getCellValueAtPoint(a.X(), a.Y(), a.Z());
-  //   gzlog << PLUGIN_NAME << "0, 0, 0 cell contents:";
-  //   for (const auto &p : blend_000.m_blend) {
-  //     gzlog << "  " << p.first << ": " << p.second;
-  //   }
-  //   gzlog << endl;
-  // } else {
-  //   gzerr << PLUGIN_NAME << "DOES NOT CONTAIN POINT" << endl;
-  // }
-
-
+  gzlog << "Grid visualization now ready for viewing in Rviz" << std::endl;
 }
-
-// DEBUG
-#include <sstream>
-#include <gazebo/gazebo.hh>
 
 void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
 {
@@ -196,11 +176,12 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 
 Color MaterialDistributionPlugin::interpolateColor(MaterialBlend const &blend) const
 {
-  Color c = std::accumulate(blend.m_blend.begin(), blend.m_blend.end(),
+  return std::accumulate(blend.m_blend.begin(), blend.m_blend.end(),
     Color({0.0, 0.0, 0.0}),
     [this]
     (Color value, MaterialBlend::BlendType::value_type const &p) {
       const auto m = m_material_db->getMaterial(p.first);
+      // TODO: define + and * operators for color
       return Color(
         {
           value.r + p.second * m.color.r,
@@ -210,6 +191,4 @@ Color MaterialDistributionPlugin::interpolateColor(MaterialBlend const &blend) c
       );
     }
   );
-  const auto s = blend.m_blend.size();
-  return Color({c.r / s, c.g / s, c.b / s});
 }

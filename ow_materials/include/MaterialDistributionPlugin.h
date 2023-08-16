@@ -31,10 +31,13 @@ public:
   Color interpolateColor(MaterialBlend const &blend) const;
 
 private:
+  void publishGrid();
 
   // gazebo::physics::ModelPtr m_model;
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
+
+  ros::Publisher m_grid_pub;
 
   std::unique_ptr<MaterialDatabase> m_material_db;
   std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;

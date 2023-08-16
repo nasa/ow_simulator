@@ -118,6 +118,7 @@ add_library(MaterialDistributionPlugin
   src/Materials.cpp
   src/populate_materials.cpp
   src/MaterialIntegrator.cpp
+  src/point_cloud_util.cpp
 )
 add_dependencies(MaterialDistributionPlugin
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
