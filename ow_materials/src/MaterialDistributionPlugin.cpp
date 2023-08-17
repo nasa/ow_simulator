@@ -38,9 +38,6 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 {
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAMES);
 
-  ros::AsyncSpinner spinner(0);
-  spinner.start();
-
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
     gzerr << "Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B
