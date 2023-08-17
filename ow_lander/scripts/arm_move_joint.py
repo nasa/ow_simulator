@@ -9,14 +9,9 @@ from ow_lander import node_helper
 
 import argparse
 
-from distutils.util import strtobool
-
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   description="Move an arm joint to either an absolute or relative position.")
-parser.add_argument('relative', type=strtobool, nargs='?', default='False',
-  help="Joint will move to the provided position relative to its current "
-       "position.")
 parser.add_argument('joint', type=int, nargs='?', default=0, choices=range(6),
   help="Index of joint that will be moved be moved" \
        "\n0 : shoulder yaw" \
@@ -26,7 +21,10 @@ parser.add_argument('joint', type=int, nargs='?', default=0, choices=range(6),
        "\n4 : hand yaw" \
        "\n5 : scoop yaw")
 parser.add_argument('angle', type=float, nargs='?', default=-0.5,
-  help="Absolute/relative angle position in radians")
+  help="Position/rotation in position in radians")
+parser.add_argument('--relative', '-r', action='store_true', default=False,
+  help="Joints will move to the provided positions relative to their current "
+       "positions.")
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(actions.ArmMoveJointServer,

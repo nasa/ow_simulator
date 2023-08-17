@@ -18,6 +18,7 @@
 #include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <unordered_map>
 #include <random>
@@ -64,8 +65,10 @@ private:
   // true. Otherwise, return false.
   bool findJointIndex(unsigned int joint, unsigned int& out_index);
 
-  // Camera functions
-  void cameraFaultRepublishCb(const sensor_msgs::Image& msg);
+  // Camera functions. Complimentary camera topics are handled separately, providing
+  //  a baseline for expanding fault injection to handle more specific camera faults
+  void cameraFaultRawRepublishCb(const sensor_msgs::Image& msg);
+  void cameraFaultInfoRepublishCb(const sensor_msgs::CameraInfo& msg);
   void checkCameraFaults();
 
   // Publishers and subscribers
@@ -80,7 +83,10 @@ private:
 
   // Camera
   ros::Subscriber m_camera_raw_sub;
-  ros::Publisher m_camera_trigger_remapped_pub;
+  ros::Subscriber m_camera_info_sub;
+  ros::Publisher m_camera_raw_remapped_pub;
+  ros::Publisher m_camera_info_remapped_pub;
+
 
   // Antenna
   ros::Subscriber m_fault_ant_pan_sub;

@@ -9,26 +9,24 @@ from ow_lander import node_helper
 
 import argparse
 
-from distutils.util import strtobool
-
 parser = argparse.ArgumentParser(
   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   description="Move all arm joints to either absolute or relative positions.")
-parser.add_argument('relative', type=strtobool, nargs='?', default='False',
+parser.add_argument('j_shou_yaw', type=float,
+  help="Shoulder yaw joint position/rotation in radians")
+parser.add_argument('j_shou_pitch', type=float,
+  help="Shoulder pitch joint position/rotation in radians")
+parser.add_argument('j_prox_pitch', type=float,
+  help="Proximal pitch joint position/rotation in radians")
+parser.add_argument('j_dist_pitch', type=float,
+  help="Distal pitch joint position/rotation in radians")
+parser.add_argument('j_hand_yaw', type=float,
+  help="Hand yaw joint position/rotation in radians")
+parser.add_argument('j_scoop_yaw', type=float,
+  help="Scoop yaw joint position/rotation in radians")
+parser.add_argument('--relative', '-r', action='store_true', default=False,
   help="Joints will move to the provided positions relative to their current "
        "positions.")
-parser.add_argument('j_shou_yaw', type=float, nargs='?', default=0.1,
-  help="Shoulder yaw joint angle")
-parser.add_argument('j_shou_pitch', type=float, nargs='?', default=0.1,
-  help="Shoulder pitch joint angle")
-parser.add_argument('j_prox_pitch', type=float, nargs='?', default=0.1,
-  help="Proximal pitch joint angle")
-parser.add_argument('j_dist_pitch', type=float, nargs='?', default=0.1,
-  help="Distal pitch joint angle")
-parser.add_argument('j_hand_yaw', type=float, nargs='?', default=0.1,
-  help="Hand yaw joint angle")
-parser.add_argument('j_scoop_yaw', type=float, nargs='?', default=0.1,
-  help="Scoop yaw joint angle")
 args = parser.parse_args()
 
 angles_arg = [args.j_shou_yaw, args.j_shou_pitch, args.j_prox_pitch,

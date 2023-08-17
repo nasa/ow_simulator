@@ -9,6 +9,7 @@
         <arg name="gzclient" value="$(arg gzclient)"/>
     </include>
 
-    <test test-name="arm_check_service" pkg="ow_sim_tests" type="arm_check_service.py" time-limit="700.0" />
-
+    <test test-name="test_task_discard_sample" pkg="ow_sim_tests"
+        type="test_task_discard_sample.py" time-limit="700.0"/>
+    
 </launch>

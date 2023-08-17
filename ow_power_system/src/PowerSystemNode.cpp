@@ -74,6 +74,7 @@ bool PowerSystemNode::loadSystemConfig()
   m_gsap_rate_hz = system_config.getDouble("gsap_rate");
   m_profile_increment = system_config.getInt32("profile_increment");
   m_moving_average_window = system_config.getInt32("power_average_size");
+  m_spinner_threads = system_config.getInt32("spinner_threads");
   return true;
 }
 
@@ -208,22 +209,35 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   for (auto i = 0; i < ow_lander::NUM_JOINTS; ++i)
     power_watts += fabs(msg->velocity[i] * msg->effort[i]);
 
-  m_power_values[++m_power_values_index % m_power_values.size()] = power_watts;   // [W]
+  // Add the current power_watts value to the moving average window, overwriting
+  // the oldest entry. Calculate the average mechanical power within the window.
+  m_power_values[m_power_values_index++ % m_power_values.size()] = power_watts;
   auto mean_mechanical_power =
       accumulate(begin(m_power_values), end(m_power_values), 0.0) / m_power_values.size();
 
+  // Set the current unprocessed value to the current average.
+  // It's not accumulating, just storing the most recent average.
+  m_unprocessed_mechanical_power = mean_mechanical_power;
+
+  // Publish mechanical raw & average power from jointStatesCb calculations.
   Float64 mechanical_power_raw_msg, mechanical_power_avg_msg;
   mechanical_power_raw_msg.data = power_watts;
   mechanical_power_avg_msg.data = mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 
-  m_unprocessed_mechanical_power = mean_mechanical_power;
-
+  // If the prognoser is ready for a new batch of data, signal the average
+  // mechanical power to be sent in. Otherwise (if the prognoser is currently
+  // processing), discard the current average from this callback.
+  // NOTE: This behavior is not ideal, but since only one batch of data can be
+  //       sent into GSAP's simple prognoser per 0.5Hz prediction, message data
+  //       has to be discarded. Once the pack model with its asynchronous
+  //       prognosers is implemented, all data can be sent in regardless of the
+  //       prediction speed of GSAP.
   if (!m_processing_power_batch)
   {
     m_mechanical_power_to_be_processed = m_unprocessed_mechanical_power;
-    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator
+    m_unprocessed_mechanical_power = 0.0;   // reset the accumulator(?)
     m_trigger_processing_new_power_batch = true;
   }
 }
@@ -514,13 +528,17 @@ void PowerSystemNode::Run()
 {
   ROS_INFO("Power system node running.");
 
+  // Start the asynchronous spinner, which will call jointStatesCb as the
+  // joint_states topic is published (50Hz).
+  ros::AsyncSpinner spinner(m_spinner_threads);
+  spinner.start();
+
   // For simplicity, we run the power node at the same rate as GSAP.
   ros::Rate rate(m_gsap_rate_hz);
 
   while (ros::ok())
   {
-    ros::spinOnce();
-
+    // If there is a new mechanical power average ready to send to GSAP, do so.
     if (m_trigger_processing_new_power_batch)
     {
       m_trigger_processing_new_power_batch = false;
@@ -531,6 +549,8 @@ void PowerSystemNode::Run()
 
     rate.sleep();
   }
+
+  spinner.stop();
 }
 
 int main(int argc, char* argv[])

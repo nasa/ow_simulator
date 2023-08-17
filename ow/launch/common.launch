@@ -5,7 +5,7 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
-  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states StereoCamera/left/image_raw:=/_original/StereoCamera/left/image_raw" />
+  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states StereoCamera/left/image_raw:=/_original/StereoCamera/left/image_raw StereoCamera/left/camera_info:=/_original/StereoCamera/left/camera_info"/>
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true" />

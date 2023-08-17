@@ -250,24 +250,27 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Poin
     return false;
   }
 
-  auto heightmap_size = static_cast<int>(terrain->getSize());
-  auto left = max(center.x - image.cols / 2, 0);
-  auto top = max(center.y - image.rows / 2, 0);
-  auto right = min(center.x - image.cols / 2 + image.cols - 1, heightmap_size);
-  auto bottom = min(center.y - image.rows / 2 + image.rows - 1, heightmap_size);
+  int left = center.x - image.cols / 2;
+  int top = center.y - image.rows / 2;
+  int right = left + image.cols - 1;
+  int bottom = top + image.rows - 1;
 
   auto result = OpenCV_Util::createZerosMatLike(image);
   auto diff = OpenCV_Util::createZerosMatLike(image);
 
   bool change_occurred = false;
 
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
+  for (int y = top; y <= bottom; ++y)
+    for (int x = left; x <= right; ++x)
     {
-      auto pixel_value = image.at<float>(y - top, x - left);
+      // Using bottom - y instead of y - top because cv::Mat has a different
+      // layout than Ogre Heightmaps.
+      auto cv_index_y = bottom - y;
+      auto cv_index_x = x - left;
+      auto pixel_value = image.at<float>(cv_index_y, cv_index_x);
       if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
         continue;
-      
+
       auto old_height = get_height_value(x, y);
       auto new_height = merge_method(old_height, pixel_value + z_bias);
 
@@ -277,10 +280,10 @@ bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Poin
 
       if (old_height == new_height) 
         continue; // no change is necessary
-      
+
       set_height_value(x, y, new_height);
 
-      diff.at<float>(iy, ix) = new_height - old_height;
+      diff.at<float>(cv_index_y, cv_index_x) = new_height - old_height;
       
       // if we make it here, flag that a change has occurred
       change_occurred = true;

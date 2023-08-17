@@ -638,7 +638,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     try:
       # transform only position
-      intended_start_position_stamped = self.transform_to_planning_frame(
+      estimated_surface_stamped = self.transform_to_planning_frame(
         self.get_intended_position(goal.frame, goal.relative, goal.position)
       )
       # normal is always considered in base_link regardless of frame parameter
@@ -650,21 +650,26 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
     # pose before end-effector is driven towards surface
     intended_start_pose_stamped = PoseStamped(
-      header=intended_start_position_stamped.header,
+      header=estimated_surface_stamped.header,
       pose=Pose(
-        position=intended_start_position_stamped.point,
+        # begin a distance along the anti-normal direction from surface position
+        position=math3d.add(
+          estimated_surface_stamped.point,
+          math3d.scalar_multiply(-goal.distance, normal)
+        ),
         orientation=orientation
       )
     )
-    max_distance = goal.distance + goal.overdrive
-    displacement = math3d.scalar_multiply(max_distance, normal)
     # pose after end-effector has driven its maximum distance towards surface
     # if there is no surface, the end-effector will reach this pose
     intended_end_pose_stamped = PoseStamped(
-      header=intended_start_position_stamped.header,
+      header=estimated_surface_stamped.header,
       pose=Pose(
+        # end an overdrive along the normal direction from the surface position
         position=math3d.add(
-          intended_start_position_stamped.point, displacement),
+          estimated_surface_stamped.point,
+          math3d.scalar_multiply(goal.overdrive, normal)
+        ),
         orientation=orientation
       )
     )
@@ -694,7 +699,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # local function to compute progress of the action during surface approach
     def compute_distance():
       pose = self.get_end_effector_pose(constants.FRAME_ID_BASE).pose
-      d = math3d.subtract(pose.position, intended_start_position_stamped.point)
+      d = math3d.subtract(pose.position, estimated_surface_stamped.point)
       return math3d.norm(d)
     # setup F/T monitor and its callback
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
