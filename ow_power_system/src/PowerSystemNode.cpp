@@ -98,7 +98,7 @@ void PowerSystemNode::initAndRun()
   if (m_active_models < 1 || m_active_models > NUM_MODELS)
   {
     ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: "
-                    << "Invalid number of active nodes specified in "
+                    << "Invalid number of active models specified in "
                     << "system.cfg! Check the value of 'active_models' "
                     << "and ensure it is between 1 & "
                     << std::to_string(NUM_MODELS) << ". Defaulting to 1...");
