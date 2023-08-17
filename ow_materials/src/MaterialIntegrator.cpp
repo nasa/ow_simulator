@@ -37,7 +37,6 @@ void MaterialIntegrator::onModification(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
   using namespace cv_bridge;
-  using PositionType = AxisAlignedGrid<MaterialBlend>::PositionType;
 
   auto diff_handle = CvImageConstPtr();
   auto result_handle = CvImageConstPtr();
@@ -87,28 +86,26 @@ void MaterialIntegrator::onModification(
                           - static_cast<float>(j) / rows * msg->height;
         // starting layer position; next loop will iterate up to the original z
         auto z_result = result_handle->image.at<float>(i, j);
-        auto box_min = PositionType(x, y, z_result);
-        auto box_max = PositionType(x + pixel_width,
-                                    y + pixel_height,
-                                    z_result - dz); // dz is always negative
+        auto box_min = GridPositionType(x, y, z_result);
+        auto box_max = GridPositionType(x + pixel_width,
+                                        y + pixel_height,
+                                        z_result - dz); // dz is always negative
         // SAVED for debugging
         // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
         // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
-        m_grid->runForEachInRectangle(box_min, box_max,
-          // FIXME: do this without static cast
-          static_cast<std::function<void(MaterialBlend, PositionType)>>(
+        m_grid->runForEachInAxisAlignedBox(box_min, box_max,
           [&bulk_blend, &points, this]
-          (MaterialBlend b, PositionType center) {
+          (MaterialBlend b, GridPositionType center) {
             bulk_blend.merge(b);
             // WORKAROUND for OW-1194, TF has an incorrect transform for
             //            base_link (specific for atacama_y1a)
-            center -= PositionType(-1.0, 0.0, 0.37);
+            center -= GridPositionType(-1.0, 0.0, 0.37);
             points.emplace_back();
             points.back().x = static_cast<float>(center.X());
             points.back().y = static_cast<float>(center.Y());
             points.back().z = static_cast<float>(center.Z());
           }
-        ));
+        );
       }
     }
   }
@@ -121,9 +118,9 @@ void MaterialIntegrator::onModification(
   bulk_blend.normalize();
 
   Color bulk_color = m_colorizer_cb(bulk_blend);
-  std::uint32_t temp_rgb = static_cast<std::uint32_t>(bulk_color.r) << 16
-                         | static_cast<std::uint32_t>(bulk_color.g) << 8
-                         | static_cast<std::uint32_t>(bulk_color.b);
+  uint32_t temp_rgb = static_cast<uint32_t>(bulk_color.r) << 16
+                    | static_cast<uint32_t>(bulk_color.g) << 8
+                    | static_cast<uint32_t>(bulk_color.b);
   float bulk_rgb = *reinterpret_cast<float*>(&temp_rgb);
   for (auto &p : points) {
     p.rgb = bulk_rgb;

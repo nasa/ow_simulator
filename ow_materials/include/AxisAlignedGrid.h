@@ -9,8 +9,6 @@
 #include <memory>
 #include <functional>
 
-#include <gazebo/common/Assert.hh>
-
 #include <ignition/math/AxisAlignedBox.hh>
 
 namespace ow_materials {
@@ -23,61 +21,52 @@ public:
     : std::runtime_error(what_arg) { };
 };
 
+using GridPositionType = ignition::math::Vector3d;
+
 template <typename T>
 class AxisAlignedGrid {
+  using GridIndexType = ignition::math::Vector3<std::size_t>;
 public:
-  AxisAlignedGrid(double x0, double y0, double z0,
-                  double x1, double y1, double z1,
-                  double cell_side_length, T initial_value);
+  AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
+                  double cell_side_length);
   ~AxisAlignedGrid() = default;
 
   AxisAlignedGrid() = delete;
   AxisAlignedGrid(const AxisAlignedGrid&) = delete;
   AxisAlignedGrid& operator=(const AxisAlignedGrid&) = delete;
 
-  using PositionType = ignition::math::Vector3d;
-  using IndexType = ignition::math::Vector3<size_t>;
-
-  const PositionType &getDiagonal() const;
-  const PositionType &getMaxCorner() const;
-  const PositionType &getMinCorner() const;
-  const PositionType &getCenter() const;
+  const GridPositionType &getDiagonal() const;
+  const GridPositionType &getMaxCorner() const;
+  const GridPositionType &getMinCorner() const;
+  const GridPositionType &getCenter() const;
 
   inline double getCellLength() const { return m_cell_length; }
 
-  // const T &getCellValueAtPoint(double x, double y, double z) const;
+  // WARNING: execution will take a long time even for moderate-sized grids
+  void runForEach(std::function<void(T, GridPositionType)> f) const;
 
-  inline bool containsPoint(double x, double y, double z) const {
-    return m_domain->Contains(ignition::math::Vector3d(x, y, z));
-  }
-
-  void runForEach(std::function<void(T, PositionType)> f) const;
-
-  void runForEachInRectangle(PositionType v0, PositionType v1,
-    // void(*f)(const &T, PositionType));
-    std::function<void(T, PositionType)> f) const;
+  void runForEachInAxisAlignedBox(GridPositionType v0, GridPositionType v1,
+                              std::function<void(T, GridPositionType)> f) const;
 
 private:
 
-  inline const T &getCellValue(IndexType i) const {
+  GridPositionType getCellCenter(GridIndexType i) const;
+
+  inline const T &getCellValue(GridIndexType i) const {
     return m_cells[index(i)];
   };
 
-  inline T &getCellValue(IndexType i) {
+  inline T &getCellValue(GridIndexType i) {
     return m_cells[index(i)];
   };
 
-  auto convertPositionToIndex(PositionType grid_coords) const;
-
-  auto getCellCenter(IndexType i) const;
-
-  size_t index(IndexType i) const;
+  std::size_t index(GridIndexType i) const;
 
   double m_cell_length;
 
   std::unique_ptr<ignition::math::AxisAlignedBox> m_domain;
 
-  IndexType m_dimensions;
+  GridIndexType m_dimensions;
 
   std::vector<T> m_cells;
 };

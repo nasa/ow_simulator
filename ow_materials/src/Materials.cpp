@@ -9,6 +9,16 @@
 
 using namespace ow_materials;
 
+bool MaterialBlend::isNormalized() const {
+  return std::fabs(1.0 - sumConcentrations())
+    <= std::numeric_limits<float>::epsilon();
+}
+
+void MaterialBlend::normalize() {
+  const auto denominator = sumConcentrations();
+  divideElementWise(denominator);
+}
+
 void MaterialBlend::merge(MaterialBlend const &other) {
   // Merge this blend with another blend by assigning the summation of their
   // concentrations per material. A material missing from the current
@@ -21,27 +31,16 @@ void MaterialBlend::merge(MaterialBlend const &other) {
   );
 }
 
-void MaterialBlend::normalize() {
-  const auto denominator = sumConcentrations();
-  divideElementWise(denominator);
-}
-
 void MaterialBlend::divideElementWise(float denominator) {
   for (auto &b : m_blend) {
     b.second /= denominator;
   }
 }
 
-bool MaterialBlend::isNormalized() {
-  return std::fabs(1.0 - sumConcentrations())
-    <= std::numeric_limits<float>::epsilon();
-}
-
-float MaterialBlend::sumConcentrations() {
-  auto sum = std::accumulate(m_blend.begin(), m_blend.end(), 0.0,
+float MaterialBlend::sumConcentrations() const {
+  return std::accumulate(m_blend.begin(), m_blend.end(), 0.0,
     [](float value, BlendType::value_type const &p) {
       return value + p.second;
     }
   );
-  return sum;
 }

@@ -11,7 +11,7 @@
 namespace ow_materials
 {
 
-using MaterialID = uint8_t;
+using MaterialID = std::uint8_t;
 
 struct Color
 {
@@ -32,38 +32,44 @@ struct Material
   Color color;
 
   // TODO:
-  //  1. add appearance parameters
-  // float abledo;
-  //  2. add terramechanics parameters
   // double cohesion;
   // double friction_angle;
 
 };
 
-// STUB: The requirements for this class are unclear at this stage, will expand
-//       on later when they are better defined.
-// Possible Improvements:
+// Possible improvements to MaterialBlend:
 //   1. Shared contiguous memory for all instances (locality of reference)
 //   2. Cache commonly reference values, like blend hardness (computation)
-//   3. Encapsulation of blend map
-//   4. Blend maintenance functions like `normalize`
-struct MaterialBlend {
+
+class MaterialBlend {
+public:
   MaterialBlend() = default;
+  ~MaterialBlend() = default;
+  MaterialBlend(const MaterialBlend&) = default;
+  MaterialBlend& operator=(const MaterialBlend&) = default;
 
   using BlendType = std::unordered_map<MaterialID, float>;
 
-  BlendType m_blend;
+  inline BlendType const &getBlendMap() const {
+    return m_blend;
+  }
 
-  void merge(MaterialBlend const &other);
+  inline BlendType &getBlendMap() {
+    return m_blend;
+  }
+
+  bool isNormalized() const;
 
   void normalize();
 
-  void divideElementWise(float denominator);
-
-  bool isNormalized();
+  void merge(MaterialBlend const &other);
 
 private:
-  float sumConcentrations();
+  void divideElementWise(float denominator);
+
+  float sumConcentrations() const;
+
+  BlendType m_blend;
 };
 
 }

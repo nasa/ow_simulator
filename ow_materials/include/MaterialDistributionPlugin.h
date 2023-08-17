@@ -22,6 +22,13 @@ namespace ow_materials
 class MaterialDistributionPlugin : public gazebo::ModelPlugin
 {
 public:
+  MaterialDistributionPlugin() = default;
+  ~MaterialDistributionPlugin() = default;
+
+  MaterialDistributionPlugin(const MaterialDistributionPlugin&) = delete;
+  MaterialDistributionPlugin& operator=(
+    const MaterialDistributionPlugin&) = delete;
+
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
   void handleVisualBulk(MaterialBlend const &blend);
@@ -32,8 +39,6 @@ public:
 
 private:
   void publishGrid();
-
-  // gazebo::physics::ModelPtr m_model;
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
 

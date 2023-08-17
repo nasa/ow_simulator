@@ -8,17 +8,11 @@
 
 #include <MaterialDistributionPlugin.h>
 
-// DEBUG
-// #include <sstream>
-// #include <pcl_ros/point_cloud.h>
-// #include <pcl/point_types.h>
-// #include <pcl_conversions/pcl_conversions.h>
 #include <point_cloud_util.h>
 
 #include <populate_materials.h>
 
 using std::string, std::make_unique, std::endl, std::uint8_t;
-using ignition::math::Vector3d;
 
 using namespace ow_materials;
 using namespace gazebo;
@@ -49,18 +43,13 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     return;
   }
 
-  const auto corner_a = sdf->Get<Vector3d>(PARAMETER_CORNER_A);
-  const auto corner_b = sdf->Get<Vector3d>(PARAMETER_CORNER_B);
+  const auto corner_a = sdf->Get<GridPositionType>(PARAMETER_CORNER_A);
+  const auto corner_b = sdf->Get<GridPositionType>(PARAMETER_CORNER_B);
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
-  auto base_blend = MaterialBlend();
-  base_blend.m_blend = {{0, 0.6}, {2, 0.4}};
   try {
-    m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(
-      corner_a.X(), corner_a.Y(), corner_a.Z(),
-      corner_b.X(), corner_b.Y(), corner_b.Z(),
-      cell_side_length, base_blend
-    );
+    m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(corner_a, corner_b,
+                                                         cell_side_length);
   } catch (const GridConfigError &e) {
     gzerr << e.what() << endl;
     return;
@@ -124,7 +113,7 @@ void MaterialDistributionPlugin::publishGrid()
   // publish and latch grid data as a point cloud for visualization
   m_grid->runForEach(
     [&grid_points, this]
-    (MaterialBlend b, AxisAlignedGrid<MaterialBlend>::PositionType center) {
+    (MaterialBlend b, GridPositionType center) {
       const Color c = interpolateColor(b);
       grid_points.emplace_back(
         static_cast<uint8_t>(c.r), // truncates double to int (<256)
@@ -134,7 +123,7 @@ void MaterialDistributionPlugin::publishGrid()
 
       // WORKAROUND for OW-1194, TF has an incorrect transform for
       //            base_link (specific for atacama_y1a)
-      center -= AxisAlignedGrid<MaterialBlend>::PositionType(-1.0, 0.0, 0.37);
+      center -= GridPositionType(-1.0, 0.0, 0.37);
 
       grid_points.back().x = static_cast<float>(center.X());
       grid_points.back().y = static_cast<float>(center.Y());
@@ -153,7 +142,7 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
   std::stringstream s;
   s << "handleVisualBulk: STUBBED\n"
        "the bulk contains\n";
-  for (auto const &x : blend.m_blend)
+  for (auto const &x : blend.getBlendMap())
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
 }
@@ -163,14 +152,15 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
   std::stringstream s;
   s << "handleCollisionBulk: STUBBED\n"
        "the bulk contains\n";
-  for (auto const &x : blend.m_blend)
+  for (auto const &x : blend.getBlendMap())
     s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
 }
 
-Color MaterialDistributionPlugin::interpolateColor(MaterialBlend const &blend) const
+Color MaterialDistributionPlugin::interpolateColor(
+  MaterialBlend const &blend) const
 {
-  return std::accumulate(blend.m_blend.begin(), blend.m_blend.end(),
+  return std::accumulate(blend.getBlendMap().begin(), blend.getBlendMap().end(),
     Color({0.0, 0.0, 0.0}),
     [this]
     (Color value, MaterialBlend::BlendType::value_type const &p) {
