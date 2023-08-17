@@ -74,7 +74,7 @@ void DynamicTerrainVisual::initMaskTexture(unsigned int texSize)
   pixelBuffer->lock(HardwareBuffer::HBL_DISCARD);
 
   const PixelBox& pixelBox = pixelBuffer->getCurrentLock();
-  uint8* pixels = static_cast<uint8*>(pixelBox.data);
+  uint8_t* pixels = static_cast<uint8_t*>(pixelBox.data);
 
   // Paint it white
   memset(pixels, 255, texSize * texSize);

@@ -252,9 +252,9 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
 
   auto diff = OpenCV_Util::createZerosMatLike(image);
 
-  uint32 mask_size = 0;
+  uint32_t mask_size = 0;
   HardwarePixelBufferSharedPtr pixel_buffer;
-  uint8* mask_pixels = nullptr;
+  uint8_t* mask_pixels = nullptr;
   if (!maskmap.isNull())
   {
     mask_size = maskmap->getWidth();
@@ -263,7 +263,7 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
     pixel_buffer->lock(HardwareBuffer::HBL_DISCARD);
     // Get pixel pointer
     const PixelBox& pixel_box = pixel_buffer->getCurrentLock();
-    mask_pixels = static_cast<uint8*>(pixel_box.data);
+    mask_pixels = static_cast<uint8_t*>(pixel_box.data);
   }
 
   bool change_occurred = false;
