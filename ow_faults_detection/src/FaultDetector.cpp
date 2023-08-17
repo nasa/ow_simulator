@@ -18,6 +18,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
+  arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
+                                          10, 
+                                          &FaultDetector::ArmFaultsInternalCb,
+                                          this);
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
                                       10,
                                       &FaultDetector::jointStatesFlagCb,
@@ -141,10 +145,16 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
   return false;
 }
 
+void FaultDetector::ArmFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
+{
+  //The actual publish on arm faults status intergrate in jointStatesFlagCb
+  ROS_INFO("arm faults internal error messages receieved");
+  trajectory_error_flag = msg->value;
+}
+
 void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
 {
   unsigned int index;
-  
   // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_state_indices.empty()) {
@@ -197,6 +207,13 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }
 
+  // update faults from ow_lander
+  // TODO: Currently only trajectory_generation faults under consideration
+  if (trajectory_error_flag == ArmFaultsStatus::TRAJECTORY_GENERATION){
+    m_arm_faults_flags |= ArmFaultsStatus::TRAJECTORY_GENERATION;
+  } else {
+    m_arm_faults_flags &= ~ArmFaultsStatus::TRAJECTORY_GENERATION;
+  }
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
   publishFaultsMessage(m_antenna_faults_msg_pub, PanTiltFaultsStatus(), m_antenna_faults_flags);

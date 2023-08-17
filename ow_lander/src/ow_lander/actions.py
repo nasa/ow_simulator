@@ -15,6 +15,7 @@ from ow_regolith.msg import Contacts
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
 from urdf_parser_py.urdf import URDF
+from owl_msgs.msg import ArmFaultsStatus
 
 import ow_lander.msg
 from ow_lander import mixins
@@ -72,6 +73,53 @@ def _compute_workspace_shoulder_yaw(x, y):
     yaw += math.asin(l / h)
     _assert_shou_yaw_in_range(yaw)
     return yaw
+    
+class _arm_failure_messages_publish:
+    """Publish the arm failure messages to rostopic 'arm_faults_internal'"""
+    def __init__(self, err):
+      self.err = err
+      self.arm_faults_internal_pub = rospy.Publisher('arm_faults_internal', ArmFaultsStatus, queue_size = 10)
+
+      """ error messages translate"""
+      if self.err == 'NONE':
+          self.err_flag = 0
+      elif self.err == 'HARDWARD':
+          self.err_flag = 1
+      elif self.err == 'TRAJECTORY_GENERATION':
+          self.err_flag = 2
+      elif self.err == 'COLLISION':
+          self.err_flag = 4
+      elif self.err == 'E_STOP':
+          self.err_flag = 8
+      elif self.err == 'POSITION_LIMIT':
+          self.err_flag = 16
+      elif self.err == 'JOINT_TORQUE_LIMIT':
+          self.err_flag = 32
+      elif self.err == 'VELOCITY_LIMIT':
+          self.err_flag = 64
+      elif self.err == 'NO_FORCE_DATA':
+          self.err_flag = 128
+      elif self.err == 'FORCE_TORQUE_LIMIT':
+          self.err_flag = 256
+      else:
+          rospy.loginfo('Arm faults status message is invalid')
+          return
+    
+      self.message_received = False
+
+      # To ensure that the subscriber has receives the message, keep publish until all set bits on
+      # self.err_flag also in msg.value now.
+      while not rospy.is_shutdown():
+        rospy.loginfo('Arm_faults_status messages sending now')
+        self.arm_faults_internal_pub.publish(value = self.err_flag)
+        self.arm_faults_status_sub = rospy.Subscriber('arm_faults_status', ArmFaultsStatus, self._check_communicate_cb)
+        if self.message_received == True:
+          break
+        
+    def _check_communicate_cb(self, msg):
+      if self.err_flag & msg.value == self.err_flag:
+        self.message_received = True
+      
 
 #####################
 ## ARM ACTIONS
@@ -88,6 +136,7 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   def execute_action(self, _goal):
     if self._arm.stop_arm():
       self._set_succeeded("Arm trajectory stopped")
+
     else:
       self._set_aborted("No arm trajectory to stop")
 
@@ -533,10 +582,16 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      err_string = 'TRAJECTORY_GENERATION'
+      rospy.loginfo(err_string + " error occured")
+      _arm_failure_messages_publish(err_string)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -546,6 +601,9 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
         self._set_aborted("Failed to reach intended pose", **results)
         return
       self._set_succeeded(f"{self.name} trajectory succeeded", **results)
+      err_string = "NONE"
+      rospy.loginfo("No error occured for arm")
+      _arm_failure_messages_publish(err_string)
 
 
 class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
@@ -586,12 +644,19 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
+      rospy.loginfo("ArmExecutionError occur")
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      err_string = 'TRAJECTORY_GENERATION'
+      rospy.loginfo(err_string + " error occured")
+      _arm_failure_messages_publish(err_string)
       return
     else:
       self._arm.checkin_arm(self.name)
