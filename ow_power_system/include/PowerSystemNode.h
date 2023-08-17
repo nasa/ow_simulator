@@ -90,11 +90,10 @@ private:
 
   // system.cfg variables:
 
-  // Whether or not to run the power system with the full battery simulation.
-  // If false, only 1 prognoser will be created during initialization.
-  // This prevents the possibility of simulating various intra-battery faults,
-  // but enabling the full battery simulation is CPU-intensive.
-  bool m_full_battery_simulation;
+  // The number of currently simulated models. Default 1, but can be modified
+  // mid-simulation by intra-battery faults (or set to a different starting
+  // value in system.cfg).
+  int m_active_models;
 
   // HACK ALERT.  The prognoser produces erratic/erroneous output when
   // given too high a power input.  The value assigned to this in system.cfg
@@ -129,11 +128,6 @@ private:
   double m_initial_soc;
   
   // End system.cfg variables.
-
-  // The number of currently simulated models. Typically equal to NUM_MODELS,
-  // it can change mid-simulation by intra-battery faults (or by enabling
-  // full battery simulation in system.cfg).
-  int m_active_models;
 
   // The number of models deactivated via faults. Used separately from
   // m_active_models to allow the system to distribute power draw as if

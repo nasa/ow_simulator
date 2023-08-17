@@ -74,7 +74,7 @@ void PowerSystemNode::initAndRun()
     }
     // If print_debug was false, then all flags remain false as initialized.
 
-    m_full_battery_simulation = (system_config.getString("full_battery_simulation") == TRUE);
+    m_active_models = system_config.getInt32("active_models");
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_initial_power = system_config.getDouble("initial_power");
@@ -94,13 +94,14 @@ void PowerSystemNode::initAndRun()
     return;
   }
 
-  // Set m_active_nodes depending on the full_battery_simulation flag.
-  if (m_full_battery_simulation)
+  // Error-catch m_active_models.
+  if (m_active_models < 1 || m_active_models > NUM_MODELS)
   {
-    m_active_models = NUM_MODELS;
-  }
-  else
-  {
+    ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: "
+                    << "Invalid number of active nodes specified in "
+                    << "system.cfg! Check the value of 'active_models' "
+                    << "and ensure it is between 1 & "
+                    << std::to_string(NUM_MODELS) << ". Defaulting to 1...");
     m_active_models = 1;
   }
   m_deactivated_models = 0;
@@ -183,13 +184,15 @@ void PowerSystemNode::initAndRun()
   ROS_INFO_STREAM("Power system node running.");
 
   // Notify the user of the state of the battery simulation.
-  if (m_full_battery_simulation)
+  if (m_active_models > 1)
   {
-    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Full battery simulation active. "
-                    << "This means " << std::to_string(NUM_MODELS)
-                    << " prognosers are running battery predictions at once. "
-                    << "Intra-battery faults are possible to model with this, "
-                    << "but CPU load will be much higher.");
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: " << std::to_string(m_active_models)
+                    << " models instantiated. This means "
+                    << std::to_string(m_active_models)
+                    << " prognosers will run battery predictions at once. "
+                    << "More complex intra-battery faults become possible to "
+                    << "simulate with more prognosers, but CPU load will be "
+                    << "much higher with each additional model.");
   }
   else
   {
