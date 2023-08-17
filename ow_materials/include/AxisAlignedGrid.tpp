@@ -177,7 +177,6 @@ void AxisAlignedGrid<T>::runForEach(
 template <typename T>
 void AxisAlignedGrid<T>::runForEachInRectangle(
   PositionType v0, PositionType v1,
-  // void(*f)(T, PositionType))
   std::function<void(T, PositionType)> f) const
 {
   auto grid_min = ignition::math::Vector3d(min(v0.X(), v1.X()),

@@ -44,9 +44,9 @@ private:
 
   ros::Publisher m_dug_points_pub;
 
-  const HandleBulkCallback m_handle_bulk_cb;
+  HandleBulkCallback m_handle_bulk_cb;
 
-  const ColorizerCallback m_colorizer_cb;
+  ColorizerCallback m_colorizer_cb;
 
   AxisAlignedGrid<MaterialBlend> const *m_grid;
 

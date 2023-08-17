@@ -17,7 +17,7 @@
 
 #include <populate_materials.h>
 
-using std::string, std::make_unique, std::endl;
+using std::string, std::make_unique, std::endl, std::uint8_t;
 using ignition::math::Vector3d;
 
 using namespace ow_materials;
@@ -37,6 +37,9 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAMES);
+
+  ros::AsyncSpinner spinner(0);
+  spinner.start();
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
@@ -68,9 +71,10 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 
   const auto center = m_grid->getCenter();
   const auto diagonal = m_grid->getDiagonal();
-  gzlog << PLUGIN_NAME << ": Material grid centered at (" << center.X() << ", "
-                                                          << center.Y() << ", "
-                                                          << center.Z() << ") "
+  gzlog << PLUGIN_NAME
+        << ": Material grid centered at (" << center.X() << ", "
+                                           << center.Y() << ", "
+                                           << center.Z() << ") "
         << "with dimensions " << diagonal.X() << " x "
                               << diagonal.Y() << " x "
                               << diagonal.Z() << " meters.\n";
@@ -126,9 +130,9 @@ void MaterialDistributionPlugin::publishGrid()
     (MaterialBlend b, AxisAlignedGrid<MaterialBlend>::PositionType center) {
       const Color c = interpolateColor(b);
       grid_points.emplace_back(
-        static_cast<std::uint8_t>(c.r), // truncates double to int (<256)
-        static_cast<std::uint8_t>(c.g),
-        static_cast<std::uint8_t>(c.b)
+        static_cast<uint8_t>(c.r), // truncates double to int (<256)
+        static_cast<uint8_t>(c.g),
+        static_cast<uint8_t>(c.b)
       );
 
       // WORKAROUND for OW-1194, TF has an incorrect transform for
@@ -140,37 +144,30 @@ void MaterialDistributionPlugin::publishGrid()
       grid_points.back().z = static_cast<float>(center.Z());
     }
   );
-  // grid_points.header.frame_id = "world";
-  // pcl_conversions::toPCL(ros::Time::now(), grid_points.header.stamp);
-  // sensor_msgs::PointCloud2 msg;
-  // pcl::toROSMsg(grid_points, msg);
-  // DEBUG_grid_points_pub.publish(msg);
+
   publishPointCloud(&m_grid_pub, grid_points);
 
-  // DEBUG
-  gzlog << "Grid visualization now ready for viewing in Rviz" << std::endl;
+  gzlog << PLUGIN_NAME << "Grid visualization now ready for viewing in Rviz"
+        << std::endl;
 }
 
 void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
 {
   std::stringstream s;
-  s << "handleVisualBulk: the bulk contains\n";
+  s << "handleVisualBulk: STUBBED\n"
+       "the bulk contains\n";
   for (auto const &x : blend.m_blend)
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
-
-
-
-  // TODO: publish points2 topic with bulk color
-
 }
 
 void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 {
   std::stringstream s;
-  s << "handleCollisionBulk: the bulk contains\n";
+  s << "handleCollisionBulk: STUBBED\n"
+       "the bulk contains\n";
   for (auto const &x : blend.m_blend)
-    s << "\t" << x.second << "%% of " << static_cast<float>(x.first) << "\n";
+    s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
 }
 

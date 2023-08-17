@@ -18,12 +18,14 @@
 
 using namespace ow_materials;
 
+using std::uint32_t, std::size_t;
+
 MaterialIntegrator::MaterialIntegrator(
   ros::NodeHandle *node_handle, AxisAlignedGrid<MaterialBlend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
-  : m_node_handle(node_handle), m_grid(grid), m_handle_bulk_cb(handle_bulk_cb),
-    m_colorizer_cb(colorizer_cb)
+  : m_node_handle(node_handle), m_grid(grid),
+    m_handle_bulk_cb(handle_bulk_cb), m_colorizer_cb(colorizer_cb)
 {
   m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 10,
     &MaterialIntegrator::onModification, this);
@@ -34,7 +36,6 @@ MaterialIntegrator::MaterialIntegrator(
 void MaterialIntegrator::onModification(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
-  gzlog << "MaterialIntegrator::onModification called" << std::endl;
   using namespace cv_bridge;
   using PositionType = AxisAlignedGrid<MaterialBlend>::PositionType;
 
@@ -45,8 +46,8 @@ void MaterialIntegrator::onModification(
     diff_handle = toCvShare(msg->diff, msg);
     result_handle = toCvShare(msg->result, msg);
   } catch (cv_bridge::Exception& e) {
-    ROS_ERROR("cv_bridge exception occurred while reading modification "
-              "differential message: %s", e.what());
+    gzlog << "cv_bridge exception occurred while reading modification "
+             "differential message: " << e.what() << std::endl;
     return;
   }
 
@@ -54,12 +55,10 @@ void MaterialIntegrator::onModification(
   const auto cols = diff_handle->image.cols;
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
+
+  // SAVED CODE for integration with ow_regolith
   // const auto pixel_area = pixel_height * pixel_height;
-
   // float volume_displaced = 0.0;
-
-  // TODO: use a binding rectangle/box to early return if there is no overlap
-  //       between it and the axis-aligned box
 
   MaterialBlend bulk_blend;
   pcl::PointCloud<pcl::PointXYZRGB> points;
@@ -70,13 +69,15 @@ void MaterialIntegrator::onModification(
   //   b) Each blend in the material grid is already normalized.
   //   c) All voxels are of the same volume.
 
+  // TODO: make float-double usage uniform
+
   // estimate the total volume displaced using a Riemann sum over the image
-  // FIXME: make float-double usage uniform
-  for (std::size_t i = 0; i != cols; ++i) {
-    for (std::size_t j = 0; j != rows; ++j) {
+  for (size_t i = 0; i != cols; ++i) {
+    for (size_t j = 0; j != rows; ++j) {
       // change in height at pixel (x, y)
       auto dz = diff_handle->image.at<float>(i, j);
       if (dz < 0.0) {
+        // SAVED CODE for integration with ow_regolith
         // const auto volume = diff_px * pixel_area;
         // compute location in grid
         const float x = (msg->position.x - msg->width / 2)
@@ -88,8 +89,9 @@ void MaterialIntegrator::onModification(
         auto z_result = result_handle->image.at<float>(i, j);
         auto box_min = PositionType(x, y, z_result);
         auto box_max = PositionType(x + pixel_width,
-                                     y + pixel_height,
-                                     z_result + dz);
+                                    y + pixel_height,
+                                    z_result - dz); // dz is always negative
+        // SAVED for debugging
         // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
         // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
         m_grid->runForEachInRectangle(box_min, box_max,
@@ -127,13 +129,15 @@ void MaterialIntegrator::onModification(
     p.rgb = bulk_rgb;
   }
 
+  // SAVED for debugging
   // gzlog << "point count = " << points.size() << "\n";
   // gzlog << "points[0] = (" << points[0].x << "," << points[0].y << "," << points[0].z << ")\n";
   // gzlog << "points[0] color = (" << (uint)points[0].r << ","
   //                                << (uint)points[0].g << ","
   //                                << (uint)points[0].b << ")\n";
 
-  // gzlog << "merges = " << points.size() << std::endl;
+  // DEBUG
+  gzlog << "number of merges = " << points.size() << std::endl;
 
   publishPointCloud(&m_dug_points_pub, points);
 

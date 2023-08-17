@@ -47,7 +47,7 @@ class ModifyTerrainScoop:
     """ Checks if position has changed significantly before submmitting a message """
 
     current_translation = np.array([new_position.x, new_position.y, new_position.z])
-    if all(np.isclose(current_translation, self.last_translation, atol=1.e-4)):
+    if all(np.isclose(current_translation, self.last_translation, atol=5.e-3)):
       return  # no significant change, abort
 
     self.last_translation = current_translation
