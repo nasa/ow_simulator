@@ -148,7 +148,6 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
 void FaultDetector::ArmFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
 {
   //The actual publish on arm faults status intergrate in jointStatesFlagCb
-  ROS_INFO("arm faults internal error messages receieved");
   trajectory_error_flag = msg->value;
 }
 
@@ -196,11 +195,15 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update system faults
-  if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
-    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  } else {
-    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  }
+
+  // TODO: The comment out codes were not sure if necessary, but keep these  for now for
+  // reference
+
+  // if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
+  //   m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
+  // } else {
+  //   m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
+  // }
   if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   } else {
@@ -211,8 +214,10 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   // TODO: Currently only trajectory_generation faults under consideration
   if (trajectory_error_flag == ArmFaultsStatus::TRAJECTORY_GENERATION){
     m_arm_faults_flags |= ArmFaultsStatus::TRAJECTORY_GENERATION;
+    m_system_faults_flags |= SystemFaultsStatus::ARM_GOAL_ERROR;
   } else {
     m_arm_faults_flags &= ~ArmFaultsStatus::TRAJECTORY_GENERATION;
+    m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
   }
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
