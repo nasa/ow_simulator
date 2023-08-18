@@ -27,6 +27,14 @@ from ow_lander.arm_interface import OWArmInterface
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
 
+def wait_for_subscribers(publisher, timeout, at_least=1, frequency=10):
+  r = rospy.Rate(frequency)
+  for _i in range(int(timeout * frequency)):
+    if publisher.get_num_connections() >= at_least:
+      return True
+    r.sleep()
+  return False
+
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its
   children classes must be placed first in the inheritance statement.
@@ -303,7 +311,6 @@ class FrameMixin:
     sequence.plan_to_pose(pose_t.pose)
     return sequence.merge()
 
-
 class PanTiltMoveMixin:
 
   JOINT_STATES_TOPIC = "/joint_states"
@@ -318,6 +325,13 @@ class PanTiltMoveMixin:
       ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
     self._subscriber = rospy.Subscriber(
       self.JOINT_STATES_TOPIC, JointState, self._handle_joint_states)
+    SUBS_TIMEOUT = 10 # seconds
+    NO_SUBS_MSG = f"No subscribers to topic %s after waiting {SUBS_TIMEOUT}s." \
+                   " Pan/Tilt actions may not work correctly as a result."
+    if not wait_for_subscribers(self._pan_pub, SUBS_TIMEOUT):
+      rospy.logwarn(NO_SUBS_MSG % self._pan_pub.name)
+    if not wait_for_subscribers(self._tilt_pub, SUBS_TIMEOUT):
+      rospy.logwarn(NO_SUBS_MSG % self._tilt_pub.name)
     self._start_server()
 
   def _handle_joint_states(self, data):
