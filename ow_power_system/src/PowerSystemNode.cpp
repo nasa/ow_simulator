@@ -595,14 +595,13 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
     {
       ros::param::getCached("/faults/" + FAULT_NAME_DBN, dbn_nodes);
 
-      ROS_INFO_STREAM(fault_name << " activated! Disconnecting "
-                      << std::to_string(dbn_nodes) << " nodes...");
+
 
       m_disconnect_battery_nodes_fault_activated = true;
 
       // Warn the user if they tried to reduce the number of deactivated nodes
       // from a previous fault activation.
-      if (m_deactivated_models > dbn_nodes)
+      if (m_deactivated_models >= dbn_nodes)
       {
         ROS_WARN_STREAM("Attempted to disconnect " << std::to_string(dbn_nodes)
                         << " out of " << std::to_string(NUM_MODELS)
@@ -610,6 +609,13 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
                         << std::to_string(m_deactivated_models)
                         << " out of " << std::to_string(NUM_MODELS)
                         << " disconnected. Behavior has not changed.");
+      }
+      else
+      {
+        ROS_INFO_STREAM(fault_name << " activated! "
+                      << std::to_string(dbn_nodes)
+                      << " out of " << std::to_string(NUM_MODELS) << " models "
+                      << "are now disconnected.");
       }
 
       // Update the number of active and deactivated nodes.
@@ -619,9 +625,9 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
     }
     else if (m_disconnect_battery_nodes_fault_activated && !fault_enabled)
     {
-      ROS_INFO_STREAM(fault_name << " deactivated!");
-      ROS_WARN_STREAM_ONCE("Note that disconnected battery nodes cannot "
-                    << "be reconnected, even if the fault is deactivated.");
+      ROS_INFO_STREAM(fault_name << " deactivated. Note that disconnected "
+                    << "battery nodes cannot be reconnected, even if the fault "
+                    << "is deactivated.");
       m_disconnect_battery_nodes_fault_activated = false;
     }
   }
