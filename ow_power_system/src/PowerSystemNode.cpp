@@ -589,39 +589,11 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
   // Disconnect battery nodes case
   if (fault_name == FAULT_NAME_DBN_ACTIVATE)
   {
-    // Check if the fault has switched, and disconnect nodes if it was turned
-    // on. There is no continuous behavior to monitor.
+    // Check if the fault has switched.
     if (!m_disconnect_battery_nodes_fault_activated && fault_enabled)
     {
-      ros::param::getCached("/faults/" + FAULT_NAME_DBN, dbn_nodes);
-
-
-
+      ROS_INFO_STREAM(fault_name << " activated!");
       m_disconnect_battery_nodes_fault_activated = true;
-
-      // Warn the user if they tried to reduce the number of deactivated nodes
-      // from a previous fault activation.
-      if (m_deactivated_models >= dbn_nodes)
-      {
-        ROS_WARN_STREAM("Attempted to disconnect " << std::to_string(dbn_nodes)
-                        << " out of " << std::to_string(NUM_MODELS)
-                        << " nodes when there are already "
-                        << std::to_string(m_deactivated_models)
-                        << " out of " << std::to_string(NUM_MODELS)
-                        << " disconnected. Behavior has not changed.");
-      }
-      else
-      {
-        ROS_INFO_STREAM(fault_name << " activated! "
-                      << std::to_string(dbn_nodes)
-                      << " out of " << std::to_string(NUM_MODELS) << " models "
-                      << "are now disconnected.");
-      }
-
-      // Update the number of active and deactivated nodes.
-      m_deactivated_models = std::max(m_deactivated_models, dbn_nodes);
-      m_active_models = std::min(m_active_models,
-                                (NUM_MODELS - m_deactivated_models));
     }
     else if (m_disconnect_battery_nodes_fault_activated && !fault_enabled)
     {
@@ -630,9 +602,43 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
                     << "is deactivated.");
       m_disconnect_battery_nodes_fault_activated = false;
     }
+
+    // Continual beahvior with DBN fault.
+    if (m_disconnect_battery_nodes_fault_activated && fault_enabled)
+    {
+      // Get the number of nodes set by the user.
+      ros::param::getCached("/faults/" + FAULT_NAME_DBN, dbn_nodes);
+
+      // Warn the user periodically if they try to reduce the number of
+      // deactivated nodes from a previous fault activation.
+      if (m_deactivated_models > dbn_nodes)
+      {
+        ROS_WARN_STREAM_THROTTLE(30, fault_name << " currently set to "
+                        << "disconnect " << std::to_string(dbn_nodes)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " nodes when there are already "
+                        << std::to_string(m_deactivated_models)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " disconnected. Behavior has not changed.");
+        ROS_WARN_STREAM_THROTTLE(30, "This warning will repeat periodically "
+                        << "until the fault value is reset to "
+                        << std::to_string(m_deactivated_models)
+                        << ", updated to disconnect more nodes, "
+                        << "or the fault is deactivated.");
+      }
+      else if (m_deactivated_models < dbn_nodes)
+      {
+        ROS_INFO_STREAM(fault_name << " updated! "
+                      << std::to_string(dbn_nodes)
+                      << " out of " << std::to_string(NUM_MODELS) << " models "
+                      << "are now disconnected.");
+        // Update the number of active and deactivated nodes.
+        m_deactivated_models = std::max(m_deactivated_models, dbn_nodes);
+        m_active_models = std::min(m_active_models,
+                                  (NUM_MODELS - m_deactivated_models));
+      }
+    }
   }
-
-
 }
 
 /*
