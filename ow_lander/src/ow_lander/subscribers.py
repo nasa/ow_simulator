@@ -16,6 +16,7 @@ def wait_for_message(message_buffer, timeout, frequency=10):
     r.sleep()
   return False
 
+
 class LinkStateSubscriber:
   """Subscribes to /gazebo/link_states and returns the pose/position of a
   specified link

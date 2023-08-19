@@ -25,8 +25,6 @@ class TestCameraCapture(unittest.TestCase):
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
-    # NOTE: additional sleep is required due to CameraCapture failing if called too early (see OW-1186)
-    rospy.sleep(10.0)
       
   def test_01_camera_capture(self):
     camera_capture_result = test_action(self,

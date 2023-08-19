@@ -316,8 +316,7 @@ class PanTiltMoveMixin:
       ANTENNA_PAN_POS_TOPIC, Float64, queue_size=1)
     self._tilt_pub = rospy.Publisher(
       ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
-    self._subscriber = rospy.Subscriber(
-      self.JOINT_STATES_TOPIC, JointState, self._handle_joint_states)
+    self._ant_joints_monitor = JointAnglesSubscriber(constants.ANTENNA_JOINTS)
     SUBS_TIMEOUT = 10 # seconds
     NO_SUBS_MSG = f"No subscribers to topic %s after waiting {SUBS_TIMEOUT}s." \
                    " Pan/Tilt actions may not work correctly as a result."
@@ -326,17 +325,6 @@ class PanTiltMoveMixin:
     if not wait_for_subscribers(self._tilt_pub, SUBS_TIMEOUT):
       rospy.logwarn(NO_SUBS_MSG % self._tilt_pub.name)
     self._start_server()
-
-  def _handle_joint_states(self, data):
-    # position of pan and tilt of the lander is obtained from JointStates
-    try:
-      self._pan_pos = data.position[constants.JOINT_STATES_MAP["j_ant_pan"]]
-      self._tilt_pos = data.position[constants.JOINT_STATES_MAP["j_ant_tilt"]]
-    except KeyError as err:
-      rospy.logerr_throttle(1,
-        f"PanTiltMoveMixin: {err}; joint value missing in "\
-        f"{self.JOINT_STATES_TOPIC} topic")
-      return
 
   def move_pan_and_tilt(self, pan, tilt):
     if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
@@ -373,8 +361,9 @@ class PanTiltMoveMixin:
       # publish feedback message
       self.publish_feedback_cb()
       # check if joints have arrived at their goal values
-      if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE) and \
-          radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
+      current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
+      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) and \
+          radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
     raise AntennaExecutionError(
@@ -402,7 +391,8 @@ class PanTiltMoveMixin:
       # publish feedback message
       self.publish_feedback_cb()
       # check if joints have arrived at their goal values
-      if radians_equivalent(pan, self._pan_pos, constants.PAN_TOLERANCE):
+      current_pan, _ = self._ant_joints_monitor.get_joint_positions()
+      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE):
         return True
       rate.sleep()
     raise AntennaExecutionError(
@@ -425,7 +415,8 @@ class PanTiltMoveMixin:
       # publish feedback message
       self.publish_feedback_cb()
       # check if joints have arrived at their goal values
-      if radians_equivalent(tilt, self._tilt_pos, constants.TILT_TOLERANCE):
+      _, current_tilt = self._ant_joints_monitor.get_joint_positions()
+      if radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
     raise AntennaExecutionError(
