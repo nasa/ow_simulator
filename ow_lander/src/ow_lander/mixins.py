@@ -19,21 +19,14 @@ from tf2_geometry_msgs import do_transform_pose
 
 from ow_lander import constants
 from ow_lander import math3d
-from ow_lander.common import radians_equivalent, in_closed_range, create_header
+from ow_lander.common import (radians_equivalent, in_closed_range,
+                              create_header, wait_for_subscribers)
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.arm_interface import OWArmInterface
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
-
-def wait_for_subscribers(publisher, timeout, at_least=1, frequency=10):
-  r = rospy.Rate(frequency)
-  for _i in range(int(timeout * frequency)):
-    if publisher.get_num_connections() >= at_least:
-      return True
-    r.sleep()
-  return False
 
 class ArmActionMixin:
   """Enables an action server to control the OceanWATERS arm. This or one of its

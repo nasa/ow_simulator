@@ -21,7 +21,7 @@ from ow_lander import mixins
 from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
-from ow_lander.common import normalize_radians
+from ow_lander.common import normalize_radians, wait_for_subscribers
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
@@ -900,6 +900,10 @@ class CameraCaptureServer(ActionServerBase):
                                              PointCloud2,
                                              self._handle_point_cloud)
     self.point_cloud_created = False
+    if not wait_for_subscribers(self._pub_trigger, 10):
+      rospy.logwarn(f"No subscribers to topic {self._pub_trigger.name} after" \
+                    "waiting 10s. CameraCapture may not work correctly as a" \
+                    "result.")
     self._start_server()
 
   def _handle_point_cloud(self, points):
@@ -948,6 +952,10 @@ class CameraSetExposureServer(ActionServerBase):
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
                                          Float64,
                                          queue_size=10)
+    if not wait_for_subscribers(self._pub_exposure, 10):
+      rospy.logwarn(f"No subscribers to topic {self._pub_exposure.name} after" \
+                    "waiting 10s. CameraSetExposure may not work correctly " \
+                    "as a result.")
     self._start_server()
 
   def execute_action(self, goal):

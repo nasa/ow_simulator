@@ -4,9 +4,10 @@
 
 """Defines functions required by multiple modules within the package"""
 
+import rospy
+
 from math import pi, tau
 from std_msgs.msg import Header
-from rospy import Time
 
 class Singleton(type):
   """When passed to the metaclass parameter in the class definition, the class
@@ -19,9 +20,8 @@ class Singleton(type):
     return cls._instances[cls]
 
 def normalize_radians(angle):
-  """
-  :param angle: (float)
-  :return: (float) the angle in [-pi, pi)
+  """Returns a version of the angle between [-pi, pi)
+  angle - in radians
   """
   # Note: tau = 2 * pi
   return (angle + pi) % tau - pi
@@ -36,5 +36,21 @@ def in_closed_range(val, lo, hi):
   """
   return val >= lo and val <= hi
 
-def create_header(frame_id, timestamp=Time(0)):
+def create_header(frame_id, timestamp=rospy.Time(0)):
   return Header(0, timestamp, frame_id)
+
+def wait_for_subscribers(publisher, timeout, at_least=1, frequency=10):
+  """Wait for subscribers to a topic.
+  publisher - ROS publisher topic
+  timeout   - Maximum time in seconds the function will block for
+  at_least  - At least this many subscribers must be seen before the function
+              will return (default: 1)
+  frequency - Rate in Hz at which subscriber count will be checked
+              (default: 10 Hz)
+  """
+  r = rospy.Rate(frequency)
+  for _i in range(int(timeout * frequency)):
+    if publisher.get_num_connections() >= at_least:
+      return True
+    r.sleep()
+  return False
