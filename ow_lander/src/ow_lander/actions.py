@@ -1066,23 +1066,18 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = owl_msgs.msg.PanTiltMoveJointsResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos,
-                           tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
+      results = {"pan_position": pan, "tilt_position": tilt}
     except ArmExecutionError as err:
-      self._set_aborted(str(err),
-        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+      self._set_aborted(str(err), **results)
     else:
       if not_preempted:
-        self._set_succeeded("Reached commanded pan/tilt values",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+        self._set_succeeded("Reached commanded pan/tilt values", **results)
       else:
-        self._set_preempted("Action was preempted",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+        self._set_preempted("Action was preempted", **results)
 
 
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
@@ -1094,21 +1089,17 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.PanResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
     except ArmExecutionError as err:
-      self._set_aborted(str(err), pan_position=self._pan_pos)
+      self._set_aborted(str(err), pan_position=pan)
     else:
       if not_preempted:
-        self._set_succeeded("Reached commanded pan value",
-                            pan_position=self._pan_pos)
+        self._set_succeeded("Reached commanded pan value", pan_position=pan)
       else:
-        self._set_preempted("Action was preempted",
-                            pan_position=self._pan_pos)
+        self._set_preempted("Action was preempted", pan_position=pan)
 
 class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1119,21 +1110,17 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.TiltResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
     except ArmExecutionError as err:
-      self._set_aborted(str(err), tilt_position=self._tilt_pos)
+      self._set_aborted(str(err), tilt_position=tilt)
     else:
       if not_preempted:
-        self._set_succeeded("Reached commanded tilt value",
-                            tilt_position=self._tilt_pos)
+        self._set_succeeded("Reached commanded tilt value", tilt_position=tilt)
       else:
-        self._set_preempted("Action was preempted",
-                            tilt_position=self._tilt_pos)
+        self._set_preempted("Action was preempted", tilt_position=tilt)
 
 class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 

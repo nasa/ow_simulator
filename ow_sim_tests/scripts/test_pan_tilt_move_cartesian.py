@@ -25,8 +25,6 @@ class TestPanTiltMoveCartesian(unittest.TestCase):
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
-    # NOTE: work around for pan/tilt actions failing when called too early (see OW-1181)
-    rospy.sleep(30.0)
 
   def test_01_pan_tilt_move_cartesian(self):
     pan_tilt_move_cartesian_result = test_action(self,
