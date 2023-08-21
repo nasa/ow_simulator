@@ -1069,16 +1069,22 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
-      pan, tilt = self._ant_joints_monitor.get_joint_positions()
-      results = {"pan_position": pan, "tilt_position": tilt}
     except ArmExecutionError as err:
-      self._set_aborted(str(err), **results)
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
-        self._set_succeeded("Reached commanded pan/tilt values", **results)
+        self._set_succeeded("Reached commanded pan/tilt values",
+          pan_position=pan, tilt_position=tilt)
       else:
-        self._set_preempted("Action was preempted", **results)
+        self._set_preempted("Action was preempted",
+          pan_position=pan, tilt_position=tilt)
 
+  def publish_feedback_cb(self):
+    current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan,
+                           tilt_position = current_tilt)
 
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1092,14 +1098,20 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
-      pan, _ = self._ant_joints_monitor.get_joint_positions()
     except ArmExecutionError as err:
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
     else:
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
         self._set_succeeded("Reached commanded pan value", pan_position=pan)
       else:
         self._set_preempted("Action was preempted", pan_position=pan)
+
+  def publish_feedback_cb(self):
+    current_pan, _ = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan)
+
 
 class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1113,14 +1125,20 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
-      _, tilt = self._ant_joints_monitor.get_joint_positions()
     except ArmExecutionError as err:
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
     else:
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
         self._set_succeeded("Reached commanded tilt value", tilt_position=tilt)
       else:
         self._set_preempted("Action was preempted", tilt_position=tilt)
+
+  def publish_feedback_cb(self):
+    _, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(tilt_position = current_tilt)
+
 
 class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1134,7 +1152,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
     cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
-                                                    'StereoCameraCenter_link')
+                                                     'StereoCameraCenter_link')
     tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'l_ant_panel')
     try:

@@ -358,11 +358,10 @@ class PanTiltMoveMixin:
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
-      current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
       # publish feedback message
-      self._publish_feedback(pan_position = current_pan,
-                             tilt_position = current_tilt)
+      self.publish_feedback_cb()
       # check if joints have arrived at their goal values
+      current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
       if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) and \
           radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
         return True
@@ -389,10 +388,10 @@ class PanTiltMoveMixin:
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
-      current_pan, _ = self._ant_joints_monitor.get_joint_positions()
       # publish feedback message
-      self._publish_feedback(pan_position = current_pan)
+      self.publish_feedback_cb()
       # check if joints have arrived at their goal values
+      current_pan, _ = self._ant_joints_monitor.get_joint_positions()
       if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE):
         return True
       rate.sleep()
@@ -413,12 +412,16 @@ class PanTiltMoveMixin:
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
-      _, current_tilt = self._ant_joints_monitor.get_joint_positions()
       # publish feedback message
-      self._publish_feedback(tilt_position = current_tilt)
+      self.publish_feedback_cb()
       # check if joints have arrived at their goal values
+      _, current_tilt = self._ant_joints_monitor.get_joint_positions()
       if radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
         return True
       rate.sleep()
     raise AntennaExecutionError(
       "Timed out waiting for tilt value to reach goal.")
+
+  def publish_feedback_cb(self):
+    """overrideable"""
+    pass
