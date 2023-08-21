@@ -353,7 +353,13 @@ void PowerSystemNode::initAndRun()
     }
 
     // DEBUG PRINT FORMATTING
-    if (m_print_debug && m_power_models[0].input_info.timestamp > 0)
+    // Skip a line for formatting purposes as long as a printout is being used.
+    if (m_print_debug && m_power_models[0].input_info.timestamp > 0
+        && (m_timestamp_print_debug
+         || m_inputs_print_debug
+         || m_outputs_print_debug
+         || m_topics_print_debug
+         || m_mech_power_print_debug))
     {
       std::cout << std::endl;
     }
