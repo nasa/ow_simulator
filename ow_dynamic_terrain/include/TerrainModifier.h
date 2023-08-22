@@ -18,19 +18,19 @@ namespace ow_dynamic_terrain
 class TerrainModifier
 {
 public:
-  static bool modifyCircle(gazebo::rendering::Heightmap* heightmap,
+  static bool modifyCircle(gazebo::rendering::Heightmap* heightmap, Ogre::TexturePtr maskmap,
                            const ow_dynamic_terrain::modify_terrain_circle::ConstPtr& msg,
                            const std::function<float(int, int)>& get_height_value,
                            const std::function<void(int, int, float)>& set_height_value,
                            ow_dynamic_terrain::modified_terrain_diff& out_diff_msg);
 
-  static bool modifyEllipse(gazebo::rendering::Heightmap* heightmap,
+  static bool modifyEllipse(gazebo::rendering::Heightmap* heightmap, Ogre::TexturePtr maskmap,
                             const ow_dynamic_terrain::modify_terrain_ellipse::ConstPtr& msg,
                             const std::function<float(int, int)>& get_height_value,
                             const std::function<void(int, int, float)>& set_height_value,
                             ow_dynamic_terrain::modified_terrain_diff& out_diff_msg);
 
-  static bool modifyPatch(gazebo::rendering::Heightmap* heightmap,
+  static bool modifyPatch(gazebo::rendering::Heightmap* heightmap, Ogre::TexturePtr maskmap,
                           const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg,
                           const std::function<float(int, int)>& get_height_value,
                           const std::function<void(int, int, float)>& set_height_value,
@@ -46,7 +46,8 @@ private:
   // Imports an OpenCV Matrix object from a sensor_msgs::Image object through cv_bridge
   static cv_bridge::CvImageConstPtr importImageToOpenCV(const ow_dynamic_terrain::modify_terrain_patch::ConstPtr& msg);
 
-  // Applies the an OpenCV image to a heightmap at a given position
+  // Applies the an OpenCV image to a heightmap at a given position, and updates
+  // the maskmap to show heightmap points that have been modified.
   // param heightmap: heightmap to merge the image with
   // param center: absolute position within the heightmap where the image will be applied
   // param z_bias: a value that will be applied as an offset to height values retrieved from the image.
@@ -57,14 +58,14 @@ private:
   // param merge_method: Choices are keep, replace, add, sub, min, max and avg.
   // param out_diff_image: an image that stores the change in heightmap around the tool
   // return: true if there was a change made to the heightmap, false otherwise
-  static bool applyImageToHeightmap(gazebo::rendering::Heightmap* heightmap,
-                                    const cv::Point2i& center, float z_bias,
-                                    const cv::Mat& image, bool skip_zeros,
-                                    const std::function<float(int, int)>& get_height_value,
-                                    const std::function<void(int, int, float)>& set_height_value,
-                                    const std::function<float(float, float)>& merge_method,
-                                    cv_bridge::CvImage& out_result_image,
-                                    cv_bridge::CvImage& out_diff_image);
+  static bool applyImage(gazebo::rendering::Heightmap* heightmap,
+                         Ogre::TexturePtr maskmap, const cv::Point2i& center,
+                         float z_bias, const cv::Mat& image, bool skip_zeros,
+                         const std::function<float(int, int)>& get_height_value,
+                         const std::function<void(int, int, float)>& set_height_value,
+                         const std::function<float(float, float)>& merge_method,
+                         cv_bridge::CvImage& out_result_image,
+                         cv_bridge::CvImage& out_diff_image);
 };
 }  // namespace ow_dynamic_terrain
 
