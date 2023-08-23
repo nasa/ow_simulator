@@ -627,7 +627,7 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
                         << " out of " << std::to_string(NUM_MODELS)
                         << " disconnected. Behavior has not changed.");
         ROS_WARN_STREAM_THROTTLE(30, "This warning will repeat periodically "
-                        << "until the fault value is reset to "
+                        << "until the value of \"battery_nodes_to_disconnect\" is reset "
                         << std::to_string(m_deactivated_models)
                         << ", updated to disconnect more nodes, "
                         << "or the fault is deactivated.");
