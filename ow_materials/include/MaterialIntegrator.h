@@ -24,6 +24,11 @@ using ColorizerCallback = std::function<Color(MaterialBlend const &)>;
 
 class MaterialIntegrator
 {
+
+  // Listens for modification events from ow_dynamic_terrain and computes a
+  // bulk material blend by correlating the location of those events with the
+  // content of the material grid.
+
 public:
   MaterialIntegrator(ros::NodeHandle *node_handle,
                      AxisAlignedGrid<MaterialBlend> const *grid,

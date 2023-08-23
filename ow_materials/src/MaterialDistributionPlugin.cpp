@@ -21,7 +21,7 @@ const string PLUGIN_NAME = "MaterialDistributionPlugin";
 
 const string NAMESPACE_MATERIALS = "/ow_materials";
 
-const string NODE_NAMES = "/ow_materials/material_distribution_plugin";
+const string NODE_NAME = "/ow_materials/material_distribution_plugin";
 
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
@@ -30,7 +30,7 @@ const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
-  m_node_handle = make_unique<ros::NodeHandle>(NODE_NAMES);
+  m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {

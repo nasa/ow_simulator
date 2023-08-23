@@ -20,6 +20,7 @@ struct Color
 
 struct Material
 {
+
   constexpr static MaterialID id_min = std::numeric_limits<MaterialID>::min();
   constexpr static MaterialID id_max = std::numeric_limits<MaterialID>::max();
 
@@ -42,6 +43,9 @@ struct Material
 //   2. Cache commonly reference values, like blend hardness (computation)
 
 class MaterialBlend {
+
+  // A blend of different materials at concentrations that add up to unity.
+
 public:
   MaterialBlend() = default;
   ~MaterialBlend() = default;

@@ -21,6 +21,12 @@ namespace ow_materials
 
 class MaterialDistributionPlugin : public gazebo::ModelPlugin
 {
+
+  // A Gazebo model plugin that simulates varying materials properties through
+  // the subsurface of a heightmap. Requires concurrent operation with
+  // ow_dynamic_terrain to read-in modification events that occur to the
+  // heightmap and from that data synthesize bulk material properties.
+
 public:
   MaterialDistributionPlugin() = default;
   ~MaterialDistributionPlugin() = default;

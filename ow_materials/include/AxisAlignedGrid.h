@@ -25,6 +25,10 @@ using GridPositionType = ignition::math::Vector3d;
 
 template <typename T>
 class AxisAlignedGrid {
+
+  // An axis-aligned box which is partitioned into cubes of a given side length.
+  // Each cube, or cell, or voxel, is linked to a value of type T.
+
   using GridIndexType = ignition::math::Vector3<std::size_t>;
 public:
   AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
