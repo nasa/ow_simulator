@@ -72,7 +72,7 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
   //    performance anyways. This restriction should remain at least until a
   //    user demonstrates a need for larger grid sizes.
   constexpr size_t max_dimension = static_cast<size_t>(
-    std::cbrt(static_cast<float>(std::numeric_limits<size_t>::max()));
+    std::cbrt(static_cast<float>(std::numeric_limits<size_t>::max()))
   );
   if (   m_dimensions.X() >= max_dimension
       || m_dimensions.Y() >= max_dimension
