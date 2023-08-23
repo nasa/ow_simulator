@@ -64,8 +64,15 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
-  constexpr auto max_dimension = std::cbrt(
-    static_cast<float>(std::numeric_limits<size_t>::max())
+  // CLARIFICATION: This serves the purpose of an arbitrary upper bound on all
+  //    grid dimension. Dependent on the value of the other dimensions, one or
+  //    two dimensions could be permitted to be larger than the cube root, but
+  //    checking for that condition would be difficult due to that dependency.
+  //    Were larger dimensions permitted, they would likely lead to poor
+  //    performance anyways. This restriction should remain at least until a
+  //    user demonstrates a need for larger grid sizes.
+  constexpr size_t max_dimension = static_cast<size_t>(
+    std::cbrt(static_cast<float>(std::numeric_limits<size_t>::max()));
   );
   if (   m_dimensions.X() >= max_dimension
       || m_dimensions.Y() >= max_dimension
