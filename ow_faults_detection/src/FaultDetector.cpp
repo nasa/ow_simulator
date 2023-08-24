@@ -258,6 +258,13 @@ void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
     m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;
   }
 
+  // check for thermal runaway threshold
+  if (msg.value > POWER_THERMAL_RUNAWAY_MAX) {
+    m_power_faults_flags |= PowerFaultsStatus::THERMAL_RUNAWAY;
+  } else {
+    m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_RUNAWAY;
+  }
+
   // update system faults
   if (PowerFaultsStatus::NONE == m_power_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::POWER_EXECUTION_ERROR;

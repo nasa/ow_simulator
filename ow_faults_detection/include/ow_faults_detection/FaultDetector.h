@@ -40,6 +40,7 @@ public:
   FaultDetector& operator= (const FaultDetector&) = delete;
 
   static constexpr float POWER_THERMAL_MAX = 70.0;
+  static constexpr float POWER_THERMAL_RUNAWAY_MAX = 120.0;
   static constexpr float POWER_SOC_MIN = 0.1;
   static constexpr float POWER_SOC_MAX_DIFF = 0.05;
   
