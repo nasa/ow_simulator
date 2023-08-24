@@ -20,10 +20,14 @@ using namespace sensor_msgs;
 using namespace cv_bridge;
 using namespace ow_dynamic_terrain;
 
-static void formatDiffMsg(const CvImage& diff_image, const Point32& position,
-                          float scale_factor, int rows, int cols, string op_name,
+static void formatDiffMsg(const CvImage& result_image,
+                          const CvImage& diff_image,
+                          const Point32& position,
+                          float scale_factor, int rows, int cols,
+                          string op_name,
                           ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
 {
+  result_image.toImageMsg(out_diff_msg.result);
   diff_image.toImageMsg(out_diff_msg.diff);
   out_diff_msg.position = position;
   out_diff_msg.height = rows / scale_factor;
@@ -73,13 +77,15 @@ bool TerrainModifier::modifyCircle(Heightmap* heightmap, TexturePtr maskmap,
   auto h_scale = terrain->getSize() / terrain->getWorldSize();  // horizontal scale factor
   auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
+  CvImage result_image;
   CvImage differential_image;
+
   auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
                             false, get_height_value, set_height_value,
-                            *merge_method, differential_image);
+                            *merge_method, result_image, differential_image);
 
   if (changed)
-    formatDiffMsg(differential_image, msg->position, h_scale,
+    formatDiffMsg(result_image, differential_image, msg->position, h_scale,
                   image.rows, image.cols, "circle", out_diff_msg);
 
   return changed;
@@ -133,13 +139,15 @@ bool TerrainModifier::modifyEllipse(Heightmap* heightmap, TexturePtr maskmap,
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
+  CvImage result_image;
   CvImage differential_image;
+
   auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
                             false, get_height_value, set_height_value,
-                            *merge_method, differential_image);
+                            *merge_method, result_image, differential_image);
 
   if (changed)
-    formatDiffMsg(differential_image, msg->position, h_scale,
+    formatDiffMsg(result_image, differential_image, msg->position, h_scale,
                   image.rows, image.cols, "ellipse", out_diff_msg);
 
   return changed;
@@ -191,13 +199,15 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, TexturePtr maskmap,
     image = OpenCV_Util::rotateImage(image, msg->orientation);
   }
 
+  CvImage result_image;
   CvImage differential_image;
+
   auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
                             false, get_height_value, set_height_value,
-                            *merge_method, differential_image);
+                            *merge_method, result_image, differential_image);
 
   if (changed)
-    formatDiffMsg(differential_image, msg->position, h_scale,
+    formatDiffMsg(result_image, differential_image, msg->position, h_scale,
                   image.rows, image.cols, "patch", out_diff_msg);
 
   return changed;
@@ -237,6 +247,7 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
                                  const function<float(int, int)>& get_height_value,
                                  const function<void(int, int, float)>& set_height_value,
                                  const function<float(float, float)>& merge_method,
+                                 CvImage& out_result_image,
                                  CvImage& out_diff_image)
 {
   if (image.type() != CV_32FC1)
@@ -250,6 +261,7 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
   int right = left + image.cols - 1;
   int bottom = top + image.rows - 1;
 
+  auto result = OpenCV_Util::createZerosMatLike(image);
   auto diff = OpenCV_Util::createZerosMatLike(image);
 
   uint32_t mask_size = 0;
@@ -284,6 +296,10 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
       auto old_height = get_height_value(x, y);
       auto new_height = merge_method(old_height, pixel_value + z_bias);
 
+      auto iy = y - top;
+      auto ix = x - left;
+      result.at<float>(iy, ix) = new_height;
+
       if (old_height == new_height) 
         continue; // no change is necessary
 
@@ -307,6 +323,9 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
   {
     pixel_buffer->unlock();
   }
+
+  out_result_image.image    = result;
+  out_result_image.encoding = image_encodings::TYPE_32FC1;
 
   out_diff_image.image    = diff;
   out_diff_image.encoding = image_encodings::TYPE_32FC1;
