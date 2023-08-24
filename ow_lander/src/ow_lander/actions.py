@@ -74,53 +74,6 @@ def _compute_workspace_shoulder_yaw(x, y):
     _assert_shou_yaw_in_range(yaw)
     return yaw
     
-class _arm_faults_internal_messages_publish:
-    """Publish the arm failure messages to rostopic 'arm_faults_internal'"""
-    def __init__(self, err):
-      self.err = err
-      self.arm_faults_internal_pub = rospy.Publisher('arm_faults_internal', ArmFaultsStatus, queue_size = 10, latch = True)
-
-      """ error messages translate"""
-      if self.err == 'NONE':
-          self.err_flag = 0
-      elif self.err == 'HARDWARD':
-          self.err_flag = 1
-      elif self.err == 'TRAJECTORY_GENERATION':
-          self.err_flag = 2
-      elif self.err == 'COLLISION':
-          self.err_flag = 4
-      elif self.err == 'E_STOP':
-          self.err_flag = 8
-      elif self.err == 'POSITION_LIMIT':
-          self.err_flag = 16
-      elif self.err == 'JOINT_TORQUE_LIMIT':
-          self.err_flag = 32
-      elif self.err == 'VELOCITY_LIMIT':
-          self.err_flag = 64
-      elif self.err == 'NO_FORCE_DATA':
-          self.err_flag = 128
-      elif self.err == 'FORCE_TORQUE_LIMIT':
-          self.err_flag = 256
-      else:
-          rospy.loginfo('Arm faults status message is invalid')
-          return
-    
-      self.message_received = False
-
-      rospy.loginfo(self.err + ' error message sending now')
-
-      # To ensure that the subscriber has receives the message, keep publish until all set bits on
-      # self.err_flag also in msg.value now.
-      while not rospy.is_shutdown() and not self.message_received:
-        if self.arm_faults_internal_pub.get_num_connections() > 0:
-          self.arm_faults_internal_pub.publish(value = self.err_flag)
-          self.message_received = True
-        rospy.sleep(1)
-        
-    def _check_communicate_cb(self, msg):
-      if self.err_flag & msg.value == self.err_flag:
-        self.message_received = True
-    
 
 #####################
 ## ARM ACTIONS
@@ -135,9 +88,11 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     if self._arm.stop_arm():
       self._set_succeeded("Arm trajectory stopped")
-
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.E_STOP)
     else:
       self._set_aborted("No arm trajectory to stop")
 
@@ -570,6 +525,8 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -590,11 +547,9 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       return
     except ArmPlanningError as err:
       self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
-      err_string = 'TRAJECTORY_GENERATION'
-      rospy.loginfo(err_string + " error occured")
-      _arm_faults_internal_messages_publish(err_string)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -604,9 +559,6 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
         self._set_aborted("Failed to reach intended pose", **results)
         return
       self._set_succeeded(f"{self.name} trajectory succeeded", **results)
-      err_string = "NONE"
-      rospy.loginfo("No error occured for arm")
-      _arm_faults_internal_messages_publish(err_string)
 
 
 class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
@@ -623,6 +575,8 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -661,9 +615,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
-      err_string = 'TRAJECTORY_GENERATION'
-      rospy.loginfo(err_string + " error occured")
-      _arm_faults_internal_messages_publish(err_string)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -682,9 +634,6 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
         _format_guarded_move_success_message(self.name, monitor),
         **results
       )
-      err_string = "NONE"
-      rospy.loginfo("No error occured for arm")
-      _arm_faults_internal_messages_publish(err_string)
 
 
 

@@ -18,9 +18,9 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
-  arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
+  m_arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
                                           10, 
-                                          &FaultDetector::ArmFaultsInternalCb,
+                                          &FaultDetector::armFaultsInternalCb,
                                           this);
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
                                       10,
@@ -145,10 +145,10 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
   return false;
 }
 
-void FaultDetector::ArmFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
+void FaultDetector::armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
 {
   //The actual publish on arm faults status intergrate in jointStatesFlagCb
-  trajectory_error_flag = msg->value;
+  m_arm_faults_internal_flag = msg->value;
 }
 
 void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
@@ -196,14 +196,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
 
   // update system faults
 
-  // TODO: The comment out codes were not sure if necessary, but keep these  for now for
-  // reference
-
-  // if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
-  //   m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  // } else {
-  //   m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  // }
   if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   } else {
@@ -211,14 +203,9 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update faults from ow_lander
-  // TODO: Currently only trajectory_generation faults under consideration
-  if (trajectory_error_flag == ArmFaultsStatus::TRAJECTORY_GENERATION){
-    m_arm_faults_flags |= ArmFaultsStatus::TRAJECTORY_GENERATION;
-    m_system_faults_flags |= SystemFaultsStatus::ARM_GOAL_ERROR;
-  } else {
-    m_arm_faults_flags &= ~ArmFaultsStatus::TRAJECTORY_GENERATION;
-    m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
-  }
+  uint64_t hardward_fault_bit = m_arm_faults_flags & ArmFaultsStatus::HARDWARE;
+  m_arm_faults_flags = (m_arm_faults_internal_flag & ~ArmFaultsStatus::HARDWARE) | hardward_fault_bit;
+
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
   publishFaultsMessage(m_antenna_faults_msg_pub, PanTiltFaultsStatus(), m_antenna_faults_flags);

@@ -24,6 +24,7 @@ from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.arm_interface import OWArmInterface
+from ow_lander.faults_interface import FaultsInterFace
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
 
@@ -40,6 +41,7 @@ class ArmActionMixin:
     moveit_commander.roscpp_initialize(sys.argv)
     # initialize/reference
     self._arm = OWArmInterface()
+    self._arm_faults = FaultsInterFace()
     # initialize interface for querying scoop tip position
     self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()

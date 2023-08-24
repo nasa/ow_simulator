@@ -50,7 +50,7 @@ private:
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
 
-  void ArmFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg);
+  void armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg);
   
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -93,7 +93,7 @@ private:
   ros::Subscriber m_camera_raw_sub;
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
-  ros::Subscriber arm_faults_internal_sub;
+  ros::Subscriber m_arm_faults_internal_sub;
 
   // faults bitflags
   uint64_t m_arm_faults_flags     = owl_msgs::ArmFaultsStatus::NONE;
@@ -106,7 +106,8 @@ private:
   std::vector<unsigned int> m_joint_state_indices;
   bool m_camera_data_pending = false;
   float m_last_soc = std::numeric_limits<float>::quiet_NaN();
-  int trajectory_error_flag = 0; // for arm planning error, msg published by ow_lander
+  // for arm planning error, msg published by ow_lander
+  uint64_t m_arm_faults_internal_flag = owl_msgs::ArmFaultsStatus::NONE;
 };
 
 #endif
