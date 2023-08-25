@@ -203,8 +203,8 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update faults from ow_lander
-  uint64_t hardward_fault_bit = m_arm_faults_flags & ArmFaultsStatus::HARDWARE;
-  m_arm_faults_flags = (m_arm_faults_internal_flag & ~ArmFaultsStatus::HARDWARE) | hardward_fault_bit;
+  uint64_t hardware_fault_bit = m_arm_faults_flags & ArmFaultsStatus::HARDWARE;
+  m_arm_faults_flags = (m_arm_faults_internal_flag & ~ArmFaultsStatus::HARDWARE) | hardware_fault_bit;
 
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);

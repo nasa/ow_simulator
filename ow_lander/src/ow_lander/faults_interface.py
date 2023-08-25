@@ -10,24 +10,24 @@ import rospy
 from ow_lander.common import Singleton
 from owl_msgs.msg import ArmFaultsStatus
 
-class FaultsInterFace(metaclass = Singleton):
+class FaultsInterface(metaclass = Singleton):
   """Communication not directly publish the arm_faults_status, instead, publish the arm_faults_internal
-  and let faultdetector handle the messages.
+  and let ow_fault_detector handle the messages.
   """
   def __init__(self):
-    self.arm_faults_status = ArmFaultsStatus.NONE
+    self._arm_faults_status = ArmFaultsStatus.NONE
     self._arm_faults_internal_pub = rospy.Publisher('arm_faults_internal', 
                                                    ArmFaultsStatus, 
                                                    queue_size = 10, 
                                                    latch = True)
 
   def set_arm_faults_flag(self, flags):
-    self.arm_faults_status |= flags
-    self.publish()
+    self._arm_faults_status |= flags
+    self._publish()
 
   def reset_arm_faults_flags(self):
-    self.arm_faults_status = ArmFaultsStatus.NONE
-    self.publish()
+    self._arm_faults_status = ArmFaultsStatus.NONE
+    self._publish()
 
-  def publish(self):
-    self._arm_faults_internal_pub.publish(value = self.arm_faults_status)
+  def _publish(self):
+    self._arm_faults_internal_pub.publish(value = self._arm_faults_status)
