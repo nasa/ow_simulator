@@ -22,6 +22,8 @@ using namespace PCOE;
 
 const std::string FAULT_NAME_HPD           = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
+const std::string FAULT_NAME_DBN           = "battery_nodes_to_disconnect";
+const std::string FAULT_NAME_DBN_ACTIVATE  = "disconnect_battery_nodes";
 const int CUSTOM_FILE_EXPECTED_COLS           = 2;
 
 // Error flags.
@@ -72,6 +74,7 @@ void PowerSystemNode::initAndRun()
     }
     // If print_debug was false, then all flags remain false as initialized.
 
+    m_active_models = system_config.getInt32("active_models");
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
     m_initial_power = system_config.getDouble("initial_power");
@@ -90,6 +93,18 @@ void PowerSystemNode::initAndRun()
                      << "restarting the simulation.");
     return;
   }
+
+  // Error-catch m_active_models.
+  if (m_active_models < 1 || m_active_models > NUM_MODELS)
+  {
+    ROS_WARN_STREAM("OW_POWER_SYSTEM WARNING: "
+                    << "Invalid number of active models specified in "
+                    << "system.cfg! Check the value of 'active_models' "
+                    << "and ensure it is between 1 & "
+                    << std::to_string(NUM_MODELS) << ". Defaulting to 1...");
+    m_active_models = 1;
+  }
+  m_deactivated_models = 0;
   
   if (!initModels())
   {
@@ -149,7 +164,7 @@ void PowerSystemNode::initAndRun()
 
     // Create the prognosers using the builder that will send predictions using
     // their corresponding message bus.
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       prognosers.push_back(builder.build(m_power_models[i].bus,
                                          m_power_models[i].name,
@@ -167,6 +182,25 @@ void PowerSystemNode::initAndRun()
   }
 
   ROS_INFO_STREAM("Power system node running.");
+
+  // Notify the user of the state of the battery simulation.
+  if (m_active_models > 1)
+  {
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: " << std::to_string(m_active_models)
+                    << " models instantiated. This means "
+                    << std::to_string(m_active_models)
+                    << " prognosers will run battery predictions at once. "
+                    << "More complex intra-battery faults become possible to "
+                    << "simulate with more prognosers, but CPU load will be "
+                    << "much higher with each additional model.");
+  }
+  else
+  {
+    ROS_INFO_STREAM("OW_POWER_SYSTEM NOTE: Not simulating full battery. "
+                    << "This means only one GSAP model will run predictions to "
+                    << "keep performance optimal, but intra-battery faults "
+                    << "may not work properly.");
+  }
 
   // This rate object is used to sync the cycles up to the provided Hz.
   // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
@@ -192,11 +226,16 @@ void PowerSystemNode::initAndRun()
 
   // Loop through the PrognoserInputHandlers to update their values and send them to
   // the bus each loop to trigger predictions.
-  int start_loops = NUM_MODELS;
+  int start_loops = m_active_models;
   while(ros::ok())
   {
     // Set up value modifiers in each model handler for injection later.
-    injectFaults();
+    // Skip the first loop to prevent activation/deactivation messages from
+    // printing during startup.
+    if (m_power_models[0].input_info.timestamp > 0)
+    {
+      injectFaults();
+    }
 
     // DEBUG PRINT
     if (m_timestamp_print_debug)
@@ -209,13 +248,14 @@ void PowerSystemNode::initAndRun()
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
     double mech_power = m_mean_mechanical_power;
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      m_power_models[i].model.applyMechanicalPower(mech_power
-                                                   / NUM_MODELS);
+      m_power_models[i].model.applyMechanicalPower(
+                                      mech_power
+                                      / (NUM_MODELS - m_deactivated_models));
       if (m_power_models[i].model.cyclePrognoserInputs())
       {
         // Current implementation means if one ModelHandler exceeds the draw
@@ -288,7 +328,7 @@ void PowerSystemNode::initAndRun()
 
     // Check if the prediction handlers have EoD predictions ready,
     // and update EoD_events if so.
-    for (int i = 0; i < NUM_MODELS; i++)
+    for (int i = 0; i < m_active_models; i++)
     {
       if (handlers[i]->getStatus())
       {
@@ -303,7 +343,7 @@ void PowerSystemNode::initAndRun()
     if (m_outputs_print_debug)
     {
       ROS_INFO_STREAM("CURRENT MODEL DATA:");
-      for (int i = 0; i < NUM_MODELS; i++)
+      for (int i = 0; i < m_active_models; i++)
       {
         printPrognoserOutputs(m_EoD_events[i].remaining_useful_life,
                               m_EoD_events[i].state_of_charge,
@@ -313,7 +353,13 @@ void PowerSystemNode::initAndRun()
     }
 
     // DEBUG PRINT FORMATTING
-    if (m_print_debug && m_power_models[0].input_info.timestamp > 0)
+    // Skip a line for formatting purposes as long as a printout is being used.
+    if (m_print_debug && m_power_models[0].input_info.timestamp > 0
+        && (m_timestamp_print_debug
+         || m_inputs_print_debug
+         || m_outputs_print_debug
+         || m_topics_print_debug
+         || m_mech_power_print_debug))
     {
       std::cout << std::endl;
     }
@@ -343,7 +389,7 @@ void PowerSystemNode::initAndRun()
 bool PowerSystemNode::initModels()
 {
   // Initialize the models.
-  for (int i = 0; i < NUM_MODELS; i++)
+  for (int i = 0; i < m_active_models; i++)
   {
     m_power_models[i].name = formatModelName(i);
     if (!m_power_models[i].model.initialize())
@@ -492,9 +538,10 @@ void PowerSystemNode::injectCustomFault()
 
       // Evenly distribute the power draw from
       // the custom fault profile across each model.
-      double wattage = data[MessageId::Watts] / NUM_MODELS;
+      double wattage = data[MessageId::Watts] 
+                        / (NUM_MODELS - m_deactivated_models);
 
-      for (int i = 0; i < NUM_MODELS; i++)
+      for (int i = 0; i < m_active_models; i++)
       {
         m_power_models[i].model.setCustomPowerDraw(wattage);
       }
@@ -511,39 +558,92 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
 {
   bool fault_enabled;
   double hpd_wattage = 0.0;
+  int dbn_nodes = 0;
 
   // Get the value of fault_enabled.
   ros::param::getCached("/faults/" + fault_name, fault_enabled);
 
-  if (!m_high_power_draw_activated && fault_enabled)
+  // High power draw case
+  if (fault_name == FAULT_NAME_HPD_ACTIVATE)
   {
-    ROS_INFO_STREAM(fault_name << " activated!");
-    m_high_power_draw_activated = true;
-  }
-  else if (m_high_power_draw_activated && !fault_enabled)
-  {
-    ROS_INFO_STREAM(fault_name << " deactivated!");
-    m_high_power_draw_activated = false;
-  }
-
-  if (m_high_power_draw_activated && fault_enabled)
-  {
-    // If the current fault being utilized is high_power_draw,
-    // simply update wattage based on the current value of the HPD slider.
-    if (fault_name == FAULT_NAME_HPD_ACTIVATE)
+    // Check if the fault has switched.
+    if (!m_high_power_draw_activated && fault_enabled)
     {
-      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
-      double split_wattage = hpd_wattage / NUM_MODELS;
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_high_power_draw_activated = true;
+    }
+    else if (m_high_power_draw_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      m_high_power_draw_activated = false;
+    }
 
-      for (int i = 0; i < NUM_MODELS; i++)
+    // Continual behavior with HPD fault.
+    if (m_high_power_draw_activated && fault_enabled)
+    {
+      // Update wattage based on the current value of the HPD slider.
+      ros::param::getCached("/faults/" + FAULT_NAME_HPD, hpd_wattage);
+      double split_wattage = hpd_wattage / (NUM_MODELS - m_deactivated_models);
+
+      for (int i = 0; i < m_active_models; i++)
       {
         m_power_models[i].model.setHighPowerDraw(split_wattage);
       }
     }
+  }
 
-    // NOTE: If other faults are added to the RQT window in the future,
-    // this is where their related flags/logic would be checked/used
-    // in a similar manner to the above code block with high power draw.
+  // Disconnect battery nodes case
+  if (fault_name == FAULT_NAME_DBN_ACTIVATE)
+  {
+    // Check if the fault has switched.
+    if (!m_disconnect_battery_nodes_fault_activated && fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_disconnect_battery_nodes_fault_activated = true;
+    }
+    else if (m_disconnect_battery_nodes_fault_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated. Note that disconnected "
+                    << "battery nodes cannot be reconnected, even if the fault "
+                    << "is deactivated.");
+      m_disconnect_battery_nodes_fault_activated = false;
+    }
+
+    // Continual beahvior with DBN fault.
+    if (m_disconnect_battery_nodes_fault_activated && fault_enabled)
+    {
+      // Get the number of nodes set by the user.
+      ros::param::getCached("/faults/" + FAULT_NAME_DBN, dbn_nodes);
+
+      // Warn the user periodically if they try to reduce the number of
+      // deactivated nodes from a previous fault activation.
+      if (m_deactivated_models > dbn_nodes)
+      {
+        ROS_WARN_STREAM_THROTTLE(30, fault_name << " currently set to "
+                        << "disconnect " << std::to_string(dbn_nodes)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " nodes when there are already "
+                        << std::to_string(m_deactivated_models)
+                        << " out of " << std::to_string(NUM_MODELS)
+                        << " disconnected. Behavior has not changed.");
+        ROS_WARN_STREAM_THROTTLE(30, "This warning will repeat periodically "
+                        << "until the value of \"battery_nodes_to_disconnect\" is reset "
+                        << std::to_string(m_deactivated_models)
+                        << ", updated to disconnect more nodes, "
+                        << "or the fault is deactivated.");
+      }
+      else if (m_deactivated_models < dbn_nodes)
+      {
+        ROS_INFO_STREAM(fault_name << " updated! "
+                      << std::to_string(dbn_nodes)
+                      << " out of " << std::to_string(NUM_MODELS) << " models "
+                      << "are now disconnected.");
+        // Update the number of active and deactivated nodes.
+        m_deactivated_models = std::max(m_deactivated_models, dbn_nodes);
+        m_active_models = std::min(m_active_models,
+                                  (NUM_MODELS - m_deactivated_models));
+      }
+    }
   }
 }
 
@@ -553,6 +653,7 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
 void PowerSystemNode::injectFaults()
 {
   injectFault(FAULT_NAME_HPD_ACTIVATE);
+  injectFault(FAULT_NAME_DBN_ACTIVATE);
   injectCustomFault();
 }
 
@@ -705,7 +806,7 @@ void PowerSystemNode::publishPredictions()
   owl_msgs::BatteryTemperature tmp_msg;
 
   // Calculate the min_rul, min_soc, and max_tmp from the new data.
-  for (int i = 0; i < NUM_MODELS; i++)
+  for (int i = 0; i < m_active_models; i++)
   {
     // If RUL is infinity, set it to the maximum horizon value instead.
     if (isinf(m_EoD_events[i].remaining_useful_life))
@@ -786,7 +887,7 @@ static void printTimestamp(double timestamp)
 
 /*
  * Prints the input data sent to GSAP's asynchronous prognosers each cycle.
- * Output: NUM_MODELS lines per cycle.
+ * Output: m_active_models lines per cycle.
  */
 static void printPrognoserInputs(double power,
                                  double voltage,
@@ -807,7 +908,7 @@ static void printPrognoserInputs(double power,
 
 /*
  * Prints the information currently stored in all models each cycle.
- * Output: NUM_MODELS lines per cycle.
+ * Output: m_active_models lines per cycle.
  */
 static void printPrognoserOutputs(double rul,
                                   double soc,

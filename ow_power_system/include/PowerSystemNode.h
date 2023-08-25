@@ -90,6 +90,11 @@ private:
 
   // system.cfg variables:
 
+  // The number of currently simulated models. Default 1, but can be modified
+  // mid-simulation by intra-battery faults (or set to a different starting
+  // value in system.cfg).
+  int m_active_models;
+
   // HACK ALERT.  The prognoser produces erratic/erroneous output when
   // given too high a power input.  The value assigned to this in system.cfg
   // protects against this by capping the power input, but it is a temporary
@@ -124,6 +129,12 @@ private:
   
   // End system.cfg variables.
 
+  // The number of models deactivated via faults. Used separately from
+  // m_active_models to allow the system to distribute power draw as if
+  // there were more models running at once (i.e. when full battery simulation
+  // is disabled).
+  int m_deactivated_models;
+
   // The rate at which /joint_states is expected to publish. If this is changed,
   // this variable will need to change as well.
   const int m_joint_states_rate = 50;
@@ -148,6 +159,7 @@ private:
 
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
+  bool m_disconnect_battery_nodes_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
 
