@@ -147,7 +147,8 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
 
 void FaultDetector::armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
 {
-  //The actual publish on arm faults status intergrate in jointStatesFlagCb
+  //arm_faults_internal was published from ow_lander/action.py
+  //m_arm_faults_internal_flag go to jointStatesFlagCb and publishes an updated message to '/arm_faults_status'.
   m_arm_faults_internal_flag = msg->value;
 }
 
@@ -195,7 +196,6 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update system faults
-
   if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   } else {
