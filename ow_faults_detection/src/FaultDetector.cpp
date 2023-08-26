@@ -18,6 +18,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
+  m_arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
+                                          10, 
+                                          &FaultDetector::armFaultsInternalCb,
+                                          this);
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
                                       10,
                                       &FaultDetector::jointStatesFlagCb,
@@ -141,10 +145,16 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
   return false;
 }
 
+void FaultDetector::armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
+{
+  //arm_faults_internal was published from ow_lander/action.py
+  //m_arm_faults_internal_flag go to jointStatesFlagCb and publishes an updated message to '/arm_faults_status'.
+  m_arm_faults_internal_flag = msg->value;
+}
+
 void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
 {
   unsigned int index;
-  
   // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_state_indices.empty()) {
@@ -186,16 +196,15 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update system faults
-  if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
-    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  } else {
-    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  }
   if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   } else {
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }
+
+  // update faults from ow_lander
+  uint64_t hardware_fault_bit = m_arm_faults_flags & ArmFaultsStatus::HARDWARE;
+  m_arm_faults_flags = (m_arm_faults_internal_flag & ~ArmFaultsStatus::HARDWARE) | hardware_fault_bit;
 
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
