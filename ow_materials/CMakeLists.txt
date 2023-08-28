@@ -12,6 +12,18 @@ endif()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  ow_dynamic_terrain
+  cv_bridge
+)
+
+find_package(OpenCV REQUIRED
+  core
+)
+
+find_package(PCL 1.3 REQUIRED COMPONENTS
+  common
+  io
+  conversions
 )
 
 include(FindPkgConfig)
@@ -25,12 +37,18 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
+  ${OpenCV_LIBRARY_DIRS}
+  ${PCL_LIBRARY_DIRS}
 )
+
+add_definitions(${PCL_DEFINITIONS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
@@ -69,6 +87,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    CATKIN_DEPENDS
+   ow_dynamic_terrain
 )
 
 ###########
@@ -96,7 +115,10 @@ add_library(MaterialDistributionPlugin
   SHARED
   src/MaterialDistributionPlugin.cpp
   src/MaterialDatabase.cpp
+  src/Materials.cpp
   src/populate_materials.cpp
+  src/MaterialIntegrator.cpp
+  src/point_cloud_util.cpp
 )
 add_dependencies(MaterialDistributionPlugin
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 

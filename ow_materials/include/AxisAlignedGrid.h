@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include <ignition/math/AxisAlignedBox.hh>
 
@@ -20,40 +21,56 @@ public:
     : std::runtime_error(what_arg) { };
 };
 
+using GridPositionType = ignition::math::Vector3d;
+
 template <typename T>
 class AxisAlignedGrid {
+
+  // An axis-aligned box which is partitioned into cubes of a given side length.
+  // Each cube, or cell, or voxel, is linked to a value of type T.
+
+  using GridIndexType = ignition::math::Vector3<std::size_t>;
 public:
-  AxisAlignedGrid(double x0, double y0, double z0,
-                  double x1, double y1, double z1,
-                  double side_length, T initial_value);
+  AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
+                  double cell_side_length);
   ~AxisAlignedGrid() = default;
 
   AxisAlignedGrid() = delete;
   AxisAlignedGrid(const AxisAlignedGrid&) = delete;
   AxisAlignedGrid& operator=(const AxisAlignedGrid&) = delete;
 
-  const ignition::math::Vector3d &getDiagonal() const;
-  const ignition::math::Vector3d &getMaxCorner() const;
-  const ignition::math::Vector3d &getMinCorner() const;
-  const ignition::math::Vector3d &getCenter() const;
+  const GridPositionType &getDiagonal() const;
+  const GridPositionType &getMaxCorner() const;
+  const GridPositionType &getMinCorner() const;
+  const GridPositionType &getCenter() const;
 
-  inline T &getCellValue(size_t i, size_t j, size_t k) {
-    return m_cells[index(i, j, k)];
-  };
+  inline double getCellLength() const { return m_cell_length; }
 
-  inline T const &getCellValue(size_t i, size_t j, size_t k) const {
-    return m_cells[index(i, j, k)];
-  };
+  // WARNING: execution will take a long time even for moderate-sized grids
+  void runForEach(std::function<void(T, GridPositionType)> f) const;
+
+  void runForEachInAxisAlignedBox(GridPositionType v0, GridPositionType v1,
+                              std::function<void(T, GridPositionType)> f) const;
 
 private:
 
-  inline size_t index(size_t i, size_t j, size_t k) const {
-    return i + j * m_dimensions.X() + k * m_dimensions.X() * m_dimensions.Y();
+  GridPositionType getCellCenter(GridIndexType i) const;
+
+  inline const T &getCellValue(GridIndexType i) const {
+    return m_cells[index(i)];
   };
+
+  inline T &getCellValue(GridIndexType i) {
+    return m_cells[index(i)];
+  };
+
+  std::size_t index(GridIndexType i) const;
+
+  double m_cell_length;
 
   std::unique_ptr<ignition::math::AxisAlignedBox> m_domain;
 
-  ignition::math::Vector3<size_t> m_dimensions;
+  GridIndexType m_dimensions;
 
   std::vector<T> m_cells;
 };

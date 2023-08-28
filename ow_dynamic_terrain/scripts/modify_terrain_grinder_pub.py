@@ -7,7 +7,6 @@ and issuing a corresponding modify_terrain_* message to update the terrain.
 """
 
 import rospy
-import time
 from math import degrees
 import numpy as np
 from geometry_msgs.msg import Point
@@ -45,6 +44,9 @@ class ModifyTerrainGrinder:
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
 
+    # the distance the grinder must travel before a modification message is sent
+    MODIFICATION_DISTANCE = 5.e-3  # meters
+
     _, roll, _ = euler_from_quaternion(
         quaternion=(new_rotation.x, new_rotation.y, new_rotation.z, new_rotation.w))
 
@@ -54,7 +56,8 @@ class ModifyTerrainGrinder:
       return # grinder not aligned for digging, abort
 
     current_translation = np.array([new_position.x, new_position.y, new_position.z])
-    if all(np.isclose(current_translation, self.last_translation, atol=1.e-4)):
+    if all(np.isclose(current_translation, self.last_translation,
+                      atol=MODIFICATION_DISTANCE)):
       return  # no significant change, abort
 
     self.last_translation = current_translation

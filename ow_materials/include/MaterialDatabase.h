@@ -9,13 +9,18 @@
 #include <ostream>
 #include <unordered_map>
 
-#include <Material.h>
+#include <Materials.h>
 
 namespace ow_materials
 {
 
 class MaterialDatabase
 {
+
+  // A catalogue of defined materials. Each material is referenced by a unique
+  // ID so that the data that describes a material only has to be stored in
+  // one location, but can be referenced elsewhere.
+
 public:
   MaterialDatabase() = default;
   ~MaterialDatabase() = default;
