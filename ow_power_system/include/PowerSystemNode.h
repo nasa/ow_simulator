@@ -20,6 +20,7 @@
 #include <owl_msgs/BatteryRemainingUsefulLife.h>
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
+#include <owl_msgs/PowerFaultsStatus.h>
 #include <PrognoserFactory.h>
 #include "PrognoserInputHandler.h"
 #include "PredictionHandler.h"
@@ -63,6 +64,7 @@ private:
   void injectFault(const std::string& power_fault_name);
   void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  void powerFaultsStatusCb(const owl_msgs::PowerFaultsStatus::ConstPtr& msg);
   PrognoserVector loadPowerProfile(const std::string& filename,
                                    std::string custom_file);
   void publishPredictions();
@@ -74,6 +76,7 @@ private:
   ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
+  ros::Subscriber m_power_faults_sub;          // Power Faults Status Subscriber
 
   // Flags that determine if debug output is printed regarding battery status
   // during runtime.

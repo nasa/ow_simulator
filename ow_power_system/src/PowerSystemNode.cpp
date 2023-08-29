@@ -422,12 +422,18 @@ void PowerSystemNode::initTopics()
   m_battery_temperature_pub = m_nh.advertise
                                   <owl_msgs::BatteryTemperature>(
                                   "/battery_temperature", 1);
-  // Finally subscribe to the joint_states to estimate the mechanical power
+  // Subscribe to /joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe(
                         "/joint_states",
                         1,
                         &PowerSystemNode::jointStatesCb,
                         this);
+  // Subscribe to /power_faults_status to react to any triggered power faults
+  m_power_faults_sub = m_nh.subscribe(
+                         "/power_faults_status",
+                         1,
+                         &PowerSystemNode::powerFaultsStatusCb,
+                         this);
 }
 
 /*
@@ -554,7 +560,7 @@ void PowerSystemNode::injectCustomFault()
 /*
  * Handles defined faults within the RQT window (currently only high power draw).
  */
-void PowerSystemNode::injectFault (const std::string& fault_name)
+void PowerSystemNode::injectFault(const std::string& fault_name)
 {
   bool fault_enabled;
   double hpd_wattage = 0.0;
@@ -695,6 +701,46 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   mechanical_power_avg_msg.data = m_mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+}
+
+/*
+ * Callback function that checks if the various power faults have been
+ * triggered, and allows the power system to update its behavior accordingly.
+ */
+void PowerSystemNode::powerFaultsStatusCb(const owl_msgs::PowerFaultsStatus::ConstPtr& msg)
+{
+  // Check each flag.
+  if (msg->value & owl_msgs::PowerFaultsStatus::LOW_STATE_OF_CHARGE != 0)
+  {
+    // Any future power system reaction to a low SoC fault would go here.
+  }
+  else
+  {
+    // Deactivating behavior related to low SoC fault would go here.
+  }
+
+  if (msg->value &
+       owl_msgs::PowerFaultsStatus::INSTANTANEOUS_CAPACITY_LOSS != 0)
+  {
+    // Any future power system reaction to an ICL fault would go here.
+  }
+  else
+  {
+    // Deactivating behavior related to ICL fault would go here.
+  }
+
+  // Once the thermal runaway fault is added, it should be checked here first
+  // with the thermal failure fault checked inside if runaway is not triggered.
+  if (msg->value & owl_msgs::PowerFaultsStatus::THERMAL_FAULT != 0)
+  {
+    // When the temperature reaches the thermal failure threshold, we want to
+    // shut down any potential ongoing actions that are using the battery,
+    // though the power system alone cannot halt these actions.
+  }
+  else
+  {
+    // Any paused actions as a result of thermal failure should resume.
+  }
 }
 
 /*
