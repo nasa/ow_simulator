@@ -138,6 +138,14 @@ class ActionServerBase(ABC):
                    "This should never happen!")
       return
     rospy.loginfo(f"{self.name} action started")
+    # reset execution fault flag by sending a PENDING state
+    # HACK: The SUCCEEDED state does not reflect the current state of the action
+    #   that has been called. It cannot have succeeded yet because it has yet to
+    #   be attempted here. This is a hack. ActionGoalStatus.msg is effectively
+    #   interpreted by ow_fault_detector as a boolean array because an element
+    #   can either be SUCCEEDED or ABORTED. To reset system_faults_status goal
+    #   error flags to 0 at the beginning of an action, we broadcast SUCCEEDED.
+    self.__publish_state(actionlib_msgs.msg.GoalStatus.SUCCEEDED)
     self.execute_action(goal)
     rospy.loginfo(f"{self.name} action complete")
 
