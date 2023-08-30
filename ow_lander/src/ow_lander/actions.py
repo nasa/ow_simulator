@@ -15,6 +15,7 @@ from ow_regolith.msg import Contacts
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
 from urdf_parser_py.urdf import URDF
+from owl_msgs.msg import ArmFaultsStatus
 
 import ow_lander.msg
 from ow_lander import mixins
@@ -72,6 +73,7 @@ def _compute_workspace_shoulder_yaw(x, y):
     yaw += math.asin(l / h)
     _assert_shou_yaw_in_range(yaw)
     return yaw
+    
 
 #####################
 ## ARM ACTIONS
@@ -86,6 +88,8 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     if self._arm.stop_arm():
       self._set_succeeded("Arm trajectory stopped")
     else:
@@ -161,6 +165,8 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
         self._arm.stop_trajectory_silently()
 
     self._arm.move_group_scoop.set_planner_id('RRTstar')
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       self._arm.checkout_arm(self.name)
       # TODO: split guarded_move trajectory into 2 parts so that ground
@@ -169,8 +175,12 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       trajectory = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err), final=Point())
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err), final=Point())
     else:
       self._arm.checkin_arm(self.name)
@@ -520,6 +530,8 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -533,8 +545,14 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
       return
@@ -562,6 +580,8 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -586,12 +606,21 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
+      rospy.loginfo("ArmExecutionError occur")
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -610,6 +639,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
         _format_guarded_move_success_message(self.name, monitor),
         **results
       )
+
 
 
 class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
@@ -674,6 +704,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       )
     )
     # move to setup pose prior to surface approach
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       self._arm.checkout_arm(self.name)
       trajectory_setup = self.plan_end_effector_to_pose(
@@ -682,8 +714,15 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err) + " - Setup trajectory failed",
+        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
+        final_distance=0, final_force=0, final_torque=0)
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         final_distance=0, final_force=0, final_torque=0)
@@ -804,6 +843,8 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
 
   # redefine execute_action to enable FT monitor
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
     def guarded_cb():
@@ -821,8 +862,15 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
       sequence.plan_to_joint_positions(new_positions)
       self._arm.execute_arm_trajectory(sequence.merge(),
         action_feedback_cb=guarded_cb)
-    except (ArmPlanningError, ArmExecutionError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_angles=self._arm_joints_monitor.get_joint_positions(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions(),
         final_force=monitor.get_force(),
