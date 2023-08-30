@@ -16,6 +16,7 @@ def wait_for_message(message_buffer, timeout, frequency=10):
     r.sleep()
   return False
 
+MESSAGE_TIMEOUT = 30
 
 class LinkStateSubscriber:
   """Subscribes to /gazebo/link_states and returns the pose/position of a
@@ -44,10 +45,11 @@ class LinkStateSubscriber:
   def get_link_pose(self):
     # block until first message is received
     if LinkStateSubscriber._message_buffer is None and \
-        not wait_for_message(LinkStateSubscriber._message_buffer, 10):
-      rospy.logwarn("LinkStatesSubscriber did not receive a message for 10 "\
-                    "seconds at startup. This may cause issues for some " \
-                    "lander actions.")
+        not wait_for_message(LinkStateSubscriber._message_buffer,
+                             MESSAGE_TIMEOUT):
+      rospy.logwarn("LinkStatesSubscriber did not receive a message for "\
+                    f"{MESSAGE_TIMEOUT} seconds at startup. This may cause " \
+                    "issues for some lander actions.")
       return None
     try:
       idx = LinkStateSubscriber._message_buffer.name.index(self._link_name)
@@ -82,10 +84,11 @@ class JointAnglesSubscriber:
   def get_joint_positions(self):
     # block until first message is received
     if not JointAnglesSubscriber._message_buffer and \
-        not wait_for_message(JointAnglesSubscriber._message_buffer, 10):
-      rospy.logwarn("JointAnglesSubscriber did not receive a message for 10 "\
-                    "seconds at startup. This may cause issues for some " \
-                    "lander actions.")
+        not wait_for_message(JointAnglesSubscriber._message_buffer,
+                             MESSAGE_TIMEOUT):
+      rospy.logwarn("JointAnglesSubscriber did not receive a message for "\
+                    f"{MESSAGE_TIMEOUT} seconds at startup. This may cause " \
+                    "issues for some lander actions.")
       return None
     angles = list()
     for name in self._joint_names:

@@ -317,9 +317,10 @@ class PanTiltMoveMixin:
     self._tilt_pub = rospy.Publisher(
       ANTENNA_TILT_POS_TOPIC, Float64, queue_size=1)
     self._ant_joints_monitor = JointAnglesSubscriber(constants.ANTENNA_JOINTS)
-    SUBS_TIMEOUT = 10 # seconds
-    NO_SUBS_MSG = f"No subscribers to topic %s after waiting {SUBS_TIMEOUT}s." \
-                   " Pan/Tilt actions may not work correctly as a result."
+    SUBS_TIMEOUT = 30 # seconds
+    NO_SUBS_MSG = f"No subscribers to topic %s after waiting {SUBS_TIMEOUT} " \
+                   "seconds. Pan/Tilt actions may not work correctly as a " \
+                   "result."
     if not wait_for_subscribers(self._pan_pub, SUBS_TIMEOUT):
       rospy.logwarn(NO_SUBS_MSG % self._pan_pub.name)
     if not wait_for_subscribers(self._tilt_pub, SUBS_TIMEOUT):

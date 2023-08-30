@@ -880,6 +880,9 @@ class LightSetIntensityServer(ActionServerBase):
       return
     self._set_succeeded(f"{name} light intensity set successfully.")
 
+# the maximum time the camera actions will wait for the camera plugin to have
+# subscribed to their control topics
+SUBSCRIBER_TIMEOUT = 30
 
 class CameraCaptureServer(ActionServerBase):
 
@@ -900,10 +903,10 @@ class CameraCaptureServer(ActionServerBase):
                                              PointCloud2,
                                              self._handle_point_cloud)
     self.point_cloud_created = False
-    if not wait_for_subscribers(self._pub_trigger, 10):
+    if not wait_for_subscribers(self._pub_trigger, SUBSCRIBER_TIMEOUT):
       rospy.logwarn(f"No subscribers to topic {self._pub_trigger.name} after" \
-                    "waiting 10s. CameraCapture may not work correctly as a" \
-                    "result.")
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraCapture " \
+                    "may not work correctly as a result.")
     self._start_server()
 
   def _handle_point_cloud(self, points):
@@ -952,10 +955,10 @@ class CameraSetExposureServer(ActionServerBase):
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
                                          Float64,
                                          queue_size=10)
-    if not wait_for_subscribers(self._pub_exposure, 10):
+    if not wait_for_subscribers(self._pub_exposure, SUBSCRIBER_TIMEOUT):
       rospy.logwarn(f"No subscribers to topic {self._pub_exposure.name} after" \
-                    "waiting 10s. CameraSetExposure may not work correctly " \
-                    "as a result.")
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraSetExposure" \
+                    " may not work correctly as a result.")
     self._start_server()
 
   def execute_action(self, goal):
