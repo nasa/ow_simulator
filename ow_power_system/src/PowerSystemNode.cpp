@@ -126,7 +126,7 @@ void PowerSystemNode::initAndRun()
   // If the power system is fully disabled, swap to a basic loop instead.
   if (!m_enable_power_system)
   {
-    ROS_INFO_STREAM("Power system disabled via system.cfg! Node will publish "
+    ROS_WARN_STREAM("Power system disabled via system.cfg! Node will publish "
                     << "static values and ignore faults.");
     runDisabledLoop();
     return;
@@ -431,9 +431,9 @@ void PowerSystemNode::runDisabledLoop()
     owl_msgs::BatteryStateOfCharge soc_msg;
     owl_msgs::BatteryTemperature tmp_msg;
 
-    rul_msg.value = m_max_horizon_secs;   // Will always be the max possible RUL
-    soc_msg.value = 1.0;                  // Hardcoded 100% battery charge
-    tmp_msg.value = 20;                   // Hardcoded 20C battery temperature
+    rul_msg.value = m_max_horizon_secs;   // Will always publish the initial
+    soc_msg.value = m_initial_soc;        // values
+    tmp_msg.value = m_initial_temperature;
 
     // Apply the most recent timestamp to each message header.
     auto timestamp = ros::Time::now();
@@ -1059,7 +1059,7 @@ static void printTopics(double rul, double soc, double tmp)
  */
 static void printFaultDisabledWarning()
 {
-  ROS_WARN_STREAM_ONCE("Faults cannot be injected while the power system "
+  ROS_WARN_STREAM_THROTTLE(60, "Faults cannot be injected while the power system "
                     << "is disabled. Modify ow_power_system/config/system.cfg "
                     << "and restart the simulator to re-enable.");
 }
