@@ -22,7 +22,7 @@ from ow_lander import mixins
 from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
-from ow_lander.common import normalize_radians
+from ow_lander.common import normalize_radians, wait_for_subscribers
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
@@ -928,6 +928,9 @@ class LightSetIntensityServer(ActionServerBase):
       return
     self._set_succeeded(f"{name} light intensity set successfully.")
 
+# the maximum time the camera actions will wait for the camera plugin to have
+# subscribed to their control topics
+SUBSCRIBER_TIMEOUT = 30
 
 class CameraCaptureServer(ActionServerBase):
 
@@ -948,6 +951,10 @@ class CameraCaptureServer(ActionServerBase):
                                              PointCloud2,
                                              self._handle_point_cloud)
     self.point_cloud_created = False
+    if not wait_for_subscribers(self._pub_trigger, SUBSCRIBER_TIMEOUT):
+      rospy.logwarn(f"No subscribers to topic {self._pub_trigger.name} after" \
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraCapture " \
+                    "may not work correctly as a result.")
     self._start_server()
 
   def _handle_point_cloud(self, points):
@@ -996,6 +1003,10 @@ class CameraSetExposureServer(ActionServerBase):
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
                                          Float64,
                                          queue_size=10)
+    if not wait_for_subscribers(self._pub_exposure, SUBSCRIBER_TIMEOUT):
+      rospy.logwarn(f"No subscribers to topic {self._pub_exposure.name} after" \
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraSetExposure" \
+                    " may not work correctly as a result.")
     self._start_server()
 
   def execute_action(self, goal):
@@ -1106,24 +1117,25 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = owl_msgs.msg.PanTiltMoveJointsResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos,
-                           tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
     except ArmExecutionError as err:
-      self._set_aborted(str(err),
-        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+          pan_position=pan, tilt_position=tilt)
       else:
         self._set_preempted("Action was preempted",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+          pan_position=pan, tilt_position=tilt)
 
+  def publish_feedback_cb(self):
+    current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan,
+                           tilt_position = current_tilt)
 
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1134,21 +1146,23 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.PanResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
     except ArmExecutionError as err:
-      self._set_aborted(str(err), pan_position=self._pan_pos)
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), pan_position=pan)
     else:
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
-        self._set_succeeded("Reached commanded pan value",
-                            pan_position=self._pan_pos)
+        self._set_succeeded("Reached commanded pan value", pan_position=pan)
       else:
-        self._set_preempted("Action was preempted",
-                            pan_position=self._pan_pos)
+        self._set_preempted("Action was preempted", pan_position=pan)
+
+  def publish_feedback_cb(self):
+    current_pan, _ = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan)
+
 
 class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1159,21 +1173,23 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.TiltResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
     except ArmExecutionError as err:
-      self._set_aborted(str(err), tilt_position=self._tilt_pos)
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), tilt_position=tilt)
     else:
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
-        self._set_succeeded("Reached commanded tilt value",
-                            tilt_position=self._tilt_pos)
+        self._set_succeeded("Reached commanded tilt value", tilt_position=tilt)
       else:
-        self._set_preempted("Action was preempted",
-                            tilt_position=self._tilt_pos)
+        self._set_preempted("Action was preempted", tilt_position=tilt)
+
+  def publish_feedback_cb(self):
+    _, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(tilt_position = current_tilt)
+
 
 class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1187,7 +1203,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
     cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
-                                                    'StereoCameraCenter_link')
+                                                     'StereoCameraCenter_link')
     tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'l_ant_panel')
     try:
