@@ -24,8 +24,8 @@ from ow_lander import faults
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians, wait_for_subscribers
-from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
-                                 AntennaPlanningError, AntennaExecutionError)
+from ow_lander.exception import (ArmError, AntennaError,
+                                 ArmPlanningError, ArmExecutionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
@@ -205,7 +205,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       trajectory = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err), final=Point())
       if isinstance(err, ArmPlanningError):
@@ -581,7 +581,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
@@ -639,7 +639,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
@@ -740,7 +740,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -778,7 +778,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_approach,
         action_feedback_cb=guarded_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -1150,7 +1150,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
-    except ArmExecutionError as err:
+    except AntennaError as err:
       pan, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
@@ -1180,7 +1180,7 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
-    except ArmExecutionError as err:
+    except AntennaError as err:
       pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
     else:
@@ -1208,7 +1208,7 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
-    except ArmExecutionError as err:
+    except AntennaError as err:
       _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
     else:
@@ -1285,7 +1285,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     tilt = normalize_radians(tilt_raw)
     try:
       not_preempted = self.move_pan_and_tilt(pan, tilt)
-    except (AntennaPlanningError, AntennaExecutionError) as err:
+    except AntennaError as err:
       self._set_aborted(str(err))
     else:
       if not_preempted:

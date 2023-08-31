@@ -19,10 +19,9 @@ from owl_msgs.msg import ArmFaultsStatus
 
 from ow_lander import math3d
 from ow_lander import constants
-from ow_lander import faults
 from ow_lander.common import (radians_equivalent, in_closed_range,
                               create_header, wait_for_subscribers)
-from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
+from ow_lander.exception import (ArmError, ArmPlanningError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.arm_interface import OWArmInterface
@@ -61,7 +60,7 @@ class ArmTrajectoryMixin(ArmActionMixin, ABC):
         self.plan_trajectory(goal),
         action_feedback_cb = self.publish_feedback_cb
       )
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
       if isinstance(err, ArmPlanningError):
@@ -102,7 +101,7 @@ class GrinderTrajectoryMixin(ArmTrajectoryMixin):
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(plan)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._cleanup()
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
@@ -142,7 +141,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
       sequence.plan_to_joint_positions(new_positions)
       self._arm.execute_arm_trajectory(sequence.merge(),
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions())

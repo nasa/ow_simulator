@@ -27,8 +27,8 @@ class ActionServerBase(ABC):
     pass
 
   """Optional property that enables the action server to update a fault
-  interface with information about success, abort, specific faults. See examples
-  of fault handlers in faults.py
+  interface when actions fail or other more specific faults occur.
+  See examples of fault handlers in faults.py
   """
   @property
   def fault_handler(self):
