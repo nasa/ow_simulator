@@ -4,8 +4,6 @@
 
 import rospy
 import actionlib
-import actionlib_msgs
-import ow_lander.msg
 
 from abc import ABC, abstractmethod
 
@@ -14,13 +12,6 @@ class ActionServerBase(ABC):
   and logging for all OceanWATERS actions.
   """
 
-  ACTION_GOAL_STATUS_TOPIC = "/action_goal_status"
-  # allocate and initialize the container for goal status msgs
-  _goal_status_array = [
-    actionlib_msgs.msg.GoalStatus() for _ in range(ow_lander.msg.ActionGoalStatus.NUM_GOAL_TYPES) 
-  ]
-
-  
   def __init__(self):
     self._server  = actionlib.SimpleActionServer(
       self.name,
@@ -28,16 +19,20 @@ class ActionServerBase(ABC):
       execute_cb = self.__on_action_called,
       auto_start = False
     )
-    self._goal_state_pub = rospy.Publisher(
-      self.ACTION_GOAL_STATUS_TOPIC, 
-      ow_lander.msg.ActionGoalStatus, queue_size=1
-    )
 
   """The string the action server is registered under. Must be overridden!"""
   @property
   @abstractmethod
   def name(self):
     pass
+
+  """Optional property that enables the action server to update a fault
+  interface with information about success, abort, specific faults. See examples
+  of fault handlers in faults.py
+  """
+  @property
+  def fault_handler(self):
+    return None
 
   """The following *_type properties are auto-generated from the *.action file
   and made for import in the corresponding package. All must be overridden!
@@ -61,13 +56,6 @@ class ActionServerBase(ABC):
   @abstractmethod
   def result_type(self):
     pass
-  
-  """Component group (arm, camera, etc) for categorically reporting action goal status 
-  (Refer to `ow_lander/msg/ActionGoalStatus.msg` for supported group definitions/ids)
-  """
-  @property
-  def goal_group_id(self):
-    return None
 
   @abstractmethod
   def execute_action(self, goal):
@@ -104,7 +92,8 @@ class ActionServerBase(ABC):
     rospy.loginfo(self.__format_result_msg(f"{self.name}: Succeeded", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_succeeded(result, msg)
-    self.__publish_state(actionlib_msgs.msg.GoalStatus.SUCCEEDED)  
+    if self.fault_handler:
+      self.fault_handler.notify_succeeded()
 
   def _set_preempted(self, msg, **kwargs):
     """Declare action was preempted, and publish its results.
@@ -117,7 +106,8 @@ class ActionServerBase(ABC):
     rospy.loginfo(self.__format_result_msg(f"{self.name}: Preempted", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_preempted(result, msg)
-    self.__publish_state(actionlib_msgs.msg.GoalStatus.PREEMPTED)  
+    if self.fault_handler:
+      self.fault_handler.notify_prempeted()
 
   def _set_aborted(self, msg, **kwargs):
     """Declare action was aborted, and publish its results.
@@ -129,8 +119,19 @@ class ActionServerBase(ABC):
     rospy.logerr(self.__format_result_msg(f"{self.name}: Aborted", msg))
     result, msg = self.__create_result(msg, **kwargs)
     self._server.set_aborted(result, msg)
-    self.__publish_state(actionlib_msgs.msg.GoalStatus.ABORTED)
+    if self.fault_handler:
+      self.fault_handler.notify_aborted()
 
+  def __set_rejected(self, msg):
+    """Declare action aborted, but use the language of rejected. Only intended
+    for use internally to this class. It always results in an empty result_type
+    being used, so there is no need for kwargs.
+    NOTE: Since SimpleActionServer is used we cannot actually reject action
+      requests, so we use an abort instead.
+    """
+    rospy.logerr(self.__format_result_msg(f"{self.name}: Rejected", msg))
+    result, msg = self.__create_result(msg)
+    self._server.set_aborted(result, msg)
 
   def __on_action_called(self, goal):
     if not isinstance(goal, self.goal_type):
@@ -138,15 +139,10 @@ class ActionServerBase(ABC):
                    "This should never happen!")
       return
     rospy.loginfo(f"{self.name} action started")
-    # reset execution fault flag by sending a PENDING state
-    # HACK: The SUCCEEDED state does not reflect the current state of the action
-    #   that has been called. It cannot have succeeded yet because it has yet to
-    #   be attempted here. This is a hack. ActionGoalStatus.msg is effectively
-    #   interpreted by ow_fault_detector as a boolean array because an element
-    #   can either be SUCCEEDED or ABORTED. To reset system_faults_status goal
-    #   error flags to 0 at the beginning of an action, we broadcast SUCCEEDED.
-    self.__publish_state(actionlib_msgs.msg.GoalStatus.SUCCEEDED)
-    self.execute_action(goal)
+    if self.fault_handler and self.fault_handler.is_faulted():
+      self.__set_rejected(self.fault_handler.get_rejected_message())
+    else:
+      self.execute_action(goal)
     rospy.loginfo(f"{self.name} action complete")
 
   def __create_result(self, msg, **kwargs):
@@ -161,24 +157,6 @@ class ActionServerBase(ABC):
       msg += "\n" + attribute_err
     return result, msg
   
-  def __publish_state(self, status):
-    if self.goal_group_id is not None:
-      # update internal status list
-      timestamp = rospy.Time.now()
-      goal_id = str(self.goal_group_id) # ActionGoalStatus emum value to string
-      text = f'Last Reported Action: {self.name}'
-      self._goal_status_array[self.goal_group_id].goal_id.stamp = timestamp
-      self._goal_status_array[self.goal_group_id].goal_id.id    = goal_id
-      self._goal_status_array[self.goal_group_id].status        = status
-      self._goal_status_array[self.goal_group_id].text          = text
-           
-      # publish status
-      msg = ow_lander.msg.ActionGoalStatus()
-      msg.header.stamp    = timestamp
-      msg.header.frame_id = "world"
-      msg.status_list     = self._goal_status_array
-      self._goal_state_pub.publish(msg)
-
   @staticmethod
   def __format_result_msg(prefix, msg=""):
     if msg == "":

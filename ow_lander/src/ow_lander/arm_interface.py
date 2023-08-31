@@ -59,8 +59,8 @@ class OWArmInterface(metaclass = Singleton):
   @classmethod
   def _assert_arm_is_checked_out(cls):
     if cls._in_use_by is None:
-      raise ArmExecutionError("Arm action did not check-out the arm before " \
-                         "attempting to execute a trajectory.")
+      raise ArmExecutionError("Arm action did not check-out the arm before "
+                              "attempting to execute a trajectory.")
 
   def __init__(self):
     # initialize/reference trajectory execution singleton
