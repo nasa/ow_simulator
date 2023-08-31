@@ -83,11 +83,29 @@ class TrajectorySequence:
       = list(self._get_final_joint_positions_of(trajectory))
     self._planning_time_total += planning_time
 
+  def _calculate_trajectory_distance(self, trajectory):
+    distance = 0.0
+    for i in range(len(trajectory.joint_trajectory.points) - 1):
+      point1 = trajectory.joint_trajectory.points[i].positions
+      point2 = trajectory.joint_trajectory.points[i + 1].positions
+      segment_distance = sum((x - y)**2 for x, y in zip(point1, point2)) ** 0.5
+      distance += segment_distance
+    return distance
+  
   def _plan(self):
     """Calls on MoveIt to plan the next trajectory of the sequence. If no
     trajectory is provided, the plan is constructed from
     """
-    success, trajectory, planning_time, error_code = self._group.plan()
+    best_distance = float('inf')
+    for i in range(5):
+      success_, trajectory_, planning_time_, error_code_ = self._group.plan()
+      distance = self._calculate_trajectory_distance(trajectory_)
+      if distance < best_distance:
+        best_distance = distance
+        success = success_
+        trajectory = trajectory_
+        planning_time = planning_time_
+        error_code = error_code_
     if not success:
       raise ArmPlanningError(
         f"MoveIt planning failed with error code: {error_code}")

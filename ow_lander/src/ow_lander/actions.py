@@ -520,6 +520,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
+    self._arm.move_group_scoop.set_planner_id('RRTConnect')
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
