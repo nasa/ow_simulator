@@ -26,7 +26,7 @@ TEST_NAME = 'arm_consistency'
 common_dir = os.path.expanduser('~/Documents')
 fig_3d_path = os.path.join(common_dir, '3D_trajectories_RRTConnect_testing.png')
 result_path = os.path.join(common_dir, 'test_results_RRTConnect_testing.txt')
-data_path = os.path.join(common_dir, 'all_trajectories_RRTConnect_testing.csv.txt')
+data_path = os.path.join(common_dir, 'all_trajectories_RRTConnect_testing.csv')
 roslib.load_manifest(PKG)
 
 def _dtw_helper(trajectories, runs):
