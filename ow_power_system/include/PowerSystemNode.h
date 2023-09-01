@@ -57,6 +57,7 @@ public:
   PowerSystemNode& operator=(const PowerSystemNode&) = delete;
   void initAndRun();
 private:
+  void runDisabledLoop();
   bool initModels();
   void initTopics();
   void injectCustomFault();
@@ -89,6 +90,10 @@ private:
 
 
   // system.cfg variables:
+
+  // Whether or not the power system is active to begin with. Can be disabled
+  // to maximize performance for those who do not need battery predictions.
+  bool m_enable_power_system;
 
   // The number of currently simulated models. Default 1, but can be modified
   // mid-simulation by intra-battery faults (or set to a different starting

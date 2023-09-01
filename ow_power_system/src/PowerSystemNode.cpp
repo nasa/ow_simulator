@@ -42,6 +42,7 @@ static void printPrognoserOutputs(double rul,
                                   int index);
 static void printMechanicalPower(double raw, double mean, int window);
 static void printTopics(double rul, double soc, double tmp);
+static void printFaultDisabledWarning();
 
 /*
  * The primary function with the loop that controls each cycle.
@@ -74,6 +75,7 @@ void PowerSystemNode::initAndRun()
     }
     // If print_debug was false, then all flags remain false as initialized.
 
+    m_enable_power_system = (system_config.getString("enable_power_system") == TRUE);
     m_active_models = system_config.getInt32("active_models");
     m_max_horizon_secs = system_config.getInt32("max_horizon");
     m_num_samples = system_config.getInt32("num_samples");
@@ -120,6 +122,15 @@ void PowerSystemNode::initAndRun()
                             );
 
   initTopics();
+
+  // If the power system is fully disabled, swap to a basic loop instead.
+  if (!m_enable_power_system)
+  {
+    ROS_WARN_STREAM("Power system disabled via system.cfg! Node will publish "
+                    << "static values and ignore faults.");
+    runDisabledLoop();
+    return;
+  }
 
   // Initialize EoD_events and previous_times.
   for (int i = 0; i < NUM_MODELS; i++)
@@ -382,6 +393,80 @@ void PowerSystemNode::initAndRun()
   spinner.stop();
 }
 
+/*
+ * Used if the power system is disabled. Simply publishes static values
+ * without using GSAP prognosers or reacting to faults. Mechanical power is
+ * still calculated using jointStatesCb for publication.
+ */
+void PowerSystemNode::runDisabledLoop()
+{
+  // This rate object is used to sync the cycles up to the provided Hz.
+  // NOTE: If the cycle takes longer than the provided Hz, nothing bad will
+  //       necessarily occur, but the simulation will be out of sync with real
+  //       time. Should essentially never happen with the disabled version of
+  //       the loop.
+  ros::Rate rate(m_loop_rate_hz);
+
+  // Start the asynchronous spinner, which will call jointStatesCb as the
+  // joint_states topic is published (50Hz).
+  ros::AsyncSpinner spinner(m_spinner_threads);
+
+  try
+  {
+    spinner.start();
+  }
+  catch(const std::runtime_error& e)
+  {
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: Encountered a std::runtime_error"
+                    << " while starting up asynchronous ROS spinner threads!");
+    return;
+  }
+
+  bool skip_first_loop = true;
+
+  while (ros::ok())
+  {
+    // Create the published messages and set them to their ideal states.
+    owl_msgs::BatteryRemainingUsefulLife rul_msg;
+    owl_msgs::BatteryStateOfCharge soc_msg;
+    owl_msgs::BatteryTemperature tmp_msg;
+
+    rul_msg.value = m_max_horizon_secs;   // Will always publish the initial
+    soc_msg.value = m_initial_soc;        // values
+    tmp_msg.value = m_initial_temperature;
+
+    // Apply the most recent timestamp to each message header.
+    auto timestamp = ros::Time::now();
+    rul_msg.header.stamp = timestamp;
+    soc_msg.header.stamp = timestamp;
+    tmp_msg.header.stamp = timestamp;
+
+    // Publish the data.
+    m_state_of_charge_pub.publish(soc_msg);
+    m_remaining_useful_life_pub.publish(rul_msg);
+    m_battery_temperature_pub.publish(tmp_msg);
+
+    // While faults cannot be injected, this call is simply to allow the system
+    // to warn the user if they attempt fault activation in this disabled state.
+    // Skip on the first loop to prevent messages from being printed during
+    // startup.
+    if (skip_first_loop)
+    {
+      skip_first_loop = false;
+    }
+    else
+    {
+      injectFaults();
+    }
+
+    // Sleep for any remaining time in the loop that would cause it to
+    // complete before the set rate.
+    rate.sleep();
+  }
+
+  spinner.stop();
+}
+
 /* 
  * Initializes every PrognoserInputHandler by calling their respective Initialize()
  * functions.
@@ -450,6 +535,13 @@ void PowerSystemNode::injectCustomFault()
 
   if (!m_custom_power_fault_activated && fault_enabled)
   {
+    // Block the fault if the power system is disabled.
+    if (!m_enable_power_system)
+    {
+      printFaultDisabledWarning();
+      return;
+    }
+
     // Multiple potential points of failure, so alert user the process has started.
     ROS_INFO_STREAM("Attempting custom fault activation...");
 
@@ -569,6 +661,13 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
     // Check if the fault has switched.
     if (!m_high_power_draw_activated && fault_enabled)
     {
+      // Block the fault if the power system is disabled.
+      if (!m_enable_power_system)
+      {
+        printFaultDisabledWarning();
+        return;
+      }
+
       ROS_INFO_STREAM(fault_name << " activated!");
       m_high_power_draw_activated = true;
     }
@@ -598,6 +697,13 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
     // Check if the fault has switched.
     if (!m_disconnect_battery_nodes_fault_activated && fault_enabled)
     {
+      // Block the fault if the power system is disabled.
+      if (!m_enable_power_system)
+      {
+        printFaultDisabledWarning();
+        return;
+      }
+
       ROS_INFO_STREAM(fault_name << " activated!");
       m_disconnect_battery_nodes_fault_activated = true;
     }
@@ -945,4 +1051,15 @@ static void printTopics(double rul, double soc, double tmp)
   ROS_INFO_STREAM("min_rul: " << std::to_string(rul) <<
                   ", min_soc: " << std::to_string(soc) <<
                   ", max_tmp: " << std::to_string(tmp));
+}
+
+/*
+ * Prints a warning to the user should they attempt to inject a fault while
+ * the power system is disabled. Only prints once.
+ */
+static void printFaultDisabledWarning()
+{
+  ROS_WARN_STREAM_THROTTLE(60, "Faults cannot be injected while the power system "
+                    << "is disabled. Modify ow_power_system/config/system.cfg "
+                    << "and restart the simulator to re-enable.");
 }
