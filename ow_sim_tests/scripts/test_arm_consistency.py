@@ -5,6 +5,7 @@
 # this repository.
 
 import rospy
+import os
 import actionlib
 import pandas as pd
 import tf2_ros
@@ -22,6 +23,10 @@ from scipy.spatial.distance import euclidean
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_consistency'
+common_dir = os.path.expanduser('~/Documents')
+fig_3d_path = os.path.join(common_dir, '3D_trajectories_RRTConnect_testing.png')
+result_path = os.path.join(common_dir, 'test_results_RRTConnect_testing.txt')
+data_path = os.path.join(common_dir, 'all_trajectories_RRTConnect_testing.csv.txt')
 roslib.load_manifest(PKG)
 
 def _dtw_helper(trajectories, runs):
@@ -58,7 +63,7 @@ def _plot_helper(trajectories):
   plt.title('3D Trajectories')
   plt.legend()
   # TODO change the saving location in your local directory
-  fig.savefig('/home/honghao/Documents/3D_trajectories_RRTConnect_testing.png')
+  fig.savefig(fig_3d_path)
   
 class TestArmConsistency(unittest.TestCase):
 
@@ -131,7 +136,7 @@ class TestArmConsistency(unittest.TestCase):
     total_outliers = len(outlier_indices)
     try:
       # TODO change the saving location in your local directory
-      with open('/home/honghao/Documents/test_results_RRTConnect_testing.txt', 'w') as f:
+      with open(result_path, 'w') as f:
         f.write("Total number of runs: {}\n".format(num_runs))
         f.write("Outliers found at runs: {}\n".format(outlier_indices))
         f.write("Total number of outliers: {}\n".format(total_outliers))
@@ -147,7 +152,7 @@ class TestArmConsistency(unittest.TestCase):
 
     try:
       # TODO change the saving location in your local directory
-      result.to_csv('/home/honghao/Documents/all_trajectories_RRTConnect_testing.csv')
+      result.to_csv(data_path)
       print("File saved successfully")
     except Exception as e:
       print("Failed to save file", e)
