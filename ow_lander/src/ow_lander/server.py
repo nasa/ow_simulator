@@ -138,7 +138,7 @@ class ActionServerBase(ABC):
                    "This should never happen!")
       return
     rospy.loginfo(f"{self.name} action started")
-    # reset execution fault flag by sending a PENDING state
+    # reset execution fault flag by sending a SUCCEEDED state
     # HACK: The SUCCEEDED state does not reflect the current state of the action
     #   that has been called. It cannot have succeeded yet because it has yet to
     #   be attempted here. This is a hack. ActionGoalStatus.msg is effectively
