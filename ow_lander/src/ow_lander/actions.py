@@ -16,13 +16,14 @@ from ow_regolith.msg import Contacts
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
 from urdf_parser_py.urdf import URDF
+from owl_msgs.msg import ArmFaultsStatus
 
 import ow_lander.msg
 from ow_lander import mixins
 from ow_lander import math3d
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
-from ow_lander.common import normalize_radians
+from ow_lander.common import normalize_radians, wait_for_subscribers
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
@@ -73,6 +74,7 @@ def _compute_workspace_shoulder_yaw(x, y):
     yaw += math.asin(l / h)
     _assert_shou_yaw_in_range(yaw)
     return yaw
+    
 
 
 #####################
@@ -88,6 +90,8 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     if self._arm.stop_arm():
       self._set_succeeded("Arm trajectory stopped")
     else:
@@ -163,6 +167,8 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
         self._arm.stop_trajectory_silently()
 
     self._arm.move_group_scoop.set_planner_id('RRTstar')
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       self._arm.checkout_arm(self.name)
       # TODO: split guarded_move trajectory into 2 parts so that ground
@@ -171,8 +177,12 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       trajectory = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err), final=Point())
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err), final=Point())
     else:
       self._arm.checkin_arm(self.name)
@@ -587,6 +597,8 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
     self._publish_feedback(pose=self._arm_tip_monitor.get_link_pose())
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -600,8 +612,14 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
       return
@@ -629,6 +647,8 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -653,12 +673,21 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
+      rospy.loginfo("ArmExecutionError occur")
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_pose=self._arm_tip_monitor.get_link_pose(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -677,6 +706,7 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
         _format_guarded_move_success_message(self.name, monitor),
         **results
       )
+
 
 
 class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
@@ -705,7 +735,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     try:
       # transform only position
-      intended_start_position_stamped = self.transform_to_planning_frame(
+      estimated_surface_stamped = self.transform_to_planning_frame(
         self.get_intended_position(goal.frame, goal.relative, goal.position)
       )
       # normal is always considered in base_link regardless of frame parameter
@@ -717,25 +747,32 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
     # pose before end-effector is driven towards surface
     intended_start_pose_stamped = PoseStamped(
-      header=intended_start_position_stamped.header,
+      header=estimated_surface_stamped.header,
       pose=Pose(
-        position=intended_start_position_stamped.point,
+        # begin a distance along the anti-normal direction from surface position
+        position=math3d.add(
+          estimated_surface_stamped.point,
+          math3d.scalar_multiply(-goal.distance, normal)
+        ),
         orientation=orientation
       )
     )
-    max_distance = goal.distance + goal.overdrive
-    displacement = math3d.scalar_multiply(max_distance, normal)
     # pose after end-effector has driven its maximum distance towards surface
     # if there is no surface, the end-effector will reach this pose
     intended_end_pose_stamped = PoseStamped(
-      header=intended_start_position_stamped.header,
+      header=estimated_surface_stamped.header,
       pose=Pose(
+        # end an overdrive along the normal direction from the surface position
         position=math3d.add(
-          intended_start_position_stamped.point, displacement),
+          estimated_surface_stamped.point,
+          math3d.scalar_multiply(goal.overdrive, normal)
+        ),
         orientation=orientation
       )
     )
     # move to setup pose prior to surface approach
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     try:
       self._arm.checkout_arm(self.name)
       trajectory_setup = self.plan_end_effector_to_pose(
@@ -744,8 +781,15 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except (ArmExecutionError, ArmPlanningError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err) + " - Setup trajectory failed",
+        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
+        final_distance=0, final_force=0, final_torque=0)
+      return
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         final_distance=0, final_force=0, final_torque=0)
@@ -761,7 +805,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     # local function to compute progress of the action during surface approach
     def compute_distance():
       pose = self.get_end_effector_pose(constants.FRAME_ID_BASE).pose
-      d = math3d.subtract(pose.position, intended_start_position_stamped.point)
+      d = math3d.subtract(pose.position, estimated_surface_stamped.point)
       return math3d.norm(d)
     # setup F/T monitor and its callback
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
@@ -866,6 +910,8 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
 
   # redefine execute_action to enable FT monitor
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self._arm_faults.reset_arm_faults_flags()
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
     def guarded_cb():
@@ -883,8 +929,15 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
       sequence.plan_to_joint_positions(new_positions)
       self._arm.execute_arm_trajectory(sequence.merge(),
         action_feedback_cb=guarded_cb)
-    except (ArmPlanningError, ArmExecutionError) as err:
+    except ArmExecutionError as err:
       self._arm.checkin_arm(self.name)
+      self._set_aborted(str(err),
+        final_angles=self._arm_joints_monitor.get_joint_positions(),
+        final_force=monitor.get_force(),
+        final_torque=monitor.get_torque())
+    except ArmPlanningError as err:
+      self._arm.checkin_arm(self.name)
+      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions(),
         final_force=monitor.get_force(),
@@ -942,6 +995,9 @@ class LightSetIntensityServer(ActionServerBase):
       return
     self._set_succeeded(f"{name} light intensity set successfully.")
 
+# the maximum time the camera actions will wait for the camera plugin to have
+# subscribed to their control topics
+SUBSCRIBER_TIMEOUT = 30
 
 class CameraCaptureServer(ActionServerBase):
 
@@ -962,6 +1018,10 @@ class CameraCaptureServer(ActionServerBase):
                                              PointCloud2,
                                              self._handle_point_cloud)
     self.point_cloud_created = False
+    if not wait_for_subscribers(self._pub_trigger, SUBSCRIBER_TIMEOUT):
+      rospy.logwarn(f"No subscribers to topic {self._pub_trigger.name} after" \
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraCapture " \
+                    "may not work correctly as a result.")
     self._start_server()
 
   def _handle_point_cloud(self, points):
@@ -1010,6 +1070,10 @@ class CameraSetExposureServer(ActionServerBase):
     self._pub_exposure = rospy.Publisher('/gazebo/plugins/camera_sim/exposure',
                                          Float64,
                                          queue_size=10)
+    if not wait_for_subscribers(self._pub_exposure, SUBSCRIBER_TIMEOUT):
+      rospy.logwarn(f"No subscribers to topic {self._pub_exposure.name} after" \
+                    f"waiting {SUBSCRIBER_TIMEOUT} seconds. CameraSetExposure" \
+                    " may not work correctly as a result.")
     self._start_server()
 
   def execute_action(self, goal):
@@ -1120,24 +1184,25 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = owl_msgs.msg.PanTiltMoveJointsResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos,
-                           tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
     except ArmExecutionError as err:
-      self._set_aborted(str(err),
-        pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
+      pan, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+          pan_position=pan, tilt_position=tilt)
       else:
         self._set_preempted("Action was preempted",
-          pan_position=self._pan_pos, tilt_position=self._tilt_pos)
+          pan_position=pan, tilt_position=tilt)
 
+  def publish_feedback_cb(self):
+    current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan,
+                           tilt_position = current_tilt)
 
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1148,21 +1213,23 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.PanResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(pan_position = self._pan_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
     except ArmExecutionError as err:
-      self._set_aborted(str(err), pan_position=self._pan_pos)
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), pan_position=pan)
     else:
+      pan, _ = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
-        self._set_succeeded("Reached commanded pan value",
-                            pan_position=self._pan_pos)
+        self._set_succeeded("Reached commanded pan value", pan_position=pan)
       else:
-        self._set_preempted("Action was preempted",
-                            pan_position=self._pan_pos)
+        self._set_preempted("Action was preempted", pan_position=pan)
+
+  def publish_feedback_cb(self):
+    current_pan, _ = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(pan_position = current_pan)
+
 
 class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1173,21 +1240,23 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   result_type   = ow_lander.msg.TiltResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
 
-  def publish_feedback_cb(self):
-    self._publish_feedback(tilt_position = self._tilt_pos)
-
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
     except ArmExecutionError as err:
-      self._set_aborted(str(err), tilt_position=self._tilt_pos)
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
+      self._set_aborted(str(err), tilt_position=tilt)
     else:
+      _, tilt = self._ant_joints_monitor.get_joint_positions()
       if not_preempted:
-        self._set_succeeded("Reached commanded tilt value",
-                            tilt_position=self._tilt_pos)
+        self._set_succeeded("Reached commanded tilt value", tilt_position=tilt)
       else:
-        self._set_preempted("Action was preempted",
-                            tilt_position=self._tilt_pos)
+        self._set_preempted("Action was preempted", tilt_position=tilt)
+
+  def publish_feedback_cb(self):
+    _, current_tilt = self._ant_joints_monitor.get_joint_positions()
+    self._publish_feedback(tilt_position = current_tilt)
+
 
 class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
@@ -1201,7 +1270,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
     cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
-                                                    'StereoCameraCenter_link')
+                                                     'StereoCameraCenter_link')
     tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'l_ant_panel')
     try:

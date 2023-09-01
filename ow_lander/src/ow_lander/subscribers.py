@@ -8,6 +8,16 @@ import rospy
 from gazebo_msgs.msg import LinkStates
 from sensor_msgs.msg import JointState
 
+def wait_for_message(message_buffer, timeout, frequency=10):
+  r = rospy.Rate(frequency)
+  for _i in range(int(timeout * frequency)):
+    if message_buffer is not None:
+      return True
+    r.sleep()
+  return False
+
+MESSAGE_TIMEOUT = 30
+
 class LinkStateSubscriber:
   """Subscribes to /gazebo/link_states and returns the pose/position of a
   specified link
@@ -31,13 +41,16 @@ class LinkStateSubscriber:
         "/gazebo/link_states", LinkStates,
         LinkStateSubscriber._on_link_states_msg
       )
-    # TODO: block until first message is received
 
   def get_link_pose(self):
-    if not LinkStateSubscriber._message_buffer:
-      rospy.logerr(
-        "Link position queried before /gazebo/link_states message received.")
-      return
+    # block until first message is received
+    if LinkStateSubscriber._message_buffer is None and \
+        not wait_for_message(LinkStateSubscriber._message_buffer,
+                             MESSAGE_TIMEOUT):
+      rospy.logwarn("LinkStatesSubscriber did not receive a message for "\
+                    f"{MESSAGE_TIMEOUT} seconds at startup. This may cause " \
+                    "issues for some lander actions.")
+      return None
     try:
       idx = LinkStateSubscriber._message_buffer.name.index(self._link_name)
     except ValueError:
@@ -67,13 +80,16 @@ class JointAnglesSubscriber:
       JointAnglesSubscriber._subscriber = rospy.Subscriber(
         "/joint_states", JointState, self._on_joint_state_msg
       )
-    # TODO: block until first message is received
 
   def get_joint_positions(self):
-    if not JointAnglesSubscriber._message_buffer:
-      rospy.logerr(
-        "Joint position queried before joint_states message received.")
-      return
+    # block until first message is received
+    if not JointAnglesSubscriber._message_buffer and \
+        not wait_for_message(JointAnglesSubscriber._message_buffer,
+                             MESSAGE_TIMEOUT):
+      rospy.logwarn("JointAnglesSubscriber did not receive a message for "\
+                    f"{MESSAGE_TIMEOUT} seconds at startup. This may cause " \
+                    "issues for some lander actions.")
+      return None
     angles = list()
     for name in self._joint_names:
       try:

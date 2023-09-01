@@ -1,3 +1,13 @@
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// Research and Simulation can be found in README.md in the root directory of
+// this repository.
+
+// This is the header file for the PowerSystemNode class, which handles
+// the creation and managing of several PrognoserInputHandler objects (each
+// simulating inputs to part of a battery). It gathers the data from each object
+// and sends it to GSAP's asynchronous prognosers, receives GSAP's predictions,
+// and publishes them after manipulations.
+
 #ifndef __POWER_SYSTEM_NODE_H__
 #define __POWER_SYSTEM_NODE_H__
 
@@ -11,116 +21,154 @@
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
 #include <PrognoserFactory.h>
+#include "PrognoserInputHandler.h"
+#include "PredictionHandler.h"
 
+#include "Messages/MessageBus.h"
+#include "Messages/ProgEventMessage.h"
+#include "Messages/ScalarMessage.h"
+#include "ModelBasedAsyncPrognoserBuilder.h"
 
 using PrognoserMap = std::map<PCOE::MessageId, PCOE::Datum<double>>;
 using PrognoserVector = std::vector<PrognoserMap>;
 
+// NOTE: This is required as a compile-time constant, so it cannot be placed in
+//       a .cfg file. The simulation must be re-built if it is changed.
+// This is the number of parallel inputs and outputs that will be simulated at
+// once. The expected amount of cells in the battery pack is 24. The 6S1P model
+// simulates 6 cells at once, so only 4 models are needed.
+constexpr int NUM_MODELS = 4;
+
+// Struct that groups the variables/classes used to handle PrognoserInputHandlers.
+struct PowerModel {
+  std::string name;
+  PrognoserInputHandler model;
+  MessageBus bus;
+  InputInfo input_info;
+  double previous_time;
+};
+
 class PowerSystemNode
 {
 public:
-  PowerSystemNode();
-  bool Initialize();
-  void Run();
-
+  PowerSystemNode() = default;
+  ~PowerSystemNode() = default;
+  PowerSystemNode(const PowerSystemNode&) = delete;
+  PowerSystemNode& operator=(const PowerSystemNode&) = delete;
+  void initAndRun();
 private:
-  bool loadSystemConfig();
-  PrognoserVector loadPowerProfile(const std::string& path_name, std::string custom_file);
-  bool loadCustomFaultPowerProfile(std::string path, std::string custom_file);
-  bool initPrognoser();
-  bool initTopics();
+  bool initModels();
+  void initTopics();
+  void injectCustomFault();
+  void injectFault(const std::string& power_fault_name);
+  void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
-  double generateTemperatureEstimate();
-  double generateVoltageEstimate();
-  void injectFault(const std::string& power_fault_name,
-                   bool& fault_activated,
-                   double& power,
-                   double& voltage,
-                   double& temperature);
-  void injectCustomFault(bool& fault_activated,
-                         const PrognoserVector& sequence,
-                         size_t& index,
-                         double& wattage,
-                         double& voltage,
-                         double& temperature);
-  void injectFaults(double& power, double& temperature, double& voltage);
-  PrognoserMap composePrognoserData(double power,
-                                    double voltage,
-                                    double temperature);
-  void parseEoD_Event(const ProgEvent& eod_event,
-                      owl_msgs::BatteryStateOfCharge& battery_soc_msg,
-                      owl_msgs::BatteryRemainingUsefulLife& battery_rul_msg,
-                      owl_msgs::BatteryTemperature& battery_temperature_msg);
-  void runPrognoser(double electrical_power);
+  PrognoserVector loadPowerProfile(const std::string& filename,
+                                   std::string custom_file);
+  void publishPredictions();
 
-  ros::NodeHandle m_nh;                               // Node Handle Initialization
-  ros::Publisher m_mechanical_power_raw_pub;          // Mechanical Power Raw
-  ros::Publisher m_mechanical_power_avg_pub;          // Mechanical Power Averaged
-  ros::Publisher m_battery_state_of_charge_pub;       // State of Charge Publisher
-  ros::Publisher m_battery_remaining_useful_life_pub; // Remaining Useful Life Publisher
-  ros::Publisher m_battery_temperature_pub;           // Battery Temperature Publisher
-  ros::Subscriber m_joint_states_sub;                 // Mechanical Power Subscriber
+  ros::NodeHandle m_nh;                        // Node Handle Initialization
+  ros::Publisher m_mechanical_power_raw_pub;   // Mechanical Power Raw
+  ros::Publisher m_mechanical_power_avg_pub;   // Mechanical Power Averaged
+  ros::Publisher m_state_of_charge_pub;        // State of Charge Publisher
+  ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
+  ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
+  ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
 
-  int m_moving_average_window = 25;
-  std::vector<double> m_power_values;
-  size_t m_power_values_index = 0;
+  // Flags that determine if debug output is printed regarding battery status
+  // during runtime.
+  // NOTE: There's no function to get boolean variables from a config, so
+  // these bools have to be set via string comparisons. Could benefit from an
+  // update if such a function is added in the future.
+  bool m_print_debug = false;
+  bool m_timestamp_print_debug = false;
+  bool m_inputs_print_debug = false;
+  bool m_outputs_print_debug = false;
+  bool m_topics_print_debug = false;
+  bool m_mech_power_print_debug = false;
 
-  std::unique_ptr<PCOE::Prognoser> m_prognoser;  // Prognoser initialization
 
-  std::chrono::time_point<std::chrono::system_clock> m_init_time;
+  // system.cfg variables:
 
-  // Main system configuration: these values are overriden by values
-  // in ../config/system.cfg.
+  // The number of currently simulated models. Default 1, but can be modified
+  // mid-simulation by intra-battery faults (or set to a different starting
+  // value in system.cfg).
+  int m_active_models;
 
-  double m_initial_power = 0.0;         // This is probably always zero
-  double m_initial_temperature = 20.0;  // 20.0 deg. C
-  double m_initial_voltage = 4.1;       // Volts
-  double m_min_temperature = 17.5;      // minimum temp = 17.5 deg. C
-  double m_max_temperature = 21.5;      // maximum temp = 21.5 deg. C
-  double m_battery_lifetime = 2738.0;   // Estimate of battery lifetime (seconds)
-  double m_base_voltage = 3.2;          // [V] estimate
-  double m_voltage_range = 0.1;         // [V]
-  double m_efficiency = 0.9;            // default 90% efficiency
-  double m_gsap_rate_hz = 0.5;          // GSAP's cycle time
+  // HACK ALERT.  The prognoser produces erratic/erroneous output when
+  // given too high a power input.  The value assigned to this in system.cfg
+  // protects against this by capping the power input, but it is a temporary
+  // hack until a circuit breaker model is added to the power system and/or 
+  // the multi-cell battery model is implemented and can handle any envisioned
+  // power draw.
+  double m_max_gsap_input_watts;
 
-  // Baseline value for power drawn by continuously-running systems.
-  // This initial value is overriden by the system config.
-  double m_baseline_wattage = 1.0;
+  // The maximum RUL estimation output from the Monte Carlo prediction process.
+  // If the prediction hits this value, it stops immediately and returns infinity
+  // (which is processed later into the max value instead).
+  int m_max_horizon_secs;
 
-  // HACK ALERT.  The prognoser produced erratic/erroneous output when
-  // given too high a power input.  This made-up value protects
-  // against this, but is a temporary hack until a circuit breaker
-  // model is added to the power system, and/or the multi-pack battery
-  // model is implemented and can handle any envisioned power draw.
-  // This initial value is overriden by the system config.
-  //
-  double m_max_gsap_input_watts = 30;
+  // The number of samples each model creates during the Monte Carlo prediction
+  // process. Lower values mean faster prediction returns, but lower accuracy
+  // (needs testing for confirmation).
+  int m_num_samples;
 
-  // Number of lines in power fault profiles to skip, in order to
-  // synchonize the consumption of the profile with GSAP's cycle rate
-  // (above).  This computation is left to the user for now, though
-  // note that the default values are not expected to change as of
-  // Release 9.  This initial value is overriden by the system config.
-  int m_profile_increment = 2;
+  // Number of threads to use for the asynchronous ROS spinning in the main
+  // loop.
+  int m_spinner_threads;
 
-  // End main system configuration.
+  // The cycle time of the main system loop.
+  double m_loop_rate_hz;
 
-  // Utilize a Mersenne Twister pseudo-random generation.
-  std::mt19937 m_random_generator;
-
-  std::uniform_real_distribution<double> m_temperature_dist;
+  // The initial power/temperature/voltage readings used as the start values for
+  // the GSAP prognosers.
+  double m_initial_power;
+  double m_initial_temperature;
+  double m_initial_voltage;
+  double m_initial_soc;
   
+  // End system.cfg variables.
+
+  // The number of models deactivated via faults. Used separately from
+  // m_active_models to allow the system to distribute power draw as if
+  // there were more models running at once (i.e. when full battery simulation
+  // is disabled).
+  int m_deactivated_models;
+
+  // The rate at which /joint_states is expected to publish. If this is changed,
+  // this variable will need to change as well.
+  const int m_joint_states_rate = 50;
+
+  // Vector w/ supporting variables that stores the moving average of the
+  // past mechanical power values.
+  int m_moving_average_window;
+
+  // The expected time interval between publications. It is equal to the
+  // reciprocal of the main loop rate.
+  double m_time_interval;
+
+  // Flag determining if the battery has reached a fail state.
+  bool m_battery_failed = false;
+
+  // Create a PowerModel struct, containing all the necessary information for a
+  // model to operate, for each model.
+  PowerModel m_power_models[NUM_MODELS];
+
+  // The matrix used to store EoD events.
+  EoDValues m_EoD_events[NUM_MODELS];
+
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
+  bool m_disconnect_battery_nodes_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
 
-  // Flag that indicates that the prognoser is handling current batch.
-  bool m_processing_power_batch = false;
-
-  bool m_trigger_processing_new_power_batch = false;
-  double m_unprocessed_mechanical_power = 0.0;
-  double m_mechanical_power_to_be_processed = 0.0;
+  // Used for mechanical power debug printouts.
+  double m_power_watts;
+  double m_mean_mechanical_power;
+  double m_sum_mechanical_power = 0;
+  int m_queue_size = 0;
+  std::deque<double> m_power_values;
 };
 
 #endif

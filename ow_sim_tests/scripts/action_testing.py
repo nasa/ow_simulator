@@ -4,7 +4,6 @@ import rospy
 import actionlib
 
 from geometry_msgs.msg import Point
-import ow_lander.msg
 
 ignore_action_checks = False
 
@@ -82,6 +81,10 @@ Calls an action asynchronously allowing checks to occur during its execution.
 @param  action: ROS action object
 @param  goal: Goal object passed to action server
 @param  max_duration: Max time allotted to action in seconds.
+@param  expected_end_state: An integer that maps to values in
+        actionlib.GoalStatus. It provides the expected state final state of the
+        action call. This allows testing of action calls that are expected to
+        fail. (default: actionlib.GoalStatus.SUCCEEDED or 3)
 @param  condition_check: A function repeatedly called during action
         execution that asserts requirements for a successful action operation
 @param  condition_check_interval: The interval in seconds between calls to
@@ -91,7 +94,8 @@ Calls an action asynchronously allowing checks to occur during its execution.
 def test_action_noyaml(test_object, action_name, action, goal, max_duration,
                        condition_check = assert_nothing,
                        condition_check_interval = 0.2,
-                       server_timeout = 10.0):
+                       server_timeout = 10.0,
+                       expected_end_state = actionlib.GoalStatus.SUCCEEDED):
   client = actionlib.SimpleActionClient(action_name, action)
   connected = client.wait_for_server(timeout=rospy.Duration(server_timeout))
   test_object.assertTrue(
@@ -119,6 +123,15 @@ def test_action_noyaml(test_object, action_name, action, goal, max_duration,
     elapsed, max_duration,
     "Action %s took longer than expected to finish!" % action_name
   )
+  end_state = client.get_state()
+  test_object.assertEqual(
+    end_state, expected_end_state,
+    f"Action {action_name} completed with state "
+    f"{actionlib.GoalStatus.to_string(end_state)} instead of the expected end "
+    f"state of {actionlib.GoalStatus.to_string(expected_end_state)}."
+  )
+  ## TOOD: return client instead so caller can access all information about
+  ##       the action results
   return client.get_result(), elapsed
 
 """
@@ -128,6 +141,10 @@ Calls an action asynchronously allowing checks to occur during its execution.
 @param  action: ROS action object
 @param  goal: Goal object passed to action server
 @param  max_duration: Max time allotted to action in seconds.
+@param  expected_end_state: An integer that maps to values in
+        actionlib.GoalStatus. It provides the expected state final state of the
+        action call. This allows testing of action calls that are expected to
+        fail. (default: actionlib.GoalStatus.SUCCEEDED or 3)
 @param  expected_final: Final arm position to be compared with action result
         (default: None)
 @param  expected_final_tolerance: allowed distance between result.final and
@@ -142,7 +159,7 @@ def test_arm_action_noyaml(test_object, action_name, action, goal, max_duration,
     test_object, action_name, action, goal, max_duration, **kwargs
   )
     # verify action ended where we expected
-  if expected_final:
+  if expected_final and hasattr(result, 'final'):
     assert_point_is_within_deviation(test_object,
       result.final, expected_final, expected_final_tolerance
     )
@@ -304,5 +321,6 @@ def test_arm_action(test_object, action_name, action, goal,
       expected_final_tolerance = final_tolerance,
       **kwargs
     )
-  print_arm_action_final(unit_name, result.final)
+  if hasattr(result, 'final'):
+    print_arm_action_final(unit_name, result.final)
   print_action_complete(unit_name, elapsed)
