@@ -62,7 +62,6 @@ def _plot_helper(trajectories):
   ax.set_zlabel('Z')
   plt.title('3D Trajectories')
   plt.legend()
-  # TODO change the saving location in your local directory
   fig.savefig(fig_3d_path)
   
 class TestArmConsistency(unittest.TestCase):
@@ -135,7 +134,6 @@ class TestArmConsistency(unittest.TestCase):
     outlier_indices, threshold = _dtw_helper(trajectories, num_runs)
     total_outliers = len(outlier_indices)
     try:
-      # TODO change the saving location in your local directory
       with open(result_path, 'w') as f:
         f.write("Total number of runs: {}\n".format(num_runs))
         f.write("Outliers found at runs: {}\n".format(outlier_indices))
@@ -151,7 +149,6 @@ class TestArmConsistency(unittest.TestCase):
     result = pd.concat(dfs, axis = 1)
 
     try:
-      # TODO change the saving location in your local directory
       result.to_csv(data_path)
       print("File saved successfully")
     except Exception as e:
