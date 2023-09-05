@@ -4,10 +4,12 @@ set(TARGET_NAME BalovnevModelPlugin)
 
 set (HEADERS
   BalovnevModelPlugin.h  
+  MovingMaxFilter.h
 )
 
 set (SOURCES
   BalovnevModelPlugin.cpp
+  MovingMaxFilter.cpp
 )
 
 include_directories(
