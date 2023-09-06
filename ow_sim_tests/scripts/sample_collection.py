@@ -27,7 +27,7 @@ TEST_NAME = 'sample_collection'
 roslib.load_manifest(PKG)
 
 DISCARD_POSITION = Point(1.5, 0.8, constants.DEFAULT_GROUND_HEIGHT) # default for discard action
-REGOLITH_CLEANUP_DELAY = 5.0 # seconds
+REGOLITH_CLEANUP_DELAY = 10.0 # seconds
 
 SCOOP_LINK_NAME = 'lander::l_scoop'
 SAMPLE_DOCK_LINK_NAME = 'lander::lander_sample_dock_link'
@@ -246,10 +246,10 @@ class SampleCollection(unittest.TestCase):
     grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
       owl_msgs.msg.TaskGrindGoal(
-        x_start         = 1.65,
+        x_start         = 1.7,
         y_start         = 0.0,
-        depth           = 0.15, # grind deep so terrain is modified
-        length          = 0.7,
+        depth           = 0.13, # grind deep so terrain is modified
+        length          = 0.4,
         parallel        = True,
         ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
@@ -267,8 +267,9 @@ class SampleCollection(unittest.TestCase):
       owl_msgs.msg.TaskScoopLinearGoal(
         frame     = 0,
         relative  = False,
-        point     = Point(1.46, 0, constants.DEFAULT_GROUND_HEIGHT),
-        depth     = 0.01,
+        point     = Point(1.7, 0, constants.DEFAULT_GROUND_HEIGHT),
+        depth     = 0.05,  # scoop extra deep because the previous deep grind
+                           # left a dip
         length    = 0.1
       ),
       TEST_NAME, "test_03_task_scoop_linear",
@@ -299,8 +300,12 @@ class SampleCollection(unittest.TestCase):
     self._assert_scoop_regolith_containment(False)
 
     # assert regolith was cleaned up after contacting with the terrain
+    # NOTE: Can be dependent on how much regolith spawns per unit volume.
+    #       More regolith seems to take longer to remove.
     rospy.sleep(REGOLITH_CLEANUP_DELAY)
-    self._assert_regolith_not_present()
+    self._assert_regolith_not_present(
+      "Some regolith remains in world after discard!"
+    )
 
   """
   Grind a new trench in a different location on the terrain.
@@ -309,10 +314,10 @@ class SampleCollection(unittest.TestCase):
     task_grind_result = test_arm_action(self,
       'TaskGrind', owl_msgs.msg.TaskGrindAction,
       owl_msgs.msg.TaskGrindGoal(
-        x_start         = 1.65,
+        x_start         = 1.7,
         y_start         = 0.5,
         depth           = 0.05,
-        length          = 0.6,
+        length          = 0.4,
         parallel        = True,
         ground_position = constants.DEFAULT_GROUND_HEIGHT
       ),
@@ -330,7 +335,7 @@ class SampleCollection(unittest.TestCase):
       owl_msgs.msg.TaskScoopCircularGoal(
         frame    = 0,
         relative = False,
-        point    = Point(1.65, 0.5, constants.DEFAULT_GROUND_HEIGHT),
+        point    = Point(1.7, 0.5, constants.DEFAULT_GROUND_HEIGHT),
         depth    = 0.01,
         parallel = True
       ),
