@@ -39,6 +39,12 @@ using PrognoserVector = std::vector<PrognoserMap>;
 // simulates 6 cells at once, so only 4 models are needed.
 constexpr int NUM_MODELS = 4;
 
+// Power fault thresholds, for their related faults.
+// They are slightly beyond the actual thresholds to prevent rounding errors.
+static constexpr float POWER_THERMAL_MAX = 70.0;
+static constexpr float POWER_SOC_MIN = 0.095;
+static constexpr float POWER_SOC_MAX_DIFF = 0.052;
+
 // Struct that groups the variables/classes used to handle PrognoserInputHandlers.
 struct PowerModel {
   std::string name;
@@ -162,11 +168,19 @@ private:
   // The matrix used to store EoD events.
   EoDValues m_EoD_events[NUM_MODELS];
 
+  // The most recent published SoC, for use in ICL fault injection.
+  double m_prev_soc;
+
+  // Fault flags.
   bool m_high_power_draw_activated = false;
   bool m_custom_power_fault_activated = false;
   bool m_disconnect_battery_nodes_fault_activated = false;
   PrognoserVector m_custom_power_fault_sequence;
   size_t m_custom_power_fault_sequence_index = 0;
+
+  bool m_low_soc_activated = false;
+  bool m_icl_activated = false;
+  bool m_thermal_failure_activated = false;
 
   // Used for mechanical power debug printouts.
   double m_power_watts;
