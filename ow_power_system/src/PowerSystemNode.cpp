@@ -20,10 +20,14 @@
 
 using namespace PCOE;
 
-const std::string FAULT_NAME_HPD           = "high_power_draw";
-const std::string FAULT_NAME_HPD_ACTIVATE  = "activate_high_power_draw";
-const std::string FAULT_NAME_DBN           = "battery_nodes_to_disconnect";
-const std::string FAULT_NAME_DBN_ACTIVATE  = "disconnect_battery_nodes";
+// Fault names
+const std::string FAULT_NAME_HPD              = "high_power_draw";
+const std::string FAULT_NAME_HPD_ACTIVATE     = "activate_high_power_draw";
+const std::string FAULT_NAME_DBN              = "battery_nodes_to_disconnect";
+const std::string FAULT_NAME_DBN_ACTIVATE     = "disconnect_battery_nodes";
+const std::string FAULT_NAME_LOW_SOC          = "low_state_of_charge";
+const std::string FAULT_NAME_ICL              = "instantaneous_capacity_loss";
+const std::string FAULT_NAME_THERMAL_FAILURE  = "thermal_failure";
 const int CUSTOM_FILE_EXPECTED_COLS           = 2;
 
 // Error flags.
@@ -43,6 +47,7 @@ static void printPrognoserOutputs(double rul,
 static void printMechanicalPower(double raw, double mean, int window);
 static void printTopics(double rul, double soc, double tmp);
 static void printFaultDisabledWarning();
+static void printPowerFaultWarning();
 
 /*
  * The primary function with the loop that controls each cycle.
@@ -86,6 +91,7 @@ void PowerSystemNode::initAndRun()
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_loop_rate_hz = system_config.getDouble("loop_rate");
     m_spinner_threads = system_config.getInt32("spinner_threads");
+    m_prev_soc = m_initial_soc;
   }
   catch(const std::exception& err)
   {
@@ -646,7 +652,7 @@ void PowerSystemNode::injectCustomFault()
 /*
  * Handles defined faults within the RQT window (currently only high power draw).
  */
-void PowerSystemNode::injectFault (const std::string& fault_name)
+void PowerSystemNode::injectFault(const std::string& fault_name)
 {
   bool fault_enabled;
   double hpd_wattage = 0.0;
@@ -715,7 +721,7 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
       m_disconnect_battery_nodes_fault_activated = false;
     }
 
-    // Continual beahvior with DBN fault.
+    // Continual behavior with DBN fault.
     if (m_disconnect_battery_nodes_fault_activated && fault_enabled)
     {
       // Get the number of nodes set by the user.
@@ -751,6 +757,100 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
       }
     }
   }
+
+  // Low state of charge case
+  if (fault_name == FAULT_NAME_LOW_SOC)
+  {
+    // Check if the fault has switched.
+    if (!m_low_soc_activated && fault_enabled)
+    {
+      // Block the fault if the power system is disabled.
+      if (!m_enable_power_system)
+      {
+        printFaultDisabledWarning();
+        return;
+      }
+
+
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_low_soc_activated = true;
+      // Warn the user about the invalid behavior associated with power faults.
+      printPowerFaultWarning();
+
+      // Extra logic if the ICL fault was already activated, to immediately
+      // bring SoC down to the threshold.
+      if (m_icl_activated && m_prev_soc > POWER_SOC_MIN)
+      {
+        m_prev_soc = POWER_SOC_MIN;
+      }
+    }
+    else if (m_low_soc_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      m_low_soc_activated = false;
+    }
+    
+    // There is no continual behavior with this fault. Its effect is applied in
+    // publishPredictions().
+  }
+
+  // Instantaneous capacity loss case
+  if (fault_name == FAULT_NAME_ICL)
+  {
+    // Check if the fault has switched.
+    if (!m_icl_activated && fault_enabled)
+    {
+      // Block the fault if the power system is disabled.
+      if (!m_enable_power_system)
+      {
+        printFaultDisabledWarning();
+        return;
+      }
+
+
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_icl_activated = true;
+      // Warn the user about the invalid behavior associated with power faults.
+      printPowerFaultWarning();
+    }
+    else if (m_icl_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      m_icl_activated = false;
+    }
+    
+    // There is no continual behavior with this fault. Its effect is applied in
+    // publishPredictions().
+  }
+
+  // Thermal failure case
+  if (fault_name == FAULT_NAME_THERMAL_FAILURE)
+  {
+    // Check if the fault has switched.
+    if (!m_thermal_failure_activated && fault_enabled)
+    {
+      // Block the fault if the power system is disabled.
+      if (!m_enable_power_system)
+      {
+        printFaultDisabledWarning();
+        return;
+      }
+
+
+      ROS_INFO_STREAM(fault_name << " activated!");
+      m_thermal_failure_activated = true;
+      // Warn the user about the invalid behavior associated with power faults.
+      printPowerFaultWarning();
+    }
+    else if (m_thermal_failure_activated && !fault_enabled)
+    {
+      ROS_INFO_STREAM(fault_name << " deactivated!");
+      m_thermal_failure_activated = false;
+    }
+    
+    // There is no continual behavior with this fault. Its effect is applied in
+    // publishPredictions().
+  }
 }
 
 /*
@@ -758,8 +858,13 @@ void PowerSystemNode::injectFault (const std::string& fault_name)
  */
 void PowerSystemNode::injectFaults()
 {
+  // For every fault, its relevant call must be added here to check if it
+  // should remain injected every cycle.
   injectFault(FAULT_NAME_HPD_ACTIVATE);
   injectFault(FAULT_NAME_DBN_ACTIVATE);
+  injectFault(FAULT_NAME_LOW_SOC);
+  injectFault(FAULT_NAME_ICL);
+  injectFault(FAULT_NAME_THERMAL_FAILURE);
   injectCustomFault();
 }
 
@@ -953,12 +1058,29 @@ void PowerSystemNode::publishPredictions()
     m_battery_failed = true;
   }
 
+  // Alter the published values based on any forced power faults.
+  if (m_low_soc_activated)
+  {
+    min_soc = POWER_SOC_MIN;
+  }
+  if (m_icl_activated)
+  {
+    min_soc = m_prev_soc * (1 - POWER_SOC_MAX_DIFF);
+  }
+  if (m_thermal_failure_activated)
+  {
+    max_tmp = POWER_THERMAL_MAX;
+  }
+
   if (m_battery_failed)
   {
     min_rul = 0;
     min_soc = 0;
     max_tmp = 0;
   }
+
+  // Store the current SoC for potential fault usage next cycle.
+  m_prev_soc = min_soc;
 
   // Publish the values for other components.
   rul_msg.value = min_rul;
@@ -1062,4 +1184,16 @@ static void printFaultDisabledWarning()
   ROS_WARN_STREAM_THROTTLE(60, "Faults cannot be injected while the power system "
                     << "is disabled. Modify ow_power_system/config/system.cfg "
                     << "and restart the simulator to re-enable.");
+}
+
+/*
+ * Prints a warning to the user when they inject one of the artificial power
+ * faults.
+ */
+static void printPowerFaultWarning()
+{
+  ROS_WARN_STREAM("Note that artificial power fault injection simply overrides "
+                  "GSAP's predictions. Remaining useful life will not be "
+                  "affected and the system will continue without any loss of "
+                  "battery health after the fault is cleared.");
 }
