@@ -779,6 +779,13 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
                    << "not react to the fault and the system "
                    << "will continue without any loss of battery health after "
                    << "the fault is removed, which is not realistic.");
+
+      // Extra logic if the ICL fault was already activated, to immediately
+      // bring SoC down to the threshold.
+      if (m_icl_activated && m_prev_soc > POWER_SOC_MIN)
+      {
+        m_prev_soc = POWER_SOC_MIN;
+      }
     }
     else if (m_low_soc_activated && !fault_enabled)
     {
