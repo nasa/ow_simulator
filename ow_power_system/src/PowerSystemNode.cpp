@@ -47,6 +47,7 @@ static void printPrognoserOutputs(double rul,
 static void printMechanicalPower(double raw, double mean, int window);
 static void printTopics(double rul, double soc, double tmp);
 static void printFaultDisabledWarning();
+static void printPowerFaultWarning();
 
 /*
  * The primary function with the loop that controls each cycle.
@@ -774,11 +775,7 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " activated!");
       m_low_soc_activated = true;
       // Warn the user about the invalid behavior associated with power faults.
-      ROS_WARN_STREAM("Note that artificial power fault injection simply "
-                   << "temporarily overrides GSAP's predictions. RUL will "
-                   << "not react to the fault and the system "
-                   << "will continue without any loss of battery health after "
-                   << "the fault is removed, which is not realistic.");
+      printPowerFaultWarning();
 
       // Extra logic if the ICL fault was already activated, to immediately
       // bring SoC down to the threshold.
@@ -814,11 +811,7 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " activated!");
       m_icl_activated = true;
       // Warn the user about the invalid behavior associated with power faults.
-      ROS_WARN_STREAM("Note that artificial power fault injection simply "
-                   << "temporarily overrides GSAP's predictions. RUL will "
-                   << "not react to the fault and the system "
-                   << "will continue without any loss of battery health after "
-                   << "the fault is removed, which is not realistic.");
+      printPowerFaultWarning();
     }
     else if (m_icl_activated && !fault_enabled)
     {
@@ -847,11 +840,7 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " activated!");
       m_thermal_failure_activated = true;
       // Warn the user about the invalid behavior associated with power faults.
-      ROS_WARN_STREAM("Note that artificial power fault injection simply "
-                   << "temporarily overrides GSAP's predictions. RUL will "
-                   << "not react to the fault and the system "
-                   << "will continue without any loss of battery health after "
-                   << "the fault is removed, which is not realistic.");
+      printPowerFaultWarning();
     }
     else if (m_thermal_failure_activated && !fault_enabled)
     {
@@ -1195,4 +1184,16 @@ static void printFaultDisabledWarning()
   ROS_WARN_STREAM_THROTTLE(60, "Faults cannot be injected while the power system "
                     << "is disabled. Modify ow_power_system/config/system.cfg "
                     << "and restart the simulator to re-enable.");
+}
+
+/*
+ * Prints a warning to the user when they inject one of the artificial power
+ * faults.
+ */
+static void printPowerFaultWarning()
+{
+  ROS_WARN_STREAM("Note that artificial power fault injection simply overrides "
+                  "GSAP's predictions. Remaining useful life will not be "
+                  "affected and the system will continue without any loss of "
+                  "battery health after the fault is cleared.");
 }
