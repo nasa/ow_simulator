@@ -4,13 +4,14 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
+import rospy
 import roslib
 import unittest
 import owl_msgs.msg
 
-from action_testing import *
+from ow_sim_tests import action_testing
 from ow_lander import constants
-from geometry_msgs.msg import Vector3, Pose, Quaternion
+from geometry_msgs.msg import Vector3, Pose, Quaternion, Point
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_find_surface'
@@ -22,13 +23,13 @@ class TestArmFindSurface(unittest.TestCase):
   def setUpClass(cls):
     rospy.init_node("test_arm_find_surface")
 
-    set_ignore_action_checks(True)
+    action_testing.set_ignore_action_checks(True)
     # proceed with test only when ros clock has been initialized
     while rospy.get_time() == 0:
       rospy.sleep(0.1)
 
   def test_01_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -46,7 +47,7 @@ class TestArmFindSurface(unittest.TestCase):
 
    # Uisng arm_move_cartesian after every arm_find_surface to get the arm off the ground
   def test_02_arm_move_cartesian(self):
-    arm_move_cartesian_result = test_arm_action(self,
+    arm_move_cartesian_result = action_testing.test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
       owl_msgs.msg.ArmMoveCartesianGoal(
         frame = 0,
@@ -60,7 +61,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_03_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -76,7 +77,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_04_arm_move_cartesian(self):
-    arm_move_cartesian_result = test_arm_action(self,
+    arm_move_cartesian_result = action_testing.test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
       owl_msgs.msg.ArmMoveCartesianGoal(
         frame = 0,
@@ -90,7 +91,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_05_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -106,7 +107,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_06_arm_move_cartesian(self):
-    arm_move_cartesian_result = test_arm_action(self,
+    arm_move_cartesian_result = action_testing.test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
       owl_msgs.msg.ArmMoveCartesianGoal(
         frame = 0,
@@ -120,7 +121,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_07_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -136,7 +137,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_08_arm_move_cartesian(self):
-    arm_move_cartesian_result = test_arm_action(self,
+    arm_move_cartesian_result = action_testing.test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
       owl_msgs.msg.ArmMoveCartesianGoal(
         frame = 0,
@@ -150,7 +151,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_09_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -166,7 +167,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_10_arm_move_cartesian(self):
-    arm_move_cartesian_result = test_arm_action(self,
+    arm_move_cartesian_result = action_testing.test_arm_action(self,
       'ArmMoveCartesian', owl_msgs.msg.ArmMoveCartesianAction,
       owl_msgs.msg.ArmMoveCartesianGoal(
         frame = 0,
@@ -180,7 +181,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
 
   def test_11_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
@@ -197,7 +198,7 @@ class TestArmFindSurface(unittest.TestCase):
     )
   
   def test_12_arm_find_surface(self):
-    arm_find_surface_result = test_arm_action(self,
+    arm_find_surface_result = action_testing.test_arm_action(self,
       'ArmFindSurface', owl_msgs.msg.ArmFindSurfaceAction,
       owl_msgs.msg.ArmFindSurfaceGoal(
         frame = 0,
