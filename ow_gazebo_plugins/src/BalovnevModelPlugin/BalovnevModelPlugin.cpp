@@ -31,7 +31,7 @@ const double BUCKET_WIDTH             = 0.085;         // m
 const double BUCKET_SIDE_PLATE_LENGTH = 0.1225;        // m
 const double BUCKET_HEIGHT_FROM_TIP   = 0.0026;        // m
 const double BLUNT_EDGE_THICK         = 0.0004;        // m
-const double BLUNT_EDGE_ANGLE         = 89 * DEG2RAD;  // rad
+const double BLUNT_EDGE_ANGLE         = 30 * DEG2RAD;  // rad
 const double SIDE_PLATE_THICK         = 0.0016;        // m
 
 // regolith properties
@@ -48,7 +48,8 @@ const int BURIED = 0;  // BURIED = 1 if entire bucket is below the soil otherwis
 // constants specific to the scoop end-effector
 const string SCOOP_LINK_NAME       = "lander::l_scoop";
 const Vector3 SCOOP_FORWARD{1.0, 0.0, 0.0};
-const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
+const Vector3 SCOOP_DOWNWARD{0.0, 0.0, 1.0};
+const Vector3 WORLD_DOWNWARD{0.0, 0.0, -1.0};
 
 const string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const string TOPIC_BALOVNEV_HORIZONTAL   = "/balovnev_model/horizontal_force";
@@ -117,11 +118,14 @@ void BalovnevModelPlugin::onUpdate()
   }
   // check for pushback
   auto link_vel = m_link->RelativeLinearVel();
-  double BACKWARD_MOTION_CHECK_THRESHOLD = 0.001; // meters
+  constexpr double BACKWARD_MOTION_CHECK_THRESHOLD = 0.001; // meters
   if (link_vel.Length() > BACKWARD_MOTION_CHECK_THRESHOLD
-      && link_vel.Dot(SCOOP_FORWARD) < 0.0) {
+      && (link_vel.Dot(SCOOP_FORWARD) < 0.0
+         || link_vel.Dot(SCOOP_DOWNWARD) > 0.0)) {
+    // gzwarn << "STALLING" << endl;
     // reset force if pushback occurs
     resetForces();
+    // m_link->ResetPhysicsStates();
   }
   if (m_horizontal_force == 0.0 && m_vertical_force == 0.0)
     return; // no force to apply, early return
@@ -214,7 +218,6 @@ void BalovnevModelPlugin::resetDepth() {
 
 bool BalovnevModelPlugin::isScoopDigging() const
 {
-  static const Vector3 SCOOP_DOWNWARD(0.0, 0.0, 1.0);
   Vector3 scoop_bottom(m_link->WorldPose().Rot().RotateVector(SCOOP_DOWNWARD));
   return WORLD_DOWNWARD.Dot(scoop_bottom) > 0.0;
 }
