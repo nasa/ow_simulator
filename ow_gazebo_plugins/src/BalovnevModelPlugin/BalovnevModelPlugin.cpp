@@ -115,21 +115,6 @@ void BalovnevModelPlugin::onUpdate()
     return;
   }
 
-  // prevent non-physical pushback/pushdown
-  auto link_vel = m_link->RelativeLinearVel();
-  constexpr double CHECK_THRESHOLD = 0.001; // meters per second
-  if (link_vel.Length() > CHECK_THRESHOLD) {
-    if (link_vel.Dot(-SCOOP_FORWARD) < 0.0) {
-      resetHorizontalForces();
-    }
-    if (link_vel.Dot(SCOOP_DOWNWARD) > 0.0) {
-      resetHorizontalForces();
-    }
-    if (m_horizontal_force == 0.0 && m_vertical_force == 0.0) {
-      return;
-    }
-  }
-
   m_link->AddRelativeForce(
     ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
   );
@@ -187,8 +172,14 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
     + g*q + BURIED * (d-ls*sin(beta)) * g*sd * (1-sin(phi))/(1+sin(phi)));
 
   constexpr double FUDGE_FACTOR = 1.0;
+
+  constexpr double MAX_HORIZONTAL_FORCE = 40.0;
   m_horizontal_force *= FUDGE_FACTOR;
+  m_horizontal_force = min(m_horizontal_force, MAX_HORIZONTAL_FORCE);
+
+  constexpr double MAX_VERTICAL_FORCE = 30.0;
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
+  m_vertical_force = min(m_vertical_force, MAX_VERTICAL_FORCE);
 
   publishForces();
 }
