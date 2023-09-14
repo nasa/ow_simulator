@@ -46,8 +46,12 @@ class ModifyTerrainScoop:
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
 
+    # the distance the scoop must travel before a modification message is sent
+    MODIFICATION_DISTANCE = 5.e-3  # meters
+
     current_translation = np.array([new_position.x, new_position.y, new_position.z])
-    if all(np.isclose(current_translation, self.last_translation, atol=1.e-4)):
+    if all(np.isclose(current_translation, self.last_translation,
+                      atol=MODIFICATION_DISTANCE)):
       return  # no significant change, abort
 
     self.last_translation = current_translation

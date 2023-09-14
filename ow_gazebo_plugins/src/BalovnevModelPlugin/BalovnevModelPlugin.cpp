@@ -31,7 +31,7 @@ const double BUCKET_WIDTH             = 0.085;         // m
 const double BUCKET_SIDE_PLATE_LENGTH = 0.1225;        // m
 const double BUCKET_HEIGHT_FROM_TIP   = 0.0026;        // m
 const double BLUNT_EDGE_THICK         = 0.0004;        // m
-const double BLUNT_EDGE_ANGLE         = 89 * DEG2RAD;  // rad
+const double BLUNT_EDGE_ANGLE         = 30 * DEG2RAD;  // rad
 const double SIDE_PLATE_THICK         = 0.0016;        // m
 
 // regolith properties
@@ -48,7 +48,8 @@ const int BURIED = 0;  // BURIED = 1 if entire bucket is below the soil otherwis
 // constants specific to the scoop end-effector
 const string SCOOP_LINK_NAME       = "lander::l_scoop";
 const Vector3 SCOOP_FORWARD{1.0, 0.0, 0.0};
-const Vector3 WORLD_DOWNWARD(0.0, 0.0, -1.0);
+const Vector3 SCOOP_DOWNWARD{0.0, 0.0, 1.0};
+const Vector3 WORLD_DOWNWARD{0.0, 0.0, -1.0};
 
 const string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
 const string TOPIC_BALOVNEV_HORIZONTAL   = "/balovnev_model/horizontal_force";
@@ -87,10 +88,6 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   m_pub_vertical_force = m_node_handle->advertise<std_msgs::Float64>(
     TOPIC_BALOVNEV_VERTICAL, 1, true
   );
-  // DEBUG CODE
-  m_pub_depth = m_node_handle->advertise<std_msgs::Float64>(
-    "/balovnev_model/depth", 1, true
-  );
 
   m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(
     std::bind(&BalovnevModelPlugin::onUpdate, this)
@@ -108,26 +105,20 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
 void BalovnevModelPlugin::onUpdate()
 {
-  if (!isScoopDigging())
-    return;
+  if ((m_horizontal_force == 0.0 && m_vertical_force == 0.0)
+      || !isScoopDigging()) {
+    return; // no force to apply, early return
+  }
 
   if(!m_link) {
     gzwarn << " m_link is invalid." << endl;
     return;
   }
-  // check for pushback
-  auto link_vel = m_link->RelativeLinearVel();
-  double BACKWARD_MOTION_CHECK_THRESHOLD = 0.001; // meters
-  if (link_vel.Length() > BACKWARD_MOTION_CHECK_THRESHOLD
-      && link_vel.Dot(SCOOP_FORWARD) < 0.0) {
-    // reset force if pushback occurs
-    resetForces();
-  }
-  if (m_horizontal_force == 0.0 && m_vertical_force == 0.0)
-    return; // no force to apply, early return
+
   m_link->AddRelativeForce(
     ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
   );
+
 }
 
 // Calculate the parameter A
@@ -181,8 +172,14 @@ void BalovnevModelPlugin::computeForces(double vertical_cut_depth)
     + g*q + BURIED * (d-ls*sin(beta)) * g*sd * (1-sin(phi))/(1+sin(phi)));
 
   constexpr double FUDGE_FACTOR = 1.0;
+
+  constexpr double MAX_HORIZONTAL_FORCE = 40.0;
   m_horizontal_force *= FUDGE_FACTOR;
+  m_horizontal_force = min(m_horizontal_force, MAX_HORIZONTAL_FORCE);
+
+  constexpr double MAX_VERTICAL_FORCE = 30.0;
   m_vertical_force = m_horizontal_force * cos(beta+delta) / sin(beta+delta);
+  m_vertical_force = min(m_vertical_force, MAX_VERTICAL_FORCE);
 
   publishForces();
 }
@@ -196,6 +193,17 @@ void BalovnevModelPlugin::publishForces()
   m_pub_vertical_force.publish<std_msgs::Float64>(vf);
 }
 
+void BalovnevModelPlugin::resetVerticalForces()
+{
+  m_vertical_force = 0.0;
+  publishForces();
+}
+
+void BalovnevModelPlugin::resetHorizontalForces() {
+  m_horizontal_force = 0.0;
+  publishForces();
+}
+
 void BalovnevModelPlugin::resetForces()
 {
   m_vertical_force = 0.0;
@@ -206,15 +214,10 @@ void BalovnevModelPlugin::resetForces()
 void BalovnevModelPlugin::resetDepth() {
   // reset moving average
   m_moving_max_depth->clear();
-  // DEBUG CODE
-  static std_msgs::Float64 depth;
-  depth.data = 0.0;
-  m_pub_depth.publish<std_msgs::Float64>(depth);
 }
 
 bool BalovnevModelPlugin::isScoopDigging() const
 {
-  static const Vector3 SCOOP_DOWNWARD(0.0, 0.0, 1.0);
   Vector3 scoop_bottom(m_link->WorldPose().Rot().RotateVector(SCOOP_DOWNWARD));
   return WORLD_DOWNWARD.Dot(scoop_bottom) > 0.0;
 }
@@ -271,11 +274,6 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   double depth = m_moving_max_depth->evaluate();
 
   computeForces(depth);
-
-  // DEBUG CODE
-  static std_msgs::Float64 depth_msg;
-  depth_msg.data = depth;
-  m_pub_depth.publish<std_msgs::Float64>(depth_msg);
 
   // reset timeout at each terrain modification
   m_dig_timeout.stop();

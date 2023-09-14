@@ -40,6 +40,8 @@ private:
 
   void publishForces();
 
+  void resetVerticalForces();
+  void resetHorizontalForces();
   void resetForces();
 
   void resetDepth();
@@ -57,8 +59,6 @@ private:
 
   ros::Publisher m_pub_horizontal_force;
   ros::Publisher m_pub_vertical_force;
-  // DEBUG CODE
-  ros::Publisher m_pub_depth;
   
   ros::Timer m_dig_timeout;
 
