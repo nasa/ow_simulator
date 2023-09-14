@@ -88,10 +88,6 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
   m_pub_vertical_force = m_node_handle->advertise<std_msgs::Float64>(
     TOPIC_BALOVNEV_VERTICAL, 1, true
   );
-  // DEBUG CODE
-  m_pub_depth = m_node_handle->advertise<std_msgs::Float64>(
-    "/balovnev_model/depth", 1, true
-  );
 
   m_updateConnection = event::Events::ConnectBeforePhysicsUpdate(
     std::bind(&BalovnevModelPlugin::onUpdate, this)
@@ -109,29 +105,35 @@ void BalovnevModelPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
 void BalovnevModelPlugin::onUpdate()
 {
-  if (!isScoopDigging())
-    return;
+  if ((m_horizontal_force == 0.0 && m_vertical_force == 0.0)
+      || !isScoopDigging()) {
+    return; // no force to apply, early return
+  }
 
   if(!m_link) {
     gzwarn << " m_link is invalid." << endl;
     return;
   }
-  // check for pushback
+
+  // prevent non-physical pushback/pushdown
   auto link_vel = m_link->RelativeLinearVel();
-  constexpr double BACKWARD_MOTION_CHECK_THRESHOLD = 0.001; // meters
-  if (link_vel.Length() > BACKWARD_MOTION_CHECK_THRESHOLD
-      && (link_vel.Dot(SCOOP_FORWARD) < 0.0
-         || link_vel.Dot(SCOOP_DOWNWARD) > 0.0)) {
-    // gzwarn << "STALLING" << endl;
-    // reset force if pushback occurs
-    resetForces();
-    // m_link->ResetPhysicsStates();
+  constexpr double CHECK_THRESHOLD = 0.001; // meters per second
+  if (link_vel.Length() > CHECK_THRESHOLD) {
+    if (link_vel.Dot(-SCOOP_FORWARD) < 0.0) {
+      resetHorizontalForces();
+    }
+    if (link_vel.Dot(SCOOP_DOWNWARD) > 0.0) {
+      resetHorizontalForces();
+    }
+    if (m_horizontal_force == 0.0 && m_vertical_force == 0.0) {
+      return;
+    }
   }
-  if (m_horizontal_force == 0.0 && m_vertical_force == 0.0)
-    return; // no force to apply, early return
+
   m_link->AddRelativeForce(
     ignition::math::Vector3d(-m_horizontal_force, 0, m_vertical_force)
   );
+
 }
 
 // Calculate the parameter A
@@ -200,6 +202,17 @@ void BalovnevModelPlugin::publishForces()
   m_pub_vertical_force.publish<std_msgs::Float64>(vf);
 }
 
+void BalovnevModelPlugin::resetVerticalForces()
+{
+  m_vertical_force = 0.0;
+  publishForces();
+}
+
+void BalovnevModelPlugin::resetHorizontalForces() {
+  m_horizontal_force = 0.0;
+  publishForces();
+}
+
 void BalovnevModelPlugin::resetForces()
 {
   m_vertical_force = 0.0;
@@ -210,10 +223,6 @@ void BalovnevModelPlugin::resetForces()
 void BalovnevModelPlugin::resetDepth() {
   // reset moving average
   m_moving_max_depth->clear();
-  // DEBUG CODE
-  static std_msgs::Float64 depth;
-  depth.data = 0.0;
-  m_pub_depth.publish<std_msgs::Float64>(depth);
 }
 
 bool BalovnevModelPlugin::isScoopDigging() const
@@ -274,11 +283,6 @@ void BalovnevModelPlugin::onModDiffVisualMsg(
   double depth = m_moving_max_depth->evaluate();
 
   computeForces(depth);
-
-  // DEBUG CODE
-  static std_msgs::Float64 depth_msg;
-  depth_msg.data = depth;
-  m_pub_depth.publish<std_msgs::Float64>(depth_msg);
 
   // reset timeout at each terrain modification
   m_dig_timeout.stop();

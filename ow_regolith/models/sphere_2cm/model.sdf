@@ -8,7 +8,7 @@
 
       <pose>0 0 0.01 0 0 0</pose>
       <inertial>
-        <mass>0.3769911184307752</mass>
+        <mass>0.031</mass>
         <!-- Set high moments to "disable" rotation -->
         <inertia>
           <ixx>1.5e-02</ixx>
