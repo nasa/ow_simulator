@@ -36,5 +36,5 @@ Hans Utz
 Uland Wong
 Devin Wright
 Yinan Xu
-Honghau Zhen
+Honghao Zhen
 
