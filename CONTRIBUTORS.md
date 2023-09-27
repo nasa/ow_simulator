@@ -38,5 +38,3 @@ Devin Wright
 Yinan Xu
 Honghau Zhen
 
-In addition, a number of external users have made valuable code
-contributions over the years.
