@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from geometry_msgs.msg import Pose, Quaternion
 from action_testing import *
-from fastdtw import fastdtw
-from scipy.spatial.distance import euclidean
 
 PKG = 'ow_sim_tests'
 TEST_NAME = 'arm_consistency'
@@ -32,13 +30,14 @@ roslib.load_manifest(PKG)
 def _dtw_helper(trajectories, runs):
   baseline_index = 0
 
-  threshold = 10
+  threshold = 2
 
   while not rospy.is_shutdown():
     baseline_trajectory = trajectories[baseline_index]
     outlier_indices = []
     for i, traj in enumerate(trajectories[1:]):
-      distance, _ = fastdtw(baseline_trajectory, traj, dist = euclidean)
+      distance = _dtw_numpy(baseline_trajectory, traj)
+      rospy.loginfo(distance)
       if distance > threshold:
         outlier_indices.append(i+1)
     if len(outlier_indices) >= (runs / 2):
@@ -47,6 +46,20 @@ def _dtw_helper(trajectories, runs):
       break
       
   return outlier_indices, threshold
+
+def _dtw_numpy(traj_1, traj_2):
+  traj_1 = np.array(traj_1).flatten()
+  traj_2 = np.array(traj_2).flatten()
+  m, n = len(traj_1), len(traj_2)
+  DTW = np.full((m + 1, n + 1), float('inf'))
+  DTW[0, 0] = 0
+
+  for i in range(1, m + 1):
+    for j in range(1, n + 1):
+      dist = (traj_1[i - 1] - traj_2[j - 1]) ** 2
+      DTW[i, j] = dist + min(DTW[i - 1, j], DTW[i, j - 1], DTW[i - 1, j - 1])
+  
+  return np.sqrt(DTW[m, n])
 
 def _plot_helper(trajectories):
   fig = plt.figure()
@@ -113,7 +126,6 @@ class TestArmConsistency(unittest.TestCase):
       while not self.client_arm_move_cartesian.wait_for_result(rospy.Duration(0.1)):
         try:
           trans = self.tfBuffer.lookup_transform('base_link', 'l_scoop_tip',rospy.Time(0))
-          print('x location', trans.transform.translation.x)
           trajectory.append([ trans.transform.translation.x, 
                               trans.transform.translation.y, 
                               trans.transform.translation.z])
