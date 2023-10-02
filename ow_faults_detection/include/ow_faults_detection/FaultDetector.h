@@ -13,6 +13,8 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Empty.h>
 #include <ow_faults_detection/JointStatesFlag.h>
+#include <ow_lander/ActionGoalStatus.h>
+#include <ow_lander/lander_joints.h>
 #include <owl_msgs/ArmFaultsStatus.h>
 #include <owl_msgs/BatteryStateOfCharge.h>
 #include <owl_msgs/BatteryTemperature.h>
@@ -20,7 +22,6 @@
 #include <owl_msgs/PanTiltFaultsStatus.h>
 #include <owl_msgs/PowerFaultsStatus.h>
 #include <owl_msgs/SystemFaultsStatus.h>
-#include <ow_lander/lander_joints.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <control_msgs/JointControllerState.h>
@@ -48,6 +49,8 @@ private:
   // Arm
   void jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg);
   bool isFlagSet(uint joint, const std::vector<uint8_t>& flags);
+
+  void armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg);
   
   // Find an item in an std::vector or other find-able data structure, and
   // return its index. Return -1 if not found.
@@ -72,6 +75,8 @@ private:
   template<typename pub_t, typename msg_t, typename flags_t>
   void publishFaultsMessage(pub_t& faults_pub, msg_t faults_msg, flags_t faults_flags);
 
+  void actionGoalStatusCb(const ow_lander::ActionGoalStatus& msg);
+
   // PUBLISHERS AND SUBSCRIBERS
   
   // faults topic publishers
@@ -82,11 +87,13 @@ private:
   ros::Publisher m_system_faults_msg_pub;
 
   // faults topic subscribers;
+  ros::Subscriber m_action_goal_status_sub;
   ros::Subscriber m_joint_states_sub; // for arm and antenna
   ros::Subscriber m_camera_original_trigger_sub;
   ros::Subscriber m_camera_raw_sub;
   ros::Subscriber m_power_soc_sub;
   ros::Subscriber m_power_temperature_sub;
+  ros::Subscriber m_arm_faults_internal_sub;
 
   // faults bitflags
   uint64_t m_arm_faults_flags     = owl_msgs::ArmFaultsStatus::NONE;
@@ -99,6 +106,8 @@ private:
   std::vector<unsigned int> m_joint_state_indices;
   bool m_camera_data_pending = false;
   float m_last_soc = std::numeric_limits<float>::quiet_NaN();
+  // for arm planning error, msg published by ow_lander
+  uint64_t m_arm_faults_internal_flag = owl_msgs::ArmFaultsStatus::NONE;
 };
 
 #endif

@@ -85,6 +85,7 @@
       <plugin name="visibility" filename="libIRGVisibilityPlugin.so">
         <visibility_bitmask>${vis_mask}</visibility_bitmask>
       </plugin>
+      <plugin name="OWLightControlPlugin" filename="libOWLightControlPlugin.so" />
     </visual>
     <selfCollide>1</selfCollide>
     <!-- If freezing the lander in place, turn off collisions with the terrain
@@ -778,6 +779,25 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+
+  <!-- link that we can reference in Gazebo to get altitude of tip
+     of grinder above the terrain. Note that without an inertial
+     tag, the link will not show up in the SDF/Gazebo at all -->
+  <link name="l_grinder_tip">
+    <inertial>
+      <mass value="0.0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="l_grinder_tip_joint" type="fixed">
+    <origin xyz="0.16 0 0" rpy="0 0 0"/>
+    <parent link="l_grinder"/>
+    <!-- <parent link="l_hand"/> -->
+    <child link="l_grinder_tip"/>
+  </joint>
+  <gazebo reference="l_grinder_tip_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
 
   <link name="l_ant_foot">
     <inertial>

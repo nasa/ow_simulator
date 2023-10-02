@@ -7,8 +7,12 @@
 import rospy
 
 from ow_lander import actions
+from ow_lander import frame_transformer
 
-rospy.init_node('arm_action_servers')
+rospy.init_node('lander_action_servers')
+
+# handles initialization that must occur after init_node call
+frame_transformer.initialize()
 
 # arm actions
 server_stop           = actions.ArmStopServer()

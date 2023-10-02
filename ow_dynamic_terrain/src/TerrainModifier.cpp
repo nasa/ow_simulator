@@ -34,7 +34,8 @@ static void formatDiffMsg(const CvImage& diff_image, const Point32& position,
         << endl;
 }
 
-bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_circle::ConstPtr& msg,
+bool TerrainModifier::modifyCircle(Heightmap* heightmap, TexturePtr maskmap,
+                                   const modify_terrain_circle::ConstPtr& msg,
                                    const function<float(int, int)>& get_height_value,
                                    const function<void(int, int, float)>& set_height_value,
                                    ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -73,9 +74,9 @@ bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   auto image = TerrainBrush::circle(h_scale * msg->outer_radius, h_scale * msg->inner_radius, msg->weight);
 
   CvImage differential_image;
-  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                                       get_height_value, set_height_value, *merge_method,
-                                       differential_image);
+  auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
+                            false, get_height_value, set_height_value,
+                            *merge_method, differential_image);
 
   if (changed)
     formatDiffMsg(differential_image, msg->position, h_scale,
@@ -84,7 +85,8 @@ bool TerrainModifier::modifyCircle(Heightmap* heightmap, const modify_terrain_ci
   return changed;
 }
 
-bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_ellipse::ConstPtr& msg,
+bool TerrainModifier::modifyEllipse(Heightmap* heightmap, TexturePtr maskmap,
+                                    const modify_terrain_ellipse::ConstPtr& msg,
                                     const function<float(int, int)>& get_height_value,
                                     const function<void(int, int, float)>& set_height_value,
                                     ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -132,9 +134,9 @@ bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   }
 
   CvImage differential_image;
-  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                                       get_height_value, set_height_value, *merge_method,
-                                       differential_image);
+  auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
+                            false, get_height_value, set_height_value,
+                            *merge_method, differential_image);
 
   if (changed)
     formatDiffMsg(differential_image, msg->position, h_scale,
@@ -143,7 +145,8 @@ bool TerrainModifier::modifyEllipse(Heightmap* heightmap, const modify_terrain_e
   return changed;
 }
 
-bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_patch::ConstPtr& msg,
+bool TerrainModifier::modifyPatch(Heightmap* heightmap, TexturePtr maskmap,
+                                  const modify_terrain_patch::ConstPtr& msg,
                                   const function<float(int, int)>& get_height_value,
                                   const function<void(int, int, float)>& set_height_value,
                                   ow_dynamic_terrain::modified_terrain_diff& out_diff_msg)
@@ -189,9 +192,9 @@ bool TerrainModifier::modifyPatch(Heightmap* heightmap, const modify_terrain_pat
   }
 
   CvImage differential_image;
-  auto changed = applyImageToHeightmap(heightmap, center, msg->position.z, image, false, 
-                                       get_height_value, set_height_value, *merge_method,
-                                       differential_image);
+  auto changed = applyImage(heightmap, maskmap, center, msg->position.z, image,
+                            false, get_height_value, set_height_value,
+                            *merge_method, differential_image);
 
   if (changed)
     formatDiffMsg(differential_image, msg->position, h_scale,
@@ -228,53 +231,85 @@ CvImageConstPtr TerrainModifier::importImageToOpenCV(const modify_terrain_patch:
   return image_handle;
 }
 
-bool TerrainModifier::applyImageToHeightmap(Heightmap* heightmap, const cv::Point2i& center, float z_bias,
-                                            const cv::Mat& image, bool skip_zeros,
-                                            const function<float(int, int)>& get_height_value,
-                                            const function<void(int, int, float)>& set_height_value,
-                                            const function<float(float, float)>& merge_method, 
-                                            CvImage& out_diff_image)
+bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
+                                 const cv::Point2i& center, float z_bias,
+                                 const cv::Mat& image, bool skip_zeros,
+                                 const function<float(int, int)>& get_height_value,
+                                 const function<void(int, int, float)>& set_height_value,
+                                 const function<float(float, float)>& merge_method,
+                                 CvImage& out_diff_image)
 {
-  auto terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
-
   if (image.type() != CV_32FC1)
   {
     gzerr << "DynamicTerrain: Only 32FC1 formats are supported" << endl;
     return false;
   }
 
-  auto heightmap_size = static_cast<int>(terrain->getSize());
-  auto left = max(center.x - image.cols / 2, 0);
-  auto top = max(center.y - image.rows / 2, 0);
-  auto right = min(center.x - image.cols / 2 + image.cols - 1, heightmap_size);
-  auto bottom = min(center.y - image.rows / 2 + image.rows - 1, heightmap_size);
+  int left = center.x - image.cols / 2;
+  int top = center.y - image.rows / 2;
+  int right = left + image.cols - 1;
+  int bottom = top + image.rows - 1;
 
   auto diff = OpenCV_Util::createZerosMatLike(image);
 
+  uint32_t mask_size = 0;
+  HardwarePixelBufferSharedPtr pixel_buffer;
+  uint8_t* mask_pixels = nullptr;
+  if (!maskmap.isNull())
+  {
+    mask_size = maskmap->getWidth();
+    // Lock the mask map pixel buffer
+    pixel_buffer = maskmap->getBuffer();
+    pixel_buffer->lock(HardwareBuffer::HBL_DISCARD);
+    // Get pixel pointer
+    const PixelBox& pixel_box = pixel_buffer->getCurrentLock();
+    mask_pixels = static_cast<uint8_t*>(pixel_box.data);
+  }
+
   bool change_occurred = false;
 
-  for (auto y = top; y <= bottom; ++y)
-    for (auto x = left; x <= right; ++x)
+  // Loop over points on Heightmap inside rectangular region surrounding image
+  for (int y = top; y <= bottom; ++y)
+  {
+    for (int x = left; x <= right; ++x)
     {
-      auto pixel_value = image.at<float>(y - top, x - left);
+      // Using bottom - y instead of y - top because cv::Mat has a different
+      // layout than Ogre Heightmaps.
+      auto cv_index_y = bottom - y;
+      auto cv_index_x = x - left;
+      auto pixel_value = image.at<float>(cv_index_y, cv_index_x);
       if (skip_zeros && ignition::math::equal<float>(pixel_value, 0.0f))
         continue;
-      
+
       auto old_height = get_height_value(x, y);
       auto new_height = merge_method(old_height, pixel_value + z_bias);
 
       if (old_height == new_height) 
         continue; // no change is necessary
-      
+
       set_height_value(x, y, new_height);
-      diff.at<float>(y - top, x - left) = new_height - old_height;
-      
+
+      diff.at<float>(cv_index_y, cv_index_x) = new_height - old_height;
+
+      // Show in texture mask that this part of terrain has been modified
+      if (!maskmap.isNull() && x < mask_size && y < mask_size)
+      {
+        mask_pixels[(mask_size - 1 - y) * mask_size + x] = 0;
+      }
+
       // if we make it here, flag that a change has occurred
       change_occurred = true;
     }
-  
-    out_diff_image.image    = diff;
-    out_diff_image.encoding = image_encodings::TYPE_32FC1;
-  
-    return change_occurred;
+  }
+
+  // Unlock mask pixel buffer
+  if (!maskmap.isNull())
+  {
+    pixel_buffer->unlock();
+  }
+
+  out_diff_image.image    = diff;
+  out_diff_image.encoding = image_encodings::TYPE_32FC1;
+
+  return change_occurred;
 }

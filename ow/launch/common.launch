@@ -5,7 +5,7 @@
   <arg name="world_name" default="$(find ow_europa)/worlds/terminator.world"/>
   <arg name="arm_sim_enable" default="false" />
   <arg name="gazebo" default="true"/>
-  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states StereoCamera/left/image_raw:=/_original/StereoCamera/left/image_raw" />
+  <arg name="extra_gazebo_args" default="joint_states:=/_original/joint_states StereoCamera/left/image_raw:=/_original/StereoCamera/left/image_raw StereoCamera/left/camera_info:=/_original/StereoCamera/left/camera_info"/>
   <arg name="gzclient" default="true"/>  <!-- Only has effect if gazebo = true -->
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true" />
@@ -90,9 +90,9 @@
     <!-- model that gets spawned into scoop -->
     <param name="regolith_model_uri" type="string" value="model://sphere_2cm"/>
     <!-- cubed meters that must be removed from terrain before a regolith particle is spawned -->
-    <param name="spawn_volume_threshold" type="double" value="1e-3"/>
+    <param name="spawn_volume_threshold" type="double" value="2e-4"/>
     <!-- horizontal spacing between each consecutive regolith spawned -->
-    <param name="spawn_spacing" type="double" value="0.02"/>
+    <param name="spawn_spacing" type="double" value="0.021"/>
   </node>
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->

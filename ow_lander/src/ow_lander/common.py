@@ -4,12 +4,10 @@
 
 """Defines functions required by multiple modules within the package"""
 
-from math import pi, tau, acos, sqrt
-from ow_lander import constants
+import rospy
+
+from math import pi, tau
 from std_msgs.msg import Header
-from rospy import Time
-# import roslib; roslib.load_manifest('urdfdom_py')
-from urdf_parser_py.urdf import URDF
 
 class Singleton(type):
   """When passed to the metaclass parameter in the class definition, the class
@@ -21,23 +19,9 @@ class Singleton(type):
       cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
     return cls._instances[cls]
 
-def is_shou_yaw_goal_in_range(joint_goal):
-  """
-  # type joint_goal: List[float, float, float, float, float, float]
-  """
-  # If shoulder yaw goal angle is out of joint range, abort
-  upper = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.upper
-  lower = URDF.from_parameter_server().joint_map["j_shou_yaw"].limit.lower
-
-  if (joint_goal[constants.J_SHOU_YAW]<lower) or (joint_goal[constants.J_SHOU_YAW]>upper):
-    return False
-  else:
-    return True
-
 def normalize_radians(angle):
-  """
-  :param angle: (float)
-  :return: (float) the angle in [-pi, pi)
+  """Returns a version of the angle between [-pi, pi)
+  angle - in radians
   """
   # Note: tau = 2 * pi
   return (angle + pi) % tau - pi
@@ -52,5 +36,21 @@ def in_closed_range(val, lo, hi):
   """
   return val >= lo and val <= hi
 
-def create_most_recent_header(frame_id):
-  return Header(0, Time(0), frame_id)
+def create_header(frame_id, timestamp=rospy.Time(0)):
+  return Header(0, timestamp, frame_id)
+
+def wait_for_subscribers(publisher, timeout, at_least=1, frequency=10):
+  """Wait for subscribers to a topic.
+  publisher - ROS publisher topic
+  timeout   - Maximum time in seconds the function will block for
+  at_least  - At least this many subscribers must be seen before the function
+              will return (default: 1)
+  frequency - Rate in Hz at which subscriber count will be checked
+              (default: 10 Hz)
+  """
+  r = rospy.Rate(frequency)
+  for _i in range(int(timeout * frequency)):
+    if publisher.get_num_connections() >= at_least:
+      return True
+    r.sleep()
+  return False

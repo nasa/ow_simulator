@@ -115,7 +115,9 @@ private:
 
     modified_terrain_diff diff_msg;
 
-    auto changed = modify_method(heightmap, msg, 
+    Ogre::TexturePtr dummy_mask_map;  // Null texture will not be updated
+
+    auto changed = modify_method(heightmap, dummy_mask_map, msg,
         [&heightmap_shape](int x, int y) { return getHeightInWorldCoords(heightmap_shape, x, y); },
         [&heightmap_shape](int x, int y, float value) { setHeightFromWorldCoords(heightmap_shape, x, y, value); },
         diff_msg);

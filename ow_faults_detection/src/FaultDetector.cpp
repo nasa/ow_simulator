@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream> 
+#include <actionlib_msgs/GoalStatus.h>
 
 using namespace ow_lander;
 using namespace owl_msgs;
@@ -17,6 +18,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
+  m_arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
+                                          10, 
+                                          &FaultDetector::armFaultsInternalCb,
+                                          this);
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
                                       10,
                                       &FaultDetector::jointStatesFlagCb,
@@ -41,6 +46,10 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
                                           10,
                                           &FaultDetector::powerTemperatureListener,
                                           this);
+  m_action_goal_status_sub = nh.subscribe( "/action_goal_status",
+                                            10,
+                                            &FaultDetector::actionGoalStatusCb,
+                                            this);
 
   // topics for OWLAT/JPL msgs: system fault messages, see owl_msgs/msg
   m_arm_faults_msg_pub = nh.advertise<ArmFaultsStatus>("/arm_faults_status", 10);
@@ -72,6 +81,55 @@ void FaultDetector::publishFaultsMessage(pub_t& fault_pub, msg_t fault_msg, flag
 }
 
 // Listeners
+
+void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
+{
+  // loop through the goal state array and update GOAL_ERROR flags
+  for (int goal_index = 0; goal_index < msg.NUM_GOAL_TYPES; goal_index++ ) {
+    auto goal_status = msg.status_list[goal_index].status;
+
+    // set/exonerate goal errors
+    if ( actionlib_msgs::GoalStatus::ABORTED == goal_status ) {
+      switch (goal_index) {
+        case msg.ARM_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::ARM_GOAL_ERROR;
+          break;
+        case msg.TASK_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::TASK_GOAL_ERROR;
+          break;
+        case msg.CAMERA_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::CAMERA_GOAL_ERROR;
+          break;
+        case msg.PAN_TILT_GOAL:
+          m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_GOAL_ERROR;
+          break;
+        default:
+          break;
+      }
+    } else if ( actionlib_msgs::GoalStatus::SUCCEEDED == goal_status ){
+      switch (goal_index) {
+        case msg.ARM_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
+          break;
+        case msg.TASK_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::TASK_GOAL_ERROR;
+          break;
+        case msg.CAMERA_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_GOAL_ERROR;
+          break;
+        case msg.PAN_TILT_GOAL:
+          m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_GOAL_ERROR;
+          break;
+        default:
+          break;
+      } // else: other statuses not currently supported but should be in the future
+    }
+  }
+
+  // publish updated faults messages
+  publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
+}
+
 // Arm and Antenna listeners
 bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
 {
@@ -87,10 +145,16 @@ bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
   return false;
 }
 
+void FaultDetector::armFaultsInternalCb(const owl_msgs::ArmFaultsStatus::ConstPtr& msg)
+{
+  //arm_faults_internal was published from ow_lander/action.py
+  //m_arm_faults_internal_flag go to jointStatesFlagCb and publishes an updated message to '/arm_faults_status'.
+  m_arm_faults_internal_flag = msg->value;
+}
+
 void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlagConstPtr& msg)
 {
   unsigned int index;
-  
   // Populate the map once here.
   // This assumes the collection of joints will never change.
   if (m_joint_state_indices.empty()) {
@@ -132,16 +196,15 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
   }
 
   // update system faults
-  if (ArmFaultsStatus::NONE == m_arm_faults_flags) {
-    m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  } else {
-    m_system_faults_flags |= SystemFaultsStatus::ARM_EXECUTION_ERROR;
-  }
   if (PanTiltFaultsStatus::NONE == m_antenna_faults_flags) {
     m_system_faults_flags &= ~SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   } else {
     m_system_faults_flags |= SystemFaultsStatus::PAN_TILT_EXECUTION_ERROR;
   }
+
+  // update faults from ow_lander
+  uint64_t hardware_fault_bit = m_arm_faults_flags & ArmFaultsStatus::HARDWARE;
+  m_arm_faults_flags = (m_arm_faults_internal_flag & ~ArmFaultsStatus::HARDWARE) | hardware_fault_bit;
 
   // publish updated faults messages
   publishFaultsMessage(m_arm_faults_msg_pub, ArmFaultsStatus(), m_arm_faults_flags);
@@ -198,7 +261,7 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
 {
   // check for excessive battery temperature
-  if (msg.value > POWER_THERMAL_MAX) {
+  if (msg.value >= POWER_THERMAL_MAX) {
     m_power_faults_flags |= PowerFaultsStatus::THERMAL_FAULT;
   } else {
     m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;
