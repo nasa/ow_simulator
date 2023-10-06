@@ -1163,7 +1163,6 @@ class DockIngestSampleServer(ActionServerBase):
     regolith_to_remove = self._identify_active_regolith_in_sample_dock()
     if not regolith_to_remove:
       return False
-    rospy.loginfo(f"regolith_to_remove = {regolith_to_remove}")
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
     service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
