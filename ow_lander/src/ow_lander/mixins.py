@@ -13,7 +13,6 @@ import rospy
 import moveit_commander
 from abc import ABC, abstractmethod
 from std_msgs.msg import Float64
-from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Pose, PoseStamped, PointStamped
 from tf2_geometry_msgs import do_transform_pose
 from owl_msgs.msg import ArmFaultsStatus

@@ -12,11 +12,11 @@ import owl_msgs.msg
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 from ow_regolith.srv import RemoveRegolith
-from ow_regolith.msg import Contacts
 from geometry_msgs.msg import Point
-from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
+from geometry_msgs.msg import Vector3, PoseStamped, Pose
 from urdf_parser_py.urdf import URDF
 from owl_msgs.msg import ArmFaultsStatus
+from gazebo_msgs.msg import LinkStates
 
 import ow_lander.msg
 from ow_lander import mixins
@@ -25,7 +25,8 @@ from ow_lander import constants
 from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians, wait_for_subscribers
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
-                                 AntennaPlanningError, AntennaExecutionError)
+                                 AntennaPlanningError, AntennaExecutionError,
+                                 ActionError)
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
@@ -1102,77 +1103,107 @@ class DockIngestSampleServer(ActionServerBase):
 
   def __init__(self):
     super(DockIngestSampleServer, self).__init__()
-    # subscribe to contact sensor to know when sample dock has sample
-    TOPIC_SAMPLE_DOCK_CONTACTS = "/ow_regolith/contacts/sample_dock"
-    self._contacts_sub = rospy.Subscriber(
-      TOPIC_SAMPLE_DOCK_CONTACTS,
-      Contacts,
-      self._on_dock_contacts
-    )
-    self._dock_contacts = list()
-    self._ingesting = False # true when action is active
-    self._last_contact_time = 0.0 # seconds
-    self._remove_lock = False # true when dock contacts are being processed
+    self._link_states_sub = rospy.Subscriber("/gazebo/link_states", LinkStates,
+                                             self._on_link_states_msg)
+    self._message_buffer = LinkStates()
+    self._regolith_removed = False
     self._start_server()
 
-  def _on_dock_contacts(self, msg):
-    self._dock_contacts = msg.link_names
-    if self._ingesting:
-      # remove contacts if ingestion is active
-      self._remove_dock_contacts()
-      self._update_last_contact_time()
+  def _on_link_states_msg(self, msg):
+    self._message_buffer = msg
 
-  def _update_last_contact_time(self):
-    self._last_contact_time = rospy.get_time()
-
-  def _remove_dock_contacts(self):
-    # a lock is used to avoid redundant service calls to remove the same links
-    if self._remove_lock:
-      return
-    self._remove_lock = True
-    # do nothing if there are no contacts to remove
-    if not self._dock_contacts:
-      return
-    # call the remove service for all dock contacts
-    REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
-    rospy.wait_for_service(REMOVE_REGOLITH_SERVICE)
+  def _transform_relative_to_dock(self, position):
+    # FIXME: This must be done manual due to the tf inaccuracy caused by OW-1194
     try:
-      service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
-      result = service(self._dock_contacts)
-    except rospy.ServiceException as e:
-      rospy.logwarn("Service call failed: %s" % e)
-      self._remove_service_failed = True
-      return
-    # mark sample as ingested so long as one dock contact was removed
-    if result.success:
-      self._sample_was_ingested = True
+      i = self._message_buffer.name.index('lander::lander_sample_dock_link')
+    except ValueError:
+      rospy.logwarn(
+        "lander::lander_sample_dock_link not found in /gazebo/link_states")
+    dock_pose = self._message_buffer.pose[i]
+    transformed = math3d.subtract(position, dock_pose.position)
+    transformed = math3d.quaternion_rotate(
+      math3d.quaternion_inverse(dock_pose.orientation),
+      transformed
+    )
+    return transformed
+
+  def _is_position_in_sample_dock(self, position):
+    # relative_to_dock = FrameTransformer().transform_geometry(
+    #   position, "lander_sample_dock_link", "world")
+    relative_to_dock = self._transform_relative_to_dock(position)
+    if relative_to_dock is None:
+      raise ActionError("Transform of regolith position failed")
+    # perform a simple axis-aligned bounding box check, since in the sample
+    # dock's frame it is a an axis_aligned box centered
+    X_DIM = 0.3 # meters
+    Y_DIM = 0.05
+    Z_DIM = 0.095
+    # NOTE: This value can be found by adding the y-value on line 25 of
+    #   lander_sample_dock.xacro to the point assigned to the origin on line 34
+    #   and multiplying the result by negative one
+    OFFSET_RELATIVE_TO_FRAME = Point(0.0, -0.33, 0.025)
+    p = math3d.subtract(relative_to_dock, OFFSET_RELATIVE_TO_FRAME)
+    if (    -X_DIM/2 < p.x < X_DIM/2
+        and -Y_DIM/2 < p.y < Y_DIM/2
+        and -Z_DIM/2 < p.z < Z_DIM/2 ):
+      return True
     else:
-      self._remove_service_failed = True
-    self._remove_lock = False
+      return False
+
+  def _identify_active_regolith_in_sample_dock(self):
+    regolith = list()
+    for i in range(len(self._message_buffer.name)):
+      name = self._message_buffer.name[i]
+      position = self._message_buffer.pose[i].position
+      if "regolith_" in name and self._is_position_in_sample_dock(position):
+        regolith.append(name)
+    return regolith
+
+  def _remove_regolith_in_dock(self):
+    regolith_to_remove = self._identify_active_regolith_in_sample_dock()
+    if not regolith_to_remove:
+      return False
+    rospy.loginfo(f"regolith_to_remove = {regolith_to_remove}")
+    REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
+    rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
+    service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
+    result = service(regolith_to_remove)
+    return result.success
 
   def execute_action(self, _goal):
-    self._ingesting = True
-    self._sample_was_ingested = False
-    self._remove_service_failed = False
-    # remove sample already contacting the dock
-    self._remove_dock_contacts()
-    # start the no-sample timeout
-    self._update_last_contact_time()
-    # loop until there has been no sample in the dock for at least 3 seconds
-    NO_CONTACTS_TIMEOUT = 3.0 # seconds
-    loop_rate = rospy.Rate(0.2)
-    while rospy.get_time() - self._last_contact_time < NO_CONTACTS_TIMEOUT:
-      loop_rate.sleep()
-    # cease ingestion and wrap up action
-    self._ingesting = False
-    self._remove_lock = False
-    if self._remove_service_failed:
-      self._set_aborted("Regolith removal service failed",
-        sample_ingested=self._sample_was_ingested)
+    self._regolith_removed = False
+    try:
+      FREQUENCY = 1 #Hz
+      TIMEOUT = 3 # seconds
+      rate = rospy.Rate(FREQUENCY)
+      iterations_since_last_removal = 0
+      while iterations_since_last_removal < int(TIMEOUT * FREQUENCY):
+        iterations_since_last_removal += 1
+        if self._remove_regolith_in_dock():
+          # reset timer
+          iterations_since_last_removal = 0
+          self._regolith_removed = True
+        rate.sleep()
+    except (rospy.ServiceException, rospy.ROSException) as err:
+      rospy.logwarn(f"Service call failed: {err}")
+      self._set_aborted(
+        "Removal service failed",
+        sample_ingested = self._regolith_removed
+      )
+      return
+    except ActionError as err:
+      self._set_aborted(
+        f"Failed to verify which regolith are present in sample dock: {err}",
+        sample_ingested = self._regolith_removed
+      )
+      return
+
+    if self._regolith_removed:
+      self._set_succeeded("Sample ingested", sample_ingested=True)
     else:
-      message = "Sample ingested" if self._sample_was_ingested else \
-                "No sample was present in dock"
-      self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
+      self._set_succeeded("No sample was present in dock",
+                          sample_ingested=False)
+
 
 
 class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
@@ -1203,6 +1234,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
     current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
     self._publish_feedback(pan_position = current_pan,
                            tilt_position = current_tilt)
+
 
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
