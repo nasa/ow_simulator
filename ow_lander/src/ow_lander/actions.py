@@ -1128,19 +1128,16 @@ class DockIngestSampleServer(ActionServerBase):
     return transformed
 
   def _is_position_in_sample_dock(self, position):
-    # relative_to_dock = FrameTransformer().transform_geometry(
-    #   position, "lander_sample_dock_link", "world")
     relative_to_dock = self._transform_relative_to_dock(position)
     if relative_to_dock is None:
       raise ActionError("Transform of regolith position failed")
-    # perform a simple axis-aligned bounding box check, since in the sample
-    # dock's frame it is a an axis_aligned box centered
+    # perform an axis-aligned box containment check since, in the sample dock's
+    # frame, it happens to be an axis-aligned box
     X_DIM = 0.3 # meters
     Y_DIM = 0.05
     Z_DIM = 0.095
     # NOTE: This value can be found by adding the y-value on line 25 of
     #   lander_sample_dock.xacro to the point assigned to the origin on line 34
-    #   and multiplying the result by negative one
     OFFSET_RELATIVE_TO_FRAME = Point(0.0, -0.33, 0.025)
     p = math3d.subtract(relative_to_dock, OFFSET_RELATIVE_TO_FRAME)
     if (    -X_DIM/2 < p.x < X_DIM/2
