@@ -1112,25 +1112,22 @@ class DockIngestSampleServer(ActionServerBase):
   def _on_link_states_msg(self, msg):
     self._message_buffer = msg
 
-  def _transform_relative_to_dock(self, position):
-    # FIXME: This must be done manual due to the tf inaccuracy caused by OW-1194
+  def _get_dock_pose(self):
     try:
       i = self._message_buffer.name.index('lander::lander_sample_dock_link')
     except ValueError:
-      rospy.logwarn(
+      raise ActionError(
         "lander::lander_sample_dock_link not found in /gazebo/link_states")
-    dock_pose = self._message_buffer.pose[i]
+    return self._message_buffer.pose[i]
+
+  def _is_position_in_sample_dock(self, position, dock_pose):
+    # transform world frame position to a sample dock frame position
+    # FIXME: This must be done manual due to the tf inaccuracy caused by OW-1194
     transformed = math3d.subtract(position, dock_pose.position)
     transformed = math3d.quaternion_rotate(
       math3d.quaternion_inverse(dock_pose.orientation),
       transformed
     )
-    return transformed
-
-  def _is_position_in_sample_dock(self, position):
-    relative_to_dock = self._transform_relative_to_dock(position)
-    if relative_to_dock is None:
-      raise ActionError("Transform of regolith position failed")
     # perform an axis-aligned box containment check since, in the sample dock's
     # frame, it happens to be an axis-aligned box
     X_DIM = 0.3 # meters
@@ -1139,7 +1136,7 @@ class DockIngestSampleServer(ActionServerBase):
     # NOTE: This value can be found by adding the y-value on line 25 of
     #   lander_sample_dock.xacro to the point assigned to the origin on line 34
     OFFSET_RELATIVE_TO_FRAME = Point(0.0, -0.33, 0.025)
-    p = math3d.subtract(relative_to_dock, OFFSET_RELATIVE_TO_FRAME)
+    p = math3d.subtract(transformed, OFFSET_RELATIVE_TO_FRAME)
     if (    -X_DIM/2 < p.x < X_DIM/2
         and -Y_DIM/2 < p.y < Y_DIM/2
         and -Z_DIM/2 < p.z < Z_DIM/2 ):
@@ -1149,10 +1146,13 @@ class DockIngestSampleServer(ActionServerBase):
 
   def _identify_active_regolith_in_sample_dock(self):
     regolith = list()
+    dock_pose = self._get_dock_pose()
     for i in range(len(self._message_buffer.name)):
       name = self._message_buffer.name[i]
       position = self._message_buffer.pose[i].position
-      if "regolith_" in name and self._is_position_in_sample_dock(position):
+      if ("regolith_" in name
+          and
+          self._is_position_in_sample_dock(position, dock_pose)):
         regolith.append(name)
     return regolith
 
