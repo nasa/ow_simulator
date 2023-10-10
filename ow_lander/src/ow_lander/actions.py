@@ -27,9 +27,11 @@ from ow_lander.common import normalize_radians, wait_for_subscribers
 from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError,
                                  ActionError)
+from ow_lander.subscribers import wait_for_message
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
+
 
 # This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
 NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
@@ -1105,20 +1107,20 @@ class DockIngestSampleServer(ActionServerBase):
     super(DockIngestSampleServer, self).__init__()
     self._link_states_sub = rospy.Subscriber("/gazebo/link_states", LinkStates,
                                              self._on_link_states_msg)
-    self._message_buffer = LinkStates()
+    self._link_states = None
     self._regolith_removed = False
     self._start_server()
 
   def _on_link_states_msg(self, msg):
-    self._message_buffer = msg
+    self._link_states = msg
 
   def _get_dock_pose(self):
     try:
-      i = self._message_buffer.name.index('lander::lander_sample_dock_link')
+      i = self._link_states.name.index('lander::lander_sample_dock_link')
     except ValueError:
       raise ActionError(
         "lander::lander_sample_dock_link not found in /gazebo/link_states")
-    return self._message_buffer.pose[i]
+    return self._link_states.pose[i]
 
   def _is_position_in_sample_dock(self, position, dock_pose):
     # transform world frame position to a sample dock frame position
@@ -1133,8 +1135,13 @@ class DockIngestSampleServer(ActionServerBase):
     X_DIM = 0.3 # meters
     Y_DIM = 0.05
     Z_DIM = 0.095
-    # NOTE: This value can be found by adding the y-value on line 25 of
-    #   lander_sample_dock.xacro to the point assigned to the origin on line 34
+    # NOTE: This value can be found in lander_sample_dock.xacro, but not
+    #   trivially. The y-value comes from the lander_sample_dock macro
+    #   definition and is the y-value passed to the lander_sample_dock_link
+    #   macro. The z-value comes from the fact that both the collision and
+    #   visual meshes in the lander_sample_dock_link macro are defined with an
+    #   origin offset by 0.025 in the +z direction. Combine these two
+    #   adjustments together to get the value of OFFSET_RELATIVE_TO_FRAME.
     OFFSET_RELATIVE_TO_FRAME = Point(0.0, -0.33, 0.025)
     p = math3d.subtract(transformed, OFFSET_RELATIVE_TO_FRAME)
     if (    -X_DIM/2 < p.x < X_DIM/2
@@ -1147,9 +1154,9 @@ class DockIngestSampleServer(ActionServerBase):
   def _identify_active_regolith_in_sample_dock(self):
     regolith = list()
     dock_pose = self._get_dock_pose()
-    for i in range(len(self._message_buffer.name)):
-      name = self._message_buffer.name[i]
-      position = self._message_buffer.pose[i].position
+    for i in range(len(self._link_states.name)):
+      name = self._link_states.name[i]
+      position = self._link_states.pose[i].position
       if ("regolith_" in name
           and
           self._is_position_in_sample_dock(position, dock_pose)):
@@ -1167,6 +1174,12 @@ class DockIngestSampleServer(ActionServerBase):
     return result.success
 
   def execute_action(self, _goal):
+    if not wait_for_message(self._link_states, 10):
+      self._set_aborted(
+        "Timed out waiting for a message on /gazebo/link_states.",
+        sample_ingested = False
+      )
+      return
     self._regolith_removed = False
     try:
       FREQUENCY = 1 #Hz
