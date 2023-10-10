@@ -73,19 +73,6 @@
           <visibility_bitmask>${vis_mask}</visibility_bitmask>
         </plugin>
       </visual>
-      <sensor name="contact_sensor_sample_dock" type="contact">
-        <parent link="lander_sample_dock${suffix}"/>
-        <contact>
-          <collision>
-            lander_sample_dock_link_fixed_joint_lump__lander_sample_dock${suffix}_collision
-          </collision>
-        </contact>
-        <plugin name="contact_sensor_sample_dock_plugin"
-                filename="libContactSensorPlugin.so">
-          <topic>/ow_regolith/contacts/sample_dock</topic>
-          <report_only>regolith_\d*.*</report_only>
-        </plugin>
-      </sensor>
     </gazebo>
 
   </xacro:macro>
