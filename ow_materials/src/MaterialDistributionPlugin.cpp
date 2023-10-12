@@ -98,34 +98,33 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       std::placeholders::_1)
   );
 
-  // defer acquiring heightmap until the gazebo scene exists
-  // NOTE: this event callback will only occur once because it deletes its own
-  //  handle at the end of the function call
+  // publish latched, because points will never change
+  // message is published later on after the pointcloud has been generated
+  m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+    "/ow_materials/grid_points2", 1, true);
+
+  // defer acquiring heightmap albedo texture until the gazebo scene exists
+  // NOTE: this event callback will only be called as many times as it needs to
+  //  before it acquires the texture, then it will delete its own event handle
+  //  to prevent future calls
   m_temp_render_connection = make_unique<event::ConnectionPtr>(
     event::Events::ConnectRender(
       std::bind(&MaterialDistributionPlugin::getHeightmapAlbedo, this)
     )
   );
 
-  // publish latched, because points will never change
-  // message is published later on after the pointcloud has been generated
-  m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
-    "/ow_materials/grid_points2", 1, true);
-
-  gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
+  gzlog << PLUGIN_NAME << ": awaiting scene heightmap..." << endl;
 }
 
 void MaterialDistributionPlugin::getHeightmapAlbedo() {
-  gzlog << "getHeightmapAlbedo called" << endl;
-
   // try to get scene and heightmap
   // if either are unavailable, try again next render signal
   auto scene = rendering::get_scene();
-  if (!scene) return;
+  if (scene == nullptr) return;
   rendering::Heightmap *heightmap = scene->GetHeightmap();
-  if (!heightmap) return;
+  if (heightmap == nullptr) return;
 
-  // populate grid from surface texture
+  // a long string of Gazebo and Ogre API calls to get heightmap albedo texture
   Ogre::TexturePtr texture;
   try {
     Ogre::Terrain *terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
@@ -136,20 +135,24 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
     if (tech == nullptr) throw runtime_error("technique");
     Ogre::Pass *pass = tech->getPass(0u);
     if (pass == nullptr) throw runtime_error("pass");
-    Ogre::TextureUnitState *unit = pass->getTextureUnitState("albedoMap");
-    if (unit == nullptr) throw runtime_error("texture unit");
+    const string UNIT_NAME = "albedoMap";
+    Ogre::TextureUnitState *unit = pass->getTextureUnitState(UNIT_NAME);
+    if (unit == nullptr) throw runtime_error(UNIT_NAME + " texture unit");
     texture = unit->_getTexturePtr();
     if (texture.isNull()) throw runtime_error("texture");
   } catch (runtime_error e) {
-    gzerr << "Failed to acquire albedo texture: could not acquire "
-          << e.what() << endl;
-    // delete this gazebo event so this function is only every called once
+    gzerr << "Failed to acquire heightmap albedo texture: "
+          << e.what() << " could not be found." << endl;
+    // prevent callback from being called again
     delete m_temp_render_connection.release();
     return;
   }
 
   Ogre::Image albedo;
   texture->convertToImage(albedo);
+
+  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
+
   // auto color = albedo.getColourAt(0, 0, 0);
   // gzlog << "COLOR (0, 0, 0) = " << color.r << " " << color.g << " " << color.b << "\n";
   // gzlog << "albedo.getDepth()  = " << albedo.getDepth() << endl;
@@ -162,11 +165,15 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   std::thread t(&MaterialDistributionPlugin::publishGrid, this);
   t.detach();
 
+  // the callback's sole purpose has been fulfilled, so we can disable it by
+  // deleting its event handle
   delete m_temp_render_connection.release();
 }
 
 void MaterialDistributionPlugin::publishGrid()
 {
+  gzlog << PLUGIN_NAME << ": Populating grid visualization data..." << endl;
+
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   // publish and latch grid data as a point cloud for visualization
   m_grid->runForEach(
@@ -191,7 +198,7 @@ void MaterialDistributionPlugin::publishGrid()
 
   publishPointCloud(&m_grid_pub, grid_points);
 
-  gzlog << PLUGIN_NAME << "Grid visualization now ready for viewing in Rviz"
+  gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << std::endl;
 }
 
