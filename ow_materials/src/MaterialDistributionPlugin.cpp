@@ -6,13 +6,14 @@
 #include <stdexcept>
 #include <functional>
 
-#include <MaterialDistributionPlugin.h>
-
 #include <point_cloud_util.h>
+#include <gazebo/rendering/rendering.hh>
 
+#include <MaterialDistributionPlugin.h>
 #include <populate_materials.h>
 
-using std::string, std::make_unique, std::endl, std::uint8_t;
+using std::string, std::make_unique, std::endl, std::uint8_t,
+      std::runtime_error;
 
 using namespace ow_materials;
 using namespace gazebo;
@@ -30,6 +31,8 @@ const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
+  gzlog << PLUGIN_NAME << ": loading..." << endl;
+
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
@@ -70,7 +73,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   try {
     populate_material_database(m_material_db.get(), NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
-    gzerr << e.what() << endl;
+    gzerr << PLUGIN_NAME << ": " << e.what() << endl;
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
@@ -95,16 +98,71 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       std::placeholders::_1)
   );
 
+  // defer acquiring heightmap until the gazebo scene exists
+  // NOTE: this event callback will only occur once because it deletes its own
+  //  handle at the end of the function call
+  m_temp_render_connection = make_unique<event::ConnectionPtr>(
+    event::Events::ConnectRender(
+      std::bind(&MaterialDistributionPlugin::getHeightmapAlbedo, this)
+    )
+  );
+
   // publish latched, because points will never change
+  // message is published later on after the pointcloud has been generated
   m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
     "/ow_materials/grid_points2", 1, true);
+
+  gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
+}
+
+void MaterialDistributionPlugin::getHeightmapAlbedo() {
+  gzlog << "getHeightmapAlbedo called" << endl;
+
+  // try to get scene and heightmap
+  // if either are unavailable, try again next render signal
+  auto scene = rendering::get_scene();
+  if (!scene) return;
+  rendering::Heightmap *heightmap = scene->GetHeightmap();
+  if (!heightmap) return;
+
+  // populate grid from surface texture
+  Ogre::TexturePtr texture;
+  try {
+    Ogre::Terrain *terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+    if (terrain == nullptr) throw runtime_error("terrain");
+    Ogre::MaterialPtr material = terrain->getMaterial();
+    if (material.isNull()) throw runtime_error("material");
+    Ogre::Technique *tech = material->getTechnique(0u);
+    if (tech == nullptr) throw runtime_error("technique");
+    Ogre::Pass *pass = tech->getPass(0u);
+    if (pass == nullptr) throw runtime_error("pass");
+    Ogre::TextureUnitState *unit = pass->getTextureUnitState("albedoMap");
+    if (unit == nullptr) throw runtime_error("texture unit");
+    texture = unit->_getTexturePtr();
+    if (texture.isNull()) throw runtime_error("texture");
+  } catch (runtime_error e) {
+    gzerr << "Failed to acquire albedo texture: could not acquire "
+          << e.what() << endl;
+    // delete this gazebo event so this function is only every called once
+    delete m_temp_render_connection.release();
+    return;
+  }
+
+  Ogre::Image albedo;
+  texture->convertToImage(albedo);
+  // auto color = albedo.getColourAt(0, 0, 0);
+  // gzlog << "COLOR (0, 0, 0) = " << color.r << " " << color.g << " " << color.b << "\n";
+  // gzlog << "albedo.getDepth()  = " << albedo.getDepth() << endl;
+  // gzlog << "albedo.getHeight() = " << albedo.getHeight() << endl;
+  // gzlog << "albedo.getWidth()  = " << albedo.getWidth() << endl;
+  // albedo.save("/usr/local/home/tstucky/ow/beta_ws/test_albedo.png");
+
   // the process takes about 6 seconds, so we spin it off in its own thread to
   // not hold up loading the rest of Gazebo
   std::thread t(&MaterialDistributionPlugin::publishGrid, this);
   t.detach();
 
-  gzlog << PLUGIN_NAME << ": Successfully loaded!" << endl;
-
+  delete m_temp_render_connection.release();
 }
 
 void MaterialDistributionPlugin::publishGrid()

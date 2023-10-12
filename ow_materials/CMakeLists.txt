@@ -29,6 +29,8 @@ find_package(PCL 1.3 REQUIRED COMPONENTS
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
+  pkg_check_modules(OGRE OGRE)
+  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
 endif()
 
 ## Specify additional locations of header files
@@ -39,6 +41,7 @@ include_directories(
   ${GAZEBO_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${OGRE-Terrain_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -46,6 +49,7 @@ link_directories(
   ${GAZEBO_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
   ${PCL_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
 )
 
 add_definitions(${PCL_DEFINITIONS})

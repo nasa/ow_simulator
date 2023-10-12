@@ -11,6 +11,7 @@
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/common/common.hh>
+#include <gazebo/common/Event.hh>
 
 #include <AxisAlignedGrid.h>
 #include <MaterialDatabase.h>
@@ -37,6 +38,8 @@ public:
 
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
+  void getHeightmapAlbedo();
+
   void handleVisualBulk(MaterialBlend const &blend);
 
   void handleCollisionBulk(MaterialBlend const &blend);
@@ -47,6 +50,8 @@ private:
   void publishGrid();
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
+
+  std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_render_connection;
 
   ros::Publisher m_grid_pub;
 

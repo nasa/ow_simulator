@@ -24,7 +24,11 @@
   
   <depend>roscpp</depend>
   <depend>gazebo</depend>
-  <depend>ow_dynamic_terrain</depend>
   <depend>pcl_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>ow_dynamic_terrain</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>cv_bridge</exec_depend>
 
 </package>
