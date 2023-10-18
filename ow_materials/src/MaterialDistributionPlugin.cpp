@@ -184,9 +184,8 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   delete m_temp_render_connection.release();
 }
 
-// void MaterialDistributionPlugin::populateGrid(rendering::Heightmap *heightmap)
-// void MaterialDistributionPlugin::populateGrid()
-void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain)
+void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
+                                              Ogre::Terrain *terrain)
 {
   gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
 
@@ -212,11 +211,12 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo, Ogre::Terrain 
       );
       auto tex_coord = make_pair(
         static_cast<size_t>(tpos.x * albedo.getWidth()),
-        static_cast<size_t>(tpos.y * albedo.getHeight())
+        // y terrain coordinate must be flipped to work with image coordinates
+        static_cast<size_t>((1.0f - tpos.y) * albedo.getHeight())
       );
 
       auto it = albedo_blends.find(tex_coord);
-      if (it == std::end(albedo_blends)) {
+      if (it == albedo_blends.end()) {
         Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
         // pack into 3xN matrix and N vector
         // Eigen::Matrix3Xf A(basis.size());

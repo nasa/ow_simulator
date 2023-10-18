@@ -47,8 +47,6 @@ public:
   Color interpolateColor(MaterialBlend const &blend) const;
 
 private:
-  // void populateGrid(gazebo::rendering::Heightmap *heightmap);
-  // void populateGrid();
   void populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain);
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
