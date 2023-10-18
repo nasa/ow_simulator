@@ -8,6 +8,9 @@
 #include <limits>
 #include <unordered_map>
 
+#include <OgreColourValue.h>
+#include <Eigen/Core>
+
 namespace ow_materials
 {
 
@@ -15,7 +18,16 @@ using MaterialID = std::uint8_t;
 
 struct Color
 {
-  double r, g, b;
+  Color(float red, float green, float blue) : r(red), g(green), b(blue) { };
+  Color(Ogre::ColourValue c) {
+    r = c.r * 255.0f;
+    g = c.g * 255.0f;
+    b = c.b * 255.0f;
+  };
+
+  float r, g, b;
+
+  inline operator Eigen::Vector3f() { return Eigen::Vector3f(r, g, b); };
 };
 
 struct Material
@@ -67,6 +79,8 @@ public:
   void normalize();
 
   void merge(MaterialBlend const &other);
+
+  void add(MaterialID id, float concentration);
 
 private:
   void divideElementWise(float denominator);

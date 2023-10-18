@@ -47,10 +47,11 @@ public:
   inline double getCellLength() const { return m_cell_length; }
 
   // WARNING: execution will take a long time even for moderate-sized grids
-  void runForEach(std::function<void(T, GridPositionType)> f) const;
-
+  void runForEach(std::function<void(const T&, GridPositionType)> f) const;
+  void runForEach(std::function<void(T&, GridPositionType)> f);
+  
   void runForEachInAxisAlignedBox(GridPositionType v0, GridPositionType v1,
-                              std::function<void(T, GridPositionType)> f) const;
+                      std::function<void(const T&, GridPositionType)> f) const;
 
 private:
 

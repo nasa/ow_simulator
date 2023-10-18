@@ -12,8 +12,11 @@
 #include <MaterialDistributionPlugin.h>
 #include <populate_materials.h>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+
 using std::string, std::make_unique, std::endl, std::uint8_t,
-      std::runtime_error;
+      std::runtime_error, std::make_pair;
 
 using namespace ow_materials;
 using namespace gazebo;
@@ -73,7 +76,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   try {
     populate_material_database(m_material_db.get(), NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
-    gzerr << PLUGIN_NAME << ": " << e.what() << endl;
+    gzerr << e.what() << endl;
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
@@ -124,10 +127,17 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   rendering::Heightmap *heightmap = scene->GetHeightmap();
   if (heightmap == nullptr) return;
 
+  gzlog << PLUGIN_NAME << ": Gazebo heightmap acquired." << endl;
+
+  gzlog << "FINE" << endl;
+
   // a long string of Gazebo and Ogre API calls to get heightmap albedo texture
   Ogre::TexturePtr texture;
+  Ogre::Terrain *terrain;
   try {
-    Ogre::Terrain *terrain = heightmap->OgreTerrain()->getTerrain(0, 0);
+    Ogre::TerrainGroup *terrain_group = heightmap->OgreTerrain();
+    if (terrain_group == nullptr) throw runtime_error("terrain group");
+    terrain = terrain_group->getTerrain(0, 0);
     if (terrain == nullptr) throw runtime_error("terrain");
     Ogre::MaterialPtr material = terrain->getMaterial();
     if (material.isNull()) throw runtime_error("material");
@@ -143,15 +153,16 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   } catch (runtime_error e) {
     gzerr << "Failed to acquire heightmap albedo texture: "
           << e.what() << " could not be found." << endl;
-    // prevent callback from being called again
     delete m_temp_render_connection.release();
     return;
   }
 
-  Ogre::Image albedo;
-  texture->convertToImage(albedo);
+  gzlog << "FINE" << endl;
 
-  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
+  Ogre::Image albedo;
+
+  // the following causes a segmentation fault???
+  texture->convertToImage(albedo);
 
   // auto color = albedo.getColourAt(0, 0, 0);
   // gzlog << "COLOR (0, 0, 0) = " << color.r << " " << color.g << " " << color.b << "\n";
@@ -160,9 +171,12 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   // gzlog << "albedo.getWidth()  = " << albedo.getWidth() << endl;
   // albedo.save("/usr/local/home/tstucky/ow/beta_ws/test_albedo.png");
 
+  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
+
   // the process takes about 6 seconds, so we spin it off in its own thread to
   // not hold up loading the rest of Gazebo
-  std::thread t(&MaterialDistributionPlugin::publishGrid, this);
+  // std::thread t(&MaterialDistributionPlugin::populateGrid, this, std::ref(heightmap));
+  std::thread t(&MaterialDistributionPlugin::populateGrid, this, albedo, terrain);
   t.detach();
 
   // the callback's sole purpose has been fulfilled, so we can disable it by
@@ -170,31 +184,124 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   delete m_temp_render_connection.release();
 }
 
-void MaterialDistributionPlugin::publishGrid()
+// void MaterialDistributionPlugin::populateGrid(rendering::Heightmap *heightmap)
+// void MaterialDistributionPlugin::populateGrid()
+void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain)
 {
-  gzlog << PLUGIN_NAME << ": Populating grid visualization data..." << endl;
+  gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
+
+  // NOTE: restricted to only 3 for now
+  auto basis = m_material_db->getColorBasis();
 
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
-  // publish and latch grid data as a point cloud for visualization
+
+  // TODO: use unordered_map instead; a custom pair hash function is required
+  using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
+                                     std::pair<MaterialBlend, Color>>;
+  AlbedoMaterialMap albedo_blends;
+  AlbedoMaterialMap::const_iterator last_insert = std::begin(albedo_blends);
+
   m_grid->runForEach(
-    [&grid_points, this]
-    (MaterialBlend b, GridPositionType center) {
-      const Color c = interpolateColor(b);
-      grid_points.emplace_back(
-        static_cast<uint8_t>(c.r), // truncates double to int (<256)
-        static_cast<uint8_t>(c.g),
-        static_cast<uint8_t>(c.b)
+    [&basis, &albedo, &terrain, &grid_points, &albedo_blends, &last_insert, this]
+    (MaterialBlend &blend, GridPositionType center) {
+      // acquire x and y in terrain space (between 0 and 1)
+      auto tpos = terrain->convertPosition(
+        Ogre::Terrain::Space::WORLD_SPACE,
+        Ogre::Vector3(center.X(), center.Y(), center.Z()),
+        Ogre::Terrain::Space::TERRAIN_SPACE
+      );
+      auto tex_coord = make_pair(
+        static_cast<size_t>(tpos.x * albedo.getWidth()),
+        static_cast<size_t>(tpos.y * albedo.getHeight())
       );
 
+      auto it = albedo_blends.find(tex_coord);
+      if (it == std::end(albedo_blends)) {
+        Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
+        // pack into 3xN matrix and N vector
+        // Eigen::Matrix3Xf A(basis.size());
+        // for (size_t i = 0; i != A.cols(); ++i) {
+        //   A.col(i) = static_cast<Eigen::Vector3f>(basis[i].second);
+        // }
+        // std::vector<float> temp;
+        // for (auto const &x : basis)
+        //   temp.push_back(x.second.r);
+        // for (auto const &x : basis)
+        //   temp.push_back(x.second.g);
+        // for (auto const &x : basis)
+        //   temp.push_back(x.second.b);
+        constexpr size_t COLOR_COUNT = 3;
+        std::vector<float> temp(COLOR_COUNT * basis.size());
+        for (size_t i = 0; i != basis.size(); ++i) {
+          temp[i]                   = basis[i].second.r;
+          temp[i + COLOR_COUNT]     = basis[i].second.g;
+          temp[i + 2 * COLOR_COUNT] = basis[i].second.b;
+        }
+        Eigen::Matrix3Xf A = Eigen::Matrix3Xf::Map(&temp[0], COLOR_COUNT, basis.size());
+        Eigen::Vector3f b = static_cast<Eigen::Vector3f>(tcolor);
+        // solve
+        Eigen::ColPivHouseholderQR<Eigen::Matrix3Xf> dec(A);
+        Eigen::VectorXf concentrations = dec.solve(b);
+        // normalize before adding into the blend to save on computation
+        concentrations.normalize();
+        // save resulting concentrations to the material blend for the cell
+        for (size_t i = 0; i != A.cols(); ++i) {
+          blend.add(basis[i].first, concentrations[i]);
+        }
+        last_insert = albedo_blends.emplace_hint(
+          last_insert,
+          make_pair(
+            tex_coord,
+            make_pair(blend, tcolor)
+          )
+        );
+        // gzlog << PLUGIN_NAME << ": reading pixel ( "
+        //       << tex_coord.first << ", "
+        //       << tex_coord.second << " )" << endl;
+      }
+
+      // publish and latch grid data as a point cloud for visualization
+      // const Color c = interpolateColor(b);
+      grid_points.emplace_back(
+        static_cast<uint8_t>(last_insert->second.second.r), // truncates double to int (<256)
+        static_cast<uint8_t>(last_insert->second.second.g),
+        static_cast<uint8_t>(last_insert->second.second.b)
+      );
       // WORKAROUND for OW-1194, TF has an incorrect transform for
       //            base_link (specific for atacama_y1a)
       center -= GridPositionType(-1.0, 0.0, 0.37);
-
       grid_points.back().x = static_cast<float>(center.X());
       grid_points.back().y = static_cast<float>(center.Y());
       grid_points.back().z = static_cast<float>(center.Z());
     }
   );
+
+  // gzlog << PLUGIN_NAME
+  //       << ": Heightmap albedo texture decomposed into materials." << endl;
+
+  // gzlog << PLUGIN_NAME << ": Populating grid visualization data..." << endl;
+
+  // pcl::PointCloud<pcl::PointXYZRGB> grid_points;
+  // // publish and latch grid data as a point cloud for visualization
+  // m_grid->runForEach(
+  //   [&grid_points, this]
+  //   (MaterialBlend const &b, GridPositionType center) {
+  //     const Color c = interpolateColor(b);
+  //     grid_points.emplace_back(
+  //       static_cast<uint8_t>(c.r), // truncates double to int (<256)
+  //       static_cast<uint8_t>(c.g),
+  //       static_cast<uint8_t>(c.b)
+  //     );
+
+  //     // WORKAROUND for OW-1194, TF has an incorrect transform for
+  //     //            base_link (specific for atacama_y1a)
+  //     center -= GridPositionType(-1.0, 0.0, 0.37);
+
+  //     grid_points.back().x = static_cast<float>(center.X());
+  //     grid_points.back().y = static_cast<float>(center.Y());
+  //     grid_points.back().z = static_cast<float>(center.Z());
+  //   }
+  // );
 
   publishPointCloud(&m_grid_pub, grid_points);
 
@@ -226,18 +333,16 @@ Color MaterialDistributionPlugin::interpolateColor(
   MaterialBlend const &blend) const
 {
   return std::accumulate(blend.getBlendMap().begin(), blend.getBlendMap().end(),
-    Color({0.0, 0.0, 0.0}),
+    Color{0.0, 0.0, 0.0},
     [this]
     (Color value, MaterialBlend::BlendType::value_type const &p) {
       const auto m = m_material_db->getMaterial(p.first);
       // TODO: define + and * operators for color
-      return Color(
-        {
-          value.r + p.second * m.color.r,
-          value.g + p.second * m.color.g,
-          value.b + p.second * m.color.b
-        }
-      );
+      return Color {
+        value.r + p.second * m.color.r,
+        value.g + p.second * m.color.g,
+        value.b + p.second * m.color.b
+      };
     }
   );
 }

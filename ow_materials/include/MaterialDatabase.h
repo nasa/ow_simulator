@@ -39,6 +39,8 @@ public:
     return m_database.at(id);
   };
 
+  std::vector<std::pair<MaterialID, Color>> getColorBasis() const;
+
 private:
 
   std::unordered_map<MaterialID, Material> m_database;

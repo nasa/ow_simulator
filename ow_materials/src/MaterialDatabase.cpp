@@ -8,9 +8,10 @@
 
 using namespace ow_materials;
 
-using std::endl;
+using std::endl, std::vector, std::pair, std::make_pair;
 
-bool MaterialDatabase::addMaterial(const Material &mat) {
+bool MaterialDatabase::addMaterial(const Material &mat)
+{
   static MaterialID id = Material::id_min;
   if (id == Material::id_max) {
     gzerr << "Database already contains maximum number of materials" << endl;
@@ -23,4 +24,12 @@ bool MaterialDatabase::addMaterial(const Material &mat) {
   }
   ++id;
   return true;
+}
+
+vector<pair<MaterialID, Color>> MaterialDatabase::getColorBasis() const
+{
+  vector<pair<MaterialID, Color>> basis;
+  for (auto const &x : m_database)
+    basis.push_back(make_pair(x.first, x.second.color));
+  return basis;
 }
