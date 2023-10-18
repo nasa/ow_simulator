@@ -175,7 +175,6 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
 
   // the process takes about 6 seconds, so we spin it off in its own thread to
   // not hold up loading the rest of Gazebo
-  // std::thread t(&MaterialDistributionPlugin::populateGrid, this, std::ref(heightmap));
   std::thread t(&MaterialDistributionPlugin::populateGrid, this, albedo, terrain);
   t.detach();
 
@@ -191,17 +190,29 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // NOTE: restricted to only 3 for now
   auto basis = m_material_db->getColorBasis();
-
-  pcl::PointCloud<pcl::PointXYZRGB> grid_points;
-
+  // pack color basis into 3xN matrix, where N is the number of possible colors
+  constexpr size_t COLOR_COUNT = 3;
+  std::vector<float> temp(COLOR_COUNT * basis.size());
+  for (size_t i = 0; i != basis.size(); ++i) {
+    temp[i]                   = basis[i].second.r;
+    temp[i + COLOR_COUNT]     = basis[i].second.g;
+    temp[i + 2 * COLOR_COUNT] = basis[i].second.b;
+  }
+  Eigen::Matrix3Xf A = Eigen::Matrix3Xf::Map(&temp[0],
+                                             COLOR_COUNT,
+                                             basis.size());
+  Eigen::ColPivHouseholderQR<Eigen::Matrix3Xf> dec(A);
+  // this map enables fast z-column-wise modification of the grid
   // TODO: use unordered_map instead; a custom pair hash function is required
   using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
                                      std::pair<MaterialBlend, Color>>;
   AlbedoMaterialMap albedo_blends;
-  AlbedoMaterialMap::const_iterator last_insert = std::begin(albedo_blends);
+  AlbedoMaterialMap::const_iterator last_insert = albedo_blends.begin();
+  // point cloud object that will be published after the loop
+  pcl::PointCloud<pcl::PointXYZRGB> grid_points;
 
   m_grid->runForEach(
-    [&basis, &albedo, &terrain, &grid_points, &albedo_blends, &last_insert, this]
+    [&]
     (MaterialBlend &blend, GridPositionType center) {
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
@@ -218,50 +229,38 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
       auto it = albedo_blends.find(tex_coord);
       if (it == albedo_blends.end()) {
         Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
-        // pack into 3xN matrix and N vector
-        // Eigen::Matrix3Xf A(basis.size());
-        // for (size_t i = 0; i != A.cols(); ++i) {
-        //   A.col(i) = static_cast<Eigen::Vector3f>(basis[i].second);
-        // }
-        // std::vector<float> temp;
-        // for (auto const &x : basis)
-        //   temp.push_back(x.second.r);
-        // for (auto const &x : basis)
-        //   temp.push_back(x.second.g);
-        // for (auto const &x : basis)
-        //   temp.push_back(x.second.b);
-        constexpr size_t COLOR_COUNT = 3;
-        std::vector<float> temp(COLOR_COUNT * basis.size());
-        for (size_t i = 0; i != basis.size(); ++i) {
-          temp[i]                   = basis[i].second.r;
-          temp[i + COLOR_COUNT]     = basis[i].second.g;
-          temp[i + 2 * COLOR_COUNT] = basis[i].second.b;
-        }
-        Eigen::Matrix3Xf A = Eigen::Matrix3Xf::Map(&temp[0], COLOR_COUNT, basis.size());
         Eigen::Vector3f b = static_cast<Eigen::Vector3f>(tcolor);
         // solve
-        Eigen::ColPivHouseholderQR<Eigen::Matrix3Xf> dec(A);
         Eigen::VectorXf concentrations = dec.solve(b);
-        // normalize before adding into the blend to save on computation
-        concentrations.normalize();
         // save resulting concentrations to the material blend for the cell
-        for (size_t i = 0; i != A.cols(); ++i) {
-          blend.add(basis[i].first, concentrations[i]);
+        const auto coef_sum = concentrations.lpNorm<1>();
+        for (size_t i = 0; i != basis.size(); ++i) {
+          // normalize concentrations so they all add up to 1.0
+          blend.add(basis[i].first, concentrations[i] / coef_sum);
+          // blend.add(basis[i].first, concentrations[i]);
         }
         last_insert = albedo_blends.emplace_hint(
           last_insert,
           make_pair(
             tex_coord,
-            make_pair(blend, tcolor)
+            make_pair(blend, interpolateColor(blend))
           )
         );
-        // gzlog << PLUGIN_NAME << ": reading pixel ( "
-        //       << tex_coord.first << ", "
-        //       << tex_coord.second << " )" << endl;
+        gzlog << "Reading pixel = (" << tex_coord.first << ", "
+                                     << tex_coord.second << ")" << endl;
+        gzlog << "Concentrations = (" << concentrations[0] / coef_sum << ", "
+                                      << concentrations[1] / coef_sum << ", "
+                                      << concentrations[2] / coef_sum << ")" << endl;
+        gzlog << "Texture Color = (" << tcolor.r << ", "
+                                     << tcolor.g << ", "
+                                     << tcolor.b << ")" << endl;
+        gzlog << "Material Color = (" << last_insert->second.second.r << ", "
+                                      << last_insert->second.second.g << ", "
+                                      << last_insert->second.second.b << ")" << endl;
+      } else {
+        blend = last_insert->second.first;
       }
 
-      // publish and latch grid data as a point cloud for visualization
-      // const Color c = interpolateColor(b);
       grid_points.emplace_back(
         static_cast<uint8_t>(last_insert->second.second.r), // truncates double to int (<256)
         static_cast<uint8_t>(last_insert->second.second.g),
@@ -276,33 +275,8 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
     }
   );
 
-  // gzlog << PLUGIN_NAME
-  //       << ": Heightmap albedo texture decomposed into materials." << endl;
-
-  // gzlog << PLUGIN_NAME << ": Populating grid visualization data..." << endl;
-
-  // pcl::PointCloud<pcl::PointXYZRGB> grid_points;
-  // // publish and latch grid data as a point cloud for visualization
-  // m_grid->runForEach(
-  //   [&grid_points, this]
-  //   (MaterialBlend const &b, GridPositionType center) {
-  //     const Color c = interpolateColor(b);
-  //     grid_points.emplace_back(
-  //       static_cast<uint8_t>(c.r), // truncates double to int (<256)
-  //       static_cast<uint8_t>(c.g),
-  //       static_cast<uint8_t>(c.b)
-  //     );
-
-  //     // WORKAROUND for OW-1194, TF has an incorrect transform for
-  //     //            base_link (specific for atacama_y1a)
-  //     center -= GridPositionType(-1.0, 0.0, 0.37);
-
-  //     grid_points.back().x = static_cast<float>(center.X());
-  //     grid_points.back().y = static_cast<float>(center.Y());
-  //     grid_points.back().z = static_cast<float>(center.Z());
-  //   }
-  // );
-
+  // publish and latch grid data as a point cloud for visualization
+  // only need to do this once because the grid is never modified
   publishPointCloud(&m_grid_pub, grid_points);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
@@ -332,17 +306,52 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 Color MaterialDistributionPlugin::interpolateColor(
   MaterialBlend const &blend) const
 {
-  return std::accumulate(blend.getBlendMap().begin(), blend.getBlendMap().end(),
+  // compute an element-wise weighted average of all colors with the
+  // concentrations acting as the weights
+  // auto l1norm = std::accumulate(
+  //   blend.getBlendMap().cbegin(), blend.getBlendMap().cend(),
+  //   Color{0.0, 0.0, 0.0},
+  //   [this]
+  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
+  //     return Color {
+  //       value.r + p.second;
+  //     }
+  //   }
+  // );
+  // return std::accumulate(
+  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
+  //   Color{0.0, 0.0, 0.0},
+  //   [this]
+  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
+  //     const auto m = m_material_db->getMaterial(p.first);
+  //     return Color {
+  //       value.r + p.second * m.color.r,
+  //       value.g + p.second * m.color.g,
+  //       value.b + p.second * m.color.b
+  //     };
+  //   }
+  // );
+  // divide by
+
+  // additive color mixing version
+  // treat each material's concentration as an alpha value
+  float f0 = 0.0f; // the previous concentration
+  return std::accumulate(
+    blend.getBlendMap().begin(), blend.getBlendMap().end(),
     Color{0.0, 0.0, 0.0},
-    [this]
+    [this, &f0]
     (Color value, MaterialBlend::BlendType::value_type const &p) {
       const auto m = m_material_db->getMaterial(p.first);
-      // TODO: define + and * operators for color
-      return Color {
-        value.r + p.second * m.color.r,
-        value.g + p.second * m.color.g,
-        value.b + p.second * m.color.b
+      float f1 = p.second;
+      float fsum = 1 - (1 - f0) * (1 - f1);
+      auto c = Color {
+        (value.r * (1 - f1) + f1 * m.color.r) / fsum,
+        (value.g * (1 - f1) + f1 * m.color.g) / fsum,
+        (value.b * (1 - f1) + f1 * m.color.b) / fsum
       };
+      f0 = f1;
+      return c;
     }
   );
+
 }

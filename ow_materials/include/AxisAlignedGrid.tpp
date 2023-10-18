@@ -171,21 +171,6 @@ void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
   }
 };
 
-// template <typename T>
-// void AxisAlignedGrid<T>::modifyByColumn(
-//   std::function<void(T&, GridPositionType)> f)
-// {
-//   for (size_t x = 0; x != m_dimensions.X(); ++x) {
-//     for (size_t y = 0; y != m_dimensions.Y(); ++y) {
-//       f(getCellValue(idx), getCellCenter(idx));
-//       for (size_t z = 0; z != m_dimensions.Z(); ++z) {
-//         auto idx = GridIndexType(x, y, z);
-
-//       }
-//     }
-//   }
-// }
-
 template <typename T>
 void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
   GridPositionType v0, GridPositionType v1,
