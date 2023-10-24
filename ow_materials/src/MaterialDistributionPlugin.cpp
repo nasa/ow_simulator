@@ -126,10 +126,7 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   if (scene == nullptr) return;
   rendering::Heightmap *heightmap = scene->GetHeightmap();
   if (heightmap == nullptr) return;
-
   gzlog << PLUGIN_NAME << ": Gazebo heightmap acquired." << endl;
-
-  gzlog << "FINE" << endl;
 
   // a long string of Gazebo and Ogre API calls to get heightmap albedo texture
   Ogre::TexturePtr texture;
@@ -152,32 +149,18 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
     if (texture.isNull()) throw runtime_error("texture");
   } catch (runtime_error e) {
     gzerr << "Failed to acquire heightmap albedo texture: "
-          << e.what() << " could not be found." << endl;
+          << e.what() << " is missing." << endl;
+    // disable callback
     delete m_temp_render_connection.release();
     return;
   }
-
-  gzlog << "FINE" << endl;
-
   Ogre::Image albedo;
-
-  // the following causes a segmentation fault???
   texture->convertToImage(albedo);
-
-  // auto color = albedo.getColourAt(0, 0, 0);
-  // gzlog << "COLOR (0, 0, 0) = " << color.r << " " << color.g << " " << color.b << "\n";
-  // gzlog << "albedo.getDepth()  = " << albedo.getDepth() << endl;
-  // gzlog << "albedo.getHeight() = " << albedo.getHeight() << endl;
-  // gzlog << "albedo.getWidth()  = " << albedo.getWidth() << endl;
-  // albedo.save("/usr/local/home/tstucky/ow/beta_ws/test_albedo.png");
-
   gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
-
-  // the process takes about 6 seconds, so we spin it off in its own thread to
-  // not hold up loading the rest of Gazebo
+  // the process can take as long as 10 seconds, so we spin it off in its own
+  // thread to not hold up loading the rest of Gazebo
   std::thread t(&MaterialDistributionPlugin::populateGrid, this, albedo, terrain);
   t.detach();
-
   // the callback's sole purpose has been fulfilled, so we can disable it by
   // deleting its event handle
   delete m_temp_render_connection.release();
@@ -194,6 +177,14 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   constexpr size_t COLOR_COUNT = 3;
   std::vector<float> temp(COLOR_COUNT * basis.size());
   for (size_t i = 0; i != basis.size(); ++i) {
+    // float norm = std::sqrt(
+    //   basis[i].second.r * basis[i].second.r
+    //   + basis[i].second.g * basis[i].second.g
+    //   + basis[i].second.b * basis[i].second.b
+    // );
+    // temp[i]                   = basis[i].second.r / norm;
+    // temp[i + COLOR_COUNT]     = basis[i].second.g / norm;
+    // temp[i + 2 * COLOR_COUNT] = basis[i].second.b / norm;
     temp[i]                   = basis[i].second.r;
     temp[i + COLOR_COUNT]     = basis[i].second.g;
     temp[i + 2 * COLOR_COUNT] = basis[i].second.b;
@@ -246,17 +237,18 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
             make_pair(blend, interpolateColor(blend))
           )
         );
-        gzlog << "Reading pixel = (" << tex_coord.first << ", "
-                                     << tex_coord.second << ")" << endl;
-        gzlog << "Concentrations = (" << concentrations[0] / coef_sum << ", "
-                                      << concentrations[1] / coef_sum << ", "
-                                      << concentrations[2] / coef_sum << ")" << endl;
-        gzlog << "Texture Color = (" << tcolor.r << ", "
-                                     << tcolor.g << ", "
-                                     << tcolor.b << ")" << endl;
-        gzlog << "Material Color = (" << last_insert->second.second.r << ", "
-                                      << last_insert->second.second.g << ", "
-                                      << last_insert->second.second.b << ")" << endl;
+        gzlog << "L1 norm = " << coef_sum << endl;
+        // gzlog << "Reading pixel = (" << tex_coord.first << ", "
+        //                              << tex_coord.second << ")" << endl;
+        // gzlog << "Concentrations = (" << concentrations[0] / coef_sum << ", "
+        //                               << concentrations[1] / coef_sum << ", "
+        //                               << concentrations[2] / coef_sum << ")" << endl;
+        // gzlog << "Texture Color = (" << tcolor.r << ", "
+        //                              << tcolor.g << ", "
+        //                              << tcolor.b << ")" << endl;
+        // gzlog << "Material Color = (" << last_insert->second.second.r << ", "
+        //                               << last_insert->second.second.g << ", "
+        //                               << last_insert->second.second.b << ")" << endl;
       } else {
         blend = last_insert->second.first;
       }
@@ -318,6 +310,20 @@ Color MaterialDistributionPlugin::interpolateColor(
   //     }
   //   }
   // );
+  return std::accumulate(
+    blend.getBlendMap().begin(), blend.getBlendMap().end(),
+    Color{0.0, 0.0, 0.0},
+    [this]
+    (Color value, MaterialBlend::BlendType::value_type const &p) {
+      const auto m = m_material_db->getMaterial(p.first);
+      return Color {
+        value.r + p.second * m.color.r,
+        value.g + p.second * m.color.g,
+        value.b + p.second * m.color.b
+      };
+    }
+  );
+
   // return std::accumulate(
   //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
   //   Color{0.0, 0.0, 0.0},
@@ -325,33 +331,32 @@ Color MaterialDistributionPlugin::interpolateColor(
   //   (Color value, MaterialBlend::BlendType::value_type const &p) {
   //     const auto m = m_material_db->getMaterial(p.first);
   //     return Color {
-  //       value.r + p.second * m.color.r,
-  //       value.g + p.second * m.color.g,
-  //       value.b + p.second * m.color.b
+  //       value.r + p.second * (m.color.r - value.r),
+  //       value.g + p.second * (m.color.g - value.g),
+  //       value.b + p.second * (m.color.b - value.b)
   //     };
   //   }
   // );
-  // divide by
 
   // additive color mixing version
   // treat each material's concentration as an alpha value
-  float f0 = 0.0f; // the previous concentration
-  return std::accumulate(
-    blend.getBlendMap().begin(), blend.getBlendMap().end(),
-    Color{0.0, 0.0, 0.0},
-    [this, &f0]
-    (Color value, MaterialBlend::BlendType::value_type const &p) {
-      const auto m = m_material_db->getMaterial(p.first);
-      float f1 = p.second;
-      float fsum = 1 - (1 - f0) * (1 - f1);
-      auto c = Color {
-        (value.r * (1 - f1) + f1 * m.color.r) / fsum,
-        (value.g * (1 - f1) + f1 * m.color.g) / fsum,
-        (value.b * (1 - f1) + f1 * m.color.b) / fsum
-      };
-      f0 = f1;
-      return c;
-    }
-  );
+  // float f0 = 0.0f; // the previous concentration
+  // return std::accumulate(
+  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
+  //   Color{0.0, 0.0, 0.0},
+  //   [this, &f0]
+  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
+  //     const auto m = m_material_db->getMaterial(p.first);
+  //     float f1 = p.second;
+  //     float fsum = 1 - (1 - f0) * (1 - f1);
+  //     auto c = Color {
+  //       (value.r * (1 - f1) + f1 * m.color.r) / fsum,
+  //       (value.g * (1 - f1) + f1 * m.color.g) / fsum,
+  //       (value.b * (1 - f1) + f1 * m.color.b) / fsum
+  //     };
+  //     f0 = f1;
+  //     return c;
+  //   }
+  // );
 
 }
