@@ -24,6 +24,13 @@ struct Color
   };
 
   float r, g, b;
+
+  inline bool operator==(const Color &other) {
+    return (r == other.r && g == other.g && b == other.b);
+  };
+  inline bool operator!=(const Color &other) {
+    return !(*this == other);
+  };
 };
 
 using MaterialID = std::uint8_t;

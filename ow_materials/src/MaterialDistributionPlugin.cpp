@@ -30,6 +30,12 @@ const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 
+static float colorSpaceDistance(const Color &c1, const Color &c2)
+{
+  Color d{c2.r - c1.r, c2.g - c1.g, c2.b - c1.b};
+  return std::sqrt(d.r * d.r + d.g * d.g + d.b * d.b);
+}
+
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
@@ -171,22 +177,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
 
   // NOTE: restricted to only 3 for now
-  auto basis = m_material_db->getReferenceColors();
-  // pack color basis into 3xN matrix, where N is the number of possible colors
-  constexpr size_t COLOR_COUNT = 3;
-  std::vector<float> temp((COLOR_COUNT + 1) * basis.size());
-  for (size_t i = 0; i != basis.size(); ++i) {
-    temp[(COLOR_COUNT + 1) * i]     = basis[i].second.r / 255.0f;
-    temp[(COLOR_COUNT + 1) * i + 1] = basis[i].second.g / 255.0f;
-    temp[(COLOR_COUNT + 1) * i + 2] = basis[i].second.b / 255.0f;
-    temp[(COLOR_COUNT + 1) * i + 3] = 1.0f;
-  }
-  Eigen::Matrix4Xf A = Eigen::Matrix4Xf::Map(&temp[0],
-                                             COLOR_COUNT + 1,
-                                             basis.size());
-  Eigen::ColPivHouseholderQR<Eigen::Matrix4Xf> dec(A);
-  // Eigen::NNLS<Eigen::Matrix4Xf> dec(A); // not available in noetic Eigen version
-  // Eigen::JacobiSVD<Eigen::Matrix4Xf> dec(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  auto ref_colors = m_material_db->getReferenceColors();
   // this map enables fast z-column-wise modification of the grid
   // TODO: use unordered_map instead; a custom pair hash function is required
   using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
@@ -212,15 +203,26 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
       );
 
       auto it = albedo_blends.find(tex_coord);
-      if (it == albedo_blends.end()) {
+      if (it != albedo_blends.end()) {
+        // blend has already been done for this coordinate, reuse the result
+        blend = last_insert->second.first;
+      } else {
         Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
-        Eigen::Vector4f b(tcolor.r / 255.0f, tcolor.g / 255.0f, tcolor.b / 255.0f, 1.0f);
-        // NOTE: linear programming solution results in negative or concentrations over unity
-        Eigen::VectorXf concentrations = dec.solve(b);
-        // save resulting concentrations to the material blend for the cell
-        for (size_t i = 0; i != basis.size(); ++i) {
-          // normalize concentrations so they all add up to 1.0
-          blend.add(basis[i].first, concentrations[i]);
+        std::vector<float> inverse_dist;
+        for (auto m : ref_colors) {
+          if (m.second == tcolor) {
+            // perfect color match
+            blend.add(m.first, 1.0f);
+            break;
+          }
+          inverse_dist.push_back(1 / colorSpaceDistance(tcolor, m.second));
+        }
+        if (inverse_dist.size() == ref_colors.size()) {
+          // a perfect color match did not occur
+          float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
+          for (size_t i = 0; i != inverse_dist.size(); ++i) {
+            blend.add(ref_colors[i].first, inverse_dist[i] / sum);
+          }
         }
         last_insert = albedo_blends.emplace_hint(
           last_insert,
@@ -229,28 +231,20 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
             make_pair(blend, interpolateColor(blend))
           )
         );
-        gzlog << "L1 norm = " << coef_sum << endl;
-        gzlog << "b = \n" << b << endl;
-        gzlog << "A = \n" << A << endl;
+        // DEBUG CODE
         // gzlog << "Reading pixel = (" << tex_coord.first << ", "
         //                              << tex_coord.second << ")" << endl;
-        gzlog << "c = \n" << concentrations << endl;
-
-        // gzlog << "Concentrations = (" << concentrations[0] / coef_sum << ", "
-        //                               << concentrations[1] / coef_sum << ", "
-        //                               << concentrations[2] / coef_sum << ")" << endl;
-        // gzlog << "Texture Color = (" << tcolor.r << ", "
-        //                              << tcolor.g << ", "
-        //                              << tcolor.b << ")" << endl;
-        // gzlog << "Material Color = (" << last_insert->second.second.r << ", "
-        //                               << last_insert->second.second.g << ", "
-        //                               << last_insert->second.second.b << ")" << endl;
-      } else {
-        blend = last_insert->second.first;
+        // float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
+        // std::stringstream ss;
+        // ss << "Concentrations = ";
+        // for (auto d : inverse_dist)
+        //   ss << d / sum << "  ";
+        // gzlog << ss.str() << endl;
       }
 
       grid_points.emplace_back(
-        static_cast<uint8_t>(last_insert->second.second.r), // truncates double to int (<256)
+        // truncates double to int (<256)
+        static_cast<uint8_t>(last_insert->second.second.r),
         static_cast<uint8_t>(last_insert->second.second.g),
         static_cast<uint8_t>(last_insert->second.second.b)
       );
@@ -294,16 +288,17 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 Color MaterialDistributionPlugin::interpolateColor(
   MaterialBlend const &blend) const
 {
-  // compute an element-wise weighted average of all colors with the
-  // concentrations acting as the weights
-  // auto l1norm = std::accumulate(
-  //   blend.getBlendMap().cbegin(), blend.getBlendMap().cend(),
+  // return std::accumulate(
+  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
   //   Color{0.0, 0.0, 0.0},
   //   [this]
   //   (Color value, MaterialBlend::BlendType::value_type const &p) {
+  //     const auto m = m_material_db->getMaterial(p.first);
   //     return Color {
-  //       value.r + p.second;
-  //     }
+  //       value.r + p.second * m.visualize_color.r,
+  //       value.g + p.second * m.visualize_color.g,
+  //       value.b + p.second * m.visualize_color.b
+  //     };
   //   }
   // );
   return std::accumulate(
@@ -313,46 +308,10 @@ Color MaterialDistributionPlugin::interpolateColor(
     (Color value, MaterialBlend::BlendType::value_type const &p) {
       const auto m = m_material_db->getMaterial(p.first);
       return Color {
-        value.r + p.second * m.visualize_color.r,
-        value.g + p.second * m.visualize_color.g,
-        value.b + p.second * m.visualize_color.b
+        value.r + p.second * (m.visualize_color.r - value.r),
+        value.g + p.second * (m.visualize_color.g - value.g),
+        value.b + p.second * (m.visualize_color.b - value.b)
       };
     }
   );
-
-  // return std::accumulate(
-  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
-  //   Color{0.0, 0.0, 0.0},
-  //   [this]
-  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
-  //     const auto m = m_material_db->getMaterial(p.first);
-  //     return Color {
-  //       value.r + p.second * (m.color.r - value.r),
-  //       value.g + p.second * (m.color.g - value.g),
-  //       value.b + p.second * (m.color.b - value.b)
-  //     };
-  //   }
-  // );
-
-  // additive color mixing version
-  // treat each material's concentration as an alpha value
-  // float f0 = 0.0f; // the previous concentration
-  // return std::accumulate(
-  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
-  //   Color{0.0, 0.0, 0.0},
-  //   [this, &f0]
-  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
-  //     const auto m = m_material_db->getMaterial(p.first);
-  //     float f1 = p.second;
-  //     float fsum = 1 - (1 - f0) * (1 - f1);
-  //     auto c = Color {
-  //       (value.r * (1 - f1) + f1 * m.color.r) / fsum,
-  //       (value.g * (1 - f1) + f1 * m.color.g) / fsum,
-  //       (value.b * (1 - f1) + f1 * m.color.b) / fsum
-  //     };
-  //     f0 = f1;
-  //     return c;
-  //   }
-  // );
-
 }
