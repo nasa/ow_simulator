@@ -175,27 +175,32 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
                                               Ogre::Terrain *terrain)
 {
   gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
-
-  // NOTE: restricted to only 3 for now
-  auto ref_colors = m_material_db->getReferenceColors();
+  // time the following operation
+  auto start_time = ros::WallTime::now();
   // this map enables fast z-column-wise modification of the grid
   // TODO: use unordered_map instead; a custom pair hash function is required
   using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
                                      std::pair<MaterialBlend, Color>>;
   AlbedoMaterialMap albedo_blends;
   AlbedoMaterialMap::const_iterator last_insert = albedo_blends.begin();
+  auto ref_colors = m_material_db->getReferenceColors();
   // point cloud object that will be published after the loop
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
-
   m_grid->runForEach(
     [&]
     (MaterialBlend &blend, GridPositionType center) {
+
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
         Ogre::Terrain::Space::WORLD_SPACE,
         Ogre::Vector3(center.X(), center.Y(), center.Z()),
         Ogre::Terrain::Space::TERRAIN_SPACE
       );
+      if (terrain->getHeightAtTerrainPosition(tpos.x, tpos.y) < center.Z()) {
+        // skip grid as it is not within the terrain
+        return;
+      }
+
       auto tex_coord = make_pair(
         static_cast<size_t>(tpos.x * albedo.getWidth()),
         // y terrain coordinate must be flipped to work with image coordinates
@@ -257,12 +262,15 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
     }
   );
 
+  gzlog << PLUGIN_NAME << ": Grid generation took "
+        << (ros::WallTime::now() - start_time).toSec() << " seconds." << endl;
+
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
   publishPointCloud(&m_grid_pub, grid_points);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
-        << std::endl;
+        << endl;
 }
 
 void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
