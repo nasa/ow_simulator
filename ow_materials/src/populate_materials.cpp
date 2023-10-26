@@ -38,7 +38,7 @@ static T get_param(const string &param_name) {
 }
 
 // specialize for unsupported rosparam data types
-// DEPRECATED: Color r, g, and b are no long uint8_t, but will keep this
+// DEPRECATED: Color r, g, and b are no longer uint8_t, but will keep this
 //             specialization in case it's needed for another material parameter
 template <>
 uint8_t get_param<uint8_t>(const string &param_name) {
@@ -72,10 +72,15 @@ void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
         get_param<float>(join({ns, mat, "occurrence"})),
         get_param<float>(join({ns, mat, "science_value"})),
         get_param<double>(join({ns, mat, "density"})),
-        Color{ // Color struct
-          get_param<float>(join({ns, mat, "color", "r"})),
-          get_param<float>(join({ns, mat, "color", "g"})),
-          get_param<float>(join({ns, mat, "color", "b"}))
+        Color{
+          get_param<float>(join({ns, mat, "reference_color", "r"})),
+          get_param<float>(join({ns, mat, "reference_color", "g"})),
+          get_param<float>(join({ns, mat, "reference_color", "b"}))
+        },
+        Color{
+          get_param<float>(join({ns, mat, "visualize_color", "r"})),
+          get_param<float>(join({ns, mat, "visualize_color", "g"})),
+          get_param<float>(join({ns, mat, "visualize_color", "b"}))
         }
       }
     );

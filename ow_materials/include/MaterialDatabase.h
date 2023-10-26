@@ -39,7 +39,9 @@ public:
     return m_database.at(id);
   };
 
-  std::vector<std::pair<MaterialID, Color>> getColorBasis() const;
+  std::vector<std::pair<MaterialID, Color>> getReferenceColors() const;
+
+  std::vector<std::pair<MaterialID, Color>> getVisualizeColors() const;
 
 private:
 

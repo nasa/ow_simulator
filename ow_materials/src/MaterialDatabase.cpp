@@ -26,10 +26,18 @@ bool MaterialDatabase::addMaterial(const Material &mat)
   return true;
 }
 
-vector<pair<MaterialID, Color>> MaterialDatabase::getColorBasis() const
+vector<pair<MaterialID, Color>> MaterialDatabase::getReferenceColors() const
 {
-  vector<pair<MaterialID, Color>> basis;
+  vector<pair<MaterialID, Color>> vec;
   for (auto const &x : m_database)
-    basis.push_back(make_pair(x.first, x.second.color));
-  return basis;
+    vec.push_back(make_pair(x.first, x.second.reference_color));
+  return vec;
+}
+
+vector<pair<MaterialID, Color>> MaterialDatabase::getVisualizeColors() const
+{
+  vector<pair<MaterialID, Color>> vec;
+  for (auto const &x : m_database)
+    vec.push_back(make_pair(x.first, x.second.visualize_color));
+  return vec;
 }

@@ -14,8 +14,6 @@
 namespace ow_materials
 {
 
-using MaterialID = std::uint8_t;
-
 struct Color
 {
   Color(float red, float green, float blue) : r(red), g(green), b(blue) { };
@@ -26,13 +24,12 @@ struct Color
   };
 
   float r, g, b;
-
-  inline operator Eigen::Vector3f() { return Eigen::Vector3f(r, g, b); };
 };
+
+using MaterialID = std::uint8_t;
 
 struct Material
 {
-
   constexpr static MaterialID id_min = std::numeric_limits<MaterialID>::min();
   constexpr static MaterialID id_max = std::numeric_limits<MaterialID>::max();
 
@@ -42,7 +39,8 @@ struct Material
 
   double density;
 
-  Color color;
+  Color reference_color;
+  Color visualize_color;
 
   // TODO:
   // double cohesion;

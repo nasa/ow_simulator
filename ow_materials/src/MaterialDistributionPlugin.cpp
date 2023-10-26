@@ -171,7 +171,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
 
   // NOTE: restricted to only 3 for now
-  auto basis = m_material_db->getColorBasis();
+  auto basis = m_material_db->getReferenceColors();
   // pack color basis into 3xN matrix, where N is the number of possible colors
   constexpr size_t COLOR_COUNT = 3;
   std::vector<float> temp((COLOR_COUNT + 1) * basis.size());
@@ -185,7 +185,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
                                              COLOR_COUNT + 1,
                                              basis.size());
   Eigen::ColPivHouseholderQR<Eigen::Matrix4Xf> dec(A);
-  // Eigen::NNLS<Eigen::Matrix4Xf> dec(A);
+  // Eigen::NNLS<Eigen::Matrix4Xf> dec(A); // not available in noetic Eigen version
   // Eigen::JacobiSVD<Eigen::Matrix4Xf> dec(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
   // this map enables fast z-column-wise modification of the grid
   // TODO: use unordered_map instead; a custom pair hash function is required
@@ -215,13 +215,11 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
       if (it == albedo_blends.end()) {
         Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
         Eigen::Vector4f b(tcolor.r / 255.0f, tcolor.g / 255.0f, tcolor.b / 255.0f, 1.0f);
-        // solve
+        // NOTE: linear programming solution results in negative or concentrations over unity
         Eigen::VectorXf concentrations = dec.solve(b);
         // save resulting concentrations to the material blend for the cell
-        const auto coef_sum = concentrations.lpNorm<1>();
         for (size_t i = 0; i != basis.size(); ++i) {
           // normalize concentrations so they all add up to 1.0
-          // blend.add(basis[i].first, concentrations[i] / coef_sum);
           blend.add(basis[i].first, concentrations[i]);
         }
         last_insert = albedo_blends.emplace_hint(
@@ -315,9 +313,9 @@ Color MaterialDistributionPlugin::interpolateColor(
     (Color value, MaterialBlend::BlendType::value_type const &p) {
       const auto m = m_material_db->getMaterial(p.first);
       return Color {
-        value.r + p.second * m.color.r,
-        value.g + p.second * m.color.g,
-        value.b + p.second * m.color.b
+        value.r + p.second * m.visualize_color.r,
+        value.g + p.second * m.visualize_color.g,
+        value.b + p.second * m.visualize_color.b
       };
     }
   );
