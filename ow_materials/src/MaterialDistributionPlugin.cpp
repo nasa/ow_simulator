@@ -13,7 +13,6 @@
 #include <populate_materials.h>
 
 #include <Eigen/Core>
-#include <Eigen/LU>
 
 using std::string, std::make_unique, std::endl, std::uint8_t,
       std::runtime_error, std::make_pair;
@@ -175,24 +174,19 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   auto basis = m_material_db->getColorBasis();
   // pack color basis into 3xN matrix, where N is the number of possible colors
   constexpr size_t COLOR_COUNT = 3;
-  std::vector<float> temp(COLOR_COUNT * basis.size());
+  std::vector<float> temp((COLOR_COUNT + 1) * basis.size());
   for (size_t i = 0; i != basis.size(); ++i) {
-    // float norm = std::sqrt(
-    //   basis[i].second.r * basis[i].second.r
-    //   + basis[i].second.g * basis[i].second.g
-    //   + basis[i].second.b * basis[i].second.b
-    // );
-    // temp[i]                   = basis[i].second.r / norm;
-    // temp[i + COLOR_COUNT]     = basis[i].second.g / norm;
-    // temp[i + 2 * COLOR_COUNT] = basis[i].second.b / norm;
-    temp[i]                   = basis[i].second.r;
-    temp[i + COLOR_COUNT]     = basis[i].second.g;
-    temp[i + 2 * COLOR_COUNT] = basis[i].second.b;
+    temp[(COLOR_COUNT + 1) * i]     = basis[i].second.r / 255.0f;
+    temp[(COLOR_COUNT + 1) * i + 1] = basis[i].second.g / 255.0f;
+    temp[(COLOR_COUNT + 1) * i + 2] = basis[i].second.b / 255.0f;
+    temp[(COLOR_COUNT + 1) * i + 3] = 1.0f;
   }
-  Eigen::Matrix3Xf A = Eigen::Matrix3Xf::Map(&temp[0],
-                                             COLOR_COUNT,
+  Eigen::Matrix4Xf A = Eigen::Matrix4Xf::Map(&temp[0],
+                                             COLOR_COUNT + 1,
                                              basis.size());
-  Eigen::ColPivHouseholderQR<Eigen::Matrix3Xf> dec(A);
+  Eigen::ColPivHouseholderQR<Eigen::Matrix4Xf> dec(A);
+  // Eigen::NNLS<Eigen::Matrix4Xf> dec(A);
+  // Eigen::JacobiSVD<Eigen::Matrix4Xf> dec(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
   // this map enables fast z-column-wise modification of the grid
   // TODO: use unordered_map instead; a custom pair hash function is required
   using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
@@ -220,15 +214,15 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
       auto it = albedo_blends.find(tex_coord);
       if (it == albedo_blends.end()) {
         Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
-        Eigen::Vector3f b = static_cast<Eigen::Vector3f>(tcolor);
+        Eigen::Vector4f b(tcolor.r / 255.0f, tcolor.g / 255.0f, tcolor.b / 255.0f, 1.0f);
         // solve
         Eigen::VectorXf concentrations = dec.solve(b);
         // save resulting concentrations to the material blend for the cell
         const auto coef_sum = concentrations.lpNorm<1>();
         for (size_t i = 0; i != basis.size(); ++i) {
           // normalize concentrations so they all add up to 1.0
-          blend.add(basis[i].first, concentrations[i] / coef_sum);
-          // blend.add(basis[i].first, concentrations[i]);
+          // blend.add(basis[i].first, concentrations[i] / coef_sum);
+          blend.add(basis[i].first, concentrations[i]);
         }
         last_insert = albedo_blends.emplace_hint(
           last_insert,
@@ -238,8 +232,12 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
           )
         );
         gzlog << "L1 norm = " << coef_sum << endl;
+        gzlog << "b = \n" << b << endl;
+        gzlog << "A = \n" << A << endl;
         // gzlog << "Reading pixel = (" << tex_coord.first << ", "
         //                              << tex_coord.second << ")" << endl;
+        gzlog << "c = \n" << concentrations << endl;
+
         // gzlog << "Concentrations = (" << concentrations[0] / coef_sum << ", "
         //                               << concentrations[1] / coef_sum << ", "
         //                               << concentrations[2] / coef_sum << ")" << endl;
