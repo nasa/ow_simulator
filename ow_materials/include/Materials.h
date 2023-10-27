@@ -8,8 +8,12 @@
 #include <limits>
 #include <unordered_map>
 
+// pragmas suppress an "ISO C++17 does not allow 'register' storage class
+// specifier" warning that occurs multiple times when this header is included
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include <OgreColourValue.h>
-#include <Eigen/Core>
+#pragma GCC diagnostic pop
 
 namespace ow_materials
 {
