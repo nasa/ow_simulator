@@ -54,17 +54,17 @@ PLEXIL must be built from its source code *prior* to building the
 repeated only when there is an essential update to the PLEXIL software
 needed by OceanWATERS, which is infrequent.
 
-1. Check out the `releases/plexil-4.6` branch of the source code:
+1. Check out the `releases/plexil-6` branch of the source code:
 
 ```
-git clone -b releases/plexil-4.6 https://github.com/plexil-group/plexil.git
+git clone -b releases/plexil-6 https://github.com/plexil-group/plexil.git
 ```
 
-Note that at the time of this writing, the head of the branch above
-was used, which has a git commit hash beginning with `c1b8c10`.  This
-commit has also been tagged `OceanWATERS-v11.0`.  Newer versions of
-this branch should continue to work with OceanWATERS, but you can
-revert to this version if you run into problem.
+Note that at the time of this writing, we used the head of the branch
+listed above; it had a git commit hash beginning with `ad913472`.
+This commit has also been tagged `OceanWATERS-v11.1`.  Newer versions
+of this branch should continue to work with OceanWATERS, but you can
+revert to this version if you run into problems.
 
 2. Install any of the following build prerequisites needed. If you're
    not sure which, if any, are missing on your system, try the build
@@ -199,14 +199,14 @@ installed under `/opt/ros/noetic`.
     you may skip this Gazebo upgrade.
 
   * Add OSRF gazebo repositories to your linux enviroment:
-  
+
 ```
 sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 ```
 
   * Update and upgrade the packages (confirm the upgrade when you get prompted):
-  
+
 ```
 sudo apt-get update
 sudo apt-get upgrade
