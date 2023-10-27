@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <functional>
+#include <unordered_map>
 
 #include <point_cloud_util.h>
 #include <gazebo/rendering/rendering.hh>
@@ -12,10 +13,10 @@
 #include <MaterialDistributionPlugin.h>
 #include <populate_materials.h>
 
-#include <Eigen/Core>
+#include <boost/functional/hash.hpp>
 
-using std::string, std::make_unique, std::endl, std::uint8_t,
-      std::runtime_error, std::make_pair;
+using std::string, std::make_unique, std::endl, std::uint8_t, std::size_t,
+      std::runtime_error, std::make_pair, std::unordered_map;
 
 using namespace ow_materials;
 using namespace gazebo;
@@ -155,7 +156,7 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   } catch (runtime_error e) {
     gzerr << "Failed to acquire heightmap albedo texture: "
           << e.what() << " is missing." << endl;
-    // disable callback
+    // disable callback by deleting its handle
     delete m_temp_render_connection.release();
     return;
   }
@@ -177,46 +178,64 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
   // time the following operation
   auto start_time = ros::WallTime::now();
-  // this map enables fast z-column-wise modification of the grid
-  // TODO: use unordered_map instead; a custom pair hash function is required
-  using AlbedoMaterialMap = std::map<std::pair<size_t, size_t>,
-                                     std::pair<MaterialBlend, Color>>;
+
+  // defines image coordinates that can be an unordered_map key
+  struct TextureCoords {
+    size_t x, y;
+    inline bool operator==(const TextureCoords &other) const {
+      return x == other.x && y == other.y;
+    };
+    struct hasher {
+      inline size_t operator()(const TextureCoords &p) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, p.x);
+        boost::hash_combine(seed, p.y);
+        return seed;
+      };
+    };
+  };
+  // simple struct for more readable code
+  struct BlendAndColor { MaterialBlend blend; Color color; };
+  using AlbedoMaterialMap = unordered_map<TextureCoords, BlendAndColor,
+                                          TextureCoords::hasher>;
+  // this map enables z-column-wise modification of the grid without having to
+  // compute the material blend for an image coordinate more than once
   AlbedoMaterialMap albedo_blends;
-  AlbedoMaterialMap::const_iterator last_insert = albedo_blends.begin();
+  AlbedoMaterialMap::const_iterator last_insert = albedo_blends.cbegin();
   auto ref_colors = m_material_db->getReferenceColors();
   // point cloud object that will be published after the loop
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   m_grid->runForEach(
     [&]
     (MaterialBlend &blend, GridPositionType center) {
-
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
         Ogre::Terrain::Space::WORLD_SPACE,
         Ogre::Vector3(center.X(), center.Y(), center.Z()),
         Ogre::Terrain::Space::TERRAIN_SPACE
       );
-      if (terrain->getHeightAtTerrainPosition(tpos.x, tpos.y) < center.Z()) {
-        // skip grid as it is not within the terrain
+
+      // skip grid as it is not within the terrain
+      if (terrain->getHeightAtTerrainPosition(tpos.x, tpos.y) <= center.Z()) {
         return;
       }
 
-      auto tex_coord = make_pair(
+      TextureCoords tex_coord{
         static_cast<size_t>(tpos.x * albedo.getWidth()),
         // y terrain coordinate must be flipped to work with image coordinates
         static_cast<size_t>((1.0f - tpos.y) * albedo.getHeight())
-      );
+      };
 
       auto it = albedo_blends.find(tex_coord);
       if (it != albedo_blends.end()) {
         // blend has already been done for this coordinate, reuse the result
-        blend = last_insert->second.first;
+        blend = last_insert->second.blend;
       } else {
-        Color tcolor(albedo.getColourAt(tex_coord.first, tex_coord.second, 0u));
+        Color tcolor(albedo.getColourAt(tex_coord.x, tex_coord.y, 0u));
         std::vector<float> inverse_dist;
         for (auto m : ref_colors) {
           if (m.second == tcolor) {
-            // perfect color match
+            // perfect color match, size of vector is used to infer this later
             blend.add(m.first, 1.0f);
             break;
           }
@@ -229,12 +248,8 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
             blend.add(ref_colors[i].first, inverse_dist[i] / sum);
           }
         }
-        last_insert = albedo_blends.emplace_hint(
-          last_insert,
-          make_pair(
-            tex_coord,
-            make_pair(blend, interpolateColor(blend))
-          )
+        last_insert = albedo_blends.emplace_hint(last_insert,
+          make_pair(tex_coord, BlendAndColor{blend, interpolateColor(blend)})
         );
         // DEBUG CODE
         // gzlog << "Reading pixel = (" << tex_coord.first << ", "
@@ -249,9 +264,9 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
       grid_points.emplace_back(
         // truncates double to int (<256)
-        static_cast<uint8_t>(last_insert->second.second.r),
-        static_cast<uint8_t>(last_insert->second.second.g),
-        static_cast<uint8_t>(last_insert->second.second.b)
+        static_cast<uint8_t>(last_insert->second.color.r),
+        static_cast<uint8_t>(last_insert->second.color.g),
+        static_cast<uint8_t>(last_insert->second.color.b)
       );
       // WORKAROUND for OW-1194, TF has an incorrect transform for
       //            base_link (specific for atacama_y1a)

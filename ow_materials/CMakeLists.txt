@@ -37,6 +37,7 @@ endif()
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
@@ -45,6 +46,7 @@ include_directories(
 )
 
 link_directories(
+  ${Boost_LIBRARY_DIR}
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
