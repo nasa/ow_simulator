@@ -165,7 +165,10 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
   // the process can take as long as 10 seconds, so we spin it off in its own
   // thread to not hold up loading the rest of Gazebo
-  std::thread t(&MaterialDistributionPlugin::populateGrid, this, albedo, terrain);
+  std::thread t(
+    &MaterialDistributionPlugin::populateGrid, this,
+    std::move(albedo), terrain
+  );
   t.detach();
   // the callback's sole purpose has been fulfilled, so we can disable it by
   // deleting its event handle
@@ -231,15 +234,15 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         // blend has already been done for this coordinate, reuse the result
         blend = last_insert->second.blend;
       } else {
-        Color tcolor(albedo.getColourAt(tex_coord.x, tex_coord.y, 0u));
+        Color tex_color(albedo.getColourAt(tex_coord.x, tex_coord.y, 0u));
         std::vector<float> inverse_dist;
         for (auto m : ref_colors) {
-          if (m.second == tcolor) {
+          if (m.second == tex_color) {
             // perfect color match, size of vector is used to infer this later
             blend.add(m.first, 1.0f);
             break;
           }
-          inverse_dist.push_back(1 / colorSpaceDistance(tcolor, m.second));
+          inverse_dist.push_back(1 / colorSpaceDistance(tex_color, m.second));
         }
         if (inverse_dist.size() == ref_colors.size()) {
           // a perfect color match did not occur
@@ -251,7 +254,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         last_insert = albedo_blends.emplace_hint(last_insert,
           make_pair(tex_coord, BlendAndColor{blend, interpolateColor(blend)})
         );
-        // DEBUG CODE
+        // DEBUG CODE: will be removed before OW-812 is merged
         // gzlog << "Reading pixel = (" << tex_coord.first << ", "
         //                              << tex_coord.second << ")" << endl;
         // float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
@@ -311,19 +314,6 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 Color MaterialDistributionPlugin::interpolateColor(
   MaterialBlend const &blend) const
 {
-  // return std::accumulate(
-  //   blend.getBlendMap().begin(), blend.getBlendMap().end(),
-  //   Color{0.0, 0.0, 0.0},
-  //   [this]
-  //   (Color value, MaterialBlend::BlendType::value_type const &p) {
-  //     const auto m = m_material_db->getMaterial(p.first);
-  //     return Color {
-  //       value.r + p.second * m.visualize_color.r,
-  //       value.g + p.second * m.visualize_color.g,
-  //       value.b + p.second * m.visualize_color.b
-  //     };
-  //   }
-  // );
   return std::accumulate(
     blend.getBlendMap().begin(), blend.getBlendMap().end(),
     Color{0.0, 0.0, 0.0},
