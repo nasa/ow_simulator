@@ -20,7 +20,10 @@ find_package(OpenCV REQUIRED
   core
 )
 
-find_package(PCL 1.3 REQUIRED COMPONENTS
+# QUIET suppresses warnings from PCL about disabling pcap, png, and libusb-1.0
+# There is a GitHub Issue about this:
+#   https://github.com/PointCloudLibrary/pcl/issues/2651
+find_package(PCL 1.3 REQUIRED QUIET COMPONENTS
   common
   io
   conversions
