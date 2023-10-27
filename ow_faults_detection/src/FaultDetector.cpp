@@ -106,7 +106,7 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
         default:
           break;
       }
-    } else if ( actionlib_msgs::GoalStatus::SUCCEEDED == goal_status ){
+    } else {
       switch (goal_index) {
         case msg.ARM_GOAL:
           m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;

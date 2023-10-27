@@ -2,23 +2,26 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-class ActionError(RuntimeError):
+class ArmError(RuntimeError):
   pass
 
-class ArmPlanningError(ActionError):
+class ArmPlanningError(ArmError):
   """Raise when planning of an arm trajectory has encountered a problem"""
   pass
 
-class ArmExecutionError(ActionError):
+class ArmExecutionError(ArmError):
   """Raise when execution of an arm trajectory has encountered a problem and
   must be ceased
   """
   pass
 
-class AntennaPlanningError(ActionError):
+class AntennaError(RuntimeError):
+  pass
+
+class AntennaPlanningError(AntennaError):
   """Raise when planning of an antenna trajectory has encountered a problem"""
   pass
 
-class AntennaExecutionError(ActionError):
+class AntennaExecutionError(AntennaError):
   """Raise when execution of an antenna trajectory has encountered a problem"""
   pass
