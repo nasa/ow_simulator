@@ -234,7 +234,10 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         // blend has already been done for this coordinate, reuse the result
         blend = last_insert->second.blend;
       } else {
-        Color tex_color(albedo.getColourAt(tex_coord.x, tex_coord.y, 0u));
+        auto ogre_color = albedo.getColourAt(tex_coord.x, tex_coord.y, 0u);
+        Color tex_color(ogre_color.r * 255.0f,
+                        ogre_color.g * 255.0f,
+                        ogre_color.b * 255.0f);
         std::vector<float> inverse_dist;
         for (auto m : ref_colors) {
           if (m.second == tex_color) {
