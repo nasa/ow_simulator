@@ -6,6 +6,8 @@
 #define MATERIAL_DISTRIBUTION_PLUGIN_H
 
 #include <memory>
+#include <vector>
+#include <utility>
 
 #include <ros/ros.h>
 
@@ -60,6 +62,8 @@ private:
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
   std::unique_ptr<MaterialIntegrator> m_collision_integrator;
+
+  std::vector<std::pair<MaterialID, Color>> m_reference_colors;
 
 };
 

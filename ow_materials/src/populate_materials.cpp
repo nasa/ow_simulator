@@ -73,11 +73,6 @@ void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
         get_param<float>(join({ns, mat, "science_value"})),
         get_param<double>(join({ns, mat, "density"})),
         Color{
-          get_param<float>(join({ns, mat, "reference_color", "r"})),
-          get_param<float>(join({ns, mat, "reference_color", "g"})),
-          get_param<float>(join({ns, mat, "reference_color", "b"}))
-        },
-        Color{
           get_param<float>(join({ns, mat, "visualize_color", "r"})),
           get_param<float>(join({ns, mat, "visualize_color", "g"})),
           get_param<float>(join({ns, mat, "visualize_color", "b"}))

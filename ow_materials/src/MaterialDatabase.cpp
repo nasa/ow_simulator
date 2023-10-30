@@ -17,27 +17,17 @@ bool MaterialDatabase::addMaterial(const Material &mat)
     gzerr << "Database already contains maximum number of materials" << endl;
     return false;
   }
+  if (!m_names.insert({mat.name, id}).second) {
+    gzerr << "Attempted to add a material to the database that shares a name "
+          << "with a material that is already present. All materials must have "
+          << "a unique name." << endl;
+  }
   if (!m_database.insert({id, mat}).second) {
     gzerr << "Attempted to add a pre-existing material ID to the database. "
-             "This should never happen." << endl;
+             "This should never happen!!" << endl;
     return false;
   }
   ++id;
   return true;
 }
 
-vector<pair<MaterialID, Color>> MaterialDatabase::getReferenceColors() const
-{
-  vector<pair<MaterialID, Color>> vec;
-  for (auto const &x : m_database)
-    vec.push_back(make_pair(x.first, x.second.reference_color));
-  return vec;
-}
-
-vector<pair<MaterialID, Color>> MaterialDatabase::getVisualizeColors() const
-{
-  vector<pair<MaterialID, Color>> vec;
-  for (auto const &x : m_database)
-    vec.push_back(make_pair(x.first, x.second.visualize_color));
-  return vec;
-}

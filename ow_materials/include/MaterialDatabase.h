@@ -39,13 +39,16 @@ public:
     return m_database.at(id);
   };
 
-  std::vector<std::pair<MaterialID, Color>> getReferenceColors() const;
-
-  std::vector<std::pair<MaterialID, Color>> getVisualizeColors() const;
+  // may throw std::out_of_range
+  inline MaterialID getMaterialIdFromName(const std::string &name) const {
+    return m_names.at(name);
+  };
 
 private:
 
   std::unordered_map<MaterialID, Material> m_database;
+
+  std::unordered_map<std::string, MaterialID> m_names;
 
 };
 

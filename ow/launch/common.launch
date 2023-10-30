@@ -97,7 +97,7 @@
 
   <!-- load materials file into ROS paramters -->
   <rosparam command="load" ns="ow_materials"
-    file="$(find ow_materials)/materials/default.yaml"/>
+    file="$(find ow_materials)/config/materials.yaml"/>
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->

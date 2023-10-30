@@ -38,7 +38,6 @@ struct Material
 
   double density;
 
-  Color reference_color;
   Color visualize_color;
 
   // TODO:

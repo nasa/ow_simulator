@@ -2,19 +2,16 @@ ICE:
   occurrence: 0.3
   science_value: 0.1
   density: 997 # kg/m^3
-  reference_color: {r: 255, g: 255, b: 255} # white, the majority of atacama_y1a
   visualize_color: {r: 0, g: 0, b: 255}
 
 SALT:
   occurrence: 0.6
   science_value: 0.4
   density: 0 # TODO
-  reference_color: {r: 185, g: 170, b: 189} # purple-gray that's rare in image
   visualize_color: {r: 0, g: 255, b: 0}
 
 HYDRATES:
   occurrence: 0.1
   science_value: 0.8
   density: 0 # TODO
-  reference_color: {r: 100, g: 95, b: 90} # orange peaks in atacama_y1a image
   visualize_color: {r: 255, g: 0, b: 0}

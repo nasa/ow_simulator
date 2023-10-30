@@ -7,13 +7,13 @@
 #include <functional>
 #include <unordered_map>
 
+#include <boost/functional/hash.hpp>
+
 #include <point_cloud_util.h>
 #include <gazebo/rendering/rendering.hh>
 
 #include <MaterialDistributionPlugin.h>
 #include <populate_materials.h>
-
-#include <boost/functional/hash.hpp>
 
 using std::string, std::make_unique, std::endl, std::uint8_t, std::size_t,
       std::runtime_error, std::make_pair, std::unordered_map;
@@ -30,6 +30,11 @@ const string NODE_NAME = "/ow_materials/material_distribution_plugin";
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
+
+const string PARAMETER_MATERIALS                  = "materials";
+const string PARAMETER_MATERIALS_FILE             = "file";
+const string PARAMETER_MATERIALS_CHILD            = "reference_color";
+const string PARAMETER_MATERIALS_CHILD_ATTRIBUTE  = "material";
 
 static float colorSpaceDistance(const Color &c1, const Color &c2)
 {
@@ -87,6 +92,46 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
         << m_material_db->size() << " materials.\n";
+
+  // get reference colors for mapping terrain texture to material compositions
+  if (!sdf->HasElement(PARAMETER_MATERIALS)) {
+    gzerr << PARAMETER_MATERIALS << " is required." << endl;
+    return;
+  }
+  auto sdf_materials = sdf->GetElement(PARAMETER_MATERIALS);
+  auto child = sdf_materials->GetFirstElement();
+  while (child) {
+    if (!child->HasAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)) {
+      gzerr << PARAMETER_MATERIALS_CHILD_ATTRIBUTE << " attribute is required "
+            << "for each reference_color specified" << endl;
+      return;
+    }
+    MaterialID id;
+    try {
+      id = m_material_db->getMaterialIdFromName(
+        child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
+      );
+    } catch (const std::out_of_range &e) {
+      gzerr << e.what() << endl;
+      return;
+    }
+    // interpret value as a vector since it's the same shape as a color
+    ignition::math::Color c;
+    child->GetValue()->Get<ignition::math::Color>(c);
+    m_reference_colors.emplace_back(id,
+      Color{
+        static_cast<float>(c.R() * 255.0),
+        static_cast<float>(c.G() * 255.0),
+        static_cast<float>(c.B() * 255.0)
+      }
+    );
+
+    // acquire the next child
+    // child = child->GetNextElement();
+    child = child->GetNextElement(PARAMETER_MATERIALS_CHILD);
+  }
+
+  gzlog << "reference size = " << m_reference_colors.size() << endl;
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
     m_node_handle.get(), m_grid.get(),
@@ -205,7 +250,6 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   // compute the material blend for an image coordinate more than once
   AlbedoMaterialMap albedo_blends;
   AlbedoMaterialMap::const_iterator last_insert = albedo_blends.cbegin();
-  auto ref_colors = m_material_db->getReferenceColors();
   // point cloud object that will be published after the loop
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   m_grid->runForEach(
@@ -239,19 +283,19 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
                         ogre_color.g * 255.0f,
                         ogre_color.b * 255.0f);
         std::vector<float> inverse_dist;
-        for (auto m : ref_colors) {
-          if (m.second == tex_color) {
+        for (auto rc : m_reference_colors) {
+          if (rc.second == tex_color) {
             // perfect color match, size of vector is used to infer this later
-            blend.add(m.first, 1.0f);
+            blend.add(rc.first, 1.0f);
             break;
           }
-          inverse_dist.push_back(1 / colorSpaceDistance(tex_color, m.second));
+          inverse_dist.push_back(1 / colorSpaceDistance(tex_color, rc.second));
         }
-        if (inverse_dist.size() == ref_colors.size()) {
+        if (inverse_dist.size() == m_reference_colors.size()) {
           // a perfect color match did not occur
           float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
           for (size_t i = 0; i != inverse_dist.size(); ++i) {
-            blend.add(ref_colors[i].first, inverse_dist[i] / sum);
+            blend.add(m_reference_colors[i].first, inverse_dist[i] / sum);
           }
         }
         last_insert = albedo_blends.emplace_hint(last_insert,
