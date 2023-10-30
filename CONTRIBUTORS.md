@@ -1,40 +1,39 @@
 OceanWATERS Team
 ----------------
 
-K. Michael Dalal (project lead)
-Chetan Kulkarni
-Thomas Stucky
-Terence Welsh
+K. Michael Dalal (project lead) <br>
+Chetan Kulkarni <br>
+Thomas Stucky <br>
+Terence Welsh <br>
 
 Alumni and Interns
 ------------------
 
-Milan Addepalli
-Mark Allan
-John Bresina
-Liam Carr
-Damiana Catanoso
-Anjan Chakrabarty
-Laurence Edwards
-Jeremy Frank
-Chuck Fry
-Jason Fugate
-Leslie Keely
-Anthony Koutroulis
-Albert Kutsyy
-Lanssie Ma
-Ussama Naal
-Keegan Nave
-Molly O'Connor
-Arno Rogg
-Emily Schiede
-Mark Shirley
-Antoine Tardy
-Pranay Thangeda
-Orkan Umurhan
-Hans Utz
-Uland Wong
-Devin Wright
-Yinan Xu
-Honghao Zhen
-
+Milan Addepalli <br>
+Mark Allan <br>
+John Bresina <br>
+Liam Carr <br>
+Damiana Catanoso <br>
+Anjan Chakrabarty <br>
+Laurence Edwards <br>
+Jeremy Frank <br>
+Chuck Fry <br>
+Jason Fugate <br>
+Leslie Keely <br>
+Anthony Koutroulis <br>
+Albert Kutsyy <br>
+Lanssie Ma <br>
+Ussama Naal <br>
+Keegan Nave <br>
+Molly O'Connor <br>
+Arno Rogg <br>
+Emily Schiede <br>
+Mark Shirley <br>
+Antoine Tardy <br>
+Pranay Thangeda <br>
+Orkan Umurhan <br>
+Hans Utz <br>
+Uland Wong <br>
+Devin Wright <br>
+Yinan Xu <br>
+Honghao Zhen <br>
