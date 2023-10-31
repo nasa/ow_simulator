@@ -70,6 +70,10 @@ public:
     return m_blend;
   }
 
+  inline bool isEmpty() const {
+    return m_blend.empty();
+  }
+
   bool isNormalized() const;
 
   void normalize();

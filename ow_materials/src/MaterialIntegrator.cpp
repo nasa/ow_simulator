@@ -96,6 +96,7 @@ void MaterialIntegrator::onModification(
         m_grid->runForEachInAxisAlignedBox(box_min, box_max,
           [&bulk_blend, &points]
           (MaterialBlend const &b, GridPositionType center) {
+            if (b.isEmpty()) return;
             bulk_blend.merge(b);
             // WORKAROUND for OW-1194, TF has an incorrect transform for
             //            base_link (specific for atacama_y1a)

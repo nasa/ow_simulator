@@ -23,10 +23,9 @@ void MaterialBlend::normalize()
 
 void MaterialBlend::merge(MaterialBlend const &other)
 {
-  // Merge this blend with another blend by assigning the summation of their
-  // concentrations per material. A material missing from the current
-  // concentration will be added and assigned the same value from the external
-  // blend.
+  // Merge this blend with another blend by summing their concentrations per
+  // material. A material missing from the current concentration will be added
+  // and assigned the same value from the external blend.
   m_blend = std::accumulate(other.m_blend.begin(), other.m_blend.end(), m_blend,
     [](BlendType &m, BlendType::value_type const &p) {
       return (m[p.first] += p.second, m);
