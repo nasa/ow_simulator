@@ -94,8 +94,8 @@ void MaterialIntegrator::onModification(
         // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
         // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
         m_grid->runForEachInAxisAlignedBox(box_min, box_max,
-          [&bulk_blend, &points, this]
-          (MaterialBlend b, GridPositionType center) {
+          [&bulk_blend, &points]
+          (MaterialBlend const &b, GridPositionType center) {
             bulk_blend.merge(b);
             // WORKAROUND for OW-1194, TF has an incorrect transform for
             //            base_link (specific for atacama_y1a)

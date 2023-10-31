@@ -11,16 +11,24 @@
 namespace ow_materials
 {
 
-using MaterialID = std::uint8_t;
-
 struct Color
 {
-  double r, g, b;
+  Color(float red, float green, float blue) : r(red), g(green), b(blue) { };
+
+  float r, g, b;
+
+  inline bool operator==(const Color &other) {
+    return (r == other.r && g == other.g && b == other.b);
+  };
+  inline bool operator!=(const Color &other) {
+    return !(*this == other);
+  };
 };
+
+using MaterialID = std::uint8_t;
 
 struct Material
 {
-
   constexpr static MaterialID id_min = std::numeric_limits<MaterialID>::min();
   constexpr static MaterialID id_max = std::numeric_limits<MaterialID>::max();
 
@@ -30,7 +38,7 @@ struct Material
 
   double density;
 
-  Color color;
+  Color visualize_color;
 
   // TODO:
   // double cohesion;
@@ -67,6 +75,8 @@ public:
   void normalize();
 
   void merge(MaterialBlend const &other);
+
+  void add(MaterialID id, float concentration);
 
 private:
   void divideElementWise(float denominator);

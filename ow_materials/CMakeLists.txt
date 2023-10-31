@@ -20,7 +20,10 @@ find_package(OpenCV REQUIRED
   core
 )
 
-find_package(PCL 1.3 REQUIRED COMPONENTS
+# QUIET suppresses warnings from PCL about disabling pcap, png, and libusb-1.0
+# There is a GitHub Issue about this:
+#   https://github.com/PointCloudLibrary/pcl/issues/2651
+find_package(PCL 1.3 REQUIRED QUIET COMPONENTS
   common
   io
   conversions
@@ -29,23 +32,29 @@ find_package(PCL 1.3 REQUIRED COMPONENTS
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(GAZEBO gazebo)
+  pkg_check_modules(OGRE OGRE)
+  pkg_check_modules(OGRE-Terrain OGRE-Terrain)
 endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${OGRE-Terrain_INCLUDE_DIRS}
 )
 
 link_directories(
+  ${Boost_LIBRARY_DIR}
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
   ${PCL_LIBRARY_DIRS}
+  ${OGRE-Terrain_LIBRARY_DIRS}
 )
 
 add_definitions(${PCL_DEFINITIONS})

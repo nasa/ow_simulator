@@ -86,24 +86,25 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
 
   // fill cells with initial value
   size_t total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
+  m_cells.resize(total_cells);
+
   // DEBUG: This is a fast and easy method to populate the grid with non-uniform
   //        material data. It depends on there being at least 3 unique materials
   //        in the database, and it ignores the initial_value. This is just a
   //        workaround until a proper grid generation method is implemented.
-  m_cells.resize(total_cells);
-  for (size_t i = 0; i != m_dimensions.X(); ++i) {
-    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-        getCellValue(GridIndexType(i, j, k)).getBlendMap() = {
-          {
-            static_cast<std::uint8_t>(
-              (i > m_dimensions.X() / 2) + (j > m_dimensions.Y() / 2)),
-            1.0f
-          }
-        };
-      }
-    }
-  }
+  // for (size_t i = 0; i != m_dimensions.X(); ++i) {
+  //   for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+  //     for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+  //       getCellValue(GridIndexType(i, j, k)).getBlendMap() = {
+  //         {
+  //           static_cast<std::uint8_t>(
+  //             (i > m_dimensions.X() / 2) + (j > m_dimensions.Y() / 2)),
+  //           1.0f
+  //         }
+  //       };
+  //     }
+  //   }
+  // }
 
 };
 
@@ -145,7 +146,20 @@ GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
 
 template <typename T>
 void AxisAlignedGrid<T>::runForEach(
-  std::function<void(T, GridPositionType)> f) const
+  std::function<void(const T&, GridPositionType)> f) const
+{
+  for (size_t x = 0; x != m_dimensions.X(); ++x) {
+    for (size_t y = 0; y != m_dimensions.Y(); ++y) {
+      for (size_t z = 0; z != m_dimensions.Z(); ++z) {
+        auto idx = GridIndexType(x, y, z);
+        f(getCellValue(idx), getCellCenter(idx));
+      }
+    }
+  }
+};
+
+template <typename T>
+void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
 {
   for (size_t x = 0; x != m_dimensions.X(); ++x) {
     for (size_t y = 0; y != m_dimensions.Y(); ++y) {
@@ -160,7 +174,7 @@ void AxisAlignedGrid<T>::runForEach(
 template <typename T>
 void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
   GridPositionType v0, GridPositionType v1,
-  std::function<void(T, GridPositionType)> f) const
+  std::function<void(const T&, GridPositionType)> f) const
 {
   auto grid_min = minPosition(v0, v1) - getMinCorner();
   auto grid_max = maxPosition(v0, v1) - getMinCorner();

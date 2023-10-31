@@ -1,0 +1,17 @@
+ICE:
+  occurrence: 0.3
+  science_value: 0.1
+  density: 997 # kg/m^3
+  visualize_color: {r: 0, g: 0, b: 255}
+
+SALT:
+  occurrence: 0.6
+  science_value: 0.4
+  density: 0 # TODO
+  visualize_color: {r: 0, g: 255, b: 0}
+
+HYDRATES:
+  occurrence: 0.1
+  science_value: 0.8
+  density: 0 # TODO
+  visualize_color: {r: 255, g: 0, b: 0}
