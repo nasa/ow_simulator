@@ -13,7 +13,7 @@ from geometry_msgs.msg import Point
 from gazebo_msgs.msg import LinkStates
 from tf.transformations import euler_from_quaternion
 from ow_dynamic_terrain.msg import modify_terrain_circle
-
+from ow_lander.common import create_header
 
 class ModifyTerrainGrinder:
 
@@ -21,9 +21,9 @@ class ModifyTerrainGrinder:
     rospy.init_node("modify_terrain_grinder_pub", anonymous=True)
     self.last_translation = np.zeros(3)
     self.pub_visual = rospy.Publisher(
-        'ow_dynamic_terrain/modify_terrain_circle/visual', modify_terrain_circle, queue_size=1)
+        'ow_dynamic_terrain/modify_terrain_circle/visual', modify_terrain_circle, queue_size=10)
     self.pub_collision = rospy.Publisher(
-        'ow_dynamic_terrain/modify_terrain_circle/collision', modify_terrain_circle, queue_size=1)
+        'ow_dynamic_terrain/modify_terrain_circle/collision', modify_terrain_circle, queue_size=10)
     self.states_sub = rospy.Subscriber(
         "/gazebo/link_states", LinkStates, self.handle_link_states)
 
@@ -37,15 +37,13 @@ class ModifyTerrainGrinder:
       scale: A value that uniformaly scales the generated modify_terrain_circle
         message
     """
-    return modify_terrain_circle(position=Point(position.x, position.y, position.z),
+    return modify_terrain_circle(header=create_header("world", rospy.Time.now()),
+                                 position=Point(position.x, position.y, position.z),
                                  outer_radius=0.08*scale, inner_radius=0.04*scale,
                                  weight=depth*scale, merge_method="min")
 
   def check_and_submit(self, new_position, new_rotation):
     """ Checks if position has changed significantly before submmitting a message """
-
-    # the distance the grinder must travel before a modification message is sent
-    MODIFICATION_DISTANCE = 5.e-3  # meters
 
     _, roll, _ = euler_from_quaternion(
         quaternion=(new_rotation.x, new_rotation.y, new_rotation.z, new_rotation.w))

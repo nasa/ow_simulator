@@ -127,11 +127,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     );
 
     // acquire the next child
-    // child = child->GetNextElement();
     child = child->GetNextElement(PARAMETER_MATERIALS_CHILD);
   }
-
-  gzlog << "reference size = " << m_reference_colors.size() << endl;
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
     m_node_handle.get(), m_grid.get(),

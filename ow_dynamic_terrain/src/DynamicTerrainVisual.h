@@ -23,6 +23,17 @@ private:
   template <typename T, typename M>
   void onModifyTerrainMsg(T msg, M modify_method)
   {
+    // NOTE: the first modification message tends to have a value of 1
+    static std::uint32_t next_expected_seq = 1;
+    if (msg->header.seq != next_expected_seq) {
+      ROS_WARN_STREAM(
+        "Modification message was dropped!\n"
+        << "Expected sequence # " << next_expected_seq << "\n"
+        << "Received sequence # " << msg->header.seq
+      );
+    }
+    next_expected_seq = msg->header.seq + 1;
+
     auto heightmap = getHeightmap(gazebo::rendering::get_scene());
     if (heightmap == nullptr)
     {
@@ -43,8 +54,13 @@ private:
     {
       terrain->updateGeometry();
       terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
-
-      m_differential_pub.publish(diff_msg);
+      // publish differential
+      if (m_running_on_gzserver) {
+        // only publish from gzserver to avoid gzclient echoing this messages
+        diff_msg.header.stamp = ros::Time::now();
+        diff_msg.header.frame_id = "world";
+        m_differential_pub.publish(diff_msg);
+      }
     }
   }
 
@@ -61,6 +77,8 @@ private:
   gazebo::event::ConnectionPtr m_on_prerender_connection;
 
   Ogre::TexturePtr mMaterialMaskTexture;
+
+  bool m_running_on_gzserver;
 };
 
 }  // namespace ow_dynamic_terrain

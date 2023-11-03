@@ -3,6 +3,7 @@
 // this repository.
 
 #include <gazebo/physics/physics.hh>
+
 #include "TerrainModifier.h"
 #include "DynamicTerrainBase.h"
 
@@ -97,6 +98,17 @@ private:
   template <typename T, typename M>
   void onModifyTerrainMsg(T msg, M modify_method)
   {
+    // NOTE: the first modification message tends to have a value of 1
+    static std::uint32_t next_expected_seq = 1;
+    if (msg->header.seq != next_expected_seq) {
+      ROS_WARN_STREAM(
+        "Modification message was dropped!\n"
+        << "Expected sequence # " << next_expected_seq << "\n"
+        << "Received sequence # " << msg->header.seq
+      );
+    }
+    next_expected_seq = msg->header.seq + 1;
+
     auto heightmap = getHeightmap(get_scene());
     if (heightmap == nullptr)
     {
@@ -127,6 +139,8 @@ private:
       // Re-enable physics updates for models that may have entered a standstill state
       m_model->GetWorld()->EnableAllModels();
       // publish differential
+      diff_msg.header.stamp = ros::Time::now();
+      diff_msg.header.frame_id = "world";
       m_differential_pub.publish(diff_msg);
     }
   }

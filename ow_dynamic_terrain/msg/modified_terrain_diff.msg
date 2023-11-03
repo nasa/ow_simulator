@@ -1,3 +1,4 @@
+std_msgs/Header header
 sensor_msgs/Image result        # an image containing resulting heights within
                                 # the modification area
 sensor_msgs/Image diff          # an image containing changes in height
