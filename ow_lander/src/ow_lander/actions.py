@@ -1227,7 +1227,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
-    except ArmExecutionError as err:
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       pan, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
@@ -1257,7 +1257,7 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_pan(goal.pan)
-    except ArmExecutionError as err:
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
     else:
@@ -1284,7 +1284,7 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   def execute_action(self, goal):
     try:
       not_preempted = self.move_tilt(goal.tilt)
-    except ArmExecutionError as err:
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
     else:
