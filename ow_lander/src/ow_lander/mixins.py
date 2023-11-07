@@ -349,6 +349,12 @@ class PanTiltMoveMixin:
     self._start_server()
 
   def move(self, pan=None, tilt=None):
+    if pan is None and tilt is None:
+      raise AntennaPlanningError(
+        "PanTiltMoveMixin.move must always be called with either both or one "
+        "the pan or tilt keyword arguments."
+      )
+
     if pan is not None and \
        not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise AntennaPlanningError(
