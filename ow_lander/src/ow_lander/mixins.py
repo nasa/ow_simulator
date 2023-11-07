@@ -348,17 +348,21 @@ class PanTiltMoveMixin:
       rospy.logwarn(NO_SUBS_MSG % self._tilt_pub.name)
     self._start_server()
 
-  def move_pan_and_tilt(self, pan, tilt):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
+  def move(self, pan=None, tilt=None):
+    if pan is not None and \
+       not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise AntennaPlanningError(
         f"Requested pan {pan} is not within allowed limits.")
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
+    if tilt is not None and \
+       not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise AntennaPlanningError(
         f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
-    self._pan_pub.publish(pan)
-    self._tilt_pub.publish(tilt)
+    if pan is not None:
+      self._pan_pub.publish(pan)
+    if tilt is not None:
+      self._tilt_pub.publish(tilt)
 
     # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
     #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
@@ -375,9 +379,9 @@ class PanTiltMoveMixin:
     #         This issue is captured by OW-1105
     # loop until pan/tilt reach their goal values
     FREQUENCY = 5 # Hz
-    TIMEOUT = 60 # seconds
+    TIMEOUT = 30 # seconds
     rate = rospy.Rate(FREQUENCY)
-    # sleep first to give the motor a chance to start moving
+    # sleep first to give the joint a chance to start moving
     rate.sleep()
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
@@ -391,75 +395,34 @@ class PanTiltMoveMixin:
         rospy.logwarn(f"Failed to acquire joint velocities: {err}")
         continue
       STALL_LIMIT = 1e-4
-      print("pan_vel  = ", pan_vel)
-      print("tilt_vel = ", tilt_vel)
       if abs(pan_vel)  < STALL_LIMIT and abs(tilt_vel) < STALL_LIMIT:
         break
       rate.sleep()
 
     current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
 
-    if not radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) or \
-       not radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
+    pan_target_reached = pan is None or \
+      radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE)
+    tilt_target_reached = tilt is None or \
+      radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE)
+
+    if not pan_target_reached and not tilt_target_reached:
+      # command their current positions to ensure a locked joint will
+      # not reattempt to acquire its goal after being unlocked
+      self._pan_pub.publish(current_pan)
+      self._tilt_pub.publish(current_tilt)
       raise AntennaExecutionError(
-        "Either pan/tilt failed to reach their target position."
-      )
+        "Both pan and tilt joints failed to reach their goal position.")
+    elif not pan_target_reached:
+      self._pan_pub.publish(current_pan)
+      raise AntennaExecutionError(
+        "Pan joint failed to reach its goal position.")
+    elif not tilt_target_reached:
+      self._tilt_pub.publish(current_tilt)
+      raise AntennaExecutionError(
+        "Tilt joint failed to reach its goal position.")
 
     return True
-
-
-  # NOTE: the following move_pan and move_tilt functions have been
-  # dumbly factored out of the previous function.  The FIXME comments
-  # above have been omitted but apply.  A more refined refactoring is
-  # left to a future iteration.
-
-  def move_pan(self, pan):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise AntennaPlanningError(
-        f"Requested pan {pan} is not within allowed limits.")
-
-    # publish requested values to start pan trajectory
-    self._pan_pub.publish(pan)
-
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
-    rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
-      if self._is_preempt_requested():
-        return False
-      # publish feedback message
-      self.publish_feedback_cb()
-      # check if joints have arrived at their goal values
-      current_pan, _ = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE):
-        return True
-      rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for pan value to reach goal.")
-
-  def move_tilt(self, tilt):
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise AntennaPlanningError(
-        f"Requested tilt {tilt} is not within allowed limits.")
-
-    # publish requested values to start tilt trajectory
-    self._tilt_pub.publish(tilt)
-
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
-    rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
-      if self._is_preempt_requested():
-        return False
-      # publish feedback message
-      self.publish_feedback_cb()
-      # check if joints have arrived at their goal values
-      _, current_tilt = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
-        return True
-      rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for tilt value to reach goal.")
 
   def publish_feedback_cb(self):
     """overrideable"""
