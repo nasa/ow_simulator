@@ -383,7 +383,7 @@ class PanTiltMoveMixin:
     rate = rospy.Rate(FREQUENCY)
     # sleep first to give the joint a chance to start moving
     rate.sleep()
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
+    for _i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
       # publish feedback message
