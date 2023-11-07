@@ -370,19 +370,6 @@ class PanTiltMoveMixin:
     if tilt is not None:
       self._tilt_pub.publish(tilt)
 
-    # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
-    #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
-    #        the image used to identify a sample location would be slightly to
-    #        the right than the image would have been if the frequency is set to
-    #        1 Hz, which would result in a sample location being selected that
-    #        is about half a meter closer to the lander than otherwise.
-    #        Such a dependency on FREQUENCY should not occur and implies that
-    #        the loop terminates before the antenna mast has completed its
-    #        movement. This breaks the synchronicity of actions, and therefore
-    #        of PLEXIL commands.
-    #        The loop break should instead trigger when both antenna joint
-    #        velocities are near enough to zero.
-    #         This issue is captured by OW-1105
     # loop until pan/tilt reach their goal values
     FREQUENCY = 5 # Hz
     TIMEOUT = 30 # seconds
