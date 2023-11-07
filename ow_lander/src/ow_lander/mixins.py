@@ -374,22 +374,39 @@ class PanTiltMoveMixin:
     #        velocities are near enough to zero.
     #         This issue is captured by OW-1105
     # loop until pan/tilt reach their goal values
-    FREQUENCY = 1 # Hz
+    FREQUENCY = 5 # Hz
     TIMEOUT = 60 # seconds
     rate = rospy.Rate(FREQUENCY)
+    # sleep first to give the motor a chance to start moving
+    rate.sleep()
     for i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
       # publish feedback message
       self.publish_feedback_cb()
       # check if joints have arrived at their goal values
-      current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) and \
-          radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
-        return True
+      try:
+        pan_vel, tilt_vel = self._ant_joints_monitor.get_joint_velocities()
+      except ValueError as err:
+        rospy.logwarn(f"Failed to acquire joint velocities: {err}")
+        continue
+      STALL_LIMIT = 1e-4
+      print("pan_vel  = ", pan_vel)
+      print("tilt_vel = ", tilt_vel)
+      if abs(pan_vel)  < STALL_LIMIT and abs(tilt_vel) < STALL_LIMIT:
+        break
       rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for pan/tilt values to reach goal.")
+
+    current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
+
+    if not radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) or \
+       not radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
+      raise AntennaExecutionError(
+        "Either pan/tilt failed to reach their target position."
+      )
+
+    return True
+
 
   # NOTE: the following move_pan and move_tilt functions have been
   # dumbly factored out of the previous function.  The FIXME comments
