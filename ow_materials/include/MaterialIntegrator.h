@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <ros/ros.h>
 
@@ -55,7 +56,13 @@ private:
 
   AxisAlignedGrid<MaterialBlend> const *m_grid;
 
+  std::atomic<std::uint32_t> m_next_expected_seq = 0;
+  std::atomic<std::size_t> m_number_of_concurrent_threads = 0;
+
   void onModification(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
+  void integrate(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
 };

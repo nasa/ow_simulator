@@ -342,7 +342,7 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
        "the bulk contains\n";
   for (auto const &x : blend.getBlendMap())
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-  gzlog << s.str() << endl;
+  // gzlog << s.str() << endl;
 }
 
 void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
@@ -352,7 +352,7 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
        "the bulk contains\n";
   for (auto const &x : blend.getBlendMap())
     s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
-  gzlog << s.str() << endl;
+  // gzlog << s.str() << endl;
 }
 
 Color MaterialDistributionPlugin::interpolateColor(

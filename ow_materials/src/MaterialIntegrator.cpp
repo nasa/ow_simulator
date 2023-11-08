@@ -36,14 +36,37 @@ MaterialIntegrator::MaterialIntegrator(
 void MaterialIntegrator::onModification(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
-  using namespace cv_bridge;
+  gzmsg << "handling seq = " << msg->header.seq << std::endl;
 
-  auto diff_handle = CvImageConstPtr();
-  auto result_handle = CvImageConstPtr();
+  if (msg->header.seq != m_next_expected_seq) {
+    ROS_WARN_STREAM("Modification message on topic "
+                    << m_sub_modification_diff.getTopic()
+                    << " was dropped! At least "
+                    << (msg->header.seq - m_next_expected_seq)
+                    << " message(s) may have been missed.");
+  }
+  m_next_expected_seq = msg->header.seq + 1;
+
+  std::thread integration(&MaterialIntegrator::integrate, this, msg);
+  integration.detach();
+
+  gzmsg << "concurrent threads = " << m_number_of_concurrent_threads << std::endl;
+}
+
+
+void MaterialIntegrator::integrate(
+  const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
+{
+  ++m_number_of_concurrent_threads;
+  // time computation
+  auto start_time = ros::WallTime::now();
+
+  auto diff_handle = cv_bridge::CvImageConstPtr();
+  auto result_handle = cv_bridge::CvImageConstPtr();
 
   try {
-    diff_handle = toCvShare(msg->diff, msg);
-    result_handle = toCvShare(msg->result, msg);
+    diff_handle = cv_bridge::toCvShare(msg->diff, msg);
+    result_handle = cv_bridge::toCvShare(msg->result, msg);
   } catch (cv_bridge::Exception& e) {
     gzlog << "cv_bridge exception occurred while reading modification "
              "differential message: " << e.what() << std::endl;
@@ -136,9 +159,14 @@ void MaterialIntegrator::onModification(
 
   // DEBUG
   gzlog << "number of merges = " << points.size() << std::endl;
+  // DEBUG
+  gzlog << "Grid blending took "<< (ros::WallTime::now() - start_time).toSec()
+        << " seconds." << std::endl;
 
   publishPointCloud(&m_dug_points_pub, points);
 
   m_handle_bulk_cb(bulk_blend);
+
+  --m_number_of_concurrent_threads;
 }
 
