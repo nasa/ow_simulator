@@ -18,46 +18,91 @@
 
 using namespace ow_materials;
 
-using std::uint32_t, std::size_t;
+using std::uint32_t, std::size_t, std::max;
+
+const auto STAT_LOG_TIMEOUT = ros::Duration(1.0); // second
 
 MaterialIntegrator::MaterialIntegrator(
   ros::NodeHandle *node_handle, AxisAlignedGrid<MaterialBlend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid),
-    m_handle_bulk_cb(handle_bulk_cb), m_colorizer_cb(colorizer_cb)
+    m_handle_bulk_cb(handle_bulk_cb), m_colorizer_cb(colorizer_cb),
+    m_stat_log_timeout(node_handle->createTimer(
+      STAT_LOG_TIMEOUT, &MaterialIntegrator::onStatLogTimeout, this, true, false)
+    )
 {
-  m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 10,
+  m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 1,
     &MaterialIntegrator::onModification, this);
   m_dug_points_pub = m_node_handle
     ->advertise<sensor_msgs::PointCloud2>(dug_points_topic, 10);
 }
 
+void MaterialIntegrator::onStatLogTimeout(const ros::TimerEvent&)
+{
+  gzmsg << "onStatLogTimeout called" << std::endl;
+
+  if (m_number_of_concurrent_threads != 0u) {
+    // wait longer for running threads to wrap up
+    resetStatLogTimeout();
+    return;
+  }
+
+  auto average = (m_batch_accumulated_processor_time * 1.0e-9)
+                 / m_batch_total_modifications;
+
+  gzlog << "Batch of modifications from topic "
+        << m_sub_modification_diff.getTopic() << " completed.\n"
+        << "Total number of modifications in batch was "
+        << m_batch_total_modifications << "\n"
+        << "Average processor time per modification was " << average << " s\n"
+        << "Maximum number of concurrently running threads was "
+        << m_batch_max_concurrent_threads << std::endl;
+
+  // reset batch statistics for next batch of modifications
+  m_batch_total_modifications = 0u;
+  m_batch_max_concurrent_threads = 0u;
+  m_batch_accumulated_processor_time = 0l;
+}
+
+void MaterialIntegrator::resetStatLogTimeout()
+{
+  m_stat_log_timeout.stop();
+  m_stat_log_timeout.setPeriod(STAT_LOG_TIMEOUT);
+  m_stat_log_timeout.start();
+}
+
 void MaterialIntegrator::onModification(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
-  gzmsg << "handling seq = " << msg->header.seq << std::endl;
+  // gzmsg << "handling seq = " << msg->header.seq << std::endl;
+
+  resetStatLogTimeout();
 
   if (msg->header.seq != m_next_expected_seq) {
-    ROS_WARN_STREAM("Modification message on topic "
-                    << m_sub_modification_diff.getTopic()
-                    << " was dropped! At least "
-                    << (msg->header.seq - m_next_expected_seq)
-                    << " message(s) may have been missed.");
+    ROS_WARN_STREAM(
+      "Modification message on topic " << m_sub_modification_diff.getTopic()
+      << " was dropped! At least " << (msg->header.seq - m_next_expected_seq)
+      << " message(s) may have been missed."
+    );
   }
   m_next_expected_seq = msg->header.seq + 1;
 
   std::thread integration(&MaterialIntegrator::integrate, this, msg);
+  // gzmsg << "thread_id = " << integration.get_id() << std::endl;
   integration.detach();
 
-  gzmsg << "concurrent threads = " << m_number_of_concurrent_threads << std::endl;
+  // gzmsg << "concurrent threads = " << m_number_of_concurrent_threads << std::endl;
 }
 
 
 void MaterialIntegrator::integrate(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
+  ++m_batch_total_modifications;
   ++m_number_of_concurrent_threads;
+  m_batch_max_concurrent_threads = max(m_batch_max_concurrent_threads.load(),
+                                       m_number_of_concurrent_threads.load());
   // time computation
   auto start_time = ros::WallTime::now();
 
@@ -70,6 +115,7 @@ void MaterialIntegrator::integrate(
   } catch (cv_bridge::Exception& e) {
     gzlog << "cv_bridge exception occurred while reading modification "
              "differential message: " << e.what() << std::endl;
+    --m_number_of_concurrent_threads;
     return;
   }
 
@@ -135,6 +181,7 @@ void MaterialIntegrator::integrate(
   }
 
   if (points.size() == 0) {
+    --m_number_of_concurrent_threads;
     return;
   }
 
@@ -158,10 +205,13 @@ void MaterialIntegrator::integrate(
   //                                << (uint)points[0].b << ")\n";
 
   // DEBUG
-  gzlog << "number of merges = " << points.size() << std::endl;
+  // gzlog << "number of merges = " << points.size() << std::endl;
   // DEBUG
-  gzlog << "Grid blending took "<< (ros::WallTime::now() - start_time).toSec()
-        << " seconds." << std::endl;
+  // gzlog << "Grid blending took "<< (ros::WallTime::now() - start_time).toSec()
+  //       << " seconds." << std::endl;
+
+  m_batch_accumulated_processor_time
+    += (ros::WallTime::now() - start_time).toNSec();
 
   publishPointCloud(&m_dug_points_pub, points);
 

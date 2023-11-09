@@ -50,14 +50,26 @@ private:
 
   ros::Publisher m_dug_points_pub;
 
+  // when enough time has passed since the last onModification call, this
+  // triggers logging of statistics about blend operation performance
+  ros::Timer m_stat_log_timeout;
+
   HandleBulkCallback m_handle_bulk_cb;
 
   ColorizerCallback m_colorizer_cb;
 
   AxisAlignedGrid<MaterialBlend> const *m_grid;
 
-  std::atomic<std::uint32_t> m_next_expected_seq = 0;
-  std::atomic<std::size_t> m_number_of_concurrent_threads = 0;
+  std::uint32_t m_next_expected_seq = 0u;
+
+  std::atomic<std::size_t> m_number_of_concurrent_threads = 0u;
+  std::atomic<std::size_t> m_batch_max_concurrent_threads = 0u;
+  std::atomic<std::size_t> m_batch_total_modifications = 0u;
+  std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0l;
+
+  void onStatLogTimeout(const ros::TimerEvent&);
+
+  void resetStatLogTimeout();
 
   void onModification(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
