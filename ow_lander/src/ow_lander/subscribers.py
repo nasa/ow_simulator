@@ -81,21 +81,31 @@ class JointAnglesSubscriber:
         "/joint_states", JointState, self._on_joint_state_msg
       )
 
-  def get_joint_positions(self):
+  def _get_joint_index(self, name):
+   return JointAnglesSubscriber._message_buffer.name.index(name)
+
+  def _assert_first_joint_message_received(self):
     # block until first message is received
     if not JointAnglesSubscriber._message_buffer and \
         not wait_for_message(JointAnglesSubscriber._message_buffer,
                              MESSAGE_TIMEOUT):
-      rospy.logwarn("JointAnglesSubscriber did not receive a message for "\
+      raise ValueError("JointAnglesSubscriber did not receive a message for "\
                     f"{MESSAGE_TIMEOUT} seconds at startup. This may cause " \
                     "issues for some lander actions.")
-      return None
+
+  def get_joint_positions(self):
+    self._assert_first_joint_message_received()
     angles = list()
     for name in self._joint_names:
-      try:
-        idx = JointAnglesSubscriber._message_buffer.name.index(name)
-      except ValueError:
-        rospy.logerr_once(f"{self._joint_names} not found in link_states")
-        return
+      idx = self._get_joint_index(name)
       angles.append(JointAnglesSubscriber._message_buffer.position[idx])
     return angles
+
+  def get_joint_velocities(self):
+    self._assert_first_joint_message_received()
+    angles = list()
+    for name in self._joint_names:
+      idx = self._get_joint_index(name)
+      angles.append(JointAnglesSubscriber._message_buffer.velocity[idx])
+    return angles
+
