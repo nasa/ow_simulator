@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <thread>
 
 #include <gazebo/gazebo.hh>
 
@@ -22,14 +23,20 @@ using std::uint32_t, std::size_t, std::max;
 
 const auto STAT_LOG_TIMEOUT = ros::Duration(1.0); // second
 
+const uint MINIMUM_INTEGRATE_THREADS = 4u;
+
 MaterialIntegrator::MaterialIntegrator(
   ros::NodeHandle *node_handle, AxisAlignedGrid<MaterialBlend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid),
     m_handle_bulk_cb(handle_bulk_cb), m_colorizer_cb(colorizer_cb),
-    m_stat_log_timeout(node_handle->createTimer(
-      STAT_LOG_TIMEOUT, &MaterialIntegrator::onStatLogTimeout, this, true, false)
+    m_stat_log_timeout(
+      node_handle->createTimer(STAT_LOG_TIMEOUT,
+        &MaterialIntegrator::onStatLogTimeout, this, true, false)
+    ),
+    m_threads(
+      max(MINIMUM_INTEGRATE_THREADS, std::thread::hardware_concurrency())
     )
 {
   m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 1,
@@ -40,14 +47,6 @@ MaterialIntegrator::MaterialIntegrator(
 
 void MaterialIntegrator::onStatLogTimeout(const ros::TimerEvent&)
 {
-  gzmsg << "onStatLogTimeout called" << std::endl;
-
-  if (m_number_of_concurrent_threads != 0u) {
-    // wait longer for running threads to wrap up
-    resetStatLogTimeout();
-    return;
-  }
-
   auto average = (m_batch_accumulated_processor_time * 1.0e-9)
                  / m_batch_total_modifications;
 
@@ -55,13 +54,11 @@ void MaterialIntegrator::onStatLogTimeout(const ros::TimerEvent&)
         << m_sub_modification_diff.getTopic() << " completed.\n"
         << "Total number of modifications in batch was "
         << m_batch_total_modifications << "\n"
-        << "Average processor time per modification was " << average << " s\n"
-        << "Maximum number of concurrently running threads was "
-        << m_batch_max_concurrent_threads << std::endl;
+        << "Average processor time per modification was "
+        << average << std::endl;
 
   // reset batch statistics for next batch of modifications
   m_batch_total_modifications = 0u;
-  m_batch_max_concurrent_threads = 0u;
   m_batch_accumulated_processor_time = 0l;
 }
 
@@ -75,8 +72,6 @@ void MaterialIntegrator::resetStatLogTimeout()
 void MaterialIntegrator::onModification(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
-  // gzmsg << "handling seq = " << msg->header.seq << std::endl;
-
   resetStatLogTimeout();
 
   if (msg->header.seq != m_next_expected_seq) {
@@ -88,11 +83,7 @@ void MaterialIntegrator::onModification(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  std::thread integration(&MaterialIntegrator::integrate, this, msg);
-  // gzmsg << "thread_id = " << integration.get_id() << std::endl;
-  integration.detach();
-
-  // gzmsg << "concurrent threads = " << m_number_of_concurrent_threads << std::endl;
+  boost::asio::post(m_threads, boost::bind(&MaterialIntegrator::integrate, this, msg));
 }
 
 
@@ -100,9 +91,6 @@ void MaterialIntegrator::integrate(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
   ++m_batch_total_modifications;
-  ++m_number_of_concurrent_threads;
-  m_batch_max_concurrent_threads = max(m_batch_max_concurrent_threads.load(),
-                                       m_number_of_concurrent_threads.load());
   // time computation
   auto start_time = ros::WallTime::now();
 
@@ -115,7 +103,6 @@ void MaterialIntegrator::integrate(
   } catch (cv_bridge::Exception& e) {
     gzlog << "cv_bridge exception occurred while reading modification "
              "differential message: " << e.what() << std::endl;
-    --m_number_of_concurrent_threads;
     return;
   }
 
@@ -181,7 +168,6 @@ void MaterialIntegrator::integrate(
   }
 
   if (points.size() == 0) {
-    --m_number_of_concurrent_threads;
     return;
   }
 
@@ -216,7 +202,5 @@ void MaterialIntegrator::integrate(
   publishPointCloud(&m_dug_points_pub, points);
 
   m_handle_bulk_cb(bulk_blend);
-
-  --m_number_of_concurrent_threads;
 }
 

@@ -9,12 +9,15 @@
 #include <memory>
 #include <mutex>
 
+#include <boost/asio/thread_pool.hpp>
+
 #include <ros/ros.h>
 
 #include <AxisAlignedGrid.h>
 #include <Materials.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
+
 
 namespace ow_materials
 {
@@ -62,10 +65,12 @@ private:
 
   std::uint32_t m_next_expected_seq = 0u;
 
-  std::atomic<std::size_t> m_number_of_concurrent_threads = 0u;
-  std::atomic<std::size_t> m_batch_max_concurrent_threads = 0u;
+  // used to compute performance statistics on batches of modifications
   std::atomic<std::size_t> m_batch_total_modifications = 0u;
-  std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0l;
+  std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0L;
+
+  // used to asynchronously parallelize calls to integrate
+  boost::asio::thread_pool m_threads;
 
   void onStatLogTimeout(const ros::TimerEvent&);
 
