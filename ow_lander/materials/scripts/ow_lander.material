@@ -32,7 +32,7 @@ fragment_program ow_lander_frag glsl
   default_params
   {
     param_named_auto wsSunPosition             light_position 0
-    // Sun lux at Jupiter
+    // Sun irradiance at Jupiter
     param_named sunIntensity                   float3 4438.0 4438.0 4438.0
     param_named sunVisibility                  float 1.0
 
@@ -48,8 +48,8 @@ fragment_program ow_lander_frag glsl
 
     // lander lights
     // Control status of lander lights (spotlights)
-    param_named_auto vsLightPos                light_position_view_space_array 3
-    param_named_auto vsLightDir                light_direction_view_space_array 3
+    param_named_auto wsLightPos                light_position_array 3
+    param_named_auto wsLightDir                light_direction_array 3
     // Color is misused to turn lights on and off
     param_named_auto lightDiffuseColor         light_diffuse_colour_array 3
     // Light intensity is baked into attenuation

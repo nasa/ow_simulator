@@ -159,8 +159,8 @@
         <compositor>CameraLensFlare/PF_FLOAT32_R</compositor>
       </plugin>
       <plugin name="CameraSim" filename="libIRGCameraSimSensorPlugin.so" >
-        <exposure>0.05</exposure>
-        <energy_conversion>0.005</energy_conversion>
+        <exposure>0.001</exposure>
+        <energy_conversion>80.0</energy_conversion>
       </plugin>
     </sensor>
   </gazebo>  
