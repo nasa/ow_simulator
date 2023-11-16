@@ -108,6 +108,7 @@ void MaterialIntegrator::integrate(
 
   const auto rows = diff_handle->image.rows;
   const auto cols = diff_handle->image.cols;
+
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
 
@@ -131,39 +132,39 @@ void MaterialIntegrator::integrate(
     for (size_t j = 0; j != rows; ++j) {
       // change in height at pixel (x, y)
       auto dz = diff_handle->image.at<float>(i, j);
-      if (dz < 0.0) {
-        // SAVED CODE for integration with ow_regolith
-        // const auto volume = diff_px * pixel_area;
-        // compute location in grid
-        const float x = (msg->position.x - msg->width / 2)
-                          + static_cast<float>(i) / cols * msg->width;
-        // +j and +y are in opposite directions, so flip signs
-        const float y = (msg->position.y + msg->height / 2)
-                          - static_cast<float>(j) / rows * msg->height;
-        // starting layer position; next loop will iterate up to the original z
-        auto z_result = result_handle->image.at<float>(i, j);
-        auto box_min = GridPositionType(x, y, z_result);
-        auto box_max = GridPositionType(x + pixel_width,
-                                        y + pixel_height,
-                                        z_result - dz); // dz is always negative
-        // SAVED for debugging
-        // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
-        // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
-        m_grid->runForEachInAxisAlignedBox(box_min, box_max,
-          [&bulk_blend, &points]
-          (MaterialBlend const &b, GridPositionType center) {
-            if (b.isEmpty()) return;
-            bulk_blend.merge(b);
-            // WORKAROUND for OW-1194, TF has an incorrect transform for
-            //            base_link (specific for atacama_y1a)
-            center -= GridPositionType(-1.0, 0.0, 0.37);
-            points.emplace_back();
-            points.back().x = static_cast<float>(center.X());
-            points.back().y = static_cast<float>(center.Y());
-            points.back().z = static_cast<float>(center.Z());
-          }
-        );
+      if (dz >= 0.0) { // ignore non-modified or raised terrain
+        continue;
       }
+      // SAVED CODE for integration with ow_regolith
+      // const auto volume = diff_px * pixel_area;
+      // compute location in grid
+      const float x = (msg->position.x - msg->width / 2)
+                        + static_cast<float>(j) / rows * msg->width;
+      // +i and +y are in opposite directions, so flip signs
+      const float y = (msg->position.y + msg->height / 2)
+                        - static_cast<float>(i) / cols * msg->height;
+      // starting layer position; next loop will iterate up to the original z
+      const auto z_result = result_handle->image.at<float>(i, j);
+      const auto pixel_center = GridPositionType2D{x + pixel_width / 2,
+                                                   y + pixel_height / 2};
+      // SAVED for debugging
+      // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
+      // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
+      m_grid->runForEachInColumn(
+        pixel_center, z_result, z_result - dz, // dz is negative
+        [&bulk_blend, &points]
+        (MaterialBlend const &b, GridPositionType center) {
+          if (b.isEmpty()) return;
+          bulk_blend.merge(b);
+          // WORKAROUND for OW-1194, TF has an incorrect transform for
+          //            base_link (specific for atacama_y1a)
+          center -= GridPositionType(-1.0, 0.0, 0.37);
+          points.emplace_back();
+          points.back().x = static_cast<float>(center.X());
+          points.back().y = static_cast<float>(center.Y());
+          points.back().z = static_cast<float>(center.Z());
+        }
+      );
     }
   }
 

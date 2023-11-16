@@ -4,10 +4,11 @@
 
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 #include <gazebo/common/Assert.hh>
 
-using std::min, std::max, std::round, std::floor, std::ceil, std::size_t;
+using std::min, std::max, std::round, std::ceil, std::size_t, std::clamp;
 
 namespace ow_materials {
 
@@ -171,32 +172,73 @@ void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
   }
 };
 
+// template <typename T>
+// void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
+//   GridPositionType v0, GridPositionType v1,
+//   std::function<void(const T&, GridPositionType)> f) const
+// {
+//   auto grid_min = minPosition(v0, v1) - getMinCorner();
+//   auto grid_max = maxPosition(v0, v1) - getMinCorner();
+
+//   auto idx_min = GridIndexType(
+//     static_cast<size_t>(max(grid_min.X() / m_cell_length, 0.0)),
+//     static_cast<size_t>(max(grid_min.Y() / m_cell_length, 0.0)),
+//     static_cast<size_t>(max(grid_min.Z() / m_cell_length, 0.0))
+//   );
+//   auto idx_max = GridIndexType(
+//     min(static_cast<size_t>(grid_max.X() / m_cell_length)+1, m_dimensions.X()),
+//     min(static_cast<size_t>(grid_max.Y() / m_cell_length)+1, m_dimensions.Y()),
+//     min(static_cast<size_t>(grid_max.Z() / m_cell_length)+1, m_dimensions.Z())
+//   );
+
+//   for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
+//     for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
+//       for (auto z = idx_min.Z(); z != idx_max.Z(); ++z) {
+//         auto idx = GridIndexType(x, y, z);
+//         f(getCellValue(idx), getCellCenter(idx));
+//       }
+//     }
+//   }
+// };
+
 template <typename T>
-void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
-  GridPositionType v0, GridPositionType v1,
-  std::function<void(const T&, GridPositionType)> f) const
+void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
+  double z1, double z2, std::function<void(const T&, GridPositionType)> f) const
 {
-  auto grid_min = minPosition(v0, v1) - getMinCorner();
-  auto grid_max = maxPosition(v0, v1) - getMinCorner();
+  if ( xy.X() < getMinCorner().X() || xy.X() > getMaxCorner().X() ||
+       xy.Y() < getMinCorner().Y() || xy.Y() > getMaxCorner().Y() ) {
+    // grid does not contain the XY position
+    return;
+  }
 
-  auto idx_min = GridIndexType(
-    static_cast<size_t>(max(grid_min.X() / m_cell_length, 0.0)),
-    static_cast<size_t>(max(grid_min.Y() / m_cell_length, 0.0)),
-    static_cast<size_t>(max(grid_min.Z() / m_cell_length, 0.0))
-  );
-  auto idx_max = GridIndexType(
-    min(static_cast<size_t>(grid_max.X() / m_cell_length)+1, m_dimensions.X()),
-    min(static_cast<size_t>(grid_max.Y() / m_cell_length)+1, m_dimensions.Y()),
-    min(static_cast<size_t>(grid_max.Z() / m_cell_length)+1, m_dimensions.Z())
-  );
+  // order z positions and constrain to within the grid
+  auto zmin = clamp(min(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
+  auto zmax = clamp(max(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
 
-  for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
-    for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
-      for (auto z = idx_min.Z(); z != idx_max.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
+  if (zmin == zmax) {
+    // column is above/below the grid domain, but not within
+    return;
+  }
+
+  auto idx = GridIndexType{
+    static_cast<size_t>((xy.X() - getMinCorner().X()) / m_cell_length),
+    static_cast<size_t>((xy.Y() - getMinCorner().Y()) / m_cell_length),
+    0u
+  };
+
+  auto kmin = static_cast<size_t>((zmin - getMinCorner().Z()) / m_cell_length);
+  auto kmax = static_cast<size_t>((zmax - getMinCorner().Z()) / m_cell_length);
+
+  // std::cout << "z1 = " << z1 << "\n";
+  // std::cout << "z2 = " << z2 << "\n";
+  // std::cout << "zmin = " << zmin << "\n";
+  // std::cout << "zmax = " << zmax << "\n";
+  // std::cout << "kmin = " << kmin << "\n";
+  // std::cout << "kmax = " << kmax << "\n";
+
+  for (auto k = kmin; k != kmax + 1; ++k) {
+    idx.Z() = k;
+    f(getCellValue(idx), getCellCenter(idx));
   }
 };
 
