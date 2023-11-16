@@ -47,19 +47,24 @@ MaterialIntegrator::MaterialIntegrator(
 
 void MaterialIntegrator::onStatLogTimeout(const ros::TimerEvent&)
 {
-  auto average = (m_batch_accumulated_processor_time * 1.0e-9)
-                 / m_batch_total_modifications;
+  auto average_time = (m_batch_accumulated_processor_time * 1.0e-9)
+                      / m_batch_total_modifications;
+  auto average_merges = m_batch_accumulated_merges
+                        / m_batch_total_modifications;
 
   gzlog << "Batch of modifications from topic "
-        << m_sub_modification_diff.getTopic() << " completed.\n"
+          << m_sub_modification_diff.getTopic() << " completed.\n"
         << "Total number of modifications in batch was "
-        << m_batch_total_modifications << "\n"
+          << m_batch_total_modifications << "\n"
         << "Average processor time per modification was "
-        << average << std::endl;
+          << average_time << "\n"
+        << "Average merges per modification was "
+          << average_merges << std::endl;
 
   // reset batch statistics for next batch of modifications
   m_batch_total_modifications = 0u;
-  m_batch_accumulated_processor_time = 0l;
+  m_batch_accumulated_processor_time = 0L;
+  m_batch_accumulated_merges = 0L;
 }
 
 void MaterialIntegrator::resetStatLogTimeout()
@@ -83,7 +88,8 @@ void MaterialIntegrator::onModification(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  boost::asio::post(m_threads, boost::bind(&MaterialIntegrator::integrate, this, msg));
+  boost::asio::post(m_threads,
+    boost::bind(&MaterialIntegrator::integrate, this, msg));
 }
 
 
@@ -91,7 +97,7 @@ void MaterialIntegrator::integrate(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
   ++m_batch_total_modifications;
-  // time computation
+
   auto start_time = ros::WallTime::now();
 
   auto diff_handle = cv_bridge::CvImageConstPtr();
@@ -112,10 +118,6 @@ void MaterialIntegrator::integrate(
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
 
-  // SAVED CODE for integration with ow_regolith
-  // const auto pixel_area = pixel_height * pixel_height;
-  // float volume_displaced = 0.0;
-
   MaterialBlend bulk_blend;
   pcl::PointCloud<pcl::PointXYZRGB> points;
 
@@ -135,8 +137,6 @@ void MaterialIntegrator::integrate(
       if (dz >= 0.0) { // ignore non-modified or raised terrain
         continue;
       }
-      // SAVED CODE for integration with ow_regolith
-      // const auto volume = diff_px * pixel_area;
       // compute location in grid
       const float x = (msg->position.x - msg->width / 2)
                         + static_cast<float>(j) / rows * msg->width;
@@ -147,9 +147,6 @@ void MaterialIntegrator::integrate(
       const auto z_result = result_handle->image.at<float>(i, j);
       const auto pixel_center = GridPositionType2D{x + pixel_width / 2,
                                                    y + pixel_height / 2};
-      // SAVED for debugging
-      // gzlog << "box_min = (" << box_min.X() << "," << box_min.Y() << "," << box_min.Z() << ")\n";
-      // gzlog << "box_max = (" << box_max.X() << "," << box_max.Y() << "," << box_max.Z() << ")\n";
       m_grid->runForEachInColumn(
         pixel_center, z_result, z_result - dz, // dz is negative
         [&bulk_blend, &points]
@@ -185,20 +182,11 @@ void MaterialIntegrator::integrate(
   }
 
   // SAVED for debugging
-  // gzlog << "point count = " << points.size() << "\n";
-  // gzlog << "points[0] = (" << points[0].x << "," << points[0].y << "," << points[0].z << ")\n";
-  // gzlog << "points[0] color = (" << (uint)points[0].r << ","
-  //                                << (uint)points[0].g << ","
-  //                                << (uint)points[0].b << ")\n";
-
-  // DEBUG
   // gzlog << "number of merges = " << points.size() << std::endl;
-  // DEBUG
-  // gzlog << "Grid blending took "<< (ros::WallTime::now() - start_time).toSec()
-  //       << " seconds." << std::endl;
 
   m_batch_accumulated_processor_time
     += (ros::WallTime::now() - start_time).toNSec();
+  m_batch_accumulated_merges += points.size();
 
   publishPointCloud(&m_dug_points_pub, points);
 

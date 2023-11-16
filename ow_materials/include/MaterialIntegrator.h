@@ -68,6 +68,7 @@ private:
   // used to compute performance statistics on batches of modifications
   std::atomic<std::size_t> m_batch_total_modifications = 0u;
   std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0L;
+  std::atomic<std::int64_t> m_batch_accumulated_merges = 0L;
 
   // used to asynchronously parallelize calls to integrate
   boost::asio::thread_pool m_threads;

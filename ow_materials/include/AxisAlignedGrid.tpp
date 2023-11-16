@@ -66,7 +66,7 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
   // CLARIFICATION: This serves the purpose of an arbitrary upper bound on all
-  //    grid dimension. Dependent on the value of the other dimensions, one or
+  //    grid dimensions. Dependent on the value of the other dimensions, one or
   //    two dimensions could be permitted to be larger than the cube root, but
   //    checking for that condition would be difficult due to that dependency.
   //    Were larger dimensions permitted, they would likely lead to poor
@@ -88,24 +88,6 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
   // fill cells with initial value
   size_t total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
   m_cells.resize(total_cells);
-
-  // DEBUG: This is a fast and easy method to populate the grid with non-uniform
-  //        material data. It depends on there being at least 3 unique materials
-  //        in the database, and it ignores the initial_value. This is just a
-  //        workaround until a proper grid generation method is implemented.
-  // for (size_t i = 0; i != m_dimensions.X(); ++i) {
-  //   for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-  //     for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-  //       getCellValue(GridIndexType(i, j, k)).getBlendMap() = {
-  //         {
-  //           static_cast<std::uint8_t>(
-  //             (i > m_dimensions.X() / 2) + (j > m_dimensions.Y() / 2)),
-  //           1.0f
-  //         }
-  //       };
-  //     }
-  //   }
-  // }
 
 };
 
@@ -172,35 +154,6 @@ void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
   }
 };
 
-// template <typename T>
-// void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
-//   GridPositionType v0, GridPositionType v1,
-//   std::function<void(const T&, GridPositionType)> f) const
-// {
-//   auto grid_min = minPosition(v0, v1) - getMinCorner();
-//   auto grid_max = maxPosition(v0, v1) - getMinCorner();
-
-//   auto idx_min = GridIndexType(
-//     static_cast<size_t>(max(grid_min.X() / m_cell_length, 0.0)),
-//     static_cast<size_t>(max(grid_min.Y() / m_cell_length, 0.0)),
-//     static_cast<size_t>(max(grid_min.Z() / m_cell_length, 0.0))
-//   );
-//   auto idx_max = GridIndexType(
-//     min(static_cast<size_t>(grid_max.X() / m_cell_length)+1, m_dimensions.X()),
-//     min(static_cast<size_t>(grid_max.Y() / m_cell_length)+1, m_dimensions.Y()),
-//     min(static_cast<size_t>(grid_max.Z() / m_cell_length)+1, m_dimensions.Z())
-//   );
-
-//   for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
-//     for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
-//       for (auto z = idx_min.Z(); z != idx_max.Z(); ++z) {
-//         auto idx = GridIndexType(x, y, z);
-//         f(getCellValue(idx), getCellCenter(idx));
-//       }
-//     }
-//   }
-// };
-
 template <typename T>
 void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
   double z1, double z2, std::function<void(const T&, GridPositionType)> f) const
@@ -216,7 +169,7 @@ void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
   auto zmax = clamp(max(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
 
   if (zmin == zmax) {
-    // column is above/below the grid domain, but not within
+    // column is entirely above/below the grid domain, but not within
     return;
   }
 
@@ -228,13 +181,6 @@ void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
 
   auto kmin = static_cast<size_t>((zmin - getMinCorner().Z()) / m_cell_length);
   auto kmax = static_cast<size_t>((zmax - getMinCorner().Z()) / m_cell_length);
-
-  // std::cout << "z1 = " << z1 << "\n";
-  // std::cout << "z2 = " << z2 << "\n";
-  // std::cout << "zmin = " << zmin << "\n";
-  // std::cout << "zmax = " << zmax << "\n";
-  // std::cout << "kmin = " << kmin << "\n";
-  // std::cout << "kmax = " << kmax << "\n";
 
   for (auto k = kmin; k != kmax + 1; ++k) {
     idx.Z() = k;
