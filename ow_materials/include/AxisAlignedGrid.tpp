@@ -8,7 +8,7 @@
 
 #include <gazebo/common/Assert.hh>
 
-using std::min, std::max, std::round, std::ceil, std::size_t, std::clamp;
+using std::min, std::max, std::ceil, std::size_t, std::clamp;
 
 namespace ow_materials {
 
@@ -59,9 +59,9 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
 
   // compute number of cells in each dimension
   m_dimensions = GridIndexType(
-    static_cast<size_t>(round(diagonal.X() / m_cell_length)),
-    static_cast<size_t>(round(diagonal.Y() / m_cell_length)),
-    static_cast<size_t>(round(diagonal.Z() / m_cell_length))
+    static_cast<size_t>(ceil(diagonal.X() / m_cell_length)),
+    static_cast<size_t>(ceil(diagonal.Y() / m_cell_length)),
+    static_cast<size_t>(ceil(diagonal.Z() / m_cell_length))
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
@@ -121,9 +121,10 @@ template <typename T>
 GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
 {
   GridPositionType grid_coord = GridPositionType(
-    (static_cast<double>(idx.X()) + 0.5) * m_cell_length,
-    (static_cast<double>(idx.Y()) + 0.5) * m_cell_length,
-    (static_cast<double>(idx.Z()) + 0.5) * m_cell_length);
+    static_cast<double>(idx.X()) + 0.5,
+    static_cast<double>(idx.Y()) + 0.5,
+    static_cast<double>(idx.Z()) + 0.5
+  ) * m_cell_length;
   return grid_coord + getMinCorner();
 };
 
@@ -131,10 +132,10 @@ template <typename T>
 void AxisAlignedGrid<T>::runForEach(
   std::function<void(const T&, GridPositionType)> f) const
 {
-  for (size_t x = 0; x != m_dimensions.X(); ++x) {
-    for (size_t y = 0; y != m_dimensions.Y(); ++y) {
-      for (size_t z = 0; z != m_dimensions.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
         f(getCellValue(idx), getCellCenter(idx));
       }
     }
@@ -144,10 +145,10 @@ void AxisAlignedGrid<T>::runForEach(
 template <typename T>
 void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
 {
-  for (size_t x = 0; x != m_dimensions.X(); ++x) {
-    for (size_t y = 0; y != m_dimensions.Y(); ++y) {
-      for (size_t z = 0; z != m_dimensions.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
         f(getCellValue(idx), getCellCenter(idx));
       }
     }
