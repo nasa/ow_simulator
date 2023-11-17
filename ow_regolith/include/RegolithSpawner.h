@@ -73,6 +73,8 @@ private:
   ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
   ros::Subscriber m_sub_mod_diff_visual;
+  // sequence number of mod diff visual message
+  std::uint32_t m_next_expected_seq = 0u;
 
   // spawns, removes, and applies forces to spawned models
   std::unique_ptr<ModelPool> m_model_pool;
