@@ -198,7 +198,7 @@ void RegolithSpawner::onModDiffVisualMsg(
 {
   if (msg->header.seq != m_next_expected_seq) {
     ROS_WARN_STREAM(
-      "Modification message on topic " << m_sub_modification_diff.getTopic()
+      "Modification message on topic " << m_sub_mod_diff_visual.getTopic()
       << " was dropped! At least " << (msg->header.seq - m_next_expected_seq)
       << " message(s) may have been missed."
     );
