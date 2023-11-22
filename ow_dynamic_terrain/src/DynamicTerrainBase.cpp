@@ -17,6 +17,7 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
   }
 
   m_node_handle = make_unique<ros::NodeHandle>(m_plugin_name);
+
   m_node_handle->setCallbackQueue(&m_callback_queue);
 
   auto on_modify_terrain_circle = [this](const modify_terrain_circle::ConstPtr& msg) {
@@ -38,7 +39,7 @@ void DynamicTerrainBase::Initialize(const std::string& topic_extension)
   subscribe<modify_terrain_patch>("modify_terrain_patch/" + topic_extension, on_modify_terrain_patch);
 
   m_differential_pub = m_node_handle->advertise<modified_terrain_diff>(
-      "/" + m_package_name + "/modification_differential/" + topic_extension, 1);
+    "/" + m_package_name + "/modification_differential/" + topic_extension, 10);
 
   m_on_update_connection = gazebo::event::Events::ConnectPostRender([this]() {
     if (m_node_handle->ok())

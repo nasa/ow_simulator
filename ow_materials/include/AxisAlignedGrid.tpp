@@ -4,10 +4,11 @@
 
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 #include <gazebo/common/Assert.hh>
 
-using std::min, std::max, std::round, std::floor, std::ceil, std::size_t;
+using std::min, std::max, std::ceil, std::size_t, std::clamp;
 
 namespace ow_materials {
 
@@ -58,14 +59,14 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
 
   // compute number of cells in each dimension
   m_dimensions = GridIndexType(
-    static_cast<size_t>(round(diagonal.X() / m_cell_length)),
-    static_cast<size_t>(round(diagonal.Y() / m_cell_length)),
-    static_cast<size_t>(round(diagonal.Z() / m_cell_length))
+    static_cast<size_t>(ceil(diagonal.X() / m_cell_length)),
+    static_cast<size_t>(ceil(diagonal.Y() / m_cell_length)),
+    static_cast<size_t>(ceil(diagonal.Z() / m_cell_length))
   );
 
   // restrict all dimensions to cube root of the max size_t to prevent overflow
   // CLARIFICATION: This serves the purpose of an arbitrary upper bound on all
-  //    grid dimension. Dependent on the value of the other dimensions, one or
+  //    grid dimensions. Dependent on the value of the other dimensions, one or
   //    two dimensions could be permitted to be larger than the cube root, but
   //    checking for that condition would be difficult due to that dependency.
   //    Were larger dimensions permitted, they would likely lead to poor
@@ -87,24 +88,6 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
   // fill cells with initial value
   size_t total_cells = m_dimensions.X() * m_dimensions.Y() * m_dimensions.Z();
   m_cells.resize(total_cells);
-
-  // DEBUG: This is a fast and easy method to populate the grid with non-uniform
-  //        material data. It depends on there being at least 3 unique materials
-  //        in the database, and it ignores the initial_value. This is just a
-  //        workaround until a proper grid generation method is implemented.
-  // for (size_t i = 0; i != m_dimensions.X(); ++i) {
-  //   for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-  //     for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-  //       getCellValue(GridIndexType(i, j, k)).getBlendMap() = {
-  //         {
-  //           static_cast<std::uint8_t>(
-  //             (i > m_dimensions.X() / 2) + (j > m_dimensions.Y() / 2)),
-  //           1.0f
-  //         }
-  //       };
-  //     }
-  //   }
-  // }
 
 };
 
@@ -138,9 +121,10 @@ template <typename T>
 GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
 {
   GridPositionType grid_coord = GridPositionType(
-    (static_cast<double>(idx.X()) + 0.5) * m_cell_length,
-    (static_cast<double>(idx.Y()) + 0.5) * m_cell_length,
-    (static_cast<double>(idx.Z()) + 0.5) * m_cell_length);
+    static_cast<double>(idx.X()) + 0.5,
+    static_cast<double>(idx.Y()) + 0.5,
+    static_cast<double>(idx.Z()) + 0.5
+  ) * m_cell_length;
   return grid_coord + getMinCorner();
 };
 
@@ -148,10 +132,10 @@ template <typename T>
 void AxisAlignedGrid<T>::runForEach(
   std::function<void(const T&, GridPositionType)> f) const
 {
-  for (size_t x = 0; x != m_dimensions.X(); ++x) {
-    for (size_t y = 0; y != m_dimensions.Y(); ++y) {
-      for (size_t z = 0; z != m_dimensions.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
         f(getCellValue(idx), getCellCenter(idx));
       }
     }
@@ -161,10 +145,10 @@ void AxisAlignedGrid<T>::runForEach(
 template <typename T>
 void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
 {
-  for (size_t x = 0; x != m_dimensions.X(); ++x) {
-    for (size_t y = 0; y != m_dimensions.Y(); ++y) {
-      for (size_t z = 0; z != m_dimensions.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
         f(getCellValue(idx), getCellCenter(idx));
       }
     }
@@ -172,31 +156,36 @@ void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
 };
 
 template <typename T>
-void AxisAlignedGrid<T>::runForEachInAxisAlignedBox(
-  GridPositionType v0, GridPositionType v1,
-  std::function<void(const T&, GridPositionType)> f) const
+void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
+  double z1, double z2, std::function<void(const T&, GridPositionType)> f) const
 {
-  auto grid_min = minPosition(v0, v1) - getMinCorner();
-  auto grid_max = maxPosition(v0, v1) - getMinCorner();
+  if ( xy.X() < getMinCorner().X() || xy.X() > getMaxCorner().X() ||
+       xy.Y() < getMinCorner().Y() || xy.Y() > getMaxCorner().Y() ) {
+    // grid does not contain the XY position
+    return;
+  }
 
-  auto idx_min = GridIndexType(
-    static_cast<size_t>(max(grid_min.X() / m_cell_length, 0.0)),
-    static_cast<size_t>(max(grid_min.Y() / m_cell_length, 0.0)),
-    static_cast<size_t>(max(grid_min.Z() / m_cell_length, 0.0))
-  );
-  auto idx_max = GridIndexType(
-    min(static_cast<size_t>(grid_max.X() / m_cell_length)+1, m_dimensions.X()),
-    min(static_cast<size_t>(grid_max.Y() / m_cell_length)+1, m_dimensions.Y()),
-    min(static_cast<size_t>(grid_max.Z() / m_cell_length)+1, m_dimensions.Z())
-  );
+  // order z positions and constrain to within the grid
+  auto zmin = clamp(min(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
+  auto zmax = clamp(max(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
 
-  for (auto x = idx_min.X(); x != idx_max.X(); ++x) {
-    for (auto y = idx_min.Y(); y != idx_max.Y(); ++y) {
-      for (auto z = idx_min.Z(); z != idx_max.Z(); ++z) {
-        auto idx = GridIndexType(x, y, z);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
+  if (zmin == zmax) {
+    // column is entirely above/below the grid domain, but not within
+    return;
+  }
+
+  auto idx = GridIndexType{
+    static_cast<size_t>((xy.X() - getMinCorner().X()) / m_cell_length),
+    static_cast<size_t>((xy.Y() - getMinCorner().Y()) / m_cell_length),
+    0u
+  };
+
+  auto kmin = static_cast<size_t>((zmin - getMinCorner().Z()) / m_cell_length);
+  auto kmax = static_cast<size_t>((zmax - getMinCorner().Z()) / m_cell_length);
+
+  for (auto k = kmin; k != kmax + 1; ++k) {
+    idx.Z() = k;
+    f(getCellValue(idx), getCellCenter(idx));
   }
 };
 

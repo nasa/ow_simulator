@@ -127,11 +127,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     );
 
     // acquire the next child
-    // child = child->GetNextElement();
     child = child->GetNextElement(PARAMETER_MATERIALS_CHILD);
   }
-
-  gzlog << "reference size = " << m_reference_colors.size() << endl;
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
     m_node_handle.get(), m_grid.get(),
@@ -340,22 +337,28 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
 void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
 {
-  std::stringstream s;
-  s << "handleVisualBulk: STUBBED\n"
-       "the bulk contains\n";
-  for (auto const &x : blend.getBlendMap())
-    s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-  gzlog << s.str() << endl;
+  // STUBBED: The complete version of this method will handle downstream effects
+  //  of a visual modification like scoop forces and regolith content.
+  // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
+  // std::stringstream s;
+  // s << "handleVisualBulk: STUBBED\n"
+  //      "the bulk contains\n";
+  // for (auto const &x : blend.getBlendMap())
+  //   s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
+  // gzlog << s.str() << endl;
 }
 
 void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
 {
-  std::stringstream s;
-  s << "handleCollisionBulk: STUBBED\n"
-       "the bulk contains\n";
-  for (auto const &x : blend.getBlendMap())
-    s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
-  gzlog << s.str() << endl;
+  // STUBBED: The complete version of this method will handle downstream effects
+  //  of a collision modification, like grinder force and torque.
+  // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
+  // std::stringstream s;
+  // s << "handleCollisionBulk: STUBBED\n"
+  //      "the bulk contains\n";
+  // for (auto const &x : blend.getBlendMap())
+  //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
+  // gzlog << s.str() << endl;
 }
 
 Color MaterialDistributionPlugin::interpolateColor(

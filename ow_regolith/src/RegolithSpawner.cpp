@@ -109,12 +109,12 @@ bool RegolithSpawner::initialize()
     SRV_REMOVE_ALL_REGOLITH, &RegolithSpawner::removeRegolithSrv, this);
 
   // subscribe to all ROS topics
-  m_sub_link_states = m_node_handle->subscribe(
-    TOPIC_LINK_STATES, 1, &RegolithSpawner::onLinkStatesMsg, this);
-  m_sub_terrain_contact = m_node_handle->subscribe(
-    TOPIC_TERRAIN_CONTACT, 1, &RegolithSpawner::onTerrainContact, this);
-  m_sub_mod_diff_visual = m_node_handle->subscribe(
-    TOPIC_MODIFY_TERRAIN_VISUAL, 1, &RegolithSpawner::onModDiffVisualMsg, this);
+  m_sub_link_states = m_node_handle->subscribe(TOPIC_LINK_STATES,
+    1, &RegolithSpawner::onLinkStatesMsg, this);
+  m_sub_terrain_contact = m_node_handle->subscribe(TOPIC_TERRAIN_CONTACT,
+    1, &RegolithSpawner::onTerrainContact, this);
+  m_sub_mod_diff_visual = m_node_handle->subscribe(TOPIC_MODIFY_TERRAIN_VISUAL,
+    10, &RegolithSpawner::onModDiffVisualMsg, this);
 
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
@@ -193,8 +193,18 @@ void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
   m_model_pool->remove(msg->link_names);
 }
 
-void RegolithSpawner::onModDiffVisualMsg(const modified_terrain_diff::ConstPtr& msg)
+void RegolithSpawner::onModDiffVisualMsg(
+  const modified_terrain_diff::ConstPtr& msg)
 {
+  if (msg->header.seq != m_next_expected_seq) {
+    ROS_WARN_STREAM(
+      "Modification message on topic " << m_sub_mod_diff_visual.getTopic()
+      << " was dropped! At least " << (msg->header.seq - m_next_expected_seq)
+      << " message(s) may have been missed."
+    );
+  }
+  m_next_expected_seq = msg->header.seq + 1;
+
   // inform dig state machine terrain has been modified
   m_dig_state->handleTerrainModified();
 

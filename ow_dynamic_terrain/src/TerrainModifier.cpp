@@ -32,10 +32,6 @@ static void formatDiffMsg(const CvImage& result_image,
   out_diff_msg.position = position;
   out_diff_msg.height = rows / scale_factor;
   out_diff_msg.width  = cols / scale_factor;
-
-  gzlog << "DynamicTerrain: " << op_name << " operation performed at (" 
-        << position.x << ", " << position.y << ")"
-        << endl;
 }
 
 bool TerrainModifier::modifyCircle(Heightmap* heightmap, TexturePtr maskmap,
@@ -296,9 +292,7 @@ bool TerrainModifier::applyImage(Heightmap* heightmap, TexturePtr maskmap,
       auto old_height = get_height_value(x, y);
       auto new_height = merge_method(old_height, pixel_value + z_bias);
 
-      auto iy = y - top;
-      auto ix = x - left;
-      result.at<float>(iy, ix) = new_height;
+      result.at<float>(cv_index_y, cv_index_x) = new_height;
 
       if (old_height == new_height) 
         continue; // no change is necessary

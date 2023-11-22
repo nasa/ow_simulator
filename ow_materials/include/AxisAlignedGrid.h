@@ -22,6 +22,7 @@ public:
 };
 
 using GridPositionType = ignition::math::Vector3d;
+using GridPositionType2D = ignition::math::Vector2d;
 
 template <typename T>
 class AxisAlignedGrid {
@@ -30,6 +31,7 @@ class AxisAlignedGrid {
   // Each cube, or cell, or voxel, is linked to a value of type T.
 
   using GridIndexType = ignition::math::Vector3<std::size_t>;
+
 public:
   AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
                   double cell_side_length);
@@ -46,12 +48,12 @@ public:
 
   inline double getCellLength() const { return m_cell_length; }
 
-  // WARNING: execution will take a long time even for moderate-sized grids
+  // WARNING: execution will may take a long time depending on grid resolution
   void runForEach(std::function<void(const T&, GridPositionType)> f) const;
   void runForEach(std::function<void(T&, GridPositionType)> f);
   
-  void runForEachInAxisAlignedBox(GridPositionType v0, GridPositionType v1,
-                      std::function<void(const T&, GridPositionType)> f) const;
+  void runForEachInColumn(GridPositionType2D xy, double z1, double z2,
+    std::function<void(const T&, GridPositionType)> f) const;
 
 private:
 

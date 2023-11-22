@@ -7,6 +7,9 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
+
+#include <boost/asio/thread_pool.hpp>
 
 #include <ros/ros.h>
 
@@ -14,6 +17,7 @@
 #include <Materials.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
+
 
 namespace ow_materials
 {
@@ -49,13 +53,39 @@ private:
 
   ros::Publisher m_dug_points_pub;
 
+  // when enough time has passed since the last onModification call, this
+  // triggers logging of statistics about blend operation performance
+  ros::Timer m_stat_log_timeout;
+
   HandleBulkCallback m_handle_bulk_cb;
 
   ColorizerCallback m_colorizer_cb;
 
   AxisAlignedGrid<MaterialBlend> const *m_grid;
 
-  void onModification(
+  std::uint32_t m_next_expected_seq = 0u;
+
+  // used to compute performance statistics on batches of modifications
+  std::atomic<std::uint32_t> m_batch_total_modifications = 0u;
+  std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0L;
+  std::atomic<std::uint32_t> m_batch_accumulated_merges = 0u;
+
+  // used to asynchronously parallelize calls to integrate
+  boost::asio::thread_pool m_threads;
+
+  void onStatLogTimeout(const ros::TimerEvent&);
+
+  // make necessary calls to reset the member ROS Timer
+  void resetStatLogTimeout();
+
+  // handles modifications by posting a new integrate call to a thread pool
+  void onModificationMsg(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
+  // Computes the intersection of the volume between new and old heightmap
+  // values and the voxel grid. Merges all MaterialBlend values within that
+  // intersection and calls the HandleBulkCallback with the resulting blend.
+  void integrate(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
 };

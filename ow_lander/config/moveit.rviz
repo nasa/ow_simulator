@@ -389,8 +389,8 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.0020000000949949026
-      Style: Flat Squares
+      Size (m): 0.007000000216066837
+      Style: Boxes
       Topic: /ow_materials/dug_points2
       Unreliable: false
       Use Fixed Frame: true
@@ -417,7 +417,7 @@ Visualization Manager:
       Queue Size: 1
       Selectable: false
       Size (Pixels): 3
-      Size (m): 0.004999999888241291
+      Size (m): 0.007000000216066837
       Style: Boxes
       Topic: /ow_materials/grid_points2
       Unreliable: false
@@ -440,7 +440,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 1.8960009813308716
+      Distance: 2.609889507293701
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -448,17 +448,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 2.1646480560302734
-        Y: -0.3580704927444458
-        Z: -1.1179511147929588e-06
+        X: 2.1457571983337402
+        Y: -0.3955997824668884
+        Z: 4.317696493671974e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6297976970672607
+      Pitch: 0.6797976493835449
       Target Frame: base_link
-      Yaw: 5.45681619644165
+      Yaw: 6.116830825805664
     Saved: ~
 Window Geometry:
   Displays:
@@ -476,5 +476,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1211
-  X: 32
-  Y: 60
+  X: 1334
+  Y: 67
