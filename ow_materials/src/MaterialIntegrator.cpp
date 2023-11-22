@@ -40,31 +40,32 @@ MaterialIntegrator::MaterialIntegrator(
     )
 {
   m_sub_modification_diff = m_node_handle->subscribe(modification_topic, 1,
-    &MaterialIntegrator::onModification, this);
+    &MaterialIntegrator::onModificationMsg, this);
   m_dug_points_pub = m_node_handle
     ->advertise<sensor_msgs::PointCloud2>(dug_points_topic, 10);
 }
 
 void MaterialIntegrator::onStatLogTimeout(const ros::TimerEvent&)
 {
-  auto average_time = (m_batch_accumulated_processor_time * 1.0e-9)
+  // compute averages
+  auto average_time = (m_batch_accumulated_processor_time * 1.0e-6) // ns to ms
                       / m_batch_total_modifications;
   auto average_merges = m_batch_accumulated_merges
                         / m_batch_total_modifications;
 
   gzlog << "Batch of modifications from topic "
           << m_sub_modification_diff.getTopic() << " completed.\n"
-        << "Total number of modifications in batch was "
-          << m_batch_total_modifications << "\n"
+        << "Total number of terrain modifications in batch was "
+          << m_batch_total_modifications << ".\n"
         << "Average processor time per modification was "
-          << average_time << "\n"
-        << "Average merges per modification was "
-          << average_merges << std::endl;
+          << average_time << " ms.\n"
+        << "Average material blend merges per modification was "
+          << average_merges << "." << std::endl;
 
   // reset batch statistics for next batch of modifications
   m_batch_total_modifications = 0u;
   m_batch_accumulated_processor_time = 0L;
-  m_batch_accumulated_merges = 0L;
+  m_batch_accumulated_merges = 0u;
 }
 
 void MaterialIntegrator::resetStatLogTimeout()
@@ -74,7 +75,7 @@ void MaterialIntegrator::resetStatLogTimeout()
   m_stat_log_timeout.start();
 }
 
-void MaterialIntegrator::onModification(
+void MaterialIntegrator::onModificationMsg(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
   resetStatLogTimeout();
@@ -122,14 +123,16 @@ void MaterialIntegrator::integrate(
   pcl::PointCloud<pcl::PointXYZRGB> points;
 
   // The following code makes these assumptions:
-  //   a) Each voxel the modification touches acquires the entirety of that
-  //      voxel. In other words, volume intersections are not factored in.
+  //   a) Each intersected voxel contributes the entirety of its blend to the
+  //      final bulk blend. In other words, partial voxel intersections along
+  //      the boundary are not accounted for.
   //   b) Each blend in the material grid is already normalized.
   //   c) All voxels are of the same volume.
 
   // TODO: make float-double usage uniform
 
-  // estimate the total volume displaced using a Riemann sum over the image
+  // iterate over entire the differential image and blend voxel grid values that
+  // lie within the volume between old heightmap values and new heightmap values
   for (size_t i = 0; i != cols; ++i) {
     for (size_t j = 0; j != rows; ++j) {
       // change in height at pixel (x, y)
@@ -137,18 +140,19 @@ void MaterialIntegrator::integrate(
       if (dz >= 0.0) { // ignore non-modified or raised terrain
         continue;
       }
-      // compute location in grid
+      // compute world-space coordinates of this pixel's center
       const float x = (msg->position.x - msg->width / 2)
                         + static_cast<float>(j) / rows * msg->width;
-      // +i and +y are in opposite directions, so flip signs
+      // +i and +y are in opposite directions, so flip the signs
       const float y = (msg->position.y + msg->height / 2)
                         - static_cast<float>(i) / cols * msg->height;
-      // starting layer position; next loop will iterate up to the original z
-      const auto z_result = result_handle->image.at<float>(i, j);
       const auto pixel_center = GridPositionType2D{x + pixel_width / 2,
                                                    y + pixel_height / 2};
+      // determine world-space z values at the top and bottom of the z-column
+      const auto z_bottom = result_handle->image.at<float>(i, j);
+      const auto z_top = z_bottom - dz; // dz is negative
       m_grid->runForEachInColumn(
-        pixel_center, z_result, z_result - dz, // dz is negative
+        pixel_center, z_bottom, z_top,
         [&bulk_blend, &points]
         (MaterialBlend const &b, GridPositionType center) {
           if (b.isEmpty()) return;
@@ -169,7 +173,6 @@ void MaterialIntegrator::integrate(
     return;
   }
 
-  // normalize the bulk by the number of blends that were merged into it
   bulk_blend.normalize();
 
   Color bulk_color = m_colorizer_cb(bulk_blend);
@@ -180,9 +183,6 @@ void MaterialIntegrator::integrate(
   for (auto &p : points) {
     p.rgb = bulk_rgb;
   }
-
-  // SAVED for debugging
-  // gzlog << "number of merges = " << points.size() << std::endl;
 
   m_batch_accumulated_processor_time
     += (ros::WallTime::now() - start_time).toNSec();

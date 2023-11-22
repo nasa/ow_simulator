@@ -68,18 +68,23 @@ private:
   // used to compute performance statistics on batches of modifications
   std::atomic<std::uint32_t> m_batch_total_modifications = 0u;
   std::atomic<std::int64_t> m_batch_accumulated_processor_time = 0L;
-  std::atomic<std::uint32_t> m_batch_accumulated_merges = 0L;
+  std::atomic<std::uint32_t> m_batch_accumulated_merges = 0u;
 
   // used to asynchronously parallelize calls to integrate
   boost::asio::thread_pool m_threads;
 
   void onStatLogTimeout(const ros::TimerEvent&);
 
+  // make necessary calls to reset the member ROS Timer
   void resetStatLogTimeout();
 
-  void onModification(
+  // handles modifications by posting a new integrate call to a thread pool
+  void onModificationMsg(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
+  // Computes the intersection of the volume between new and old heightmap
+  // values and the voxel grid. Merges all MaterialBlend values within that
+  // intersection and calls the HandleBulkCallback with the resulting blend.
   void integrate(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
