@@ -25,7 +25,7 @@ class SunValues:
     self.listener = tf.TransformListener()
 
     # Must use separate messages or they sometimes interfere with one another
-    self.lux_msg = ShaderParamUpdate()
+    self.flux_msg = ShaderParamUpdate()
     self.visibility_msg = ShaderParamUpdate()
     self.shader_param_pub = rospy.Publisher("/gazebo/global_shader_param", ShaderParamUpdate, queue_size=1)
 
@@ -46,17 +46,17 @@ class SunValues:
     dist = math.sqrt(trans[0] * trans[0] + trans[1] * trans[1] + trans[2] * trans[2])
     # Ratio of 1 AU over distance
     dist_ratio = 149597870700.0 / dist
-    # Use the solar illuminance constant to compute lux at this distance from sun
-    lux = 133000.0 * dist_ratio * dist_ratio
+    # Use the solar constant (in W / m^2) to compute flux at this distance from sun
+    flux = 1361.5 * dist_ratio * dist_ratio
 
-    self.lux_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
-    self.lux_msg.paramName = "sunIntensity"
-    self.lux_msg.paramValue = str(lux) + ' ' + str(lux) + ' ' + str(lux)
-    self.shader_param_pub.publish(self.lux_msg)
+    self.flux_msg.shaderType = ShaderParamUpdate.SHADER_TYPE_FRAGMENT
+    self.flux_msg.paramName = "sunIntensity"
+    self.flux_msg.paramValue = str(flux) + ' ' + str(flux) + ' ' + str(flux)
+    self.shader_param_pub.publish(self.flux_msg)
 
-    self.lens_flare_color_msg.x = lux
-    self.lens_flare_color_msg.y = lux
-    self.lens_flare_color_msg.z = lux
+    self.lens_flare_color_msg.x = flux
+    self.lens_flare_color_msg.y = flux
+    self.lens_flare_color_msg.z = flux
     self.lens_flare_color_pub.publish(self.lens_flare_color_msg)
 
   # Pass sun visibility value from irg_planetary_ephemeris to shaders in our
