@@ -38,9 +38,7 @@ out vec3 wsNormal;
 out vec3 wsVecToEye;
 out vec2 wsHeightmapUV;
 out vec3 vsPos;
-//out vec3 vsNormal;
 out mat3 normalMatrix;
-//out vec3 vsVecToSun;
 
 // halfFOVy must be in radians. near and far must be positive.
 mat4 perspectiveProjection(float halfFOVy, float near, float far)
@@ -85,9 +83,6 @@ void main()
   wsHeightmapUV = uv0;
 
   normalMatrix = mat3(inverseTransposeWorldViewMatrix);
-
-  //vsNormal = normalMatrix * normal;
-  //vsVecToSun = normalMatrix * normalize(wsSunPosition.xyz);
 
   // PSSM shadows
   vec4 worldPos = worldMatrix * position;

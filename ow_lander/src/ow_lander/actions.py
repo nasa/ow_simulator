@@ -1226,8 +1226,8 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
-    except ArmExecutionError as err:
+      not_preempted = self.move(pan = goal.pan, tilt = goal.tilt)
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       pan, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
@@ -1256,8 +1256,8 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_pan(goal.pan)
-    except ArmExecutionError as err:
+      not_preempted = self.move(pan = goal.pan)
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
     else:
@@ -1283,8 +1283,8 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_tilt(goal.tilt)
-    except ArmExecutionError as err:
+      not_preempted = self.move(tilt = goal.tilt)
+    except (AntennaPlanningError, AntennaExecutionError) as err:
       _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
     else:
@@ -1316,7 +1316,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
                                                      'l_ant_panel')
     try:
       frame_id = mixins.FrameMixin.get_frame_id_from_index(goal.frame)
-    except ArmExecutionError as err:
+    except ActionError as err:
       self._set_aborted(str(err))
       return
     lookat = goal.point
@@ -1359,7 +1359,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     tilt_raw = -(a + b - (math.pi / 2))
     tilt = normalize_radians(tilt_raw)
     try:
-      not_preempted = self.move_pan_and_tilt(pan, tilt)
+      not_preempted = self.move(pan = pan, tilt = tilt)
     except (AntennaPlanningError, AntennaExecutionError) as err:
       self._set_aborted(str(err))
     else:
