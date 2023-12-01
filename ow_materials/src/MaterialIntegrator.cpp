@@ -190,6 +190,6 @@ void MaterialIntegrator::integrate(
 
   publishPointCloud(&m_dug_points_pub, points);
 
-  m_handle_bulk_cb(bulk_blend);
+  m_handle_bulk_cb(bulk_blend, static_cast<uint32_t>(points.size()));
 }
 

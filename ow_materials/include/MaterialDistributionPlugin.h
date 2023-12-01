@@ -42,9 +42,9 @@ public:
 
   void getHeightmapAlbedo();
 
-  void handleVisualBulk(MaterialBlend const &blend);
+  void handleVisualBulk(MaterialBlend const &blend, std::uint32_t count);
 
-  void handleCollisionBulk(MaterialBlend const &blend);
+  void handleCollisionBulk(MaterialBlend const &blend, std::uint32_t count);
 
   Color interpolateColor(MaterialBlend const &blend) const;
 

@@ -22,9 +22,10 @@
 namespace ow_materials
 {
 
-using HandleBulkCallback = std::function<void(MaterialBlend const &)>;
+using HandleBulkCallback = std::function<void(MaterialBlend const&,
+                                              std::uint32_t)>;
 
-using ColorizerCallback = std::function<Color(MaterialBlend const &)>;
+using ColorizerCallback = std::function<Color(MaterialBlend const&)>;
 
 class MaterialIntegrator
 {

@@ -135,7 +135,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     "/ow_dynamic_terrain/modification_differential/visual",
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
-      std::placeholders::_1),
+      std::placeholders::_1, std::placeholders::_2),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
@@ -144,7 +144,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     "/ow_dynamic_terrain/modification_differential/collision",
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
-      std::placeholders::_1),
+      std::placeholders::_1, std::placeholders::_2),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
@@ -335,7 +335,8 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         << endl;
 }
 
-void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
+void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend,
+                                                  std::uint32_t count)
 {
 
   // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
@@ -344,25 +345,30 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a visual modification like scoop forces and regolith content.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  // std::stringstream s;
-  // s << "handleVisualBulk: STUBBED\n"
-  //      "the bulk contains\n";
-  // for (auto const &x : blend.getBlendMap())
-  //   s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-  // gzlog << s.str() << endl;
+  std::stringstream s;
+  s << "handleVisualBulk: STUBBED\n"
+    << count << " voxels intersected.\n"
+    << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+    "The bulk material contains\n";
+  for (auto const &x : blend.getBlendMap())
+    s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
+  gzlog << s.str() << endl;
 }
 
-void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
+void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend,
+                                                     std::uint32_t count)
 {
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a collision modification, like grinder force and torque.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  // std::stringstream s;
-  // s << "handleCollisionBulk: STUBBED\n"
-  //      "the bulk contains\n";
-  // for (auto const &x : blend.getBlendMap())
-  //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
-  // gzlog << s.str() << endl;
+  std::stringstream s;
+  s << "handleVisualBulk: STUBBED\n"
+    << count << " voxels intersected.\n"
+    << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+    "The bulk material contains\n";
+  for (auto const &x : blend.getBlendMap())
+    s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
+  gzlog << s.str() << endl;
 }
 
 Color MaterialDistributionPlugin::interpolateColor(

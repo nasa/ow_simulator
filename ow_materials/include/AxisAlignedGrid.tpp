@@ -118,6 +118,12 @@ const GridPositionType &AxisAlignedGrid<T>::getCenter() const {
 };
 
 template <typename T>
+const double &AxisAlignedGrid<T>::getCellVolume() const {
+  static const double volume = m_cell_length * m_cell_length * m_cell_length;
+  return volume;
+};
+
+template <typename T>
 GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
 {
   GridPositionType grid_coord = GridPositionType(
