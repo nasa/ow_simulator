@@ -11,11 +11,11 @@
 #include <vector>
 
 #include <ModelPool.h>
-#include <DigStateMachine.h>
 
 #include <gazebo_msgs/LinkStates.h>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
+#include <ow_dynamic_terrain/scoop_dig_phase.h>
 
 #include <ow_regolith/SpawnRegolith.h>
 #include <ow_regolith/RemoveRegolith.h>
@@ -23,11 +23,13 @@
 
 namespace ow_regolith {
 
+class RegolithSpawner
+
 // RegolithSpawner is a ROS node that detects when digging by the scoop
 // end-effector occurs and spawns a model in the scoop to represent collected
 // material. The node will also remove models it has spawned as they collide
 // with the terrain or in response to a service call.
-class RegolithSpawner
+
 {
 public:
   RegolithSpawner(const std::string &node_name);
@@ -55,15 +57,16 @@ public:
   bool removeRegolithSrv(ow_regolith::RemoveRegolithRequest &request,
                          ow_regolith::RemoveRegolithResponse &response);
 
-  // saves the orientation of scoop to a member variable
-  void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
-
   void onTerrainContact(const ow_regolith::Contacts::ConstPtr &msg);
+
+  void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
 
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
   void onModDiffVisualMsg(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
+  void onDigPhaseMsg(const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg);
 
 private:
   // ROS interfaces
@@ -73,13 +76,18 @@ private:
   ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
   ros::Subscriber m_sub_mod_diff_visual;
+  ros::Subscriber m_sub_dig_phase;
+
+  // true if scoop is performing a dig motion
+  bool m_digging = false;
+  // true if scoop is performing a dig motion and is exiting the terrain
+  bool m_retracting = false;
+
   // sequence number of mod diff visual message
   std::uint32_t m_next_expected_seq = 0u;
 
   // spawns, removes, and applies forces to spawned models
   std::unique_ptr<ModelPool> m_model_pool;
-  // estimates the state of a dig from scoop orientation and terrain mods
-  std::unique_ptr<DigStateMachine> m_dig_state;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;

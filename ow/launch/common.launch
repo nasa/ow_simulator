@@ -79,6 +79,10 @@
   <!-- Start faults detection node -->
   <node name="faults_detection" pkg="ow_faults_detection" type="faults_detection" output="screen" />
 
+  <!-- Monitor scoop position to detect a dig operation -->
+  <node name="dig_detection_node" pkg="ow_dynamic_terrain"
+    type="dig_detection_node" output="screen"/>
+
   <!-- ====== simulate changes to the terrain caused by the scoop   ======= -->
   <node name="modify_terrain_scoop" pkg="ow_dynamic_terrain" type="modify_terrain_scoop_pub.py" output="screen"/>
 

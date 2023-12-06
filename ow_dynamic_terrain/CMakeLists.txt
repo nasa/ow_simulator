@@ -90,6 +90,7 @@ add_message_files(
   modify_terrain_ellipse.msg
   modify_terrain_patch.msg
   modified_terrain_diff.msg
+  scoop_dig_phase.msg
 )
 
 generate_messages(
@@ -212,6 +213,23 @@ add_dependencies(${PROJECT_NAME}_visual
 
 target_link_libraries(${PROJECT_NAME}_visual
   ${PROJECT_NAME}_shared
+)
+
+## dig_detection_node (dig phase estimation)
+
+add_executable(dig_detection_node
+  src/dig_detection_node.cpp
+  src/DigDetector.cpp
+  src/DigStateMachine.cpp
+)
+
+add_dependencies(dig_detection_node
+  ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(dig_detection_node
+  ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
 )
 
 #############
