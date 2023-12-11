@@ -125,8 +125,7 @@ bool RegolithSpawner::initialize()
                                              / 180.0f; // radians
   // FIXME: this is not the right formula and results in a force much larger
   //  than the particle weight
-  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f
-                                              / cos(MAX_SCOOP_INCLINATION_RAD);
+  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
   // query gazebo for the gravity vector
   ServiceClientFacade gz_get_phys_props;
   GetPhysicsProperties phys_prop_msg;
