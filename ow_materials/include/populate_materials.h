@@ -5,7 +5,7 @@
 #include <string>
 #include <stdexcept>
 
-#include <MaterialDatabase.h>
+#include "MaterialDatabase.h"
 
 // thrown when material configuration is not correctly formatted
 class MaterialConfigError : public std::runtime_error

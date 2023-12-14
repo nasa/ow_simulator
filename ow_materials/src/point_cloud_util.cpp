@@ -2,11 +2,9 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <point_cloud_util.h>
-
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <ros/ros.h>
+#include "point_cloud_util.h"
+#include "pcl_conversions/pcl_conversions.h"
+#include "ros/ros.h"
 
 void publishPointCloud(ros::Publisher *pub,
                        pcl::PointCloud<pcl::PointXYZRGB> &cloud)

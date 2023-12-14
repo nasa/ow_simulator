@@ -2,9 +2,9 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <gazebo/common/common.hh>
+#include "gazebo/common/common.hh"
 
-#include <MaterialDatabase.h>
+#include "MaterialDatabase.h"
 
 using namespace ow_materials;
 

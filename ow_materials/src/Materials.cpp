@@ -5,7 +5,7 @@
 #include <numeric>
 #include <cmath>
 
-#include <Materials.h>
+#include "Materials.h"
 
 using namespace ow_materials;
 

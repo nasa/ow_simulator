@@ -9,15 +9,14 @@
 #include <memory>
 #include <mutex>
 
-#include <boost/asio/thread_pool.hpp>
+#include "boost/asio/thread_pool.hpp"
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 
-#include <AxisAlignedGrid.h>
-#include <Materials.h>
+#include "ow_dynamic_terrain/modified_terrain_diff.h"
 
-#include <ow_dynamic_terrain/modified_terrain_diff.h>
-
+#include "AxisAlignedGrid.h"
+#include "Materials.h"
 
 namespace ow_materials
 {

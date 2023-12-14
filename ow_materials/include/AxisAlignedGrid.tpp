@@ -6,7 +6,7 @@
 #include <limits>
 #include <algorithm>
 
-#include <gazebo/common/Assert.hh>
+#include "gazebo/common/Assert.hh"
 
 using std::min, std::max, std::ceil, std::size_t, std::clamp;
 

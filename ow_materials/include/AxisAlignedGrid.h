@@ -9,7 +9,7 @@
 #include <memory>
 #include <functional>
 
-#include <ignition/math/AxisAlignedBox.hh>
+#include "ignition/math/AxisAlignedBox.hh"
 
 namespace ow_materials {
 

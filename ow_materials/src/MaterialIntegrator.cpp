@@ -2,20 +2,18 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <MaterialIntegrator.h>
-
 #include <cmath>
 #include <algorithm>
 #include <thread>
 
-#include <gazebo/gazebo.hh>
+#include "gazebo/gazebo.hh"
+#include "cv_bridge/cv_bridge.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/core/mat.hpp"
 
-#include <cv_bridge/cv_bridge.h>
+#include "point_cloud_util.h"
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/mat.hpp>
-
-#include <point_cloud_util.h>
+#include "MaterialIntegrator.h"
 
 using namespace ow_materials;
 

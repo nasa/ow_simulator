@@ -8,9 +8,9 @@
 #include <set>
 #include <limits>
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 
-#include <populate_materials.h>
+#include "populate_materials.h"
 
 using std::string, std::begin, std::end, std::initializer_list, std::set,
       std::vector, std::stringstream, std::numeric_limits, std::runtime_error;

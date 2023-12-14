@@ -7,13 +7,13 @@
 #include <functional>
 #include <unordered_map>
 
-#include <boost/functional/hash.hpp>
+#include "boost/functional/hash.hpp"
 
-#include <point_cloud_util.h>
-#include <gazebo/rendering/rendering.hh>
+#include "gazebo/rendering/rendering.hh"
 
-#include <MaterialDistributionPlugin.h>
-#include <populate_materials.h>
+#include "point_cloud_util.h"
+#include "populate_materials.h"
+#include "MaterialDistributionPlugin.h"
 
 using std::string, std::make_unique, std::endl, std::uint8_t, std::size_t,
       std::runtime_error, std::make_pair, std::unordered_map;
