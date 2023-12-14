@@ -337,6 +337,10 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
 void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
 {
+
+  // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
+  //  scoop digging is not occurring
+
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a visual modification like scoop forces and regolith content.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.

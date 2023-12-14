@@ -34,24 +34,25 @@ using tf::Vector3, tf::Point, tf::vector3MsgToTF, tf::pointMsgToTF,
 using gazebo_msgs::LinkStates, gazebo_msgs::GetPhysicsProperties;
 
 // service paths served by this class
-const static string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
-const static string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
-const static string SRV_GET_PHYS_PROPS      = "/gazebo/get_physics_properties";
+const string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
+const string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
+const string SRV_GET_PHYS_PROPS      = "/gazebo/get_physics_properties";
 
 // topic paths used in class
-const static string TOPIC_LINK_STATES           = "/gazebo/link_states";
-const static string TOPIC_TERRAIN_CONTACT       = "/ow_regolith/contacts/terrain";
-const static string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
+const string TOPIC_LINK_STATES           = "/gazebo/link_states";
+const string TOPIC_TERRAIN_CONTACT       = "/ow_regolith/contacts/terrain";
+const string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
+const string TOPIC_DIG_PHASE             = "/ow_dynamic_terrain/scoop_dig_phase";
 
-const static string REGOLITH_TAG = "regolith";
+const string REGOLITH_TAG  = "regolith";
 
 // constants specific to the scoop end-effector
-const static string SCOOP_LINK_NAME       = "lander::l_scoop_tip";
-const static Vector3 SCOOP_FORWARD        = Vector3(1.0, 0.0, 0.0);
-const static Vector3 SCOOP_SPAWN_OFFSET   = Vector3(0.0, 0.0, -0.05);
-const static double SCOOP_WIDTH           = 0.08; // meters
+const string SCOOP_LINK_NAME       = "lander::l_scoop_tip";
+const Vector3 SCOOP_FORWARD        = Vector3(1.0, 0.0, 0.0);
+const Vector3 SCOOP_SPAWN_OFFSET   = Vector3(0.0, 0.0, -0.05);
+const double SCOOP_WIDTH           = 0.08; // meters
 
-const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
+const ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
 RegolithSpawner::RegolithSpawner(const string &node_name)
   : m_node_handle(make_shared<ros::NodeHandle>(node_name)),
@@ -100,8 +101,6 @@ bool RegolithSpawner::initialize()
     return false;
   }
 
-  m_dig_state = make_unique<DigStateMachine>(m_node_handle, this);
-
   // advertise services served by this class
   m_srv_spawn_regolith = m_node_handle->advertiseService(
     SRV_SPAWN_REGOLITH, &RegolithSpawner::spawnRegolithSrv, this);
@@ -115,12 +114,18 @@ bool RegolithSpawner::initialize()
     1, &RegolithSpawner::onTerrainContact, this);
   m_sub_mod_diff_visual = m_node_handle->subscribe(TOPIC_MODIFY_TERRAIN_VISUAL,
     10, &RegolithSpawner::onModDiffVisualMsg, this);
+  m_sub_dig_phase = m_node_handle->subscribe(TOPIC_DIG_PHASE,
+    1, &RegolithSpawner::onDigPhaseMsg, this);
+
 
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
   constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0f; // degrees
-  constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI / 180.0f; // radians
-  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = 1.0f / cos(MAX_SCOOP_INCLINATION_RAD);
+  constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI
+                                             / 180.0f; // radians
+  // FIXME: this is not the right formula and results in a force much larger
+  //  than the particle weight
+  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
   // query gazebo for the gravity vector
   ServiceClientFacade gz_get_phys_props;
   GetPhysicsProperties phys_prop_msg;
@@ -183,9 +188,6 @@ void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg)
   }
   auto pose_it = begin(msg->pose) + distance(begin(msg->name), name_it);
   quaternionMsgToTF(pose_it->orientation, m_scoop_orientation);
-
-  // inform dig state machine scoop orientation has been updated
-  m_dig_state->handleScoopPoseUpdate(m_scoop_orientation);
 }
 
 void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
@@ -205,11 +207,8 @@ void RegolithSpawner::onModDiffVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  // inform dig state machine terrain has been modified
-  m_dig_state->handleTerrainModified();
-
   // if not digging, ignore this modification as it could be caused by a grind
-  if (!m_dig_state->isDigging())
+  if (!m_digging)
     return;
 
   // import image to so we can traverse it
@@ -255,7 +254,7 @@ void RegolithSpawner::onModDiffVisualMsg(
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // if scoop is exiting terrain, adding psuedo forces is unnecesssary
-    if (m_dig_state->isRetracting())
+    if (m_retracting)
       return;
     // compute psuedo force direction from scoop orientation
     Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
@@ -268,5 +267,28 @@ void RegolithSpawner::onModDiffVisualMsg(
       ROS_ERROR("Failed to apply force to regolith %s", link_name.c_str());
       return;
     }
+  }
+}
+
+void RegolithSpawner::onDigPhaseMsg(
+  const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg)
+{
+  m_digging = msg->digging;
+  m_retracting = msg->phase == msg->RETRACTING;
+  using ow_dynamic_terrain::scoop_dig_phase;
+  switch (msg->phase) {
+    // do nothing phases
+    case scoop_dig_phase::SINKING:
+    case scoop_dig_phase::PLOWING:
+      break;
+    case scoop_dig_phase::NOT_DIGGING:
+      resetTrackedVolume();
+      clearAllPsuedoForces();
+      break;
+    case scoop_dig_phase::RETRACTING:
+      clearAllPsuedoForces();
+      break;
+    default:
+      ROS_ERROR("Unhandled dig state received. This should never happen!");
   }
 }

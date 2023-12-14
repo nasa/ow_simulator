@@ -77,9 +77,9 @@ add_message_files(
 )
 
 generate_messages(
-    DEPENDENCIES
-    std_msgs
-    geometry_msgs
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
 )
 
 ###################################
@@ -129,7 +129,6 @@ add_executable(regolith_node
   src/regolith_node.cpp
   src/RegolithSpawner.cpp
   src/ModelPool.cpp
-  src/DigStateMachine.cpp
   src/sdf_utility.cpp
 )
 add_dependencies(regolith_node 
