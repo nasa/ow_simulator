@@ -1,0 +1,3 @@
+std_msgs/Header header
+uint8 material_index
+float32 volume_excavated

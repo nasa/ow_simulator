@@ -99,7 +99,7 @@
     <param name="spawn_spacing" type="double" value="0.021"/>
   </node>
 
-  <!-- load materials file into ROS paramters -->
+  <!-- load materials file into ROS parameters -->
   <rosparam command="load" ns="ow_materials"
     file="$(find ow_materials)/config/materials.yaml"/>
 

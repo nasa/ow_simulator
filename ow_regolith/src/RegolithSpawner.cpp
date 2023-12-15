@@ -152,8 +152,9 @@ void RegolithSpawner::resetTrackedVolume()
 
 void RegolithSpawner::clearAllPsuedoForces()
 {
-  if (!m_model_pool->clearAllForces())
+  if (!m_model_pool->clearAllForces()) {
     ROS_WARN("Failed to clear force on one or more regolith particles");
+  }
 }
 
 bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
@@ -169,12 +170,13 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
 bool RegolithSpawner::removeRegolithSrv(RemoveRegolithRequest &request,
                                         RemoveRegolithResponse &response)
 {
-  if (request.link_names.empty())
+  if (request.link_names.empty()) {
     // remove all regolith models
     response.not_removed = m_model_pool->clear();
-  else
+  } else {
     // remove specific regolith models
     response.not_removed = m_model_pool->remove(request.link_names);
+  }
   response.success = response.not_removed.empty();
   return true;
 }
@@ -208,8 +210,9 @@ void RegolithSpawner::onModDiffVisualMsg(
   m_next_expected_seq = msg->header.seq + 1;
 
   // if not digging, ignore this modification as it could be caused by a grind
-  if (!m_digging)
+  if (!m_digging) {
     return;
+  }
 
   // import image to so we can traverse it
   auto image_handle = CvImageConstPtr();
@@ -254,8 +257,9 @@ void RegolithSpawner::onModDiffVisualMsg(
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // if scoop is exiting terrain, adding psuedo forces is unnecesssary
-    if (m_retracting)
+    if (m_retracting) {
       return;
+    }
     // compute psuedo force direction from scoop orientation
     Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
     scooping_vec.setZ(0.0); // flatten against X-Y plane

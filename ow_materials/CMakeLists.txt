@@ -12,6 +12,8 @@ endif()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  message_generation
+  std_msgs
   ow_dynamic_terrain
   cv_bridge
 )
@@ -23,6 +25,7 @@ find_package(OpenCV REQUIRED
 # QUIET suppresses warnings from PCL about disabling pcap, png, and libusb-1.0
 # There is a GitHub Issue about this:
 #   https://github.com/PointCloudLibrary/pcl/issues/2651
+
 find_package(PCL 1.3 REQUIRED QUIET COMPONENTS
   common
   io
@@ -38,6 +41,7 @@ endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+
 include_directories(
   include
   ${Boost_INCLUDE_DIR}
@@ -85,6 +89,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
+add_message_files(
+  FILES
+  BulkExcavation.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -94,8 +108,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
    CATKIN_DEPENDS
+   message_runtime
+   std_msgs
    ow_dynamic_terrain
 )
 
