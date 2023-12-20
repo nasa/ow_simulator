@@ -11,6 +11,8 @@
 
 #include "gazebo/rendering/rendering.hh"
 
+#include "ow_materials/BulkExcavation.h"
+
 #include "point_cloud_util.h"
 #include "populate_materials.h"
 #include "MaterialDistributionPlugin.h"
@@ -151,8 +153,13 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 
   // publish latched, because points will never change
   // message is published later on after the pointcloud has been generated
-  m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+  m_pub_grid = m_node_handle->advertise<sensor_msgs::PointCloud2>(
     "/ow_materials/grid_points2", 1, true);
+
+  m_pub_bulk_excavation_visual = m_node_handle->advertise<BulkExcavation>(
+    "/ow_materials/bulk_excavation/visual", 10, false);
+  m_pub_bulk_excavation_collision = m_node_handle->advertise<BulkExcavation>(
+    "/ow_materials/bulk_excavation/collision", 10, false);
 
   // defer acquiring heightmap albedo texture until the gazebo scene exists
   // NOTE: this event callback will only be called as many times as it needs to
@@ -329,7 +336,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
-  publishPointCloud(&m_grid_pub, grid_points);
+  publishPointCloud(&m_pub_grid, grid_points);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << endl;
@@ -350,9 +357,18 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend,
     << count << " voxels intersected.\n"
     << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
     "The bulk material contains\n";
-  for (auto const &x : blend.getBlendMap())
+
+  BulkExcavation msg;
+  msg.header.stamp = ros::Time::now();
+  msg.volume_excavated = count * m_grid->getCellVolume();
+  for (auto const &x : blend.getBlendMap()) {
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
+    msg.material_index.push_back(x.first);
+    msg.material_concentration.push_back(x.second);
+  }
   gzlog << s.str() << endl;
+
+  m_pub_bulk_excavation_visual.publish(msg);
 }
 
 void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend,

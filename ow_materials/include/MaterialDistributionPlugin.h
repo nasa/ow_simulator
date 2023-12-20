@@ -55,7 +55,9 @@ private:
 
   std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_render_connection;
 
-  ros::Publisher m_grid_pub;
+  ros::Publisher m_pub_grid;
+  ros::Publisher m_pub_bulk_excavation_visual;
+  ros::Publisher m_pub_bulk_excavation_collision;
 
   std::unique_ptr<MaterialDatabase> m_material_db;
   std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;

@@ -14,7 +14,7 @@
 
 #include <gazebo_msgs/LinkStates.h>
 
-#include <ow_dynamic_terrain/modified_terrain_diff.h>
+#include <ow_materials/BulkExcavation.h>
 #include <ow_dynamic_terrain/scoop_dig_phase.h>
 
 #include <ow_regolith/SpawnRegolith.h>
@@ -24,13 +24,13 @@
 namespace ow_regolith {
 
 class RegolithSpawner
+{
 
 // RegolithSpawner is a ROS node that detects when digging by the scoop
 // end-effector occurs and spawns a model in the scoop to represent collected
 // material. The node will also remove models it has spawned as they collide
 // with the terrain or in response to a service call.
 
-{
 public:
   RegolithSpawner(const std::string &node_name);
   ~RegolithSpawner() = default;
@@ -63,8 +63,8 @@ public:
 
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
-  void onModDiffVisualMsg(
-    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+  void onBulkExcavationVisualMsg(
+    const ow_materials::BulkExcavation::ConstPtr &msg);
 
   void onDigPhaseMsg(const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg);
 
@@ -75,11 +75,9 @@ private:
   ros::ServiceServer m_srv_remove_all_regolith;
   ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
-  ros::Subscriber m_sub_mod_diff_visual;
+  ros::Subscriber m_sub_bulk_excavation;
   ros::Subscriber m_sub_dig_phase;
 
-  // true if scoop is performing a dig motion
-  bool m_digging = false;
   // true if scoop is performing a dig motion and is exiting the terrain
   bool m_retracting = false;
 

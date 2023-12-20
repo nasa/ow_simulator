@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   cv_bridge
   ow_dynamic_terrain
+  ow_materials
   std_msgs
   geometry_msgs
   message_generation
@@ -94,6 +95,7 @@ generate_messages(
 catkin_package(
    CATKIN_DEPENDS
    ow_dynamic_terrain
+   ow_materials
    message_runtime
    std_msgs
    geometry_msgs

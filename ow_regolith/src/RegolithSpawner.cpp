@@ -39,10 +39,10 @@ const string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
 const string SRV_GET_PHYS_PROPS      = "/gazebo/get_physics_properties";
 
 // topic paths used in class
-const string TOPIC_LINK_STATES           = "/gazebo/link_states";
-const string TOPIC_TERRAIN_CONTACT       = "/ow_regolith/contacts/terrain";
-const string TOPIC_MODIFY_TERRAIN_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
-const string TOPIC_DIG_PHASE             = "/ow_dynamic_terrain/scoop_dig_phase";
+const string TOPIC_LINK_STATES     = "/gazebo/link_states";
+const string TOPIC_TERRAIN_CONTACT = "/ow_regolith/contacts/terrain";
+const string TOPIC_BULK_EXCAVATION = "/ow_materials/bulk_excavation/visual";
+const string TOPIC_DIG_PHASE       = "/ow_dynamic_terrain/scoop_dig_phase";
 
 const string REGOLITH_TAG  = "regolith";
 
@@ -87,6 +87,7 @@ bool RegolithSpawner::initialize()
       m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - dy);
     }
   }
+
   // initialize offset selector
   m_spawn_offset_selector = m_spawn_offsets.begin();
 
@@ -112,8 +113,8 @@ bool RegolithSpawner::initialize()
     1, &RegolithSpawner::onLinkStatesMsg, this);
   m_sub_terrain_contact = m_node_handle->subscribe(TOPIC_TERRAIN_CONTACT,
     1, &RegolithSpawner::onTerrainContact, this);
-  m_sub_mod_diff_visual = m_node_handle->subscribe(TOPIC_MODIFY_TERRAIN_VISUAL,
-    10, &RegolithSpawner::onModDiffVisualMsg, this);
+  m_sub_bulk_excavation = m_node_handle->subscribe(TOPIC_BULK_EXCAVATION,
+    10, &RegolithSpawner::onBulkExcavationVisualMsg, this);
   m_sub_dig_phase = m_node_handle->subscribe(TOPIC_DIG_PHASE,
     1, &RegolithSpawner::onDigPhaseMsg, this);
 
@@ -197,65 +198,38 @@ void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
   m_model_pool->remove(msg->link_names);
 }
 
-void RegolithSpawner::onModDiffVisualMsg(
-  const modified_terrain_diff::ConstPtr& msg)
+void RegolithSpawner::onBulkExcavationVisualMsg(
+  const ow_materials::BulkExcavation::ConstPtr& msg)
 {
+
+  // TODO: store material type somehow
+
   if (msg->header.seq != m_next_expected_seq) {
     ROS_WARN_STREAM(
-      "Modification message on topic " << m_sub_mod_diff_visual.getTopic()
+      "Modification message on topic " << m_sub_bulk_excavation.getTopic()
       << " was dropped! At least " << (msg->header.seq - m_next_expected_seq)
       << " message(s) may have been missed."
     );
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  // if not digging, ignore this modification as it could be caused by a grind
-  if (!m_digging) {
-    return;
-  }
+  m_volume_displaced += msg->volume_excavated;
 
-  // import image to so we can traverse it
-  auto image_handle = CvImageConstPtr();
-  try {
-    image_handle = toCvShare(msg->diff, msg);
-  } catch (cv_bridge::Exception& e) {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return;
-  }
-  
-  auto rows = image_handle->image.rows;
-  auto cols = image_handle->image.cols;
-  if (rows <= 0 || cols <= 0) {
-    ROS_WARN("Differential image dimensions are zero or negative");
-    return;
-  }
-
-  const auto pixel_height = msg->height / rows;
-  const auto pixel_width = msg->width / cols;
-  const auto pixel_area = pixel_height * pixel_height;
-
-  // estimate the total volume displaced using a Riemann sum over the image
-  for (auto y = 0; y < rows; ++y) {
-    for (auto x = 0; x < cols; ++x) {
-      const auto volume = -image_handle->image.at<float>(y, x) * pixel_area;
-      m_volume_displaced += volume;
-    }
-  }
-
-  if (m_volume_displaced >= m_spawn_threshold) {
+  while (m_volume_displaced >= m_spawn_threshold) {
+    // deduct threshold from tracked volume
+    m_volume_displaced -= m_spawn_threshold;
     // select spawn offset
     auto offset = *(m_spawn_offset_selector++);
     // wrap selector
-    if (m_spawn_offset_selector ==  m_spawn_offsets.end())
+    if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
       m_spawn_offset_selector = m_spawn_offsets.begin();
+    }
     // spawn a regolith model
     auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME);
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
       return;
     }
-    // deduct threshold from tracked volume
-    m_volume_displaced -= m_spawn_threshold;
     // if scoop is exiting terrain, adding psuedo forces is unnecesssary
     if (m_retracting) {
       return;
@@ -277,7 +251,6 @@ void RegolithSpawner::onModDiffVisualMsg(
 void RegolithSpawner::onDigPhaseMsg(
   const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg)
 {
-  m_digging = msg->digging;
   m_retracting = msg->phase == msg->RETRACTING;
   using ow_dynamic_terrain::scoop_dig_phase;
   switch (msg->phase) {

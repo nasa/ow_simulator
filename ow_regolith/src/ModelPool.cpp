@@ -93,8 +93,9 @@ string ModelPool::spawn(const Point &position, const string &reference_frame)
 
   pointTFToMsg(position, spawn_msg.request.initial_pose.position);
 
-  if (!m_gz_spawn_model.call(spawn_msg))
+  if (!m_gz_spawn_model.call(spawn_msg)) {
     return "";
+  }
 
   m_active_models.emplace(
     link_name.str(),
