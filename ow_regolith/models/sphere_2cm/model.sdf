@@ -9,7 +9,8 @@
       <pose>0 0 0.01 0 0 0</pose>
       <inertial>
         <!-- Acquired by taking the density of ice ~0.9168 g/cm^3 and
-             multiplying by the volume of a 2cm sphere. Converted to kg. -->
+             multiplying by the volume of a 2cm diameter sphere.
+             Converted to kg. -->
         <mass>0.031</mass>
         <!-- Set high moments to "disable" rotation -->
         <inertia>

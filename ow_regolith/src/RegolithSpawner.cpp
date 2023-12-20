@@ -77,14 +77,14 @@ bool RegolithSpawner::initialize()
   // if the optional spawn_spacing parameter is present, generate spawn points
   double spawn_spacing;
   if (m_node_handle->getParam("spawn_spacing", spawn_spacing)) {
-    const auto spawn_count = static_cast<int>(
-      floor(SCOOP_WIDTH / (2 * spawn_spacing))
+    const auto additional_spawns = static_cast<int>(
+      (SCOOP_WIDTH - spawn_spacing) / (2 * spawn_spacing)
     );
-    for (int i = 1; i < spawn_count; ++i) {
+    for (int i = 0; i < additional_spawns; ++i) {
       // populate both sides of the central spawn point with additional points
-      Vector3 adjustment(0.0f, i * static_cast<float>(spawn_spacing), 0.0f);
-      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET + adjustment);
-      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - adjustment);
+      Vector3 dy{0.0f, (i + 1) * static_cast<float>(spawn_spacing), 0.0f};
+      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET + dy);
+      m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - dy);
     }
   }
   // initialize offset selector
