@@ -8,6 +8,7 @@
 #include <string>
 #include <ostream>
 #include <unordered_map>
+#include <stdexcept>
 
 #include "Materials.h"
 
@@ -51,6 +52,17 @@ private:
   std::unordered_map<std::string, MaterialID> m_names;
 
 };
+
+// thrown when material configuration is not correctly formatted
+class MaterialConfigError : public std::runtime_error
+{
+public:
+  MaterialConfigError(const std::string &what_arg)
+    : std::runtime_error(what_arg) { };
+};
+
+void populate_material_database(ow_materials::MaterialDatabase *db_ptr,
+                                const std::string &ns);
 
 }
 

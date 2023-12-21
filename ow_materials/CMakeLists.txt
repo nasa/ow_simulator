@@ -92,6 +92,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 add_message_files(
   FILES
   BulkExcavation.msg
+  MaterialConcentration.msg
 )
 
 generate_messages(
@@ -110,10 +111,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 
 catkin_package(
-   CATKIN_DEPENDS
-   message_runtime
-   std_msgs
-   ow_dynamic_terrain
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS message_runtime std_msgs ow_dynamic_terrain
 )
 
 ###########
@@ -136,13 +135,21 @@ catkin_package(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+# Library for handling material types and the database
+add_library(Materials
+  SHARED
+  src/MaterialDatabase.cpp
+  src/Materials.cpp
+)
+add_dependencies(Materials
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
+
 # Gazebo plugin that gives a terrain a material distribution
 add_library(MaterialDistributionPlugin
   SHARED
   src/MaterialDistributionPlugin.cpp
-  src/MaterialDatabase.cpp
-  src/Materials.cpp
-  src/populate_materials.cpp
   src/MaterialIntegrator.cpp
   src/point_cloud_util.cpp
 )
@@ -152,6 +159,7 @@ add_dependencies(MaterialDistributionPlugin
 )
 target_link_libraries(MaterialDistributionPlugin
   ${GAZEBO_LIBRARIES}
+  Materials
 )
 
 #############
@@ -178,3 +186,18 @@ target_link_libraries(MaterialDistributionPlugin
 #   models
 #   DESTINATION share/${PROJECT_NAME}/
 # )
+
+#install(FILES include/Materials.h
+# DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#)
+
+#install(DIRECTORY include/${PROJECT_NAME}/
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#  FILES_MATCHING PATTERN "*.h"
+#  PATTERN ".svn" EXCLUDE
+#)
+
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)

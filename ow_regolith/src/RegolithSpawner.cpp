@@ -9,11 +9,13 @@
 #include <cmath>
 #include <chrono>
 
-#include <cv_bridge/cv_bridge.h>
-#include <gazebo_msgs/GetPhysicsProperties.h>
+#include "cv_bridge/cv_bridge.h"
+#include "gazebo_msgs/GetPhysicsProperties.h"
 
-#include <RegolithSpawner.h>
-#include <ServiceClientFacade.h>
+#include "ow_materials/Materials.h"
+
+#include "RegolithSpawner.h"
+#include "ServiceClientFacade.h"
 
 using namespace ow_regolith;
 using namespace ow_dynamic_terrain;
@@ -100,6 +102,14 @@ bool RegolithSpawner::initialize()
   if (!m_model_pool->setModel(model_uri, REGOLITH_TAG)) {
     ROS_ERROR("Failed to set model.");
     return false;
+  }
+
+  // create a material database from ROS parameters
+  try {
+    populate_material_database(&m_material_db, "/ow_materials");
+  } catch (const MaterialConfigError &e) {
+    ROS_ERROR(e.what());
+    return;
   }
 
   // advertise services served by this class
@@ -213,9 +223,12 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  m_volume_displaced += msg->volume_excavated;
+  m_volume_displaced += msg->volume;
 
-  while (m_volume_displaced >= m_spawn_threshold) {
+  // Use a for-loop so a maximum number of iterations can be enforced.
+  // A warning will be issued if more volume is being displaced than can
+  // be handled by the maximum number of iterations. 
+  for (m_volume_displaced >= m_spawn_threshold) {
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // select spawn offset

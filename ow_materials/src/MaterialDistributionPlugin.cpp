@@ -12,9 +12,9 @@
 #include "gazebo/rendering/rendering.hh"
 
 #include "ow_materials/BulkExcavation.h"
+#include "ow_materials/MaterialConcentration.h"
 
 #include "point_cloud_util.h"
-#include "populate_materials.h"
 #include "MaterialDistributionPlugin.h"
 
 using std::string, std::make_unique, std::endl, std::uint8_t, std::size_t,
@@ -360,11 +360,13 @@ void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend,
 
   BulkExcavation msg;
   msg.header.stamp = ros::Time::now();
-  msg.volume_excavated = count * m_grid->getCellVolume();
+  msg.volume = count * m_grid->getCellVolume();
   for (auto const &x : blend.getBlendMap()) {
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-    msg.material_index.push_back(x.first);
-    msg.material_concentration.push_back(x.second);
+    MaterialConcentration c;
+    c.id = x.first;
+    c.proportion = x.second;
+    msg.composition.push_back(c);
   }
   gzlog << s.str() << endl;
 

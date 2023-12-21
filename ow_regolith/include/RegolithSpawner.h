@@ -5,21 +5,23 @@
 #ifndef REGOLITH_SPAWNER_H
 #define REGOLITH_SPAWNER_H
 
-#include <ros/ros.h>
-#include <tf/tf.h>
-
 #include <vector>
 
-#include <ModelPool.h>
+#include "ros/ros.h"
+#include "tf/tf.h"
 
-#include <gazebo_msgs/LinkStates.h>
+#include "gazebo_msgs/LinkStates.h"
 
-#include <ow_materials/BulkExcavation.h>
-#include <ow_dynamic_terrain/scoop_dig_phase.h>
+#include "ow_materials/MaterialDatabase.h"
 
-#include <ow_regolith/SpawnRegolith.h>
-#include <ow_regolith/RemoveRegolith.h>
-#include <ow_regolith/Contacts.h>
+#include "ow_materials/BulkExcavation.h"
+#include "ow_dynamic_terrain/scoop_dig_phase.h"
+
+#include "ow_regolith/SpawnRegolith.h"
+#include "ow_regolith/RemoveRegolith.h"
+#include "ow_regolith/Contacts.h"
+
+#include "ModelPool.h"
 
 namespace ow_regolith {
 
@@ -86,6 +88,8 @@ private:
 
   // spawns, removes, and applies forces to spawned models
   std::unique_ptr<ModelPool> m_model_pool;
+
+  MaterialDatabase m_material_db;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;
