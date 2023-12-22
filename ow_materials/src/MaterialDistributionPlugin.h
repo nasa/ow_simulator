@@ -59,7 +59,8 @@ private:
   ros::Publisher m_pub_bulk_excavation_visual;
   ros::Publisher m_pub_bulk_excavation_collision;
 
-  std::unique_ptr<MaterialDatabase> m_material_db;
+  MaterialDatabase m_material_db;
+
   std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;

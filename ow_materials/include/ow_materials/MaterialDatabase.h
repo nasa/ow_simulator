@@ -45,6 +45,8 @@ public:
     return m_names.at(name);
   };
 
+  void populate_from_rosparams(const std::string &ns);
+
 private:
 
   std::unordered_map<MaterialID, Material> m_database;
@@ -60,9 +62,6 @@ public:
   MaterialConfigError(const std::string &what_arg)
     : std::runtime_error(what_arg) { };
 };
-
-void populate_material_database(ow_materials::MaterialDatabase *db_ptr,
-                                const std::string &ns);
 
 }
 

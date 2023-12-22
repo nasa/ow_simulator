@@ -67,7 +67,8 @@ static T get_param(const string &param_name) {
 // DEPRECATED: Color r, g, and b are no longer uint8_t, but will keep this
 //             specialization in case it's needed for another material parameter
 template <>
-uint8_t get_param<uint8_t>(const string &param_name) {
+uint8_t get_param<uint8_t>(const string &param_name)
+{
   auto value = get_param<int>(param_name);
   if (   value < numeric_limits<uint8_t>::min()
       || value > numeric_limits<uint8_t>::max()) {
@@ -76,7 +77,8 @@ uint8_t get_param<uint8_t>(const string &param_name) {
   return static_cast<uint8_t>(value);
 }
 
-void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
+void MaterialDatabase::populate_from_rosparams(const string &ns)
+{
   // search for material names in namespace
   vector<string> param_names;
   if (!ros::param::getParamNames(param_names)) {
@@ -92,7 +94,7 @@ void populate_material_database(MaterialDatabase *db_ptr, const string &ns) {
   }
   // build and add all materials to database
   for (const auto &mat : mat_names) {
-    const bool added = db_ptr->addMaterial(
+    const bool added = addMaterial(
       {
         mat,
         get_param<float>(join({ns, mat, "occurrence"})),

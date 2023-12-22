@@ -136,11 +136,11 @@ add_executable(regolith_node
 add_dependencies(regolith_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
+  ${ow_materials_EXPORTED_TARGETS}
 )
 target_link_libraries(regolith_node
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
-  ${ow_materials_LIBRARIES}
 )
 
 # Gazebo sensor plugin that tracks when regolith collides with the terrain

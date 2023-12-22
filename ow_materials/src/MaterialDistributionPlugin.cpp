@@ -84,16 +84,15 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                               << diagonal.Y() << " x "
                               << diagonal.Z() << " meters.\n";
 
-  m_material_db = make_unique<MaterialDatabase>();
   // populate materials database
   try {
-    populate_material_database(m_material_db.get(), NAMESPACE_MATERIALS);
+    m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
     gzerr << e.what() << endl;
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
-        << m_material_db->size() << " materials.\n";
+        << m_material_db.size() << " materials.\n";
 
   // get reference colors for mapping terrain texture to material compositions
   if (!sdf->HasElement(PARAMETER_MATERIALS)) {
@@ -110,7 +109,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     }
     MaterialID id;
     try {
-      id = m_material_db->getMaterialIdFromName(
+      id = m_material_db.getMaterialIdFromName(
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
     } catch (const std::out_of_range &e) {
@@ -397,7 +396,7 @@ Color MaterialDistributionPlugin::interpolateColor(
     Color{0.0, 0.0, 0.0},
     [this]
     (Color value, MaterialBlend::BlendType::value_type const &p) {
-      const auto m = m_material_db->getMaterial(p.first);
+      const auto m = m_material_db.getMaterial(p.first);
       return Color {
         value.r + p.second * (m.visualize_color.r - value.r),
         value.g + p.second * (m.visualize_color.g - value.g),

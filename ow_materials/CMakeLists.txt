@@ -44,7 +44,6 @@ endif()
 
 include_directories(
   src
-  include/${PROJECT_NAME}
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
@@ -147,6 +146,9 @@ add_dependencies(Materials
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
+target_include_directories(Materials
+  PUBLIC include/${PROJECT_NAME}
+)
 
 # Gazebo plugin that gives a terrain a material distribution
 add_library(MaterialDistributionPlugin
@@ -158,6 +160,7 @@ add_library(MaterialDistributionPlugin
 add_dependencies(MaterialDistributionPlugin
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
+  Materials
 )
 target_link_libraries(MaterialDistributionPlugin
   ${GAZEBO_LIBRARIES}
@@ -189,8 +192,7 @@ target_link_libraries(MaterialDistributionPlugin
 #   DESTINATION share/${PROJECT_NAME}/
 # )
 
-install(
-  TARGETS Materials
+install(TARGETS Materials
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

@@ -106,7 +106,7 @@ bool RegolithSpawner::initialize()
 
   // create a material database from ROS parameters
   try {
-    ow_materials::populate_material_database(&m_material_db, "/ow_materials");
+    m_material_db.populate_from_rosparams("/ow_materials");
   } catch (const ow_materials::MaterialConfigError &e) {
     ROS_ERROR_STREAM(e.what());
     return false;
