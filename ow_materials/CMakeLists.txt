@@ -43,7 +43,8 @@ endif()
 ## Your package locations should be listed before other locations
 
 include_directories(
-  include
+  src
+  include/${PROJECT_NAME}
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
@@ -112,6 +113,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES Materials
   CATKIN_DEPENDS message_runtime std_msgs ow_dynamic_terrain
 )
 
@@ -187,15 +189,12 @@ target_link_libraries(MaterialDistributionPlugin
 #   DESTINATION share/${PROJECT_NAME}/
 # )
 
-#install(FILES include/Materials.h
-# DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#)
-
-#install(DIRECTORY include/${PROJECT_NAME}/
-#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#  FILES_MATCHING PATTERN "*.h"
-#  PATTERN ".svn" EXCLUDE
-#)
+install(
+  TARGETS Materials
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
 install(
   DIRECTORY include/${PROJECT_NAME}/

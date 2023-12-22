@@ -106,10 +106,10 @@ bool RegolithSpawner::initialize()
 
   // create a material database from ROS parameters
   try {
-    populate_material_database(&m_material_db, "/ow_materials");
-  } catch (const MaterialConfigError &e) {
-    ROS_ERROR(e.what());
-    return;
+    ow_materials::populate_material_database(&m_material_db, "/ow_materials");
+  } catch (const ow_materials::MaterialConfigError &e) {
+    ROS_ERROR_STREAM(e.what());
+    return false;
   }
 
   // advertise services served by this class
@@ -225,10 +225,14 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
 
   m_volume_displaced += msg->volume;
 
-  // Use a for-loop so a maximum number of iterations can be enforced.
-  // A warning will be issued if more volume is being displaced than can
-  // be handled by the maximum number of iterations. 
-  for (m_volume_displaced >= m_spawn_threshold) {
+  if (m_volume_displaced < m_spawn_threshold) {
+    return;
+  }
+
+  // Use a for-loop so a maximum number of iterations can be enforced. The
+  // maximum iteration is the number of unique spawns, so that more than one
+  // particle will not spawn at the same location in the same frame.
+  for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // select spawn offset
@@ -258,6 +262,15 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
       ROS_ERROR("Failed to apply force to regolith %s", link_name.c_str());
       return;
     }
+  }
+
+  // If execution arrives here and there remains displaced volume, then
+  // the volume displaced per frame is larger than the particle spawning system
+  // can handle. A warning should be issued.
+  if (m_volume_displaced >= m_spawn_threshold) {
+    ROS_WARN("More volume is being displaced per frame than can be spawned as "
+             "regolith. Consider increasing the value of "
+             "spawn_volume_threshold in common.launch to avoid this warning.");
   }
 }
 

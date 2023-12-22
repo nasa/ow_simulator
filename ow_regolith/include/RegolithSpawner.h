@@ -89,7 +89,7 @@ private:
   // spawns, removes, and applies forces to spawned models
   std::unique_ptr<ModelPool> m_model_pool;
 
-  MaterialDatabase m_material_db;
+  ow_materials::MaterialDatabase m_material_db;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;
