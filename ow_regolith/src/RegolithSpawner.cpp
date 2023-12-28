@@ -221,27 +221,23 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  float ratio_of_whole = 1.0f;
   if (m_volume_displaced > 0.0) {
-    // The ratio of the volume represented by the received bulk to the total
-    // volume tracked yields the ratio of material being added to m_bulk.
-    // Passing this value to merge adds the proportions of the received bulk to
-    // m_bulk relative to it's unity.
-    ratio_of_whole = static_cast<float>(msg->volume / m_volume_displaced);
+    // The ratio of the volume of the newly received bulk to the total volume
+    // displaced yields a scale multiplier that allows for accurate merging
+    // of the newly receive bulk into the total displaced bulk.
+    float ratio_of_bulk = static_cast<float>(msg->volume / m_volume_displaced);
+    // Merge compositions into the total displaced bulk.
+    m_bulk.merge(MaterialBlend(msg->composition), ratio_of_bulk);
   } else {
-    m_bulk.clear();
+    // The bulk is reset and set equal to the newly received bulk.
+    m_bulk = MaterialBlend(msg->composition);
   }
-
-  // merge compositions into the existing bulk
-  m_bulk.merge(MaterialBlend(msg->composition), ratio_of_whole);
 
   m_volume_displaced += msg->volume;
-
   if (m_volume_displaced < m_spawn_threshold) {
+    // nothing more to do until the threshold is reached
     return;
   }
-
-  m_bulk.normalize();
 
   std::stringstream ss;
   ss << "{\n";
@@ -251,19 +247,20 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   ss << "}";
   ROS_INFO(ss.str().c_str());
 
+  // A regolith is now ready to spawn, but first the displaced bulk should be
+  // normalized.
+  m_bulk.normalize();
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
   // particle will not spawn at the same location in the same frame.
   for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
-    // spawn no more if it's now less than the threshold
+    // Once volume is less than threshold, this function has done its job,
     if (m_volume_displaced < m_spawn_threshold) {
-      break;
+      return;
     }
-    // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
-    // select spawn offset
+    // select spawn offset and wrap from end to beginning
     auto offset = *(m_spawn_offset_selector++);
-    // wrap selector
     if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
       m_spawn_offset_selector = m_spawn_offsets.begin();
     }
@@ -273,7 +270,7 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
       ROS_ERROR("Failed to spawn regolith particle");
       continue;
     }
-    // if scoop is exiting terrain, adding psuedo forces is unnecesssary
+    // if scoop is retracting, psuedo forces are not need
     if (!m_retracting) {
       // compute psuedo force direction from scoop orientation
       Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
@@ -287,10 +284,10 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
       }
     }
   }
-
-  // If execution arrives here and there remains displaced volume, then
-  // the volume displaced per frame is larger than the particle spawning system
-  // can handle. A warning should be issued.
+  // The nominal behavior of the previous loop is to return from inside.
+  // If execution arrives here and there remains displaced volume above the
+  // threshold. This means the volume displaced per frame is larger than the
+  // particle spawning system can handle. A warning should be issued.
   if (m_volume_displaced >= m_spawn_threshold) {
     ROS_WARN("More volume is being displaced per frame than can be spawned as "
              "regolith. Consider increasing the value of "
