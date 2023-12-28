@@ -2,19 +2,21 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
+#ifndef MODEL_POOL_H
+#define MODEL_POOL_H
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 
-#include <ros/ros.h>
-#include <tf/tf.h>
+#include "ros/ros.h"
+#include "tf/tf.h"
 
-#include <gazebo_msgs/DeleteModel.h>
+#include "gazebo_msgs/DeleteModel.h"
 
-#include <ServiceClientFacade.h>
+#include "ow_materials/Materials.h"
 
-#ifndef MODEL_POOL_H
-#define MODEL_POOL_H
+#include "ServiceClientFacade.h"
 
 namespace ow_regolith
 {
@@ -39,7 +41,8 @@ public:
 
   // spawn a model
   std::string spawn(const tf::Point &position,
-                    const std::string &reference_frame);
+                    const std::string &reference_frame,
+                    const ow_materials::MaterialBlend &composition);
 
   // remove models within the pool by link name
   std::vector<std::string> remove(const std::vector<std::string> &link_names);
@@ -73,6 +76,7 @@ private:
   struct Model {
     const std::string model_name;
     const std::string body_name;
+    ow_materials::MaterialBlend blend;
   };
   // keys are of the form "model_name::body_name"
   std::unordered_map<std::string, Model> m_active_models;

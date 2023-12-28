@@ -12,6 +12,7 @@
 
 #include "gazebo_msgs/LinkStates.h"
 
+#include "ow_materials/Materials.h"
 #include "ow_materials/MaterialDatabase.h"
 
 #include "ow_materials/BulkExcavation.h"
@@ -90,6 +91,7 @@ private:
   std::unique_ptr<ModelPool> m_model_pool;
 
   ow_materials::MaterialDatabase m_material_db;
+  ow_materials::MaterialBlend m_bulk;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;

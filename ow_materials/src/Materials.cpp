@@ -7,7 +7,17 @@
 
 #include "Materials.h"
 
+using std::vector;
+
 using namespace ow_materials;
+
+MaterialBlend::MaterialBlend(vector<MaterialConcentration> const &composition)
+{
+  m_blend.clear();
+  for (const auto &c : composition) {
+    m_blend[c.id] = c.proportion;
+  }
+}
 
 bool MaterialBlend::isNormalized() const
 {
@@ -21,23 +31,29 @@ void MaterialBlend::normalize()
   divideElementWise(denominator);
 }
 
-void MaterialBlend::merge(MaterialBlend const &other)
+void MaterialBlend::merge(MaterialBlend const &other, float ratio_of_whole)
 {
-  // Merge this blend with another blend by summing their concentrations per
-  // material. A material missing from the current concentration will be added
+  // Merge this blend with another blend by summing their proportions per
+  // material. A material missing from the current proportion will be added
   // and assigned the same value from the external blend.
   m_blend = std::accumulate(other.m_blend.begin(), other.m_blend.end(), m_blend,
-    [](BlendType &m, BlendType::value_type const &p) {
-      return (m[p.first] += p.second, m);
+    [ratio_of_whole](BlendType &m, BlendType::value_type const &p) {
+      return (m[p.first] += p.second * ratio_of_whole, m);
     }
   );
 }
 
-void MaterialBlend::add(MaterialID id, float concentration)
+void MaterialBlend::add(MaterialID id, float proportion)
 {
-  if (concentration <= 0.0f)
+  if (proportion <= 0.0f) {
     return;
-  m_blend[id] = concentration;
+  }
+  m_blend[id] = proportion;
+}
+
+void MaterialBlend::clear()
+{
+  m_blend.clear();
 }
 
 void MaterialBlend::divideElementWise(float denominator)

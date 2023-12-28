@@ -7,6 +7,9 @@
 
 #include <limits>
 #include <unordered_map>
+#include <ostream>
+
+#include "ow_materials/MaterialConcentration.h"
 
 namespace ow_materials
 {
@@ -56,9 +59,10 @@ class MaterialBlend {
 
 public:
   MaterialBlend() = default;
-  ~MaterialBlend() = default;
+  MaterialBlend(std::vector<MaterialConcentration> const &composition);
   MaterialBlend(const MaterialBlend&) = default;
   MaterialBlend& operator=(const MaterialBlend&) = default;
+  ~MaterialBlend() = default;
 
   using BlendType = std::unordered_map<MaterialID, float>;
 
@@ -78,9 +82,11 @@ public:
 
   void normalize();
 
-  void merge(MaterialBlend const &other);
+  void merge(MaterialBlend const &other, float ratio_of_whole = 1.0f);
 
   void add(MaterialID id, float concentration);
+
+  void clear();
 
 private:
   void divideElementWise(float denominator);
@@ -88,6 +94,7 @@ private:
   float sumConcentrations() const;
 
   BlendType m_blend;
+
 };
 
 }

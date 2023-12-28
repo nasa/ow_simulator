@@ -12,8 +12,6 @@
 #include "cv_bridge/cv_bridge.h"
 #include "gazebo_msgs/GetPhysicsProperties.h"
 
-#include "ow_materials/Materials.h"
-
 #include "RegolithSpawner.h"
 #include "ServiceClientFacade.h"
 
@@ -26,7 +24,7 @@ using namespace cv_bridge;
 using namespace std::literals::chrono_literals;
 
 using std::string, std::begin, std::end, std::distance, std::find,
-      std::stringstream, std::make_unique, std::make_shared;
+      std::make_unique, std::make_shared;
 
 using std::chrono::duration_cast, std::chrono::seconds;
 
@@ -34,6 +32,8 @@ using tf::Vector3, tf::Point, tf::vector3MsgToTF, tf::pointMsgToTF,
       tf::quatRotate, tf::quaternionMsgToTF, tf::tfDot;
 
 using gazebo_msgs::LinkStates, gazebo_msgs::GetPhysicsProperties;
+
+using ow_materials::MaterialBlend;
 
 // service paths served by this class
 const string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
@@ -173,7 +173,8 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
 {
   Point position;
   pointMsgToTF(request.position, position);
-  auto ret = m_model_pool->spawn(position, request.reference_frame);
+  auto ret = m_model_pool->spawn(
+    position, request.reference_frame, MaterialBlend());
   response.success = !ret.empty();
   return true;
 }
@@ -211,9 +212,6 @@ void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
 void RegolithSpawner::onBulkExcavationVisualMsg(
   const ow_materials::BulkExcavation::ConstPtr& msg)
 {
-
-  // TODO: store material type somehow
-
   if (msg->header.seq != m_next_expected_seq) {
     ROS_WARN_STREAM(
       "Modification message on topic " << m_sub_bulk_excavation.getTopic()
@@ -223,16 +221,44 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
+  float ratio_of_whole = 1.0f;
+  if (m_volume_displaced > 0.0) {
+    // The ratio of the volume represented by the received bulk to the total
+    // volume tracked yields the ratio of material being added to m_bulk.
+    // Passing this value to merge adds the proportions of the received bulk to
+    // m_bulk relative to it's unity.
+    ratio_of_whole = static_cast<float>(msg->volume / m_volume_displaced);
+  } else {
+    m_bulk.clear();
+  }
+
+  // merge compositions into the existing bulk
+  m_bulk.merge(MaterialBlend(msg->composition), ratio_of_whole);
+
   m_volume_displaced += msg->volume;
 
   if (m_volume_displaced < m_spawn_threshold) {
     return;
   }
 
+  m_bulk.normalize();
+
+  std::stringstream ss;
+  ss << "{\n";
+  for (auto b : m_bulk.getBlendMap()) {
+    ss << "\t" << static_cast<int>(b.first) << ":" << b.second << "\n";
+  }
+  ss << "}";
+  ROS_INFO(ss.str().c_str());
+
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
   // particle will not spawn at the same location in the same frame.
   for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
+    // spawn no more if it's now less than the threshold
+    if (m_volume_displaced < m_spawn_threshold) {
+      break;
+    }
     // deduct threshold from tracked volume
     m_volume_displaced -= m_spawn_threshold;
     // select spawn offset
@@ -242,25 +268,23 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
       m_spawn_offset_selector = m_spawn_offsets.begin();
     }
     // spawn a regolith model
-    auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME);
+    auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME, m_bulk);
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
-      return;
+      continue;
     }
     // if scoop is exiting terrain, adding psuedo forces is unnecesssary
-    if (m_retracting) {
-      return;
-    }
-    // compute psuedo force direction from scoop orientation
-    Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
-    scooping_vec.setZ(0.0); // flatten against X-Y plane
-    Vector3 pushback_force = -m_psuedo_force_mag * scooping_vec.normalize();
-    // choose a long ros duration (1 yr) to delay the disabling of wrench force
-    constexpr auto one_year_in_seconds = duration_cast<seconds>(1h*24*365).count();
-    if (!m_model_pool->applyForce(link_name, pushback_force,
-                                  ros::Duration(one_year_in_seconds))) {
-      ROS_ERROR("Failed to apply force to regolith %s", link_name.c_str());
-      return;
+    if (!m_retracting) {
+      // compute psuedo force direction from scoop orientation
+      Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
+      scooping_vec.setZ(0.0); // flatten against X-Y plane
+      Vector3 pushback_force = -m_psuedo_force_mag * scooping_vec.normalize();
+      // choose a long ros duration (1 yr) to delay the disabling of wrench force
+      constexpr auto one_year_in_seconds = duration_cast<seconds>(1h*24*365).count();
+      if (!m_model_pool->applyForce(link_name, pushback_force,
+                                    ros::Duration(one_year_in_seconds))) {
+        ROS_ERROR("Failed to apply force to regolith %s", link_name.c_str());
+      }
     }
   }
 

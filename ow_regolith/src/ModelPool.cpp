@@ -1,15 +1,18 @@
+// The Notices and Disclaimers for Ocean Worlds Autonomy Testbed for Exploration
+// Research and Simulation can be found in README.md in the root directory of
+// this repository.
 
 #include <stdexcept>
 #include <sstream>
 
-#include <sdf_utility.h>
-#include <ServiceClientFacade.h>
+#include "sdf_utility.h"
+#include "ServiceClientFacade.h"
 
-#include <gazebo_msgs/SpawnModel.h>
-#include <gazebo_msgs/ApplyBodyWrench.h>
-#include <gazebo_msgs/BodyRequest.h>
+#include "gazebo_msgs/SpawnModel.h"
+#include "gazebo_msgs/ApplyBodyWrench.h"
+#include "gazebo_msgs/BodyRequest.h"
 
-#include <ModelPool.h>
+#include "ModelPool.h"
 
 using namespace ow_regolith;
 
@@ -20,6 +23,8 @@ using std::string, std::vector, std::begin, std::end, std::stringstream,
       std::out_of_range;
 
 using tf::pointMsgToTF, tf::pointTFToMsg, tf::Point, tf::Vector3;
+
+using ow_materials::MaterialBlend;
 
 // service paths used in class
 const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
@@ -76,7 +81,8 @@ bool ModelPool::setModel(const string &model_uri, const string &model_tag)
   return true;
 }
 
-string ModelPool::spawn(const Point &position, const string &reference_frame)
+string ModelPool::spawn(const Point &position, const string &reference_frame,
+                        const MaterialBlend &composition)
 {
   ROS_INFO("Spawning regolith");
 
@@ -99,7 +105,7 @@ string ModelPool::spawn(const Point &position, const string &reference_frame)
 
   m_active_models.emplace(
     link_name.str(),
-    Model{model_name.str(), m_model_body_name}
+    Model{model_name.str(), m_model_body_name, composition}
   );
 
   return link_name.str();
@@ -107,8 +113,9 @@ string ModelPool::spawn(const Point &position, const string &reference_frame)
 
 vector<string> ModelPool::remove(const vector<string> &link_names)
 {
-  if (link_names.empty())
+  if (link_names.empty()) {
     return {};
+  }
   vector<string> not_removed;
   DeleteModel msg;
   // delete one or multiple models as provided in link_names
@@ -134,11 +141,12 @@ vector<string> ModelPool::clear() {
   auto it = begin(m_active_models);
   while (it != end(m_active_models)) {
     msg.request.model_name = it->second.model_name;
-    if (removeModel(msg))
+    if (removeModel(msg)) {
       it = m_active_models.erase(it);
-    else
+    } else {
       // do not remove from active list if removal failed
       not_removed.push_back((it++)->first);
+    }
   }
   return not_removed;
 }
@@ -149,7 +157,6 @@ bool ModelPool::applyForce(const string &link_name, const Vector3 &force,
   wrench_msg.request.body_name = link_name;
   vector3TFToMsg(force, wrench_msg.request.wrench.force);
   wrench_msg.request.duration = apply_for;
-
   return m_gz_apply_wrench.call(wrench_msg);
 }
 

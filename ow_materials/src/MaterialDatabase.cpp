@@ -79,6 +79,8 @@ uint8_t get_param<uint8_t>(const string &param_name)
 
 void MaterialDatabase::populate_from_rosparams(const string &ns)
 {
+  m_database.clear();
+  m_names.clear();
   // search for material names in namespace
   vector<string> param_names;
   if (!ros::param::getParamNames(param_names)) {
