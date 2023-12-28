@@ -18,6 +18,7 @@
 #include "AxisAlignedGrid.h"
 #include "MaterialDatabase.h"
 #include "MaterialIntegrator.h"
+#include "material_mixing.h"
 
 namespace ow_materials
 {
@@ -42,11 +43,11 @@ public:
 
   void getHeightmapAlbedo();
 
-  void handleVisualBulk(MaterialBlend const &blend, std::uint32_t count);
+  void handleVisualBulk(Blend const &blend, std::uint32_t count);
 
-  void handleCollisionBulk(MaterialBlend const &blend, std::uint32_t count);
+  void handleCollisionBulk(Blend const &blend, std::uint32_t count);
 
-  Color interpolateColor(MaterialBlend const &blend) const;
+  Color interpolateColor(Blend const &blend) const;
 
 private:
   void populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain);
@@ -61,7 +62,7 @@ private:
 
   MaterialDatabase m_material_db;
 
-  std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
+  std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
   std::unique_ptr<MaterialIntegrator> m_collision_integrator;

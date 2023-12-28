@@ -14,7 +14,7 @@
 
 #include "gazebo_msgs/DeleteModel.h"
 
-#include "ow_materials/Materials.h"
+#include "ow_materials/material_mixing.h"
 
 #include "ServiceClientFacade.h"
 
@@ -26,12 +26,13 @@ namespace ow_regolith
 class ModelPool
 {
 public:
-  ModelPool(std::shared_ptr<ros::NodeHandle> &nh) : m_node_handle(nh) {};
+  ModelPool()                            = delete;
+  ModelPool(const ModelPool&)            = delete;
+  ModelPool& operator=(const ModelPool&) = delete;
+
   ~ModelPool() = default;
 
-  ModelPool() = delete;
-  ModelPool(const ModelPool&) = delete;
-  ModelPool& operator=(const ModelPool&) = delete;
+  ModelPool(std::shared_ptr<ros::NodeHandle> nh) : m_node_handle(nh) {};
 
   bool connectServices();
 
@@ -42,7 +43,7 @@ public:
   // spawn a model
   std::string spawn(const tf::Point &position,
                     const std::string &reference_frame,
-                    const ow_materials::MaterialBlend &composition);
+                    const ow_materials::Blend &blend);
 
   // remove models within the pool by link name
   std::vector<std::string> remove(const std::vector<std::string> &link_names);
@@ -76,7 +77,7 @@ private:
   struct Model {
     const std::string model_name;
     const std::string body_name;
-    ow_materials::MaterialBlend blend;
+    const ow_materials::Blend blend;
   };
   // keys are of the form "model_name::body_name"
   std::unordered_map<std::string, Model> m_active_models;

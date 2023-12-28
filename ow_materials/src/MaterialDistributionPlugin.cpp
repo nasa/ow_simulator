@@ -67,8 +67,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
   try {
-    m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(corner_a, corner_b,
-                                                         cell_side_length);
+    m_grid = make_unique<AxisAlignedGrid<Blend>>(corner_a, corner_b,
+                                                 cell_side_length);
   } catch (const GridConfigError &e) {
     gzerr << e.what() << endl;
     return;
@@ -246,7 +246,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
     };
   };
   // simple struct for more readable code
-  struct BlendAndColor { MaterialBlend blend; Color color; };
+  struct BlendAndColor { Blend blend; Color color; };
   using AlbedoMaterialMap = unordered_map<TextureCoords, BlendAndColor,
                                           TextureCoords::hasher>;
   // this map enables z-column-wise modification of the grid without having to
@@ -257,7 +257,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   m_grid->runForEach(
     [&]
-    (MaterialBlend &blend, GridPositionType center) {
+    (Blend &blend, GridPositionType center) {
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
         Ogre::Terrain::Space::WORLD_SPACE,
@@ -341,38 +341,30 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         << endl;
 }
 
-void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend,
+void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
                                                   std::uint32_t count)
 {
-
   // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
   //  scoop digging is not occurring
 
-  // STUBBED: The complete version of this method will handle downstream effects
-  //  of a visual modification like scoop forces and regolith content.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
   std::stringstream s;
   s << "handleVisualBulk: STUBBED\n"
-    << count << " voxels intersected.\n"
+    << count << " voxels int`rsected.\n"
     << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
     "The bulk material contains\n";
-
-  BulkExcavation msg;
-  msg.header.stamp = ros::Time::now();
-  msg.volume = count * m_grid->getCellVolume();
-  for (auto const &x : blend.getBlendMap()) {
+  for (auto const &x : blend.getComposition()) {
     s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-    MaterialConcentration c;
-    c.id = x.first;
-    c.proportion = x.second;
-    msg.composition.push_back(c);
   }
   gzlog << s.str() << endl;
 
+  Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
+  auto msg = excavated_bulk.generateExcavationBulkMessage();
+  msg.header.stamp = ros::Time::now();
   m_pub_bulk_excavation_visual.publish(msg);
 }
 
-void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend,
+void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
                                                      std::uint32_t count)
 {
   // STUBBED: The complete version of this method will handle downstream effects
@@ -383,19 +375,18 @@ void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend,
     << count << " voxels intersected.\n"
     << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
     "The bulk material contains\n";
-  for (auto const &x : blend.getBlendMap())
+  for (auto const &x : blend.getComposition())
     s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   gzlog << s.str() << endl;
 }
 
-Color MaterialDistributionPlugin::interpolateColor(
-  MaterialBlend const &blend) const
+Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const
 {
   return std::accumulate(
-    blend.getBlendMap().begin(), blend.getBlendMap().end(),
+    blend.getComposition().begin(), blend.getComposition().end(),
     Color{0.0, 0.0, 0.0},
     [this]
-    (Color value, MaterialBlend::BlendType::value_type const &p) {
+    (Color value, CompositionType::value_type const &p) {
       const auto m = m_material_db.getMaterial(p.first);
       return Color {
         value.r + p.second * (m.visualize_color.r - value.r),

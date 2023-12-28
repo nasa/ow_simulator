@@ -33,8 +33,6 @@ using tf::Vector3, tf::Point, tf::vector3MsgToTF, tf::pointMsgToTF,
 
 using gazebo_msgs::LinkStates, gazebo_msgs::GetPhysicsProperties;
 
-using ow_materials::MaterialBlend;
-
 // service paths served by this class
 const string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
 const string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
@@ -58,7 +56,7 @@ const ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
 RegolithSpawner::RegolithSpawner(const string &node_name)
   : m_node_handle(make_shared<ros::NodeHandle>(node_name)),
-    m_volume_displaced(0.0),
+    m_bulk_displaced(),
     m_spawn_offsets(1, SCOOP_SPAWN_OFFSET)
 {
   // do nothing
@@ -156,9 +154,9 @@ bool RegolithSpawner::initialize()
   return true;
 }
 
-void RegolithSpawner::resetTrackedVolume()
+void RegolithSpawner::resetDisplacedBulk()
 {
-  m_volume_displaced = 0.0;
+  m_bulk_displaced.clear();
 }
 
 void RegolithSpawner::clearAllPsuedoForces()
@@ -174,7 +172,7 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
   Point position;
   pointMsgToTF(request.position, position);
   auto ret = m_model_pool->spawn(
-    position, request.reference_frame, MaterialBlend());
+    position, request.reference_frame, ow_materials::Blend());
   response.success = !ret.empty();
   return true;
 }
@@ -221,51 +219,38 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  if (m_volume_displaced > 0.0) {
-    // The ratio of the volume of the newly received bulk to the total volume
-    // displaced yields a scale multiplier that allows for accurate merging
-    // of the newly receive bulk into the total displaced bulk.
-    float ratio_of_bulk = static_cast<float>(msg->volume / m_volume_displaced);
-    // Merge compositions into the total displaced bulk.
-    m_bulk.merge(MaterialBlend(msg->composition), ratio_of_bulk);
-  } else {
-    // The bulk is reset and set equal to the newly received bulk.
-    m_bulk = MaterialBlend(msg->composition);
-  }
+  m_bulk_displaced.mix(ow_materials::Bulk(*msg));
 
-  m_volume_displaced += msg->volume;
-  if (m_volume_displaced < m_spawn_threshold) {
+  if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
     // nothing more to do until the threshold is reached
     return;
   }
 
   std::stringstream ss;
   ss << "{\n";
-  for (auto b : m_bulk.getBlendMap()) {
+  for (auto const &b : m_bulk_displaced.getComposition()) {
     ss << "\t" << static_cast<int>(b.first) << ":" << b.second << "\n";
   }
   ss << "}";
   ROS_INFO(ss.str().c_str());
 
-  // A regolith is now ready to spawn, but first the displaced bulk should be
-  // normalized.
-  m_bulk.normalize();
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
-  // particle will not spawn at the same location in the same frame.
+  // particle will never spawn at the same location in the same frame.
   for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
     // Once volume is less than threshold, this function has done its job,
-    if (m_volume_displaced < m_spawn_threshold) {
+    if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
       return;
     }
-    m_volume_displaced -= m_spawn_threshold;
+    m_bulk_displaced.reduce(m_spawn_threshold);
     // select spawn offset and wrap from end to beginning
     auto offset = *(m_spawn_offset_selector++);
     if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
       m_spawn_offset_selector = m_spawn_offsets.begin();
     }
     // spawn a regolith model
-    auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME, m_bulk);
+    auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME,
+                                         m_bulk_displaced.getBlend());
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
       continue;
@@ -288,7 +273,7 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   // If execution arrives here and there remains displaced volume above the
   // threshold. This means the volume displaced per frame is larger than the
   // particle spawning system can handle. A warning should be issued.
-  if (m_volume_displaced >= m_spawn_threshold) {
+  if (m_bulk_displaced.getVolume() >= m_spawn_threshold) {
     ROS_WARN("More volume is being displaced per frame than can be spawned as "
              "regolith. Consider increasing the value of "
              "spawn_volume_threshold in common.launch to avoid this warning.");
@@ -306,7 +291,7 @@ void RegolithSpawner::onDigPhaseMsg(
     case scoop_dig_phase::PLOWING:
       break;
     case scoop_dig_phase::NOT_DIGGING:
-      resetTrackedVolume();
+      resetDisplacedBulk();
       clearAllPsuedoForces();
       break;
     case scoop_dig_phase::RETRACTING:

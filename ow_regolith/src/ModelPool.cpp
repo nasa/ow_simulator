@@ -24,8 +24,6 @@ using std::string, std::vector, std::begin, std::end, std::stringstream,
 
 using tf::pointMsgToTF, tf::pointTFToMsg, tf::Point, tf::Vector3;
 
-using ow_materials::MaterialBlend;
-
 // service paths used in class
 const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
 const static string SRV_DELETE_MODEL      = "/gazebo/delete_model";
@@ -82,7 +80,7 @@ bool ModelPool::setModel(const string &model_uri, const string &model_tag)
 }
 
 string ModelPool::spawn(const Point &position, const string &reference_frame,
-                        const MaterialBlend &composition)
+                        const ow_materials::Blend &composition)
 {
   ROS_INFO("Spawning regolith");
 

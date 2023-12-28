@@ -16,15 +16,15 @@
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
 
 #include "AxisAlignedGrid.h"
-#include "Materials.h"
+#include "Material.h"
+#include "material_mixing.h"
 
 namespace ow_materials
 {
 
-using HandleBulkCallback = std::function<void(MaterialBlend const&,
-                                              std::uint32_t)>;
+using HandleBulkCallback = std::function<void(Blend const&, std::uint32_t)>;
 
-using ColorizerCallback = std::function<Color(MaterialBlend const&)>;
+using ColorizerCallback = std::function<Color(Blend const&)>;
 
 class MaterialIntegrator
 {
@@ -35,15 +35,15 @@ class MaterialIntegrator
 
 public:
   MaterialIntegrator(ros::NodeHandle *node_handle,
-                     AxisAlignedGrid<MaterialBlend> const *grid,
+                     AxisAlignedGrid<Blend> const *grid,
                      const std::string &modification_topic,
                      const std::string &dug_points_topic,
                      HandleBulkCallback handle_bulk_cb,
                      ColorizerCallback colorizer_cb);
   ~MaterialIntegrator() = default;
 
-  MaterialIntegrator() = delete;
-  MaterialIntegrator(const MaterialIntegrator&) = delete;
+  MaterialIntegrator()                                     = delete;
+  MaterialIntegrator(const MaterialIntegrator&)            = delete;
   MaterialIntegrator& operator=(const MaterialIntegrator&) = delete;
 
 private:
@@ -61,7 +61,7 @@ private:
 
   ColorizerCallback m_colorizer_cb;
 
-  AxisAlignedGrid<MaterialBlend> const *m_grid;
+  AxisAlignedGrid<Blend> const *m_grid;
 
   std::uint32_t m_next_expected_seq = 0u;
 
@@ -83,7 +83,7 @@ private:
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
   // Computes the intersection of the volume between new and old heightmap
-  // values and the voxel grid. Merges all MaterialBlend values within that
+  // values and the voxel grid. Merges all Blend values within that
   // intersection and calls the HandleBulkCallback with the resulting blend.
   void integrate(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);

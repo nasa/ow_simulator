@@ -140,7 +140,7 @@ catkin_package(
 add_library(Materials
   SHARED
   src/MaterialDatabase.cpp
-  src/Materials.cpp
+  src/material_mixing.cpp
 )
 add_dependencies(Materials
   ${${PROJECT_NAME}_EXPORTED_TARGETS}

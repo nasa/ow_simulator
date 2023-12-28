@@ -6,11 +6,10 @@
 #define MATERIAL_DATABASE_H
 
 #include <string>
-#include <ostream>
 #include <unordered_map>
 #include <stdexcept>
 
-#include "Materials.h"
+#include "Material.h"
 
 namespace ow_materials
 {

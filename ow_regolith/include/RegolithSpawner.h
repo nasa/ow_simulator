@@ -12,8 +12,8 @@
 
 #include "gazebo_msgs/LinkStates.h"
 
-#include "ow_materials/Materials.h"
 #include "ow_materials/MaterialDatabase.h"
+#include "ow_materials/material_mixing.h"
 
 #include "ow_materials/BulkExcavation.h"
 #include "ow_dynamic_terrain/scoop_dig_phase.h"
@@ -46,8 +46,8 @@ public:
   // NOTE: this must be called before any other functions
   bool initialize();
 
-  // reset tracked volume to 0
-  void resetTrackedVolume();
+  // reset displaced bulk so that it is empty
+  void resetDisplacedBulk();
 
   // clear any psuedo forces acting on regolith
   void clearAllPsuedoForces();
@@ -91,14 +91,12 @@ private:
   std::unique_ptr<ModelPool> m_model_pool;
 
   ow_materials::MaterialDatabase m_material_db;
-  ow_materials::MaterialBlend m_bulk;
+  ow_materials::Bulk m_bulk_displaced;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
-  // sum of volume displaced since previous reoglith spawning
-  double m_volume_displaced;
   // list of spawn positions relative to scoop link
   std::vector<tf::Vector3> m_spawn_offsets;
   std::vector<tf::Vector3>::const_iterator m_spawn_offset_selector;
