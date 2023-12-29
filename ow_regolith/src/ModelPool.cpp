@@ -25,15 +25,32 @@ using std::string, std::vector, std::begin, std::end, std::stringstream,
 using tf::pointMsgToTF, tf::pointTFToMsg, tf::Point, tf::Vector3;
 
 // service paths used in class
-const static string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
-const static string SRV_DELETE_MODEL      = "/gazebo/delete_model";
-const static string SRV_APPLY_BODY_WRENCH = "/gazebo/apply_body_wrench";
-const static string SRV_CLEAR_BODY_WRENCH = "/gazebo/clear_body_wrenches";
+const string SRV_SPAWN_MODEL       = "/gazebo/spawn_sdf_model";
+const string SRV_DELETE_MODEL      = "/gazebo/delete_model";
+const string SRV_APPLY_BODY_WRENCH = "/gazebo/apply_body_wrench";
+const string SRV_CLEAR_BODY_WRENCH = "/gazebo/clear_body_wrenches";
 
-const static ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
+const ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 
-bool ModelPool::connectServices()
+// Time before a BulkExcavation is sent on /ow_materials/material_ingested
+// following receipt of a removal request where ingested=True
+// NOTE: This interval intentionally matches the interval in
+//  DockIngestSampleServer in ow_lander/src/ow_lander/actions.py such that
+//  there will only be one BulkExcavation message on this topic per call to
+//  DockIngestSample.
+const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
+
+bool ModelPool::initialize()
 {
+  // advertise a topic for communicating ingested sample contents
+  m_pub_material_ingested = m_node_handle
+    ->advertise<ow_materials::BulkExcavation>("/ground_truth/material_ingested",
+                                              1, true);
+  m_consolidate_ingested_timeout = m_node_handle->createTimer(
+    CONSOLIDATE_INGESTED_TIMEOUT,
+    &ModelPool::onConsolidateIngestedTimeout,
+    this, true, false
+  );
   // connect to all ROS services
   return
     m_gz_spawn_model.connect<SpawnModel>(
@@ -80,7 +97,7 @@ bool ModelPool::setModel(const string &model_uri, const string &model_tag)
 }
 
 string ModelPool::spawn(const Point &position, const string &reference_frame,
-                        const ow_materials::Blend &composition)
+                        const ow_materials::Bulk &bulk)
 {
   ROS_INFO("Spawning regolith");
 
@@ -103,13 +120,14 @@ string ModelPool::spawn(const Point &position, const string &reference_frame,
 
   m_active_models.emplace(
     link_name.str(),
-    Model{model_name.str(), m_model_body_name, composition}
+    Model{model_name.str(), m_model_body_name, bulk}
   );
 
   return link_name.str();
 }
 
-vector<string> ModelPool::remove(const vector<string> &link_names)
+vector<string> ModelPool::remove(const vector<string> &link_names,
+                                 bool ingested)
 {
   if (link_names.empty()) {
     return {};
@@ -118,16 +136,23 @@ vector<string> ModelPool::remove(const vector<string> &link_names)
   DeleteModel msg;
   // delete one or multiple models as provided in link_names
   for (auto const &n : link_names) {
+    ow_materials::Bulk bulk;
     try {
       msg.request.model_name = m_active_models.at(n).model_name;
+      bulk = m_active_models.at(n).bulk;
     } catch(out_of_range &_err) {
       not_removed.push_back(n);
       continue;
     }
-    if (removeModel(msg))
+    if (removeModel(msg)) {
       m_active_models.erase(n);
-    else
+      if (ingested) {
+        m_ingested_bulk.mix(bulk);
+        resetConsolidatedIngestedTimeout();
+      }
+    } else {
       not_removed.push_back(n);
+    }
   }
   return not_removed;
 }
@@ -181,4 +206,18 @@ bool ModelPool::removeModel(DeleteModel &msg)
     return false;
   }
   return true;
+}
+
+void ModelPool::onConsolidateIngestedTimeout(const ros::TimerEvent&)
+{
+  m_pub_material_ingested.publish(
+    m_ingested_bulk.generateExcavationBulkMessage());
+  m_ingested_bulk.clear();
+}
+
+void ModelPool::resetConsolidatedIngestedTimeout()
+{
+  m_consolidate_ingested_timeout.stop();
+  m_consolidate_ingested_timeout.setPeriod(CONSOLIDATE_INGESTED_TIMEOUT);
+  m_consolidate_ingested_timeout.start();
 }

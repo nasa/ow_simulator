@@ -34,7 +34,7 @@ public:
 
   ModelPool(std::shared_ptr<ros::NodeHandle> nh) : m_node_handle(nh) {};
 
-  bool connectServices();
+  bool initialize();
 
   bool setModel(const std::string &model_uri, const std::string &model_prefix);
 
@@ -43,10 +43,11 @@ public:
   // spawn a model
   std::string spawn(const tf::Point &position,
                     const std::string &reference_frame,
-                    const ow_materials::Blend &blend);
+                    const ow_materials::Bulk &bulk);
 
   // remove models within the pool by link name
-  std::vector<std::string> remove(const std::vector<std::string> &link_names);
+  std::vector<std::string> remove(const std::vector<std::string> &link_names,
+                                  bool ingested);
 
   // remove all models in pool
   std::vector<std::string> clear();
@@ -61,10 +62,21 @@ public:
 private:
   bool removeModel(gazebo_msgs::DeleteModel &msg);
 
+  void onConsolidateIngestedTimeout(const ros::TimerEvent&);
+
+  // make necessary calls to reset the member ROS Timer
+  void resetConsolidatedIngestedTimeout();
+
+  ros::Timer m_consolidate_ingested_timeout;
+
+  ow_materials::Bulk m_ingested_bulk;
+
   std::shared_ptr<ros::NodeHandle> m_node_handle;
 
   ServiceClientFacade m_gz_spawn_model, m_gz_delete_model,
                       m_gz_apply_wrench, m_gz_clear_wrench;
+
+  ros::Publisher m_pub_material_ingested;
 
   // regolith model that spawns in the scoop when digging occurs
   std::string m_model_uri;
@@ -77,7 +89,7 @@ private:
   struct Model {
     const std::string model_name;
     const std::string body_name;
-    const ow_materials::Blend blend;
+    const ow_materials::Bulk bulk;
   };
   // keys are of the form "model_name::body_name"
   std::unordered_map<std::string, Model> m_active_models;

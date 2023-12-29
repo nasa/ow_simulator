@@ -1170,7 +1170,7 @@ class DockIngestSampleServer(ActionServerBase):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
     service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
-    result = service(regolith_to_remove)
+    result = service(regolith_to_remove, True)
     return result.success
 
   def execute_action(self, _goal):

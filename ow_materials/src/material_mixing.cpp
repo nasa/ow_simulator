@@ -103,12 +103,14 @@ void Bulk::mix(Bulk const &other)
   m_volume += other.m_volume;
 }
 
-void Bulk::reduce(double volume_deducted)
+double Bulk::reduce(double volume_deducted)
 {
+  auto prev_volume = m_volume;
   m_volume = max(0.0, m_volume - volume_deducted);
   if (m_volume == 0.0) {
     m_blend.clear();
   }
+  return prev_volume - m_volume;
 }
 
 BulkExcavation Bulk::generateExcavationBulkMessage() const

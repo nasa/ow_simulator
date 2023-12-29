@@ -92,7 +92,8 @@ public:
   // considered to be perfectly mixed, this will never affect the composition.
   // If the deducted volume is larger than the contained volume, the volume of
   // the Bulk after this operation will be zero.
-  void reduce(double volume_deducted);
+  // Returns the actual volume deducted from the bulk (always positive).
+  double reduce(double volume_deducted);
 
   // Generate a BulkExcavation message type out of this instance's data.
   BulkExcavation generateExcavationBulkMessage() const;

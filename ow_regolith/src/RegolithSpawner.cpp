@@ -92,7 +92,7 @@ bool RegolithSpawner::initialize()
   m_spawn_offset_selector = m_spawn_offsets.begin();
 
   m_model_pool = make_unique<ModelPool>(m_node_handle);
-  if (!m_model_pool->connectServices()) {
+  if (!m_model_pool->initialize()) {
     ROS_ERROR("ModelPool failed to connect to gazebo_ros services.");
     return false;
   }
@@ -172,7 +172,7 @@ bool RegolithSpawner::spawnRegolithSrv(SpawnRegolithRequest &request,
   Point position;
   pointMsgToTF(request.position, position);
   auto ret = m_model_pool->spawn(
-    position, request.reference_frame, ow_materials::Blend());
+    position, request.reference_frame, ow_materials::Bulk());
   response.success = !ret.empty();
   return true;
 }
@@ -185,7 +185,8 @@ bool RegolithSpawner::removeRegolithSrv(RemoveRegolithRequest &request,
     response.not_removed = m_model_pool->clear();
   } else {
     // remove specific regolith models
-    response.not_removed = m_model_pool->remove(request.link_names);
+    response.not_removed = m_model_pool->remove(request.link_names,
+                                                request.ingested);
   }
   response.success = response.not_removed.empty();
   return true;
@@ -204,7 +205,7 @@ void RegolithSpawner::onLinkStatesMsg(const LinkStates::ConstPtr &msg)
 
 void RegolithSpawner::onTerrainContact(const Contacts::ConstPtr &msg)
 {
-  m_model_pool->remove(msg->link_names);
+  m_model_pool->remove(msg->link_names, false);
 }
 
 void RegolithSpawner::onBulkExcavationVisualMsg(
@@ -242,15 +243,18 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
     if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
       return;
     }
-    m_bulk_displaced.reduce(m_spawn_threshold);
     // select spawn offset and wrap from end to beginning
     auto offset = *(m_spawn_offset_selector++);
     if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
       m_spawn_offset_selector = m_spawn_offsets.begin();
     }
+    // reduce tracked bulk by the threshold
+    double particle_volume = m_bulk_displaced.reduce(m_spawn_threshold);
     // spawn a regolith model
+    ow_materials::Bulk particle_bulk(m_bulk_displaced.getBlend(),
+                                     particle_volume);
     auto link_name = m_model_pool->spawn(offset, SCOOP_LINK_NAME,
-                                         m_bulk_displaced.getBlend());
+                                         particle_bulk);
     if (link_name.empty()) {
       ROS_ERROR("Failed to spawn regolith particle");
       continue;
