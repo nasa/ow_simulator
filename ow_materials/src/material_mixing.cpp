@@ -97,7 +97,6 @@ void Bulk::mix(Bulk const &other)
   // scaling factor to scale the other's composition by while merging it into
   // this one's composition.
   float ratio_of_whole = static_cast<float>(other.m_volume / m_volume);
-  // Merge compositions into the total displaced bulk.
   m_blend.merge(other.m_blend, ratio_of_whole);
   m_blend.normalize();
   m_volume += other.m_volume;

@@ -23,6 +23,7 @@
 #include "ow_regolith/Contacts.h"
 
 #include "ModelPool.h"
+#include "SingleThreadedTaskQueue.h"
 
 namespace ow_regolith {
 
@@ -72,6 +73,10 @@ public:
   void onDigPhaseMsg(const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg);
 
 private:
+  void processBulkExcavation(const ow_materials::BulkExcavation bulk);
+
+  void manageQueue(const ros::WallTimerEvent&);
+
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
   ros::ServiceServer m_srv_spawn_regolith;
@@ -92,6 +97,10 @@ private:
 
   ow_materials::MaterialDatabase m_material_db;
   ow_materials::Bulk m_bulk_displaced;
+
+  SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
+
+  ros::WallTimer m_queue_manager_timer;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;

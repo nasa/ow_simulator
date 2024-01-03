@@ -57,7 +57,9 @@ const ros::Duration SERVICE_CONNECT_TIMEOUT = ros::Duration(5.0);
 RegolithSpawner::RegolithSpawner(const string &node_name)
   : m_node_handle(make_shared<ros::NodeHandle>(node_name)),
     m_bulk_displaced(),
-    m_spawn_offsets(1, SCOOP_SPAWN_OFFSET)
+    m_spawn_offsets(1, SCOOP_SPAWN_OFFSET),
+    m_queue(std::bind(&RegolithSpawner::processBulkExcavation, this,
+      std::placeholders::_1))
 {
   // do nothing
 }
@@ -151,6 +153,10 @@ bool RegolithSpawner::initialize()
                        * gravity.length()
                        * PSUEDO_FORCE_WEIGHT_FACTOR;
 
+  const ros::WallDuration TASK_QUEUE_PERIOD(0.005);
+  m_queue_manager_timer = m_node_handle->createWallTimer(TASK_QUEUE_PERIOD,
+    &RegolithSpawner::manageQueue, this, false, true);
+
   return true;
 }
 
@@ -220,7 +226,18 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   }
   m_next_expected_seq = msg->header.seq + 1;
 
-  m_bulk_displaced.mix(ow_materials::Bulk(*msg));
+  m_queue.addTask(*msg);
+}
+
+void RegolithSpawner::manageQueue(const ros::WallTimerEvent&)
+{
+  m_queue.manage();
+}
+
+void RegolithSpawner::processBulkExcavation(
+    const ow_materials::BulkExcavation bulk)
+{
+  m_bulk_displaced.mix(ow_materials::Bulk(bulk));
 
   if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
     // nothing more to do until the threshold is reached
