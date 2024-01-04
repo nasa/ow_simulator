@@ -96,7 +96,7 @@ const GridPositionType &AxisAlignedGrid<T>::getDiagonal() const {
   static const GridPositionType diagonal(m_domain->XLength(),
                                          m_domain->YLength(),
                                          m_domain->ZLength());
-  return diagonal;
+   return diagonal;
 };
 
 template <typename T>

@@ -75,7 +75,7 @@ public:
 private:
   void processBulkExcavation(const ow_materials::BulkExcavation bulk);
 
-  void manageQueue(const ros::WallTimerEvent&);
+  void manageQueue(const ros::TimerEvent&);
 
   // ROS interfaces
   std::shared_ptr<ros::NodeHandle> m_node_handle;
@@ -86,8 +86,9 @@ private:
   ros::Subscriber m_sub_bulk_excavation;
   ros::Subscriber m_sub_dig_phase;
 
-  // true if scoop is performing a dig motion and is exiting the terrain
-  bool m_retracting = false;
+  // If true, a pseudo force will be applied to spawned particles to keep them
+  // in the scoop. Determined based on the dig phase.
+  bool m_psuedo_force_required = false;
 
   // sequence number of mod diff visual message
   std::uint32_t m_next_expected_seq = 0u;
@@ -100,7 +101,7 @@ private:
 
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
 
-  ros::WallTimer m_queue_manager_timer;
+  ros::Timer m_queue_manager_timer;
 
   // magnitude of force that keeps regolith in the scoop while digging
   float m_psuedo_force_mag;

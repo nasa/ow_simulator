@@ -153,8 +153,8 @@ bool RegolithSpawner::initialize()
                        * gravity.length()
                        * PSUEDO_FORCE_WEIGHT_FACTOR;
 
-  const ros::WallDuration TASK_QUEUE_PERIOD(0.005);
-  m_queue_manager_timer = m_node_handle->createWallTimer(TASK_QUEUE_PERIOD,
+  const ros::Duration TASK_QUEUE_PERIOD(0.005);
+  m_queue_manager_timer = m_node_handle->createTimer(TASK_QUEUE_PERIOD,
     &RegolithSpawner::manageQueue, this, false, true);
 
   return true;
@@ -229,7 +229,7 @@ void RegolithSpawner::onBulkExcavationVisualMsg(
   m_queue.addTask(*msg);
 }
 
-void RegolithSpawner::manageQueue(const ros::WallTimerEvent&)
+void RegolithSpawner::manageQueue(const ros::TimerEvent&)
 {
   m_queue.manage();
 }
@@ -237,6 +237,9 @@ void RegolithSpawner::manageQueue(const ros::WallTimerEvent&)
 void RegolithSpawner::processBulkExcavation(
     const ow_materials::BulkExcavation bulk)
 {
+  // DEBUG
+  auto start_time = ros::Time::now();
+
   m_bulk_displaced.mix(ow_materials::Bulk(bulk));
 
   if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
@@ -244,13 +247,14 @@ void RegolithSpawner::processBulkExcavation(
     return;
   }
 
-  std::stringstream ss;
-  ss << "{\n";
-  for (auto const &b : m_bulk_displaced.getComposition()) {
-    ss << "\t" << static_cast<int>(b.first) << ":" << b.second << "\n";
-  }
-  ss << "}";
-  ROS_INFO(ss.str().c_str());
+  // DEBUG LOGGING
+  // std::stringstream ss;
+  // ss << "{\n";
+  // for (auto const &b : m_bulk_displaced.getComposition()) {
+  //   ss << "\t" << static_cast<int>(b.first) << ":" << b.second << "\n";
+  // }
+  // ss << "}";
+  // ROS_INFO(ss.str().c_str());
 
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
@@ -258,6 +262,11 @@ void RegolithSpawner::processBulkExcavation(
   for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
     // Once volume is less than threshold, this function has done its job,
     if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
+      // DEBUG
+      ROS_INFO_STREAM(
+        "processBulkExcavation call took "
+        << (ros::Time::now() - start_time).toSec() * 1000 << " ms"
+      );
       return;
     }
     // select spawn offset and wrap from end to beginning
@@ -277,7 +286,7 @@ void RegolithSpawner::processBulkExcavation(
       continue;
     }
     // if scoop is retracting, psuedo forces are not need
-    if (!m_retracting) {
+    if (m_psuedo_force_required) {
       // compute psuedo force direction from scoop orientation
       Vector3 scooping_vec(quatRotate(m_scoop_orientation, SCOOP_FORWARD));
       scooping_vec.setZ(0.0); // flatten against X-Y plane
@@ -299,23 +308,27 @@ void RegolithSpawner::processBulkExcavation(
              "regolith. Consider increasing the value of "
              "spawn_volume_threshold in common.launch to avoid this warning.");
   }
+
 }
 
 void RegolithSpawner::onDigPhaseMsg(
   const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg)
 {
-  m_retracting = msg->phase == msg->RETRACTING;
   using ow_dynamic_terrain::scoop_dig_phase;
+  m_psuedo_force_required = (
+    msg->phase == scoop_dig_phase::SINKING ||
+    msg->phase == scoop_dig_phase::PLOWING
+  );
   switch (msg->phase) {
     // do nothing phases
     case scoop_dig_phase::SINKING:
     case scoop_dig_phase::PLOWING:
       break;
-    case scoop_dig_phase::NOT_DIGGING:
-      resetDisplacedBulk();
+    case scoop_dig_phase::RETRACTING:
       clearAllPsuedoForces();
       break;
-    case scoop_dig_phase::RETRACTING:
+    case scoop_dig_phase::NOT_DIGGING:
+      resetDisplacedBulk();
       clearAllPsuedoForces();
       break;
     default:

@@ -101,6 +101,9 @@ string ModelPool::spawn(const Point &position, const string &reference_frame,
 {
   ROS_INFO("Spawning regolith");
 
+  // DEBUG
+  auto start_time = ros::Time::now();
+
   static auto spawn_count = 0;
   stringstream model_name, link_name;
   model_name << m_model_tag << "_" << spawn_count++;
@@ -121,6 +124,12 @@ string ModelPool::spawn(const Point &position, const string &reference_frame,
   m_active_models.emplace(
     link_name.str(),
     Model{model_name.str(), m_model_body_name, bulk}
+  );
+
+  // DEBUG
+  ROS_INFO_STREAM(
+    "spawn call took "
+    << (ros::Time::now() - start_time).toSec() * 1000 << " ms"
   );
 
   return link_name.str();
