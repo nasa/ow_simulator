@@ -53,7 +53,7 @@ bool PrognoserInputHandler::loadSystemConfig()
     m_baseline_wattage = (system_config.getDouble("baseline_power_comms") +
 			  system_config.getDouble("baseline_power_compute") +
 			  system_config.getDouble("baseline_power_heating") +
-			  system_config.getDouble("baseline_power_science"));
+			  system_config.getDouble("baseline_power_other"));
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_time_interval = 1 / (system_config.getDouble("loop_rate"));
   }
