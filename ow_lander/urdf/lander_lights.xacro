@@ -87,7 +87,7 @@
           <outer_angle>1.222</outer_angle>
           <falloff>1.0</falloff>
         </spot>
-        <cast_shadows>false</cast_shadows>
+        <cast_shadows>true</cast_shadows>
       </light>
     </gazebo>
   </xacro:macro>

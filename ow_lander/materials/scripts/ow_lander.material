@@ -11,8 +11,8 @@ vertex_program ow_lander_vert glsl
     param_named_auto inverseTransposeWorldMatrix      inverse_transpose_world_matrix
     param_named_auto inverseTransposeWorldViewMatrix  inverse_transpose_worldview_matrix
 
-    // shadow mapping (PSSM), which requires 3 shadow maps
-    param_named_auto texViewProjMatrix   texture_viewproj_matrix_array 3
+    // 3 for the sun because it uses PSSM, plus 2 spotlights
+    param_named_auto texViewProjMatrix   texture_viewproj_matrix_array 5
 
     // lander lights
     param_named landerUpVec              float3 0.0 0.0 1.0
@@ -36,15 +36,17 @@ fragment_program ow_lander_frag glsl
     param_named sunIntensity                   float3 4438.0 4438.0 4438.0
     param_named sunVisibility                  float 1.0
 
-    // shadow mapping (PSSM)
+    // shadow mapping
     param_named shadowMap0                     int 0
     param_named shadowMap1                     int 1
     param_named shadowMap2                     int 2
+    param_named shadowMap3                     int 3
+    param_named shadowMap4                     int 4
     // This line is sometimes necessary, but not usually. Perhaps it is a Gazebo bug.
     param_named pssmSplitPoints                float4 6.66067 38.364 500 0
 
     // texture references
-    param_named irradianceMap                  int 3
+    param_named irradianceMap                  int 5
 
     // lander lights
     // Control status of lander lights (spotlights)
@@ -56,7 +58,7 @@ fragment_program ow_lander_frag glsl
     param_named_auto lightAtten                light_attenuation_array 3
     param_named_auto spotlightParams           spotlight_params_array 3
     // spotlight texture
-    param_named spotlightMap                   int 4
+    param_named spotlightMap                   int 6
   }
 }
 
@@ -85,6 +87,16 @@ material ow/lander
         tex_address_mode clamp
       }
       texture_unit shadowMap2
+      {
+        content_type shadow
+        tex_address_mode clamp
+      }
+      texture_unit shadowMap3
+      {
+        content_type shadow
+        tex_address_mode clamp
+      }
+      texture_unit shadowMap4
       {
         content_type shadow
         tex_address_mode clamp

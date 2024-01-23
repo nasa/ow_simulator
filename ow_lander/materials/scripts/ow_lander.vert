@@ -29,8 +29,8 @@ uniform vec4 spotlightAtten0;
 out vec4 spotlightTexCoord[2];
 
 // Shadow parameters
-uniform mat4 texViewProjMatrix[3];
-out vec4 lsPos[3];
+uniform mat4 texViewProjMatrix[5];
+out vec4 lsPos[5];
 
 // output
 out vec3 wsPos;

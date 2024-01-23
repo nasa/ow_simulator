@@ -30,10 +30,12 @@ uniform vec4 pssmSplitPoints;
 uniform sampler2DShadow shadowMap0;
 uniform sampler2DShadow shadowMap1;
 uniform sampler2DShadow shadowMap2;
+uniform sampler2DShadow shadowMap3;
+uniform sampler2DShadow shadowMap4;
 // We only need this measurement for one shadow map because Ogre uses the same
 // dimensions for all shadow maps.
 float inverseShadowMapSize = 1.0 / float(textureSize(shadowMap0, 0).x);
-in vec4 lsPos[3];
+in vec4 lsPos[5];
 
 uniform vec4 wsLightPos[3];
 uniform vec4 wsLightDir[3];
@@ -49,6 +51,13 @@ uniform sampler2D spotlightMap;
 out vec4 outputCol;
 
 const float PI = 3.14159265358979;
+
+const int NUM_LIGHTS = 3;
+struct LightData {
+  vec3 wsVecToLight;
+  vec3 color;
+};
+LightData lights[NUM_LIGHTS];
 
 // Blend normals using Reoriented Normal Mapping.
 // Using RNM method from http://blog.selfshadow.com/publications/blending-in-detail
@@ -135,19 +144,21 @@ float calcPSSMDepthShadowDebug(
 
 // wsVecToLight must not be normalized.
 // wsLightDir must be normalized.
-vec3 spotlight(in vec3 wsVecToLight,
+void spotlight(in vec3 wsVecToLight,
                in vec3 wsLightDir,
                in vec4 attenParams,
                in vec4 spotParams,
                in vec3 color,
-               in vec4 texCoord,
+               in vec4 beamTexCoord,
+               in vec4 lsPos,
+               in sampler2DShadow shadowMap,
                in int index)
 {
   // If this is not a spotlight or a spotlight isn't applied to this object
   // because it is too far away, spotParams will be set to 1,0,0,1
   if (spotParams == vec4(1, 0, 0, 1))
   {
-    return vec3(0, 0, 0);
+    lights[index].color = vec3(0, 0, 0);
   }
   else
   {
@@ -169,7 +180,7 @@ vec3 spotlight(in vec3 wsVecToLight,
     // The math is a bit complicated, but it results in a spotT value of 1.0
     // where the texture is projected and 0.0 outside the texture. A simpler
     // implementation would use conditionals but it would likely be slower.
-    vec2 normalizedTexCoord = texCoord.xy / texCoord.w;
+    vec2 normalizedTexCoord = beamTexCoord.xy / beamTexCoord.w;
     // Arbitrarily large multiplier for saturating values at 0 or 1
     const float saturator = 1000000.0;
     // 0 where texcoord < 0 and 1 where texcoord > 0
@@ -180,11 +191,24 @@ vec3 spotlight(in vec3 wsVecToLight,
     float spotTZ = clamp(dot(-wsLightDir, wsDirToLight) * saturator, 0.0, 1.0);
     float spotT = spotT0.x * spotT0.y * spotT1.x * spotT1.y * spotTZ;
 
-    vec3 texColor = textureProj(spotlightMap, texCoord).rgb;
+    vec3 texColor = textureProj(spotlightMap, beamTexCoord).rgb;
 
+    // Compute shadow with arbitrary blurring of jagged shadow edges.
+    float blurShadow = 1.0 + 2.0 * lsPos.z;
+    // Compute shadow lookup bias using formula from
+    // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+    // Should be able to bake this bias into the shadow map using constant_bias
+    // and slope_scale_bias in IRGShadowParametersPlugins, but it doesn't work.
+    float constantBias = 0.01;
+    float cosTheta = clamp(dot(wsNormal, wsDirToLight), 0.0, 1.0);
+    float slopeScaleBias = clamp(0.005 * tan(acos(cosTheta)), 0.0, 0.02);
+    lsPos.z -= constantBias + slopeScaleBias;
+    float shadow = calcDepthShadow(shadowMap, lsPos, inverseShadowMapSize * blurShadow);
+
+    lights[index].wsVecToLight = wsVecToLight;
     // Attenuation and spot cone get baked into final light color. This is how
     // spotlights get generalized so they can be stored in lights array.
-    return max(texColor * color * (atten * spotT), vec3(0.0));
+    lights[index].color = max(texColor * color * (shadow * atten * spotT), vec3(0.0));
   }
 }
 
@@ -206,13 +230,6 @@ vec3 brdf_oren_nayar(vec3 L, vec3 V, vec3 N, float roughness, vec3 albedo) {
 void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNormalHeight,
               vec3 albedo, out vec3 diffuse, out vec3 specular)
 {
-  const int NUM_LIGHTS = 3;
-  struct LightData {
-    vec3 wsVecToLight;
-    vec3 color;
-  };
-  LightData lights[NUM_LIGHTS];
-
   // shadows
   // Compute shadow lookup bias using formula from
   // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
@@ -236,13 +253,13 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   lights[0].color = sunIntensity * (sunVisibility * heightMultiplier * shadow);
 
   // lander lights
-  for (int i=0; i<2; i++) {
-    vec3 wsVecToLight = wsLightPos[i+1].xyz - wsPos;
-    lights[i+1].wsVecToLight = wsVecToLight;
-    lights[i+1].color = spotlight(wsVecToLight, wsLightDir[i+1].xyz, lightAtten[i+1],
-                                  spotlightParams[1+1], lightDiffuseColor[i+1].rgb,
-                                  spotlightTexCoord[i], i+1);
-  }
+  // This cannot be a for-loop because sampler2DArrayShadow is not supported by Ogre.
+  spotlight(wsLightPos[1].xyz - wsPos, wsLightDir[1].xyz, lightAtten[1],
+            spotlightParams[1], lightDiffuseColor[1].rgb, spotlightTexCoord[0],
+            lsPos[3], shadowMap3, 1);
+  spotlight(wsLightPos[2].xyz - wsPos, wsLightDir[2].xyz, lightAtten[2],
+            spotlightParams[2], lightDiffuseColor[2].rgb, spotlightTexCoord[1],
+            lsPos[4], shadowMap4, 2);
 
   const float roughness = 0.3;
   const float specPower = 60.0;
