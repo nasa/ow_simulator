@@ -126,19 +126,19 @@ catkin_add_env_hooks(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-# ROS node executable for automated regolith spawning and clean-up
-add_executable(regolith_node 
-  src/regolith_node.cpp
-  src/RegolithSpawner.cpp
-  src/ModelPool.cpp
+# Plugin for automated regolith spawning and clean-up
+add_library(RegolithPlugin
+  SHARED
+  src/RegolithPlugin.cpp
+  src/ParticlePool.cpp
   src/sdf_utility.cpp
 )
-add_dependencies(regolith_node 
-  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+add_dependencies(RegolithPlugin
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
   ${ow_materials_EXPORTED_TARGETS}
 )
-target_link_libraries(regolith_node
+target_link_libraries(RegolithPlugin
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
 )

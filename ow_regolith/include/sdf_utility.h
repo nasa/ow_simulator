@@ -15,15 +15,15 @@ namespace sdf_utility {
 bool getSdfFromUri(const std::string &uri, std::string &out_sdf_text);
 
 // parse SDF contents into an SDF object
-sdf::SDFPtr parseSdf(const std::string &sdf_text);
+void parseSdf(const std::string &sdf_text, sdf::SDF &out_sdf);
 
-bool getModelLink(const sdf::SDFPtr &sdf, sdf::ElementPtr &out_link);
+bool getModelLink(const sdf::SDF &sdf, sdf::ElementPtr &out_link);
 
-// get the name of the first link of the model
-bool getModelLinkName(const sdf::SDFPtr &sdf, std::string &out_name);
+// // get the name of the first link of the model
+// bool getModelLinkName(const sdf::SDF &sdf, std::string &out_name);
 
-// get the mass of the first link of the model
-bool getModelLinkMass(const sdf::SDFPtr &sdf, float &out_mass);
+// // get the mass of the first link of the model
+// bool getModelLinkMass(const sdf::SDF &sdf, float &out_mass);
 
 }
 

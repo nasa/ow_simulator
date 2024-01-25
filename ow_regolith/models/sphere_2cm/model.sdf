@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 
 <sdf version="1.5">
-  <model name="sphere_2cm">
+  <model name="regolith">
     <link name="link">
 
-      <must_be_base_link>true</must_be_base_link>
+      <!-- <must_be_base_link>true</must_be_base_link> -->
 
       <pose>0 0 0.01 0 0 0</pose>
       <inertial>

@@ -6,46 +6,45 @@
 #define REGOLITH_SPAWNER_H
 
 #include <vector>
+#include <memory>
 
 #include "ros/ros.h"
-#include "tf/tf.h"
 
-#include "gazebo_msgs/LinkStates.h"
+#include "gazebo/gazebo.hh"
+#include "gazebo/physics/physics.hh"
+#include "gazebo/common/common.hh"
 
 #include "ow_materials/MaterialDatabase.h"
 #include "ow_materials/material_mixing.h"
-
 #include "ow_materials/BulkExcavation.h"
+
 #include "ow_dynamic_terrain/scoop_dig_phase.h"
 
 #include "ow_regolith/SpawnRegolith.h"
 #include "ow_regolith/RemoveRegolith.h"
 #include "ow_regolith/Contacts.h"
 
-#include "ModelPool.h"
+#include "ParticlePool.h"
 #include "SingleThreadedTaskQueue.h"
 
 namespace ow_regolith {
 
-class RegolithSpawner
+class RegolithPlugin : public gazebo::ModelPlugin
 {
 
-// RegolithSpawner is a ROS node that detects when digging by the scoop
+// RegolithPlugin is a ROS node that detects when digging by the scoop
 // end-effector occurs and spawns a model in the scoop to represent collected
 // material. The node will also remove models it has spawned as they collide
 // with the terrain or in response to a service call.
 
 public:
-  RegolithSpawner(const std::string &node_name);
-  ~RegolithSpawner() = default;
+  RegolithPlugin();
+  ~RegolithPlugin() = default;
 
-  RegolithSpawner()  = delete;
-  RegolithSpawner(const RegolithSpawner&) = delete;
-  RegolithSpawner& operator=(const RegolithSpawner&) = delete;
+  RegolithPlugin(const RegolithPlugin&)            = delete;
+  RegolithPlugin& operator=(const RegolithPlugin&) = delete;
 
-  // loads regolith SDF and computes its mass
-  // NOTE: this must be called before any other functions
-  bool initialize();
+  void Load(gazebo::physics::ModelPtr world, sdf::ElementPtr sdf) override;
 
   // reset displaced bulk so that it is empty
   void resetDisplacedBulk();
@@ -63,8 +62,6 @@ public:
 
   void onTerrainContact(const ow_regolith::Contacts::ConstPtr &msg);
 
-  void onLinkStatesMsg(const gazebo_msgs::LinkStates::ConstPtr &msg);
-
   // computes the volume displaced from a modified terrain diff image and
   // and spawns reoglith if it surpasses the spawn threshold
   void onBulkExcavationVisualMsg(
@@ -78,7 +75,11 @@ private:
   void manageQueue(const ros::TimerEvent&);
 
   // ROS interfaces
-  std::shared_ptr<ros::NodeHandle> m_node_handle;
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
+
+  // gazebo interface
+  gazebo::physics::LinkPtr m_scoop_link;
+
   ros::ServiceServer m_srv_spawn_regolith;
   ros::ServiceServer m_srv_remove_all_regolith;
   ros::Subscriber m_sub_link_states;
@@ -94,7 +95,7 @@ private:
   std::uint32_t m_next_expected_seq = 0u;
 
   // spawns, removes, and applies forces to spawned models
-  std::unique_ptr<ModelPool> m_model_pool;
+  ParticlePool m_model_pool;
 
   ow_materials::MaterialDatabase m_material_db;
   ow_materials::Bulk m_bulk_displaced;
@@ -104,15 +105,18 @@ private:
   ros::Timer m_queue_manager_timer;
 
   // magnitude of force that keeps regolith in the scoop while digging
-  float m_psuedo_force_mag;
+  double m_psuedo_force_mag;
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
   // list of spawn positions relative to scoop link
-  std::vector<tf::Vector3> m_spawn_offsets;
-  std::vector<tf::Vector3>::const_iterator m_spawn_offset_selector;
+  std::vector<ignition::math::Vector3d> m_spawn_offsets;
+  std::vector<ignition::math::Vector3d>::const_iterator m_spawn_offset_selector;
   // orientation of scoop in Gazebo world
   tf::Quaternion m_scoop_orientation;
 };
+
+  // Register this plugin with the simulator
+  GZ_REGISTER_MODEL_PLUGIN(RegolithPlugin)
 
 } // namespace ow_regolith
 
