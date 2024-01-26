@@ -2,6 +2,7 @@
 
 <sdf version="1.5">
   <model name="regolith">
+    <pose>0 0 0 0 0 0</pose>
     <link name="link">
 
       <!-- <must_be_base_link>true</must_be_base_link> -->

@@ -56,7 +56,7 @@ public:
 
 private:
   inline bool isInitialized() {
-    return m_world && m_model;
+    return m_world != nullptr;
   }
 
   // bool removeModel(gazebo_msgs::DeleteModel &msg);
@@ -75,37 +75,31 @@ private:
 
   ros::Publisher m_pub_material_ingested;
 
-  std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_event;
-
   gazebo::event::ConnectionPtr m_update_event;
 
   gazebo::physics::WorldPtr m_world;
-  gazebo::physics::ModelPtr m_model;
 
   // name of Gazebo model that contains all regolith links
   std::string m_name;
 
   // regolith model that spawns in the scoop when digging occurs
   sdf::SDF m_model_sdf;
-  sdf::ElementPtr m_link_sdf;
 
-  // keeps track of all regolith models and links present in the simulation
-  // struct Model {
-  //   const std::string model_name;
-  //   const std::string body_name;
-  //   const ow_materials::Bulk bulk;
-  // };
   struct Particle {
-    const gazebo::physics::LinkPtr link;
-    const ow_materials::Bulk bulk;
-  };
-  std::unordered_map<std::string, Particle> m_active_models;
+    Particle(ow_materials::Bulk bulk)
+      : force_applied(false), force(ignition::math::Vector3d::Zero) {
+      // do nothing
+    }
+    Particle() = delete;
+    Particle(const Particle&) = delete;
+    Particle& operator=(const Particle&) = delete;
 
-  struct MaintainedForce {
-    const gazebo::physics::LinkPtr link;
-    const ignition::math::Vector3d force;
+    const ow_materials::Bulk bulk;
+    bool force_applied;
+    ignition::math::Vector3d force;
   };
-  std::vector<MaintainedForce> m_maintained_forces;
+
+  std::unordered_map<std::string, Particle> m_active_models;
 };
 
 } // namespace ow_regolith

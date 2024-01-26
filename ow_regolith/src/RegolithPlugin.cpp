@@ -7,13 +7,9 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <chrono>
 #include <sstream>
 #include <string_view>
 #include <exception>
-
-#include "tf/tf.h"
-#include "cv_bridge/cv_bridge.h"
 
 #include "RegolithPlugin.h"
 #include "ServiceClientFacade.h"
@@ -21,34 +17,24 @@
 using namespace ow_regolith;
 using namespace ow_dynamic_terrain;
 
-using namespace sensor_msgs;
-using namespace cv_bridge;
-
 using namespace std::literals;
 using namespace std::literals::chrono_literals;
 
-using std::string, std::string_view, std::begin, std::end, std::distance,
-      std::find, std::endl, std::runtime_error;
-
-using std::chrono::duration_cast, std::chrono::seconds;
+using std::string, std::string_view, std::endl, std::runtime_error;
 
 using ignition::math::Vector3d, ignition::math::Quaterniond;
 
 // service paths served by this class
 const string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
 const string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
-const string SRV_GET_PHYS_PROPS      = "/gazebo/get_physics_properties";
 
 // topic paths used in class
-const string TOPIC_LINK_STATES     = "/gazebo/link_states";
 const string TOPIC_TERRAIN_CONTACT = "/ow_regolith/contacts/terrain";
 const string TOPIC_BULK_EXCAVATION = "/ow_materials/bulk_excavation/visual";
 const string TOPIC_DIG_PHASE       = "/ow_dynamic_terrain/scoop_dig_phase";
 
 // constants specific to the scoop end-effector
 const Vector3d SCOOP_SPAWN_OFFSET(0.0, 0.0, -0.05);
-
-const ros::Duration SERVICE_CONNECT_TIMEOUT(5.0);
 
 constexpr string_view PLUGIN_NAME{"RegolithPlugin"};
 constexpr string_view SCOOP_LINK_NAME{"lander::l_scoop_tip"};
@@ -68,10 +54,6 @@ template<typename T>
 static T get_required_parameter(sdf::ElementPtr sdf, string_view name)
 {
   if (!sdf->HasElement(name.data())) {
-    // gazebo::common::Exception e;
-    // e << "Required SDF parameter " << name
-    //    << " missing. Fix the SDF implementation of this plugin.";
-    // throw e;
     std::stringstream ss;
     ss << "Required SDF parameter " << name
        << " missing. Fix the SDF implementation of this plugin.";
