@@ -19,12 +19,6 @@ void parseSdf(const std::string &sdf_text, sdf::SDF &out_sdf);
 
 bool getModelLink(const sdf::SDF &sdf, sdf::ElementPtr &out_link);
 
-// // get the name of the first link of the model
-// bool getModelLinkName(const sdf::SDF &sdf, std::string &out_name);
-
-// // get the mass of the first link of the model
-// bool getModelLinkMass(const sdf::SDF &sdf, float &out_mass);
-
 }
 
 #endif // SDF_UTILITY_H

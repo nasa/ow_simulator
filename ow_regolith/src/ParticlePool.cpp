@@ -2,20 +2,12 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <stdexcept>
 #include <sstream>
 
 #include "sdf_utility.h"
-#include "ServiceClientFacade.h"
-
-#include "geometry_msgs/Vector3.h"
-
-#include "gazebo_msgs/BodyRequest.h"
-
 #include "ParticlePool.h"
 
 using namespace ow_regolith;
-
 using namespace sdf_utility;
 
 using std::string, std::vector, std::stringstream, std::endl;
@@ -23,26 +15,9 @@ using std::string, std::vector, std::stringstream, std::endl;
 using ignition::math::Vector3d, ignition::math::Quaterniond,
       ignition::math::Pose3d;
 
-// Time before a BulkExcavation is sent on /ow_materials/material_ingested
-// following receipt of a removal request where ingested=True
-// NOTE: This interval intentionally matches the interval in
-//  DockIngestSampleServer in ow_lander/src/ow_lander/actions.py such that
-//  there will only be one BulkExcavation message on this topic per call to
-//  DockIngestSample.
-const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
-
 const string NOT_INITIALIZED_ERR{
   "ParticlePool has not yet been initialized!"
 };
-
-static geometry_msgs::Vector3 toVector3Message(const Vector3d &vec)
-{
-  geometry_msgs::Vector3 result;
-  result.x = vec.X();
-  result.y = vec.Y();
-  result.z = vec.Z();
-  return result;
-}
 
 ParticlePool::ParticlePool()
 {
@@ -51,7 +26,7 @@ ParticlePool::ParticlePool()
 
 bool ParticlePool::initialize(const string name,
                               gazebo::physics::WorldPtr world,
-                              const string &model_uri, ros::NodeHandle *nh)
+                              const string &model_uri)
 {
   // prepare world to contain a particle pool
   if (!world) {
@@ -67,15 +42,10 @@ bool ParticlePool::initialize(const string name,
     return false;
   }
   parseSdf(sdf_string, m_model_sdf);
-  // setup ROS and gazebo facilities like events, timers, and publishers
+
   m_update_event = gazebo::event::Events::ConnectBeforePhysicsUpdate(
     std::bind(&ParticlePool::onUpdate, this)
   );
-  // advertise a topic for communicating ingested sample contents
-  m_pub_material_ingested = nh->advertise<ow_materials::BulkExcavation>(
-    "/ground_truth/material_ingested", 1, true);
-  m_consolidate_ingested_timeout = nh->createTimer(CONSOLIDATE_INGESTED_TIMEOUT,
-    &ParticlePool::onConsolidateIngestedTimeout, this, true, false);
 
   return true;
 }
@@ -139,16 +109,46 @@ string ParticlePool::spawn(const Vector3d &position,
   return name;
 }
 
-void ParticlePool::remove(const vector<string> &link_names, bool ingested)
+void ParticlePool::remove(const vector<string> &model_names)
 {
   if (!isInitialized()) {
     gzerr << NOT_INITIALIZED_ERR << endl;
     return;
   }
-  for (const auto ln : link_names) {
-    m_world->RemoveModel(ln);
-    m_active_models.erase(ln);
+  for (const auto name : model_names) {
+    auto particle_it = m_active_models.find(name);
+    if (particle_it == m_active_models.end()) {
+      gzwarn << "Particle " << name << " not present. Nothing removed." << endl;
+      continue;
+    }
+    removeParticle(particle_it);
   }
+}
+
+ow_materials::Bulk ParticlePool::removeAndConsolidate(
+  const vector<string> &model_names)
+{
+  if (!isInitialized()) {
+    gzerr << NOT_INITIALIZED_ERR << endl;
+    return ow_materials::Bulk();
+  }
+  ow_materials::Bulk consolidated;
+  for (const auto name : model_names) {
+    auto particle_it = m_active_models.find(name);
+    if (particle_it == m_active_models.end()) {
+      gzwarn << "Particle " << name << " not present. Nothing removed." << endl;
+      continue;
+    }
+    consolidated.mix(particle_it->second.bulk);
+    removeParticle(particle_it);
+  }
+  return consolidated;
+}
+
+void ParticlePool::removeParticle(const PoolType::iterator it)
+{
+  m_world->RemoveModel(it->first);
+  m_active_models.erase(it);
 }
 
 void ParticlePool::clear() {
@@ -210,18 +210,4 @@ void ParticlePool::onUpdate() const
       link->AddLinkForce(particle.second.force);
     }
   }
-}
-
-void ParticlePool::onConsolidateIngestedTimeout(const ros::TimerEvent&)
-{
-  m_pub_material_ingested.publish(
-    m_ingested_bulk.generateExcavationBulkMessage());
-  m_ingested_bulk.clear();
-}
-
-void ParticlePool::resetConsolidatedIngestedTimeout()
-{
-  m_consolidate_ingested_timeout.stop();
-  m_consolidate_ingested_timeout.setPeriod(CONSOLIDATE_INGESTED_TIMEOUT);
-  m_consolidate_ingested_timeout.start();
 }

@@ -9,7 +9,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include "ros/ros.h"
 #include "ignition/math/Vector3.hh"
 #include "gazebo/physics/physics.hh"
 
@@ -32,7 +31,7 @@ public:
   ParticlePool& operator=(const ParticlePool&) = delete;
 
   bool initialize(const std::string name, gazebo::physics::WorldPtr world,
-                  const std::string &model_uri, ros::NodeHandle *nh);
+                  const std::string &model_uri);
 
   float getModelMass() const {return 0.031f;}
 
@@ -41,8 +40,12 @@ public:
                     const std::string &reference_frame,
                     const ow_materials::Bulk &bulk);
 
-  // remove models within the pool by link name
-  void remove(const std::vector<std::string> &link_names, bool ingested);
+  // remove models in pool by link name
+  void remove(const std::vector<std::string> &link_names);
+
+  // remove models in pool by link name and return their mixed bulk
+  ow_materials::Bulk removeAndConsolidate(
+    const std::vector<std::string> &link_names);
 
   // remove all models in pool
   void clear();
@@ -59,21 +62,7 @@ private:
     return m_world != nullptr;
   }
 
-  // bool removeModel(gazebo_msgs::DeleteModel &msg);
-  void getModelFromWorld();
-
   void onUpdate() const;
-
-  void onConsolidateIngestedTimeout(const ros::TimerEvent&);
-
-  // make necessary calls to reset the member ROS Timer
-  void resetConsolidatedIngestedTimeout();
-
-  ros::Timer m_consolidate_ingested_timeout;
-
-  ow_materials::Bulk m_ingested_bulk;
-
-  ros::Publisher m_pub_material_ingested;
 
   gazebo::event::ConnectionPtr m_update_event;
 
@@ -86,8 +75,9 @@ private:
   sdf::SDF m_model_sdf;
 
   struct Particle {
-    Particle(ow_materials::Bulk bulk)
-      : force_applied(false), force(ignition::math::Vector3d::Zero) {
+    Particle(ow_materials::Bulk bulk_)
+      : bulk(bulk_), force_applied(false), force(ignition::math::Vector3d::Zero)
+    {
       // do nothing
     }
     Particle() = delete;
@@ -99,7 +89,11 @@ private:
     ignition::math::Vector3d force;
   };
 
-  std::unordered_map<std::string, Particle> m_active_models;
+  using PoolType = std::unordered_map<std::string, Particle>;
+
+  void removeParticle(const PoolType::iterator it);
+
+   PoolType m_active_models;
 };
 
 } // namespace ow_regolith

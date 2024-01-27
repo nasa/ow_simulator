@@ -348,15 +348,15 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
   //  scoop digging is not occurring
 
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  std::stringstream s;
-  s << "handleVisualBulk: STUBBED\n"
-    << count << " voxels int`rsected.\n"
-    << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
-    "The bulk material contains\n";
-  for (auto const &x : blend.getComposition()) {
-    s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-  }
-  gzlog << s.str() << endl;
+  // std::stringstream s;
+  // s << "handleVisualBulk: STUBBED\n"
+  //   << count << " voxels int`rsected.\n"
+  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+  //   "The bulk material contains\n";
+  // for (auto const &x : blend.getComposition()) {
+  //   s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
+  // }
+  // gzlog << s.str() << endl;
 
   Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
   auto msg = excavated_bulk.generateExcavationBulkMessage();
@@ -370,14 +370,14 @@ void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a collision modification, like grinder force and torque.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  std::stringstream s;
-  s << "handleVisualBulk: STUBBED\n"
-    << count << " voxels intersected.\n"
-    << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
-    "The bulk material contains\n";
-  for (auto const &x : blend.getComposition())
-    s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
-  gzlog << s.str() << endl;
+  // std::stringstream s;
+  // s << "handleVisualBulk: STUBBED\n"
+  //   << count << " voxels intersected.\n"
+  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+  //   "The bulk material contains\n";
+  // for (auto const &x : blend.getComposition())
+  //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
+  // gzlog << s.str() << endl;
 }
 
 Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const

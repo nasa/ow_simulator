@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "ros/ros.h"
-
 #include "tf/tf.h"
 
 #include "gazebo/gazebo.hh"
@@ -76,18 +75,26 @@ private:
 
   void manageQueue(const ros::TimerEvent&);
 
-  // ROS interfaces
-  std::unique_ptr<ros::NodeHandle> m_node_handle;
+  // when called, broadcasts a BulkExcavation of ingested material
+  void onConsolidateIngestedTimeout(const ros::TimerEvent&);
 
-  // gazebo interface
-  gazebo::physics::LinkPtr m_scoop_link;
+  // make necessary calls to reset the member ROS Timer
+  void resetConsolidatedIngestedTimeout();
+
+  // the following members support ingest bulk consolidation
+  ros::Publisher m_pub_material_ingested;
+  ros::Timer m_consolidate_ingested_timeout;
+  ow_materials::Bulk m_bulk_ingested;
+
+  std::unique_ptr<ros::NodeHandle> m_node_handle;
 
   ros::ServiceServer m_srv_spawn_regolith;
   ros::ServiceServer m_srv_remove_all_regolith;
-  ros::Subscriber m_sub_link_states;
   ros::Subscriber m_sub_terrain_contact;
   ros::Subscriber m_sub_bulk_excavation;
   ros::Subscriber m_sub_dig_phase;
+
+  gazebo::physics::LinkPtr m_scoop_link;
 
   // If true, a pseudo force will be applied to spawned particles to keep them
   // in the scoop. Determined based on the dig phase.

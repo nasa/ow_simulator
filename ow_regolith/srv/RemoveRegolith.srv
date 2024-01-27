@@ -5,6 +5,3 @@ string[] link_names  # list of regolith link names in gazebo scoped name form
 bool ingested        # If true, the material is being removed because it is
                      # ingested by the lander's sample dock.
 ---
-bool success         # false if not_removed is not empty, true otherwise
-string[] not_removed # list of regolith link names that were in the request, but
-                     # could not be removed for whatever reason

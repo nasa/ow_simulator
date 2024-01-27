@@ -12,13 +12,11 @@
 #include <exception>
 
 #include "RegolithPlugin.h"
-#include "ServiceClientFacade.h"
 
 using namespace ow_regolith;
 using namespace ow_dynamic_terrain;
 
 using namespace std::literals;
-using namespace std::literals::chrono_literals;
 
 using std::string, std::string_view, std::endl, std::runtime_error;
 
@@ -29,15 +27,24 @@ const string SRV_SPAWN_REGOLITH      = "/ow_regolith/spawn_regolith";
 const string SRV_REMOVE_ALL_REGOLITH = "/ow_regolith/remove_regolith";
 
 // topic paths used in class
-const string TOPIC_TERRAIN_CONTACT = "/ow_regolith/contacts/terrain";
-const string TOPIC_BULK_EXCAVATION = "/ow_materials/bulk_excavation/visual";
-const string TOPIC_DIG_PHASE       = "/ow_dynamic_terrain/scoop_dig_phase";
+const string TOPIC_TERRAIN_CONTACT   = "/ow_regolith/contacts/terrain";
+const string TOPIC_BULK_EXCAVATION   = "/ow_materials/bulk_excavation/visual";
+const string TOPIC_DIG_PHASE         = "/ow_dynamic_terrain/scoop_dig_phase";
+const string TOPIC_MATERIAL_INGESTED = "/ground_truth/material_ingested";
 
 // constants specific to the scoop end-effector
 const Vector3d SCOOP_SPAWN_OFFSET(0.0, 0.0, -0.05);
 
 constexpr string_view PLUGIN_NAME{"RegolithPlugin"};
 constexpr string_view SCOOP_LINK_NAME{"lander::l_scoop_tip"};
+
+// Time before a BulkExcavation is sent on /ow_materials/material_ingested
+// following receipt of a removal request where ingested=True
+// NOTE: This interval intentionally matches the interval in
+//  DockIngestSampleServer in ow_lander/src/ow_lander/actions.py such that
+//  there will only be one BulkExcavation message on this topic per call to
+//  DockIngestSample.
+const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
 
 #define GZERR(msg) gzerr << PLUGIN_NAME << ": " << msg
 #define GZWARN(msg) gzwarn << PLUGIN_NAME << ": " << msg
@@ -103,8 +110,7 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
   // initialize offset selector
   m_spawn_offset_selector = m_spawn_offsets.begin();
 
-  if (!m_model_pool.initialize("regolith", model->GetWorld(),
-                               model_uri, m_node_handle.get())) {
+  if (!m_model_pool.initialize("regolith", model->GetWorld(), model_uri)) {
     GZERR("ParticlePool failed to connect to gazebo_ros services" << endl);
     return;
   }
@@ -117,20 +123,6 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
     return;
   }
 
-  // advertise services served by this class
-  m_srv_spawn_regolith = m_node_handle->advertiseService(
-    SRV_SPAWN_REGOLITH, &RegolithPlugin::spawnRegolithSrv, this);
-  m_srv_remove_all_regolith = m_node_handle->advertiseService(
-    SRV_REMOVE_ALL_REGOLITH, &RegolithPlugin::removeRegolithSrv, this);
-
-  // subscribe to all ROS topics
-  m_sub_terrain_contact = m_node_handle->subscribe(TOPIC_TERRAIN_CONTACT,
-    1, &RegolithPlugin::onTerrainContact, this);
-  m_sub_bulk_excavation = m_node_handle->subscribe(TOPIC_BULK_EXCAVATION,
-    10, &RegolithPlugin::onBulkExcavationVisualMsg, this);
-  m_sub_dig_phase = m_node_handle->subscribe(TOPIC_DIG_PHASE,
-    1, &RegolithPlugin::onDigPhaseMsg, this);
-
   // set the maximum scoop inclination that the psuedo force can counteract
   // NOTE: do not use a value that makes cosine zero!
   constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0; // degrees
@@ -142,9 +134,32 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
                        * model->GetWorld()->Gravity().Length()
                        * PSUEDO_FORCE_WEIGHT_FACTOR;
 
+
+  //// setup ROS facilities
+  // advertise services served by this class
+  m_srv_spawn_regolith = m_node_handle->advertiseService(
+    SRV_SPAWN_REGOLITH, &RegolithPlugin::spawnRegolithSrv, this);
+  m_srv_remove_all_regolith = m_node_handle->advertiseService(
+    SRV_REMOVE_ALL_REGOLITH, &RegolithPlugin::removeRegolithSrv, this);
+  // advertise published topics
+  m_pub_material_ingested = m_node_handle
+    ->advertise<ow_materials::BulkExcavation>(TOPIC_MATERIAL_INGESTED, 1, true);
+  // create timers
   const ros::Duration TASK_QUEUE_PERIOD(0.005);
-  m_queue_manager_timer = m_node_handle->createTimer(TASK_QUEUE_PERIOD,
-    &RegolithPlugin::manageQueue, this, false, true);
+  m_queue_manager_timer = m_node_handle->createTimer(
+    TASK_QUEUE_PERIOD, &RegolithPlugin::manageQueue, this, false, true
+  );
+  m_consolidate_ingested_timeout = m_node_handle->createTimer(
+    CONSOLIDATE_INGESTED_TIMEOUT, &RegolithPlugin::onConsolidateIngestedTimeout,
+    this, true, false
+  );
+  // subscribe to all ROS topics
+  m_sub_terrain_contact = m_node_handle->subscribe(TOPIC_TERRAIN_CONTACT,
+    1, &RegolithPlugin::onTerrainContact, this);
+  m_sub_bulk_excavation = m_node_handle->subscribe(TOPIC_BULK_EXCAVATION,
+    10, &RegolithPlugin::onBulkExcavationVisualMsg, this);
+  m_sub_dig_phase = m_node_handle->subscribe(TOPIC_DIG_PHASE,
+    1, &RegolithPlugin::onDigPhaseMsg, this);
 
   GZMSG("Successfully loaded!" << endl);
 }
@@ -170,22 +185,28 @@ bool RegolithPlugin::spawnRegolithSrv(SpawnRegolithRequest &request,
 }
 
 bool RegolithPlugin::removeRegolithSrv(RemoveRegolithRequest &request,
-                                        RemoveRegolithResponse &response)
+                                        RemoveRegolithResponse &)
 {
   if (request.link_names.empty()) {
     // remove all regolith models
     m_model_pool.clear();
   } else {
     // remove specific regolith models
-    m_model_pool.remove(request.link_names, request.ingested);
+    if (request.ingested) {
+      m_bulk_ingested.mix(
+        m_model_pool.removeAndConsolidate(request.link_names)
+      );
+      resetConsolidatedIngestedTimeout();
+    } else {
+      m_model_pool.remove(request.link_names);
+    }
   }
-  response.success = response.not_removed.empty();
   return true;
 }
 
 void RegolithPlugin::onTerrainContact(const Contacts::ConstPtr &msg)
 {
-  m_model_pool.remove(msg->link_names, false);
+  m_model_pool.remove(msg->link_names);
 }
 
 void RegolithPlugin::onBulkExcavationVisualMsg(
@@ -210,34 +231,13 @@ void RegolithPlugin::processBulkExcavation(
 {
   const Vector3d SCOOP_FORWARD(1.0, 0.0, 0.0);
 
-  // DEBUG
-  auto start_time = ros::Time::now();
-
   m_bulk_displaced.mix(ow_materials::Bulk(bulk));
-
-  if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
-    // nothing more to do until the threshold is reached
-    return;
-  }
-
-  // DEBUG LOGGING
-  // std::stringstream ss;
-  // ss << "{\n";
-  // for (auto const &b : m_bulk_displaced.getComposition()) {
-  //   ss << "\t" << static_cast<int>(b.first) << ":" << b.second << "\n";
-  // }
-  // ss << "}";
-  // ROS_INFO(ss.str().c_str());
-
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
   // particle will never spawn at the same location in the same frame.
   for (uint i = 0u; i != m_spawn_offsets.size(); ++i) {
     // Once volume is less than threshold, this function has done its job,
     if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
-      // DEBUG
-      ROS_INFO_STREAM("processBulkExcavation call took "
-        << (ros::Time::now() - start_time).toSec() * 1000 << " ms");
       return;
     }
     // select spawn offset and wrap from end to beginning
@@ -250,9 +250,9 @@ void RegolithPlugin::processBulkExcavation(
     // spawn a regolith model
     ow_materials::Bulk particle_bulk(m_bulk_displaced.getBlend(),
                                      particle_volume);
-    auto link_name = m_model_pool.spawn(offset, SCOOP_LINK_NAME.data(),
+    auto model_name = m_model_pool.spawn(offset, SCOOP_LINK_NAME.data(),
                                          particle_bulk);
-    if (link_name.empty()) {
+    if (model_name.empty()) {
       GZERR("Failed to spawn regolith particle!" << endl);
       continue;
     }
@@ -263,8 +263,8 @@ void RegolithPlugin::processBulkExcavation(
       Vector3d scooping_direction = scoop_orientation * SCOOP_FORWARD;
       scooping_direction.Z() = 0.0; // flatten against X-Y plane
       Vector3d pushback = -m_psuedo_force_mag * scooping_direction.Normalized();
-      if (!m_model_pool.applyMaintainedForce(link_name, pushback)) {
-        GZERR("Failed to apply force to regolith " << link_name << endl);
+      if (!m_model_pool.applyMaintainedForce(model_name, pushback)) {
+        GZERR("Failed to apply force to regolith " << model_name << endl);
       }
     }
   }
@@ -277,7 +277,6 @@ void RegolithPlugin::processBulkExcavation(
            "regolith. Consider increasing the value of spawn_volume_threshold "
            "in common.launch to avoid this warning." << endl);
   }
-
 }
 
 void RegolithPlugin::onDigPhaseMsg(
@@ -299,6 +298,20 @@ void RegolithPlugin::onDigPhaseMsg(
       clearAllPsuedoForces();
       break;
     default:
-      ROS_ERROR("Unhandled dig state received. This should never happen!");
+      GZERR("Unhandled dig state received. This should never happen!" << endl);
   }
+}
+
+void RegolithPlugin::onConsolidateIngestedTimeout(const ros::TimerEvent&)
+{
+  m_pub_material_ingested.publish(
+    m_bulk_ingested.generateExcavationBulkMessage());
+  m_bulk_ingested.clear();
+}
+
+void RegolithPlugin::resetConsolidatedIngestedTimeout()
+{
+  m_consolidate_ingested_timeout.stop();
+  m_consolidate_ingested_timeout.setPeriod(CONSOLIDATE_INGESTED_TIMEOUT);
+  m_consolidate_ingested_timeout.start();
 }
