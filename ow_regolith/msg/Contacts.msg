@@ -1,1 +1,1 @@
-string[] link_names        # link names of all colliders in contact with sensor
+string[] model_names   # names of all models currently in contact with sensor

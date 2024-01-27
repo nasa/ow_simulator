@@ -76,18 +76,20 @@ void ContactSensorPlugin::onUpdate()
       continue;
     const auto link = contact.second.collision1->GetLink();
     const auto model = contact.second.collision1->GetModel();
-    const auto link_name = model->GetName() + "::" + link->GetName();
-    if (m_report_only_set && !regex_match(link_name, m_report_only))
+    const auto model_name = model->GetName();
+    if (m_report_only_set && !regex_match(model_name, m_report_only))
       continue;
-    current_contacts.emplace(link_name);
+    current_contacts.emplace(model_name);
   }
 
   // publish only if the list of links in contact with sensor has changed
-  if (m_links_in_contact != current_contacts) {
-    m_links_in_contact = current_contacts;
+  if (m_models_in_contact != current_contacts) {
+    m_models_in_contact = current_contacts;
     // publish list of all contacts
     Contacts msg;
-    msg.link_names = vector(begin(m_links_in_contact), end(m_links_in_contact));
+    msg.model_names = vector(
+      begin(m_models_in_contact), end(m_models_in_contact)
+    );
     m_pub_contacts.publish(msg);
   }
 }

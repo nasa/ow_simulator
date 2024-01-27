@@ -206,7 +206,7 @@ bool RegolithPlugin::removeRegolithSrv(RemoveRegolithRequest &request,
 
 void RegolithPlugin::onTerrainContact(const Contacts::ConstPtr &msg)
 {
-  m_model_pool.remove(msg->link_names);
+  m_model_pool.remove(msg->model_names);
 }
 
 void RegolithPlugin::onBulkExcavationVisualMsg(
