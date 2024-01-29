@@ -102,7 +102,7 @@ class SystemFaultsInterface:
 
   def get_rejected_message(self):
     group = self._goal_fault_publisher.get_group_str(self._group_id)
-    return f"Action group, {group}, is faulted. Use the FaultClear action to" \
+    return f"Action group, {group}, is faulted. Use the FaultClear action to " \
             "make the group operable again."
 
   def _notify(self, status):
