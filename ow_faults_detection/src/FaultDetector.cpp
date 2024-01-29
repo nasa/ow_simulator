@@ -261,7 +261,7 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
 void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
 {
   // check for excessive battery temperature
-  if (msg.value > POWER_THERMAL_MAX) {
+  if (msg.value >= POWER_THERMAL_MAX) {
     m_power_faults_flags |= PowerFaultsStatus::THERMAL_FAULT;
   } else {
     m_power_faults_flags &= ~PowerFaultsStatus::THERMAL_FAULT;

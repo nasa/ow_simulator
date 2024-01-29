@@ -2,7 +2,12 @@
 # Research and Simulation can be found in README.md in the root directory of
 # this repository.
 
-class ArmError(RuntimeError):
+class ActionError(RuntimeError):
+  """Raise when any action fails"""
+  pass
+
+class ArmError(ActionError):
+  """Raise when any arm action fails"""
   pass
 
 class ArmPlanningError(ArmError):
@@ -15,7 +20,8 @@ class ArmExecutionError(ArmError):
   """
   pass
 
-class AntennaError(RuntimeError):
+class AntennaError(ActionError):
+  """Raise when any antenna action fails"""
   pass
 
 class AntennaPlanningError(AntennaError):

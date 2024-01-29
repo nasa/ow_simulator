@@ -18,12 +18,14 @@ using std::string, std::set, std::vector, std::bind, std::dynamic_pointer_cast,
       std::endl, std::regex_match, std::begin, std::end, std::regex,
       std::make_unique;
 
-const static string NODE_PREFIX = "contact_sensor_";
+const string NODE_PREFIX = "contact_sensor_";
 
-const static string PLUGIN_NAME = "ContactSensorPlugin";
+const string PLUGIN_NAME = "ContactSensorPlugin";
 
-const static string PARAMETER_TOPIC = "topic";
-const static string PARAMETER_REPORT_ONLY = "report_only";
+const string PARAMETER_TOPIC = "topic";
+const string PARAMETER_REPORT_ONLY = "report_only";
+
+const double SENSOR_UPDATE_RATE = 10; // hertz
 
 GZ_REGISTER_SENSOR_PLUGIN(ContactSensorPlugin)
 
@@ -38,6 +40,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
     bind(&ContactSensorPlugin::onUpdate, this)
   );
   m_parent_sensor->SetActive(true);
+  m_parent_sensor->SetUpdateRate(SENSOR_UPDATE_RATE);
 
   // get plugin parameters
   if (!sdf->HasElement(PARAMETER_TOPIC)) // required

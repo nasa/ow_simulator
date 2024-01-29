@@ -5,17 +5,18 @@
 """Defines all lander actions"""
 
 import math
+from copy import copy
 
 import rospy
 import owl_msgs.msg
 from std_msgs.msg import Empty, Float64
 from sensor_msgs.msg import PointCloud2
 from ow_regolith.srv import RemoveRegolith
-from ow_regolith.msg import Contacts
 from geometry_msgs.msg import Point
-from geometry_msgs.msg import Vector3, PoseStamped, Pose, Quaternion
+from geometry_msgs.msg import Vector3, PoseStamped, Pose
 from urdf_parser_py.urdf import URDF
 from owl_msgs.msg import ArmFaultsStatus
+from gazebo_msgs.msg import LinkStates
 
 import ow_lander.msg
 from ow_lander import mixins
@@ -24,11 +25,13 @@ from ow_lander import faults
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians, wait_for_subscribers
-from ow_lander.exception import (ArmError, AntennaError,
+from ow_lander.exception import (ActionError, ArmError, AntennaError,
                                  ArmPlanningError, ArmExecutionError)
+from ow_lander.subscribers import wait_for_message
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
+
 
 # This message is used by both ArmMoveCartesianGuarded and ArmMoveJointsGuarded
 NO_THRESHOLD_BREACH_MESSAGE = "Arm failed to reach pose despite neither " \
@@ -75,6 +78,7 @@ def _compute_workspace_shoulder_yaw(x, y):
     _assert_shou_yaw_in_range(yaw)
     return yaw
     
+
 
 #####################
 ## ARM ACTIONS
@@ -269,63 +273,72 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
 
   def plan_trajectory(self, goal):
-    PREGRIND_HEIGHT = 0.25
+    APPROACH_DISTANCE = 0.25 # meters
+    # distance between the backward and forward linear paths
+    SEGMENT_SEPARATION_DISTANCE = 0.08 # meters
 
-    point = Point(goal.x_start, goal.y_start, goal.ground_position)
-    depth = goal.depth
-    length = goal.length
-    parallel = goal.parallel
-
-    yaw = _compute_workspace_shoulder_yaw(point.x, point.y)
-    if parallel:
-      R = math.sqrt(point.x*point.x+point.y*point.y)
-      # adjust trench to fit scoop circular motion
-      dx = 0.04*R*math.sin(yaw)  # Center dig_circular in grind trench
-      dy = 0.04*R*math.cos(yaw)
-      # Move starting point back to avoid scoop-terrain collision
-      point.x = 0.9*(point.x + dx)
-      point.y = 0.9*(point.y - dy)
-    else:
-      dx = 5*length/8*math.sin(yaw)
-      dy = 5*length/8*math.cos(yaw)
-      # Move starting point back to avoid scoop-terrain collision
-      point.x = 0.97*(point.x - dx)
-      point.y = 0.97*(point.y + dy)
+    # NOTE: grind_point lies halfway between the two segments in the center of
+    #       the trench
+    grind_point = Point(goal.x_start, goal.y_start, goal.ground_position)
+    yaw = _compute_workspace_shoulder_yaw(grind_point.x, grind_point.y)
+    # define variables in perpendicular configuration (left-to-right of lander)
+    trench_direction = Vector3(math.sin(yaw), -math.cos(yaw), 0.0)
+    # NOTE: this grinder design can grind in any direction, so yaw can be zero
+    grind_orientation = math3d.quaternion_from_euler(math.pi, math.pi / 2, 0)
+    # compute the start of segment1 from grind_point
+    segment1_offset_from_grind_point = math3d.add(
+      Vector3(-SEGMENT_SEPARATION_DISTANCE / 2, 0, 0),
+      math3d.scalar_multiply(-goal.length / 2, trench_direction)
+    )
+    segment_separation = math3d.scalar_multiply(
+      -SEGMENT_SEPARATION_DISTANCE, math3d.orthogonal(trench_direction))
+    if goal.parallel:
+      # rotate segment defining vectors so they now run parallel
+      rot_to_parallel = math3d.quaternion_from_euler(0, 0, math.pi / 2)
+      segment1_offset_from_grind_point = math3d.quaternion_rotate(
+        rot_to_parallel, segment1_offset_from_grind_point)
+      segment_separation = math3d.quaternion_rotate(rot_to_parallel,
+                                                    segment_separation)
+      trench_direction = math3d.quaternion_rotate(rot_to_parallel,
+                                                  trench_direction)
+    # define entry position and positions for first segment of grind motion
+    segment1_start_surface = math3d.add(grind_point, segment1_offset_from_grind_point)
+    entry_approach = math3d.add(segment1_start_surface,
+                                Vector3(0, 0, APPROACH_DISTANCE))
+    segment1_start_bottom = math3d.subtract(segment1_start_surface,
+                                            Vector3(0, 0, goal.depth))
+    segment1_end_bottom = math3d.add(segment1_start_bottom,
+      math3d.scalar_multiply(goal.length, trench_direction))
+    # define positions for second segment of grind motion when it moves backward
+    segment2_start_bottom = math3d.add(segment1_end_bottom,
+                                       segment_separation)
+    segment2_end_bottom = math3d.add(segment1_start_bottom, segment_separation)
+    exit_retract = math3d.add(entry_approach, segment_separation)
 
     sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_grinder, 'l_grinder')
-    # place grinder above the start point
-    pregrind_position = math3d.add(point, Vector3(0, 0, PREGRIND_HEIGHT))
-    pregrind_pose = Pose(
-      position = pregrind_position,
-      orientation = Quaternion(0.70616885803, 0.0303977418722,
-                               -0.706723318474, 0.0307192507001)
+      self._arm.robot, self._arm.move_group_grinder, 'l_grinder_tip')
+    sequence.plan_to_named_joint_positions(
+      j_shou_yaw = yaw,
+      j_shou_pitch = math.pi / 2,
+      j_prox_pitch = -math.pi / 2,
+      j_dist_pitch = 0.0,
+      j_hand_yaw = -2 * math.pi / 3,
+      j_grinder = 0.0
     )
-    sequence.plan_to_pose(pregrind_pose)
-    # enter terrain
-    trench_bottom = math3d.add(
-      point, Vector3(0, 0, constants.GRINDER_OFFSET - depth)
-    )
-    sequence.plan_to_z(trench_bottom.z)
-    # grinding ice forward
-    yaw_offset = 0 if parallel else -math.pi / 2
-    trench_segment = math3d.scalar_multiply(
-      length,
-      Vector3(math.cos(yaw + yaw_offset), math.sin(yaw + yaw_offset), 0)
-    )
-    sequence.plan_linear_translation(trench_segment)
-    # grind sideways
-    if parallel:
-      # NOTE: small angle approximation?
-      sequence.plan_to_named_joint_translations(j_shou_yaw = 0.08)
-    else:
-      sequence.plan_to_translation(math3d.scalar_multiply(0.08,
-          Vector3(math.cos(yaw), math.sin(yaw), 0)))
-    # grind backwards towards lander
-    sequence.plan_linear_translation(
-      math3d.scalar_multiply(-1, trench_segment))
-    # exit terrain
-    sequence.plan_to_z(pregrind_position.z)
+    # place grinder directly above its terrain entry point
+    sequence.plan_to_pose(Pose(entry_approach, grind_orientation))
+    # enter terrain at the start of segment 1
+    sequence.plan_to_position(segment1_start_bottom)
+    # perform segment 1, moving away from grind_point
+    sequence.plan_linear_path_to_pose(
+      Pose(segment1_end_bottom, grind_orientation))
+    # shift along segment separation direction to the start of segment 2
+    sequence.plan_to_position(segment2_start_bottom)
+    # perform segment 2, moving towards grind_point
+    sequence.plan_linear_path_to_pose(
+      Pose(segment2_end_bottom, grind_orientation))
+    # retract out of terrain
+    sequence.plan_to_position(exit_retract)
     return sequence.merge()
 
 class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
@@ -347,46 +360,66 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     #  1. implement normal parameter
     #  2. implement scoop_angle parameter
 
-    trench_surface = self.transform_to_planning_frame(
+    RADIUS = 0.4 # meters
+    ARC = math.pi / 2
+    RETRACT_DISTANCE = 0.2 # meters
+
+    # NOTE: dig point is on the surface in the center of the circular trench
+    dig_point = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
-    trench_bottom = Point(
-      trench_surface.x,
-      trench_surface.y,
-      trench_surface.z - goal.depth + constants.R_PARALLEL_FALSE_A
-    )
-    sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
     # place end-effector above trench position
+    yaw = _compute_workspace_shoulder_yaw(dig_point.x, dig_point.y)
+    trench_bottom = Point(dig_point.x,
+                          dig_point.y,
+                          dig_point.z - goal.depth)
+    # center of the circular arc
+    center = math3d.add(trench_bottom, Vector3(0, 0, RADIUS))
+    # rotates a downward facing point of contact (POC) on the circle to the
+    # start and end of the perpendicular downward arc trajectory
+    rot_down_to_start = math3d.quaternion_from_euler(ARC / 2, 0, yaw)
+    rot_down_to_end = math3d.quaternion_from_euler(-ARC / 2, 0, yaw)
+    # rotates from the scoops identity orientation (bottom up, facing away from
+    # lander) to its perpendicular mid-scooping orientation (bottom down, facing
+    # to the lander's right)
+    rot_scoop_to_down = math3d.quaternion_from_euler(math.pi, 0, -math.pi / 2)
+    if goal.parallel:
+      # modify rotations so they describe the parallel downward arc trajectory
+      rot_to_parallel = math3d.quaternion_from_euler(0, 0, math.pi / 2)
+      rot_down_to_start = math3d.quaternion_multiply(rot_to_parallel,
+                                                     rot_down_to_start)
+      rot_down_to_end = math3d.quaternion_multiply(rot_to_parallel,
+                                                   rot_down_to_end)
+    # compute the start and end POCs along the circle by rotating the downward
+    # facing POC into position using the rot_down_to_* quaternions
+    poc1 = math3d.quaternion_rotate(rot_down_to_start, Vector3(0, 0, -RADIUS))
+    poc2 = math3d.quaternion_rotate(rot_down_to_end, Vector3(0, 0, -RADIUS))
+    # convert POCs back to BASE frame
+    p1 = math3d.add(poc1, center)
+    p2 = math3d.add(poc2, center)
+    # acquire BASE frame orientations by combining the rotation required to
+    # rotate the scoop into its mid-scooping orientation at the downward POC
+    # with the rot_down_to_* rotations
+    o1 = math3d.quaternion_multiply(rot_down_to_start, rot_scoop_to_down)
+    o2 = math3d.quaternion_multiply(rot_down_to_end, rot_scoop_to_down)
+
+    sequence = TrajectorySequence(
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop_tip')
     sequence.plan_to_named_joint_positions(
-      j_shou_yaw = _compute_workspace_shoulder_yaw(
-        trench_bottom.x, trench_bottom.y),
+      j_shou_yaw = yaw,
       j_shou_pitch = math.pi / 2,
       j_prox_pitch = -math.pi / 2,
       j_dist_pitch = 0.0,
       j_hand_yaw = 0.0,
-      j_scoop_yaw = 0.0
+      j_scoop_yaw = math.pi / 2 if goal.parallel else 0.0
     )
-    if goal.parallel:
-      # rotate hand so scoop bottom points down
-      sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
-      # rotate scoop to face radially out from lander
-      sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi/2)
-      # pitch scoop back with the distal pitch so its blade faces terrain
-      sequence.plan_to_named_joint_positions(j_dist_pitch = -19.0/54.0*math.pi)
-      # Once aligned to trench goal, place hand above trench middle point
-      sequence.plan_to_position(trench_bottom)
-      # perform scoop by rotating distal pitch, and scoop through surface
-      sequence.plan_to_named_joint_translations(j_dist_pitch = 2.0/3.0*math.pi)
-    else:
-      # lower to trench position, maintaining up-right orientation
-      sequence.plan_to_position(trench_bottom)
-      # rotate hand yaw so scoop tip points into surface
-      sequence.plan_to_named_joint_positions(j_hand_yaw = math.pi/2.2)
-      # lower scoop back to down z-position with new hand yaw position set
-      sequence.plan_to_z(trench_bottom.z)
-      # perform scoop by rotating hand yaw, and scoop through surface
-      sequence.plan_to_named_joint_positions(j_hand_yaw = -0.29*math.pi)
+    # move arm to start of downward circular arc, with scoop facing down
+    sequence.plan_to_pose(Pose(p1, o1))
+    # move through downward circular arc and end with scoop pitched up
+    sequence.plan_circular_path_to_pose(Pose(p2, o2), center)
+    # retract out of the trench so the next arm movement can be made safely
+    sequence.plan_to_z(dig_point.z + RETRACT_DISTANCE)
     return sequence.merge()
+
 
 class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
                             ActionServerBase):
@@ -404,52 +437,88 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
 
   def plan_trajectory(self, goal):
     # TODO:
-    #  1. implement normal parameter
+    #  1. normal parameter
 
-    trench_surface = self.transform_to_planning_frame(
+    APPROACH_DISTANCE = 0.22 # meters
+    RETRACT_DISTANCE = 0.16 # meters
+    ENTRY_RADIUS = 0.2 # meters
+    EXIT_RADIUS = 0.4 # meters
+    ENTRY_PITCH = math.pi / 2
+    # this pitch was picked to avoid hand collision with terrain
+    EXIT_PITCH = -0.8 # radians
+
+    # NOTE: commanded dig point is halfway between the start of the entry
+    #       circular trajectory and the start of the exit circular trajectory
+    dig_point = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
-    ## TODO: comment on what these calculations do
-    alpha = math.atan2(constants.WRIST_SCOOP_PARAL,
-                       constants.WRIST_SCOOP_PERP)
-    distance_from_ground = constants.ROT_RADIUS * \
-      (math.cos(alpha) - math.sin(alpha))
-    # TODO: what point does this reference??
-    center = Point(
-      trench_surface.x,
-      trench_surface.y,
-      trench_surface.z + constants.SCOOP_HEIGHT - goal.depth + distance_from_ground
-    )
+    yaw = _compute_workspace_shoulder_yaw(dig_point.x, dig_point.y)
+    trench_direction = Vector3(math.cos(yaw), math.sin(yaw), 0.0)
+    # orientations scoop will transition between
+    digging_orientation = math3d.quaternion_from_euler(math.pi, 0, yaw)
+    entry_orietation = math3d.quaternion_from_euler(math.pi, ENTRY_PITCH, yaw)
+    exit_orientation = math3d.quaternion_from_euler(math.pi, EXIT_PITCH, yaw)
+    # point on the surface above where linear movement starts
+    linear_start_surface = math3d.add(dig_point,
+      math3d.scalar_multiply(-goal.length / 2, trench_direction))
+    # point under the surface where linear movement starts
+    linear_start_bottom = math3d.add(linear_start_surface,
+                                     Vector3(0, 0, -goal.depth))
+    # point under the surface where linear movement ends
+    linear_end_bottom = math3d.add(linear_start_bottom,
+      math3d.scalar_multiply(goal.length, trench_direction))
+    # center of the circular entry arc
+    entry_circle_center = math3d.add(linear_start_bottom,
+                                     Vector3(0, 0, ENTRY_RADIUS))
+    # center of the circular exit arc
+    exit_circle_center = math3d.add(linear_end_bottom,
+                                    Vector3(0, 0, EXIT_RADIUS))
+    # rotate around center by entry arc
+    entry_rot = math3d.quaternion_from_euler(0, ENTRY_PITCH, yaw)
+    linear_start_poc = math3d.subtract(linear_start_bottom, entry_circle_center)
+    entry_arc_start_poc = math3d.quaternion_rotate(entry_rot, linear_start_poc)
+    entry_arc_start = math3d.add(entry_arc_start_poc, entry_circle_center)
+    # place approach directly above the start of the entry arc
+    entry_approach = copy(entry_arc_start)
+    entry_approach.z = dig_point.z + APPROACH_DISTANCE
+    # rotate around center by exit arc
+    exit_rot = math3d.quaternion_from_euler(0, EXIT_PITCH, yaw)
+    linear_end_poc = math3d.subtract(linear_end_bottom, exit_circle_center)
+    exit_arc_end_poc = math3d.quaternion_rotate(exit_rot, linear_end_poc)
+    exit_arc_end = math3d.add(exit_arc_end_poc, exit_circle_center)
+    # z-position scoop will retract to after exit
+    exit_retract_z = dig_point.z + RETRACT_DISTANCE
+
     sequence = TrajectorySequence(
-      self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
+      self._arm.robot, self._arm.move_group_scoop, 'l_scoop_tip')
     # place end-effector above trench position
     sequence.plan_to_named_joint_positions(
-      j_shou_yaw = _compute_workspace_shoulder_yaw(
-        trench_surface.x, trench_surface.y),
+      j_shou_yaw = yaw,
       j_shou_pitch = math.pi / 2,
       j_prox_pitch = -math.pi / 2,
       j_dist_pitch = 0.0,
-      j_hand_yaw = math.pi/2.2,
-      j_scoop_yaw = 0.0
+      j_hand_yaw = 0.0,
+      j_scoop_yaw = math.pi / 2
     )
-    # rotate hand so scoop bottom points down
-    sequence.plan_to_named_joint_positions(j_hand_yaw = 0.0)
-    # rotate scoop to face radially out from lander
-    sequence.plan_to_named_joint_positions(j_scoop_yaw = math.pi / 2)
-    # retract scoop back so its blades face terrain
-    sequence.plan_to_named_joint_positions(j_dist_pitch = -math.pi / 2)
-    # place scoop at the trench side nearest to the lander
-    sequence.plan_to_position(center)
-    # TODO: what is this doing?
-    sequence.plan_to_named_joint_positions(j_dist_pitch = 2.0/9.0 * math.pi)
-    # compute the far end of the trench
-    far_trench_pose = sequence.get_final_pose()
-    _, _, yaw = math3d.euler_from_quaternion(far_trench_pose.orientation)
-    far_trench_pose.position.x += goal.length * math.cos(yaw)
-    far_trench_pose.position.y += goal.length * math.sin(yaw)
+    # approach terrain while rotating into entry orientation
+    sequence.plan_to_pose(Pose(entry_approach, entry_orietation))
+    # place scoop tip at the start of the circular entry arc while maintaining
+    # entry orientation
+    sequence.plan_to_position(entry_arc_start)
+    # rotate scoop tip into terrain
+    sequence.plan_circular_path_to_pose(
+      Pose(linear_start_bottom, digging_orientation),
+      entry_circle_center
+    )
     # move the scoop along a linear path to the end of the trench
-    sequence.plan_linear_path_to_pose(far_trench_pose)
-    # pitch scoop upward to maintain sample
-    sequence.plan_to_named_joint_positions(j_dist_pitch = math.pi / 2)
+    sequence.plan_linear_path_to_pose(
+      Pose(linear_end_bottom, digging_orientation))
+    # pitch scoop upward and out of the exit point
+    sequence.plan_circular_path_to_pose(Pose(exit_arc_end, exit_orientation),
+                                        exit_circle_center)
+    # retract up from terrain while maintaining exit orientation
+    # NOTE: only required for especially deep digs
+    if sequence.get_final_pose().position.z < exit_retract_z:
+      sequence.plan_to_z(exit_retract_z)
     return sequence.merge()
 
 
@@ -1064,77 +1133,114 @@ class DockIngestSampleServer(ActionServerBase):
 
   def __init__(self):
     super(DockIngestSampleServer, self).__init__()
-    # subscribe to contact sensor to know when sample dock has sample
-    TOPIC_SAMPLE_DOCK_CONTACTS = "/ow_regolith/contacts/sample_dock"
-    self._contacts_sub = rospy.Subscriber(
-      TOPIC_SAMPLE_DOCK_CONTACTS,
-      Contacts,
-      self._on_dock_contacts
-    )
-    self._dock_contacts = list()
-    self._ingesting = False # true when action is active
-    self._last_contact_time = 0.0 # seconds
-    self._remove_lock = False # true when dock contacts are being processed
+    self._link_states_sub = rospy.Subscriber("/gazebo/link_states", LinkStates,
+                                             self._on_link_states_msg)
+    self._link_states = None
+    self._regolith_removed = False
     self._start_server()
 
-  def _on_dock_contacts(self, msg):
-    self._dock_contacts = msg.link_names
-    if self._ingesting:
-      # remove contacts if ingestion is active
-      self._remove_dock_contacts()
-      self._update_last_contact_time()
+  def _on_link_states_msg(self, msg):
+    self._link_states = msg
 
-  def _update_last_contact_time(self):
-    self._last_contact_time = rospy.get_time()
-
-  def _remove_dock_contacts(self):
-    # a lock is used to avoid redundant service calls to remove the same links
-    if self._remove_lock:
-      return
-    self._remove_lock = True
-    # do nothing if there are no contacts to remove
-    if not self._dock_contacts:
-      return
-    # call the remove service for all dock contacts
-    REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
-    rospy.wait_for_service(REMOVE_REGOLITH_SERVICE)
+  def _get_dock_pose(self):
     try:
-      service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
-      result = service(self._dock_contacts)
-    except rospy.ServiceException as e:
-      rospy.logwarn("Service call failed: %s" % e)
-      self._remove_service_failed = True
-      return
-    # mark sample as ingested so long as one dock contact was removed
-    if result.success:
-      self._sample_was_ingested = True
+      i = self._link_states.name.index('lander::lander_sample_dock_link')
+    except ValueError:
+      raise ActionError(
+        "lander::lander_sample_dock_link not found in /gazebo/link_states")
+    return self._link_states.pose[i]
+
+  def _is_position_in_sample_dock(self, position, dock_pose):
+    # transform world frame position to a sample dock frame position
+    # FIXME: This must be done manual due to the tf inaccuracy caused by OW-1194
+    transformed = math3d.subtract(position, dock_pose.position)
+    transformed = math3d.quaternion_rotate(
+      math3d.quaternion_inverse(dock_pose.orientation),
+      transformed
+    )
+    # perform an axis-aligned box containment check since, in the sample dock's
+    # frame, it happens to be an axis-aligned box
+    X_DIM = 0.3 # meters
+    Y_DIM = 0.05
+    Z_DIM = 0.095
+    # NOTE: This value can be found in lander_sample_dock.xacro, but not
+    #   trivially. The y-value comes from the lander_sample_dock macro
+    #   definition and is the y-value passed to the lander_sample_dock_link
+    #   macro. The z-value comes from the fact that both the collision and
+    #   visual meshes in the lander_sample_dock_link macro are defined with an
+    #   origin offset by 0.025 in the +z direction. Combine these two
+    #   adjustments together to get the value of OFFSET_RELATIVE_TO_FRAME.
+    OFFSET_RELATIVE_TO_FRAME = Point(0.0, -0.33, 0.025)
+    p = math3d.subtract(transformed, OFFSET_RELATIVE_TO_FRAME)
+    if (    -X_DIM/2 < p.x < X_DIM/2
+        and -Y_DIM/2 < p.y < Y_DIM/2
+        and -Z_DIM/2 < p.z < Z_DIM/2 ):
+      return True
     else:
-      self._remove_service_failed = True
-    self._remove_lock = False
+      return False
+
+  def _identify_active_regolith_in_sample_dock(self):
+    regolith = list()
+    dock_pose = self._get_dock_pose()
+    for i in range(len(self._link_states.name)):
+      name = self._link_states.name[i]
+      position = self._link_states.pose[i].position
+      if ("regolith_" in name
+          and
+          self._is_position_in_sample_dock(position, dock_pose)):
+        regolith.append(name)
+    return regolith
+
+  def _remove_regolith_in_dock(self):
+    regolith_to_remove = self._identify_active_regolith_in_sample_dock()
+    if not regolith_to_remove:
+      return False
+    REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
+    rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
+    service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
+    result = service(regolith_to_remove)
+    return result.success
 
   def execute_action(self, _goal):
-    self._ingesting = True
-    self._sample_was_ingested = False
-    self._remove_service_failed = False
-    # remove sample already contacting the dock
-    self._remove_dock_contacts()
-    # start the no-sample timeout
-    self._update_last_contact_time()
-    # loop until there has been no sample in the dock for at least 3 seconds
-    NO_CONTACTS_TIMEOUT = 3.0 # seconds
-    loop_rate = rospy.Rate(0.2)
-    while rospy.get_time() - self._last_contact_time < NO_CONTACTS_TIMEOUT:
-      loop_rate.sleep()
-    # cease ingestion and wrap up action
-    self._ingesting = False
-    self._remove_lock = False
-    if self._remove_service_failed:
-      self._set_aborted("Regolith removal service failed",
-        sample_ingested=self._sample_was_ingested)
+    if not wait_for_message(self._link_states, 10):
+      self._set_aborted(
+        "Timed out waiting for a message on /gazebo/link_states.",
+        sample_ingested = False
+      )
+      return
+    self._regolith_removed = False
+    try:
+      FREQUENCY = 1 #Hz
+      TIMEOUT = 3 # seconds
+      rate = rospy.Rate(FREQUENCY)
+      iterations_since_last_removal = 0
+      while iterations_since_last_removal < int(TIMEOUT * FREQUENCY):
+        iterations_since_last_removal += 1
+        if self._remove_regolith_in_dock():
+          # reset timer
+          iterations_since_last_removal = 0
+          self._regolith_removed = True
+        rate.sleep()
+    except (rospy.ServiceException, rospy.ROSException) as err:
+      rospy.logwarn(f"Service call failed: {err}")
+      self._set_aborted(
+        "Removal service failed",
+        sample_ingested = self._regolith_removed
+      )
+      return
+    except ActionError as err:
+      self._set_aborted(
+        f"Failed to verify which regolith are present in sample dock: {err}",
+        sample_ingested = self._regolith_removed
+      )
+      return
+
+    if self._regolith_removed:
+      self._set_succeeded("Sample ingested", sample_ingested=True)
     else:
-      message = "Sample ingested" if self._sample_was_ingested else \
-                "No sample was present in dock"
-      self._set_succeeded(message, sample_ingested=self._sample_was_ingested)
+      self._set_succeeded("No sample was present in dock",
+                          sample_ingested=False)
+
 
 
 class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
@@ -1149,7 +1255,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_pan_and_tilt(goal.pan, goal.tilt)
+      not_preempted = self.move(pan = goal.pan, tilt = goal.tilt)
     except AntennaError as err:
       pan, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
@@ -1167,6 +1273,7 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
     self._publish_feedback(pan_position = current_pan,
                            tilt_position = current_tilt)
 
+
 class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'Pan'
@@ -1179,7 +1286,7 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_pan(goal.pan)
+      not_preempted = self.move(pan = goal.pan)
     except AntennaError as err:
       pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
@@ -1207,7 +1314,7 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   def execute_action(self, goal):
     try:
-      not_preempted = self.move_tilt(goal.tilt)
+      not_preempted = self.move(tilt = goal.tilt)
     except AntennaError as err:
       _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
@@ -1241,7 +1348,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
                                                      'l_ant_panel')
     try:
       frame_id = mixins.FrameMixin.get_frame_id_from_index(goal.frame)
-    except ArmExecutionError as err:
+    except ActionError as err:
       self._set_aborted(str(err))
       return
     lookat = goal.point
@@ -1284,7 +1391,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     tilt_raw = -(a + b - (math.pi / 2))
     tilt = normalize_radians(tilt_raw)
     try:
-      not_preempted = self.move_pan_and_tilt(pan, tilt)
+      not_preempted = self.move(pan = pan, tilt = tilt)
     except AntennaError as err:
       self._set_aborted(str(err))
     else:

@@ -73,25 +73,10 @@ your feature or bug fix.
 
 ## History
 
-OceanWATERS has been developed and maintained at the NASA Ames Research
-Center since late 2018.
-
-### Current staff
-
-K. Michael Dalal (project lead), Liam Carr, Anthony Koutroulis, Chetan Kulkarni,
-Thomas Stucky, Terence Welsh
-
-### Former staff
-
-Mark Allan, John Bresina, Damiana Catanoso, Anjan Chakrabarty, Laurence Edwards,
-Jeremy Frank, Chuck Fry, Jason Fugate, Leslie Keely, Lanssie Ma, Ussama Naal,
-Molly O’Connor, Arno Rogg, Antoine Tardy, Orkan Umurhan, Hans Utz, Uland Wong
-
-### Former interns
-
-Milan Addepalli, Liam Carr, Albert Kutsyy, Keegan Nave, Emily Schiede,
-Pranay Thangeda, Devin Wright, Yinan Xu
-
+OceanWATERS has been developed and maintained at the NASA Ames
+Research Center since late 2018.  It was open-sourced on GitHub in
+2020.  See the [CONTRIBUTORS file](CONTRIBUTORS.md) for a list of
+present and past team members.
 
 ## Notices
 
