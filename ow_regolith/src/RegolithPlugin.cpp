@@ -11,6 +11,8 @@
 #include <string_view>
 #include <exception>
 
+#include "ow_materials/material_utils.h"
+
 #include "RegolithPlugin.h"
 
 using namespace ow_regolith;
@@ -45,6 +47,12 @@ constexpr string_view SCOOP_LINK_NAME{"lander::l_scoop_tip"};
 //  there will only be one BulkExcavation message on this topic per call to
 //  DockIngestSample.
 const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
+
+// set the maximum scoop inclination that the psuedo force can counteract
+constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0; // degrees
+constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI
+                                           / 180.0; // radians
+constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
 
 #define GZERR(msg) gzerr << PLUGIN_NAME << ": " << msg
 #define GZWARN(msg) gzwarn << PLUGIN_NAME << ": " << msg
@@ -115,25 +123,16 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
     return;
   }
 
-  // create a material database from ROS parameters
+  // populate materials database
   try {
     m_material_db.populate_from_rosparams("/ow_materials");
   } catch (const ow_materials::MaterialConfigError &e) {
-    GZERR(e.what() << endl);
+    GZERR("Failed initialize material database: " << e.what() << endl);
     return;
   }
-
-  // set the maximum scoop inclination that the psuedo force can counteract
-  // NOTE: do not use a value that makes cosine zero!
-  constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0; // degrees
-  constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI
-                                             / 180.0; // radians
-  constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
-  // psuedo force magnitude = model's weight X weight factor
-  m_psuedo_force_mag = m_model_pool.getModelMass()
-                       * model->GetWorld()->Gravity().Length()
-                       * PSUEDO_FORCE_WEIGHT_FACTOR;
-
+  
+  // acquire gravity constant from gazebo
+  m_world_gravity_mag = model->GetWorld()->Gravity().Length();
 
   //// setup ROS facilities
   // advertise services served by this class
@@ -247,11 +246,22 @@ void RegolithPlugin::processBulkExcavation(
     }
     // reduce tracked bulk by the threshold
     double particle_volume = m_bulk_displaced.reduce(m_spawn_threshold);
-    // spawn a regolith model
+    // The returned value is the actual mass take from the bulk, so that is the
+    // particle's mass, which also has an identical blend to the reduced bulk.
     ow_materials::Bulk particle_bulk(m_bulk_displaced.getBlend(),
                                      particle_volume);
+    // compute particle mass, which requires database lookups
+    double mass;
+    try {
+      mass = ow_materials::computeBulkMass(particle_bulk, m_material_db);
+    } catch (ow_materials::MaterialRangeError const &e) {
+      GZERR("Material in displaced bulk is somehow not present in the database."
+            " MaterialRangeError: " << e.what() << endl);
+      return;
+    }
+    // spawn in particle pool
     auto model_name = m_model_pool.spawn(offset, SCOOP_LINK_NAME.data(),
-                                         particle_bulk);
+                                         particle_bulk, mass);
     if (model_name.empty()) {
       GZERR("Failed to spawn regolith particle!" << endl);
       continue;
@@ -262,7 +272,9 @@ void RegolithPlugin::processBulkExcavation(
       const Quaterniond scoop_orientation = m_scoop_link->WorldPose().Rot();
       Vector3d scooping_direction = scoop_orientation * SCOOP_FORWARD;
       scooping_direction.Z() = 0.0; // flatten against X-Y plane
-      Vector3d pushback = -m_psuedo_force_mag * scooping_direction.Normalized();
+      double psuedo_force_mag = mass * m_world_gravity_mag
+                                * PSUEDO_FORCE_WEIGHT_FACTOR;
+      Vector3d pushback = -psuedo_force_mag * scooping_direction.Normalized();
       if (!m_model_pool.applyMaintainedForce(model_name, pushback)) {
         GZERR("Failed to apply force to regolith " << model_name << endl);
       }

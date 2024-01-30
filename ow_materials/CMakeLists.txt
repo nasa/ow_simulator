@@ -141,6 +141,7 @@ add_library(Materials
   SHARED
   src/MaterialDatabase.cpp
   src/material_mixing.cpp
+  src/material_utils.cpp
 )
 add_dependencies(Materials
   ${${PROJECT_NAME}_EXPORTED_TARGETS}

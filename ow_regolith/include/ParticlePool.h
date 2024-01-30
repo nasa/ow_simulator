@@ -24,7 +24,7 @@ class ParticlePool
   // model in gazebo. It can also apply forces to the models it has spawned.
 
 public:
-  ParticlePool();
+  ParticlePool() = default;
   ~ParticlePool() = default;
 
   ParticlePool(const ParticlePool&)            = delete;
@@ -33,12 +33,11 @@ public:
   bool initialize(const std::string name, gazebo::physics::WorldPtr world,
                   const std::string &model_uri);
 
-  float getModelMass() const {return 0.031f;}
-
   // spawn a model
   std::string spawn(const ignition::math::Vector3d &position,
                     const std::string &reference_frame,
-                    const ow_materials::Bulk &bulk);
+                    const ow_materials::Bulk &bulk,
+                    const double mass = 0.03);
 
   // remove models in pool by link name
   void remove(const std::vector<std::string> &link_names);
@@ -59,10 +58,12 @@ public:
 
 private:
   inline bool isInitialized() {
-    return m_world != nullptr;
+    return m_initialized;
   }
 
   void onUpdate() const;
+
+  bool m_initialized = false;
 
   gazebo::event::ConnectionPtr m_update_event;
 
@@ -72,7 +73,15 @@ private:
   std::string m_name;
 
   // regolith model that spawns in the scoop when digging occurs
-  sdf::SDF m_model_sdf;
+  sdf::SDF m_sdf;
+  // associated parameter and element pointers to customized spawned particles
+  sdf::ParamPtr  m_sdf_name;
+  sdf::ElementPtr m_sdf_pose;
+  sdf::ElementPtr m_sdf_mass;
+  sdf::ElementPtr m_sdf_ixx;
+  sdf::ElementPtr m_sdf_iyy;
+  sdf::ElementPtr m_sdf_izz;
+  sdf::ElementPtr m_sdf_radius;
 
   struct Particle {
     Particle(ow_materials::Bulk bulk_)

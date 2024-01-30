@@ -81,10 +81,12 @@ private:
   // make necessary calls to reset the member ROS Timer
   void resetConsolidatedIngestedTimeout();
 
-  // the following members support ingest bulk consolidation
+  // the following members support ingest bulk consolidation of ingested and
+  // displaced material
   ros::Publisher m_pub_material_ingested;
   ros::Timer m_consolidate_ingested_timeout;
   ow_materials::Bulk m_bulk_ingested;
+  ow_materials::Bulk m_bulk_displaced;
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
 
@@ -106,15 +108,15 @@ private:
   // spawns, removes, and applies forces to spawned models
   ParticlePool m_model_pool;
 
+  // allows for look up of material properties
   ow_materials::MaterialDatabase m_material_db;
-  ow_materials::Bulk m_bulk_displaced;
 
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
 
   ros::Timer m_queue_manager_timer;
 
-  // magnitude of force that keeps regolith in the scoop while digging
-  double m_psuedo_force_mag;
+  // magnitude of the world's acceleration due to gravity vector
+  double m_world_gravity_mag;
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
   // list of spawn positions relative to scoop link

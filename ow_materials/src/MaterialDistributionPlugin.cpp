@@ -112,7 +112,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       id = m_material_db.getMaterialIdFromName(
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
-    } catch (const std::out_of_range &e) {
+    } catch (MaterialRangeError const &e) {
       gzerr << e.what() << endl;
       return;
     }

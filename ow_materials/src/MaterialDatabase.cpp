@@ -17,29 +17,52 @@
 using namespace ow_materials;
 
 using std::begin, std::string, std::end, std::initializer_list, std::set,
-      std::vector, std::stringstream, std::numeric_limits, std::runtime_error,
-      std::endl, std::pair, std::make_pair;
+      std::vector, std::stringstream, std::numeric_limits, std::endl,
+      std::out_of_range;
 
 bool MaterialDatabase::addMaterial(const Material &mat)
 {
-  static MaterialID id = Material::id_min;
-  if (id == Material::id_max) {
+  if (m_last_id_added == Material::id_max) {
     gzerr << "Database already contains maximum number of materials" << endl;
     return false;
   }
-  if (!m_names.insert({mat.name, id}).second) {
+  if (!m_names.insert({mat.name, m_last_id_added}).second) {
     gzerr << "Attempted to add a material to the database that shares a name "
           << "with a material that is already present. All materials must have "
           << "a unique name." << endl;
+    return false;
   }
-  if (!m_database.insert({id, mat}).second) {
+  if (!m_database.insert({m_last_id_added, mat}).second) {
     gzerr << "Attempted to add a pre-existing material ID to the database. "
              "This should never happen!!" << endl;
     return false;
   }
-  ++id;
+  ++m_last_id_added;
   return true;
 }
+
+const Material &MaterialDatabase::getMaterial(MaterialID id) const
+{
+  try {
+    return m_database.at(id);
+  } catch (out_of_range &) {
+    stringstream ss;
+    ss << "Database does not contain material with ID "
+       << static_cast<std::uint32_t>(id);
+    throw MaterialRangeError(ss.str());
+  }
+};
+
+MaterialID MaterialDatabase::getMaterialIdFromName(const string &name) const
+{
+  try {
+    return m_names.at(name);
+  } catch (out_of_range &) {
+    stringstream ss;
+    ss << "Database does not contain material with name " << name;
+    throw MaterialRangeError(ss.str());
+  }
+};
 
 // The following functions help generate a database from ROS params
 

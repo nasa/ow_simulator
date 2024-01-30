@@ -19,11 +19,6 @@ const string NOT_INITIALIZED_ERR{
   "ParticlePool has not yet been initialized!"
 };
 
-ParticlePool::ParticlePool()
-{
-  // do nothing
-}
-
 bool ParticlePool::initialize(const string name,
                               gazebo::physics::WorldPtr world,
                               const string &model_uri)
@@ -35,24 +30,81 @@ bool ParticlePool::initialize(const string name,
   }
   m_world = world;
   m_name = name;
+
   // acquire SDF data from URI path
   string sdf_string;
   if (!getSdfFromUri(model_uri, sdf_string)) {
     gzerr << "Failed to load particle SDF file" << endl;
     return false;
   }
-  parseSdf(sdf_string, m_model_sdf);
+  parseSdf(sdf_string, m_sdf);
 
   m_update_event = gazebo::event::Events::ConnectBeforePhysicsUpdate(
     std::bind(&ParticlePool::onUpdate, this)
   );
 
+  // get sdf attribute pointer for name setting
+  auto model_element = m_sdf.Root()->GetElement("model");
+  if (!model_element) {
+    gzerr << "Regolith SDF is missing model element." << endl;
+    return false;
+  }
+  m_sdf_name = model_element->GetAttribute("name");
+  if (!m_sdf_name) {
+    gzerr << "Regolith SDF is missing name element." << endl;
+    return false;
+  }
+  // get sdf element pointer for pose setting
+  m_sdf_pose = model_element->GetElement("pose");
+  if (!m_sdf_pose) {
+    gzerr << "Regolith SDF is missing pose element." << endl;
+    return false;
+  }
+  // get mass and inertia pointers for mass and moment of inertia setting
+  auto link_element = model_element->GetElement("link");
+  if (!link_element) {
+    gzerr << "Regolith SDF is missing link element." << endl;
+    return false;
+  }
+  auto inertial_element = link_element->GetElement("inertial");
+  if (!inertial_element) {
+    gzerr << "Regolith SDF is missing inertial element." << endl;
+    return false;
+  }
+  m_sdf_mass = inertial_element->GetElement("mass");
+  if (!m_sdf_mass) {
+    gzerr << "Regolith SDF is missing mass element." << endl;
+    return false;
+  }
+  auto inertia_element = inertial_element->GetElement("inertia");
+  if (!inertia_element) {
+    gzerr << "Regolith SDF is missing inertia element." << endl;
+    return false;
+  }
+  m_sdf_ixx = inertia_element->GetElement("ixx");
+  if (!m_sdf_ixx) {
+    gzerr << "Regolith SDF is missing ixx element." << endl;
+    return false;
+  }
+  m_sdf_iyy = inertia_element->GetElement("iyy");
+  if (!m_sdf_iyy) {
+    gzerr << "Regolith SDF is missing iyy element." << endl;
+    return false;
+  }
+  m_sdf_izz = inertia_element->GetElement("izz");
+  if (!m_sdf_izz) {
+    gzerr << "Regolith SDF is missing izz element." << endl;
+    return false;
+  }
+
+  m_initialized = true;
   return true;
 }
 
 string ParticlePool::spawn(const Vector3d &position,
                            const string &reference_frame,
-                           const ow_materials::Bulk &bulk)
+                           const ow_materials::Bulk &bulk,
+                           const double mass)
 {
   if (!isInitialized()) {
     gzerr << NOT_INITIALIZED_ERR << endl;
@@ -64,25 +116,10 @@ string ParticlePool::spawn(const Vector3d &position,
   ss << "regolith_" << spawn_count++;
   const auto name = ss.str();
   // set model name
-  auto model_element = m_model_sdf.Root()->GetElement("model");
-  if (!model_element) {
-    gzerr << "Regolith SDF is missing model element." << endl;
-    return "";
-  }
-  auto name_attribute = model_element->GetAttribute("name");
-  if (!name_attribute) {
-    gzerr << "Regolith SDF is missing name element." << endl;
-    return "";
-  }
-  name_attribute->Set(name);
+  m_sdf_name->Set(name);
   // set model pose
-  auto pose_element = model_element->GetElement("pose");
-  if (!pose_element) {
-    gzerr << "Regolith SDF is missing pose element." << endl;
-    return "";
-  }
   if (reference_frame == "" || reference_frame == "world") {
-    pose_element->Set(Pose3d(position, Quaterniond::Identity));
+    m_sdf_pose->Set(Pose3d(position, Quaterniond::Identity));
   } else {
     // find world pose relative to requested reference frame
     const auto reference = m_world->EntityByName(reference_frame);
@@ -91,16 +128,23 @@ string ParticlePool::spawn(const Vector3d &position,
                "reference frame, " << reference_frame << "." << endl;
       return "";
     }
-    pose_element->Set(
+    m_sdf_pose->Set(
       reference->WorldPose() * Pose3d(position, Quaterniond::Identity)
     );
   }
+  m_sdf_mass->Set(mass);
+  // compute the moment of inertia of a solid sphere
+  // double moi = 2.0 / 5.0 * mass *
+  // m_sdf_ixx->Set();
+  // m_sdf_iyy->Set();
+  // m_sdf_izz->Set();
+
   // insert into world and track as an active model
   // NOTE: Models inserted with InsertModelSDF may take several simulation
   //  cycles or more before appearing in the world's model list. For this reason
   //  immediately a pointer to the inserted model is tricky and not attempted.
   //  Models are instead always referenced by their name.
-  m_world->InsertModelSDF(m_model_sdf);
+  m_world->InsertModelSDF(m_sdf);
   auto inserted = m_active_models.try_emplace(name, bulk);
   if (!inserted.second) {
     gzerr << "Insertion of a new particle into the pool failed. This should "

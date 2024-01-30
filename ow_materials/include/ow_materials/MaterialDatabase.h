@@ -34,19 +34,18 @@ public:
     return m_database.size();
   }
 
-  // may throw std::out_of_range
-  inline const Material &getMaterial(MaterialID id) const {
-    return m_database.at(id);
-  };
+  // may throw MaterialRangeError
+  const Material &getMaterial(MaterialID id) const;
 
-  // may throw std::out_of_range
-  inline MaterialID getMaterialIdFromName(const std::string &name) const {
-    return m_names.at(name);
-  };
+  // may throw MaterialRangeError
+  MaterialID getMaterialIdFromName(const std::string &name) const;
 
+  // may throw MaterialConfigError
   void populate_from_rosparams(const std::string &ns);
 
 private:
+
+  MaterialID m_last_id_added = Material::id_min;
 
   std::unordered_map<MaterialID, Material> m_database;
 
@@ -60,6 +59,14 @@ class MaterialConfigError : public std::runtime_error
 public:
   MaterialConfigError(const std::string &what_arg)
     : std::runtime_error(what_arg) { };
+};
+
+// thrown when database access fails
+class MaterialRangeError : public std::out_of_range
+{
+public:
+  MaterialRangeError(const std::string &what_arg)
+    : std::out_of_range(what_arg) { };
 };
 
 }
