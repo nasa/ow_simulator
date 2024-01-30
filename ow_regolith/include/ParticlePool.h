@@ -78,10 +78,6 @@ private:
   sdf::ParamPtr  m_sdf_name;
   sdf::ElementPtr m_sdf_pose;
   sdf::ElementPtr m_sdf_mass;
-  sdf::ElementPtr m_sdf_ixx;
-  sdf::ElementPtr m_sdf_iyy;
-  sdf::ElementPtr m_sdf_izz;
-  sdf::ElementPtr m_sdf_radius;
 
   struct Particle {
     Particle(ow_materials::Bulk bulk_)

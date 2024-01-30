@@ -76,26 +76,6 @@ bool ParticlePool::initialize(const string name,
     gzerr << "Regolith SDF is missing mass element." << endl;
     return false;
   }
-  auto inertia_element = inertial_element->GetElement("inertia");
-  if (!inertia_element) {
-    gzerr << "Regolith SDF is missing inertia element." << endl;
-    return false;
-  }
-  m_sdf_ixx = inertia_element->GetElement("ixx");
-  if (!m_sdf_ixx) {
-    gzerr << "Regolith SDF is missing ixx element." << endl;
-    return false;
-  }
-  m_sdf_iyy = inertia_element->GetElement("iyy");
-  if (!m_sdf_iyy) {
-    gzerr << "Regolith SDF is missing iyy element." << endl;
-    return false;
-  }
-  m_sdf_izz = inertia_element->GetElement("izz");
-  if (!m_sdf_izz) {
-    gzerr << "Regolith SDF is missing izz element." << endl;
-    return false;
-  }
 
   m_initialized = true;
   return true;
@@ -133,12 +113,6 @@ string ParticlePool::spawn(const Vector3d &position,
     );
   }
   m_sdf_mass->Set(mass);
-  // compute the moment of inertia of a solid sphere
-  // double moi = 2.0 / 5.0 * mass *
-  // m_sdf_ixx->Set();
-  // m_sdf_iyy->Set();
-  // m_sdf_izz->Set();
-
   // insert into world and track as an active model
   // NOTE: Models inserted with InsertModelSDF may take several simulation
   //  cycles or more before appearing in the world's model list. For this reason
