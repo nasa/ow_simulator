@@ -97,14 +97,39 @@ class TrajectorySequence:
       = list(self._get_final_joint_positions_of(trajectory))
     self._planning_time_total += planning_time
 
+  def _calculate_trajectory_distance(self, trajectory):
+    distance = 0.0
+    for i in range(len(trajectory.joint_trajectory.points) - 1):
+      point1 = trajectory.joint_trajectory.points[i].positions
+      point2 = trajectory.joint_trajectory.points[i + 1].positions
+      segment_distance = sum((x - y)**2 for x, y in zip(point1, point2)) ** 0.5
+      distance += segment_distance
+    return distance
+  
   def _plan(self):
     """Calls on MoveIt to plan the next trajectory of the sequence. If no
     trajectory is provided, the plan is constructed from
     """
-    success, trajectory, planning_time, error_code = self._group.plan()
-    if not success:
-      raise ArmPlanningError(
-        f"MoveIt planning failed with error code: {error_code}")
+    """ To maintain consistency and reproducibility, use plan selection to
+    create 5 plans, and select the best out of 5 with the shortest Euclidean
+    distance that the end effector needed to move
+    """
+    best_distance = float('inf')
+    num_samples = 5
+    planning_time = 0
+    for i in range(num_samples):
+      success_, trajectory_, planning_time_, error_code_ = self._group.plan()
+      planning_time += planning_time_
+      if success_ == False:
+        rospy.logwarn(f"The {i} plan have error code: {error_code_}")
+        if i == num_samples - 1 & best_distance == float('inf'):
+          raise ArmPlanningError(
+          f"MoveIt planning failed with error code: {error_code_}")
+        continue
+      distance = self._calculate_trajectory_distance(trajectory_)
+      if distance < best_distance:
+        best_distance = distance
+        trajectory = trajectory_
     self._append_trajectory(trajectory, planning_time)
 
   def _plan_to_coordinate(self, coordinate, position):
