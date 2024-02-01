@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "ros/ros.h"
-#include "tf/tf.h"
 
 #include "gazebo/gazebo.hh"
 #include "gazebo/physics/physics.hh"
@@ -96,6 +95,10 @@ private:
 
   gazebo::physics::LinkPtr m_scoop_link;
 
+  // If ture, the scoop is performing a dig motion. Based on the value of
+  // the dig phase message.
+  bool m_scoop_is_digging = false;
+
   // If true, a pseudo force will be applied to spawned particles to keep them
   // in the scoop. Determined based on the dig phase.
   bool m_psuedo_force_required = false;
@@ -109,6 +112,8 @@ private:
   // allows for look up of material properties
   ow_materials::MaterialDatabase m_material_db;
 
+  // Forces processBulkExcavation to occur synchronously even if message arrivals
+  // overlap.
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
 
   // magnitude of the world's acceleration due to gravity vector
@@ -118,8 +123,6 @@ private:
   // list of spawn positions relative to scoop link
   std::vector<ignition::math::Vector3d> m_spawn_offsets;
   std::vector<ignition::math::Vector3d>::const_iterator m_spawn_offset_selector;
-  // orientation of scoop in Gazebo world
-  tf::Quaternion m_scoop_orientation;
 };
 
   // Register this plugin with the simulator

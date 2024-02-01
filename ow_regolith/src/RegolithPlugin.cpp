@@ -213,6 +213,10 @@ void RegolithPlugin::onBulkExcavationVisualMsg(
       << " message(s) may have been missed." << endl);
   }
   m_next_expected_seq = msg->header.seq + 1;
+  if (!m_scoop_is_digging) {
+    // do not spawn regolith when the motion does not look like a dig
+    return;
+  }
   m_queue.addTask(*msg);
 }
 
@@ -285,6 +289,7 @@ void RegolithPlugin::onDigPhaseMsg(
   const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg)
 {
   using ow_dynamic_terrain::scoop_dig_phase;
+  m_scoop_is_digging = msg->phase != scoop_dig_phase::NOT_DIGGING;
   m_psuedo_force_required = msg->phase == scoop_dig_phase::SINKING ||
                             msg->phase == scoop_dig_phase::PLOWING;
   switch (msg->phase) {
