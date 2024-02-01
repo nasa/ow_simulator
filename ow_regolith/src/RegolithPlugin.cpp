@@ -144,10 +144,6 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
   m_pub_material_ingested = m_node_handle
     ->advertise<ow_materials::BulkExcavation>(TOPIC_MATERIAL_INGESTED, 1, true);
   // create timers
-  const ros::Duration TASK_QUEUE_PERIOD(0.005);
-  m_queue_manager_timer = m_node_handle->createTimer(
-    TASK_QUEUE_PERIOD, &RegolithPlugin::manageQueue, this, false, true
-  );
   m_consolidate_ingested_timeout = m_node_handle->createTimer(
     CONSOLIDATE_INGESTED_TIMEOUT, &RegolithPlugin::onConsolidateIngestedTimeout,
     this, true, false
@@ -220,17 +216,11 @@ void RegolithPlugin::onBulkExcavationVisualMsg(
   m_queue.addTask(*msg);
 }
 
-void RegolithPlugin::manageQueue(const ros::TimerEvent&)
-{
-  m_queue.manage();
-}
-
-void RegolithPlugin::processBulkExcavation(
-  const ow_materials::BulkExcavation bulk)
+void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
 {
   const Vector3d SCOOP_FORWARD(1.0, 0.0, 0.0);
 
-  m_bulk_displaced.mix(ow_materials::Bulk(bulk));
+  m_bulk_displaced.mix(ow_materials::Bulk(*bulk));
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
   // particle will never spawn at the same location in the same frame.

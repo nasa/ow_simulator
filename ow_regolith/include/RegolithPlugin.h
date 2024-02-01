@@ -71,9 +71,7 @@ public:
   void onDigPhaseMsg(const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg);
 
 private:
-  void processBulkExcavation(const ow_materials::BulkExcavation bulk);
-
-  void manageQueue(const ros::TimerEvent&);
+  void processBulkExcavation(ow_materials::BulkExcavation *bulk);
 
   // when called, broadcasts a BulkExcavation of ingested material
   void onConsolidateIngestedTimeout(const ros::TimerEvent&);
@@ -112,8 +110,6 @@ private:
   ow_materials::MaterialDatabase m_material_db;
 
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
-
-  ros::Timer m_queue_manager_timer;
 
   // magnitude of the world's acceleration due to gravity vector
   double m_world_gravity_mag;
