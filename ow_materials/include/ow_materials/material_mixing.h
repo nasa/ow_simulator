@@ -20,7 +20,7 @@ class Blend {
 
   // A blend of different materials at concentrations that add up to unity.
 
-  // Possible improvements to Blend:
+  // Possible performance improvements to Blend:
   //   1. Shared contiguous memory for all instances (locality of reference)
   //   2. Cache commonly reference values, like blend hardness (computation)
 

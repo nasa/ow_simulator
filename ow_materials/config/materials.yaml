@@ -3,9 +3,9 @@ ICE:
   visualize_color: {r: 0, g: 0, b: 255}
 
 SALT:
-  density: 2160
+  density: 2160 # density of halite
   visualize_color: {r: 0, g: 255, b: 0}
 
 MG_HYDRATES:
-  density: 2660 # Anhydrous MgSO4
+  density: 2660 # density of Anhydrous MgSO4
   visualize_color: {r: 255, g: 0, b: 0}

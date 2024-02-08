@@ -66,7 +66,8 @@ MaterialID MaterialDatabase::getMaterialIdFromName(const string &name) const
 
 // The following functions help generate a database from ROS params
 
-static string join(const initializer_list<string> &args) {
+static string join(const initializer_list<string> &args)
+{
   stringstream joined;
 
   for (auto x = begin(args); x != end(args) - 1; ++x) {
@@ -84,20 +85,6 @@ static T get_param(const string &param_name) {
   T value;
   ros::param::get(param_name, value);
   return value;
-}
-
-// specialize for unsupported rosparam data types
-// DEPRECATED: Color r, g, and b are no longer uint8_t, but will keep this
-//             specialization in case it's needed for another material parameter
-template <>
-uint8_t get_param<uint8_t>(const string &param_name)
-{
-  auto value = get_param<int>(param_name);
-  if (   value < numeric_limits<uint8_t>::min()
-      || value > numeric_limits<uint8_t>::max()) {
-    throw MaterialConfigError("Material parameter is out of acceptable range!");
-  }
-  return static_cast<uint8_t>(value);
 }
 
 void MaterialDatabase::populate_from_rosparams(const string &ns)
