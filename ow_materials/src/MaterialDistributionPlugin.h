@@ -9,15 +9,16 @@
 #include <vector>
 #include <utility>
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/common/common.hh>
-#include <gazebo/common/Event.hh>
+#include "gazebo/gazebo.hh"
+#include "gazebo/common/common.hh"
+#include "gazebo/common/Event.hh"
 
-#include <AxisAlignedGrid.h>
-#include <MaterialDatabase.h>
-#include <MaterialIntegrator.h>
+#include "AxisAlignedGrid.h"
+#include "MaterialDatabase.h"
+#include "MaterialIntegrator.h"
+#include "material_mixing.h"
 
 namespace ow_materials
 {
@@ -42,11 +43,11 @@ public:
 
   void getHeightmapAlbedo();
 
-  void handleVisualBulk(MaterialBlend const &blend);
+  void handleVisualBulk(Blend const &blend, std::uint32_t count);
 
-  void handleCollisionBulk(MaterialBlend const &blend);
+  void handleCollisionBulk(Blend const &blend, std::uint32_t count);
 
-  Color interpolateColor(MaterialBlend const &blend) const;
+  Color interpolateColor(Blend const &blend) const;
 
 private:
   void populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain);
@@ -55,10 +56,13 @@ private:
 
   std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_render_connection;
 
-  ros::Publisher m_grid_pub;
+  ros::Publisher m_pub_grid;
+  ros::Publisher m_pub_bulk_excavation_visual;
+  ros::Publisher m_pub_bulk_excavation_collision;
 
-  std::unique_ptr<MaterialDatabase> m_material_db;
-  std::unique_ptr<AxisAlignedGrid<MaterialBlend>> m_grid;
+  MaterialDatabase m_material_db;
+
+  std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
   std::unique_ptr<MaterialIntegrator> m_collision_integrator;

@@ -2,20 +2,18 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#include <MaterialIntegrator.h>
-
 #include <cmath>
 #include <algorithm>
 #include <thread>
 
-#include <gazebo/gazebo.hh>
+#include "gazebo/gazebo.hh"
+#include "cv_bridge/cv_bridge.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/core/mat.hpp"
 
-#include <cv_bridge/cv_bridge.h>
+#include "point_cloud_util.h"
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/mat.hpp>
-
-#include <point_cloud_util.h>
+#include "MaterialIntegrator.h"
 
 using namespace ow_materials;
 
@@ -26,7 +24,7 @@ const auto STAT_LOG_TIMEOUT = ros::Duration(1.0); // second
 const uint MINIMUM_INTEGRATE_THREADS = 4u;
 
 MaterialIntegrator::MaterialIntegrator(
-  ros::NodeHandle *node_handle, AxisAlignedGrid<MaterialBlend> const *grid,
+  ros::NodeHandle *node_handle, AxisAlignedGrid<Blend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid),
@@ -119,7 +117,7 @@ void MaterialIntegrator::integrate(
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
 
-  MaterialBlend bulk_blend;
+  Blend bulk_blend;
   pcl::PointCloud<pcl::PointXYZRGB> points;
 
   // The following code makes these assumptions:
@@ -154,7 +152,7 @@ void MaterialIntegrator::integrate(
       m_grid->runForEachInColumn(
         pixel_center, z_bottom, z_top,
         [&bulk_blend, &points]
-        (MaterialBlend const &b, GridPositionType center) {
+        (Blend const &b, GridPositionType center) {
           if (b.isEmpty()) return;
           bulk_blend.merge(b);
           // WORKAROUND for OW-1194, TF has an incorrect transform for
@@ -190,6 +188,6 @@ void MaterialIntegrator::integrate(
 
   publishPointCloud(&m_dug_points_pub, points);
 
-  m_handle_bulk_cb(bulk_blend);
+  m_handle_bulk_cb(bulk_blend, static_cast<uint32_t>(points.size()));
 }
 

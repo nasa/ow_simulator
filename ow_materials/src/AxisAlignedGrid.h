@@ -9,7 +9,7 @@
 #include <memory>
 #include <functional>
 
-#include <ignition/math/AxisAlignedBox.hh>
+#include "ignition/math/AxisAlignedBox.hh"
 
 namespace ow_materials {
 
@@ -46,6 +46,7 @@ public:
   const GridPositionType &getMinCorner() const;
   const GridPositionType &getCenter() const;
 
+  const double &getCellVolume() const;
   inline double getCellLength() const { return m_cell_length; }
 
   // WARNING: execution will may take a long time depending on grid resolution

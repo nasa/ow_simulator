@@ -7,13 +7,15 @@
 #include <functional>
 #include <unordered_map>
 
-#include <boost/functional/hash.hpp>
+#include "boost/functional/hash.hpp"
 
-#include <point_cloud_util.h>
-#include <gazebo/rendering/rendering.hh>
+#include "gazebo/rendering/rendering.hh"
 
-#include <MaterialDistributionPlugin.h>
-#include <populate_materials.h>
+#include "ow_materials/BulkExcavation.h"
+#include "ow_materials/MaterialConcentration.h"
+
+#include "point_cloud_util.h"
+#include "MaterialDistributionPlugin.h"
 
 using std::string, std::make_unique, std::endl, std::uint8_t, std::size_t,
       std::runtime_error, std::make_pair, std::unordered_map;
@@ -65,8 +67,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
   try {
-    m_grid = make_unique<AxisAlignedGrid<MaterialBlend>>(corner_a, corner_b,
-                                                         cell_side_length);
+    m_grid = make_unique<AxisAlignedGrid<Blend>>(corner_a, corner_b,
+                                                 cell_side_length);
   } catch (const GridConfigError &e) {
     gzerr << e.what() << endl;
     return;
@@ -82,16 +84,15 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                               << diagonal.Y() << " x "
                               << diagonal.Z() << " meters.\n";
 
-  m_material_db = make_unique<MaterialDatabase>();
   // populate materials database
   try {
-    populate_material_database(m_material_db.get(), NAMESPACE_MATERIALS);
+    m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
     gzerr << e.what() << endl;
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
-        << m_material_db->size() << " materials.\n";
+        << m_material_db.size() << " materials.\n";
 
   // get reference colors for mapping terrain texture to material compositions
   if (!sdf->HasElement(PARAMETER_MATERIALS)) {
@@ -108,10 +109,10 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     }
     MaterialID id;
     try {
-      id = m_material_db->getMaterialIdFromName(
+      id = m_material_db.getMaterialIdFromName(
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
-    } catch (const std::out_of_range &e) {
+    } catch (MaterialRangeError const &e) {
       gzerr << e.what() << endl;
       return;
     }
@@ -135,7 +136,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     "/ow_dynamic_terrain/modification_differential/visual",
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
-      std::placeholders::_1),
+      std::placeholders::_1, std::placeholders::_2),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
@@ -144,15 +145,20 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     "/ow_dynamic_terrain/modification_differential/collision",
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
-      std::placeholders::_1),
+      std::placeholders::_1, std::placeholders::_2),
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
 
   // publish latched, because points will never change
   // message is published later on after the pointcloud has been generated
-  m_grid_pub = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+  m_pub_grid = m_node_handle->advertise<sensor_msgs::PointCloud2>(
     "/ow_materials/grid_points2", 1, true);
+
+  m_pub_bulk_excavation_visual = m_node_handle->advertise<BulkExcavation>(
+    "/ow_materials/bulk_excavation/visual", 10, false);
+  m_pub_bulk_excavation_collision = m_node_handle->advertise<BulkExcavation>(
+    "/ow_materials/bulk_excavation/collision", 10, false);
 
   // defer acquiring heightmap albedo texture until the gazebo scene exists
   // NOTE: this event callback will only be called as many times as it needs to
@@ -240,7 +246,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
     };
   };
   // simple struct for more readable code
-  struct BlendAndColor { MaterialBlend blend; Color color; };
+  struct BlendAndColor { Blend blend; Color color; };
   using AlbedoMaterialMap = unordered_map<TextureCoords, BlendAndColor,
                                           TextureCoords::hasher>;
   // this map enables z-column-wise modification of the grid without having to
@@ -251,7 +257,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   m_grid->runForEach(
     [&]
-    (MaterialBlend &blend, GridPositionType center) {
+    (Blend &blend, GridPositionType center) {
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
         Ogre::Terrain::Space::WORLD_SPACE,
@@ -329,51 +335,59 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
-  publishPointCloud(&m_grid_pub, grid_points);
+  publishPointCloud(&m_pub_grid, grid_points);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << endl;
 }
 
-void MaterialDistributionPlugin::handleVisualBulk(MaterialBlend const &blend)
+void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
+                                                  std::uint32_t count)
 {
-
   // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
   //  scoop digging is not occurring
 
-  // STUBBED: The complete version of this method will handle downstream effects
-  //  of a visual modification like scoop forces and regolith content.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
   // std::stringstream s;
   // s << "handleVisualBulk: STUBBED\n"
-  //      "the bulk contains\n";
-  // for (auto const &x : blend.getBlendMap())
+  //   << count << " voxels int`rsected.\n"
+  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+  //   "The bulk material contains\n";
+  // for (auto const &x : blend.getComposition()) {
   //   s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
+  // }
   // gzlog << s.str() << endl;
+
+  Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
+  auto msg = excavated_bulk.generateExcavationBulkMessage();
+  msg.header.stamp = ros::Time::now();
+  m_pub_bulk_excavation_visual.publish(msg);
 }
 
-void MaterialDistributionPlugin::handleCollisionBulk(MaterialBlend const &blend)
+void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
+                                                     std::uint32_t count)
 {
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a collision modification, like grinder force and torque.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
   // std::stringstream s;
-  // s << "handleCollisionBulk: STUBBED\n"
-  //      "the bulk contains\n";
-  // for (auto const &x : blend.getBlendMap())
+  // s << "handleVisualBulk: STUBBED\n"
+  //   << count << " voxels intersected.\n"
+  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
+  //   "The bulk material contains\n";
+  // for (auto const &x : blend.getComposition())
   //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   // gzlog << s.str() << endl;
 }
 
-Color MaterialDistributionPlugin::interpolateColor(
-  MaterialBlend const &blend) const
+Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const
 {
   return std::accumulate(
-    blend.getBlendMap().begin(), blend.getBlendMap().end(),
+    blend.getComposition().begin(), blend.getComposition().end(),
     Color{0.0, 0.0, 0.0},
     [this]
-    (Color value, MaterialBlend::BlendType::value_type const &p) {
-      const auto m = m_material_db->getMaterial(p.first);
+    (Color value, CompositionType::value_type const &p) {
+      const auto m = m_material_db.getMaterial(p.first);
       return Color {
         value.r + p.second * (m.visualize_color.r - value.r),
         value.g + p.second * (m.visualize_color.g - value.g),

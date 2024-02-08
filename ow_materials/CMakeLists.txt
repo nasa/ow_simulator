@@ -12,6 +12,8 @@ endif()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  message_generation
+  std_msgs
   ow_dynamic_terrain
   cv_bridge
 )
@@ -23,6 +25,7 @@ find_package(OpenCV REQUIRED
 # QUIET suppresses warnings from PCL about disabling pcap, png, and libusb-1.0
 # There is a GitHub Issue about this:
 #   https://github.com/PointCloudLibrary/pcl/issues/2651
+
 find_package(PCL 1.3 REQUIRED QUIET COMPONENTS
   common
   io
@@ -38,8 +41,9 @@ endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+
 include_directories(
-  include
+  src
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
@@ -85,6 +89,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
+add_message_files(
+  FILES
+  BulkExcavation.msg
+  MaterialConcentration.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -94,9 +109,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
-   CATKIN_DEPENDS
-   ow_dynamic_terrain
+  INCLUDE_DIRS include
+  LIBRARIES Materials
+  CATKIN_DEPENDS message_runtime std_msgs ow_dynamic_terrain
 )
 
 ###########
@@ -119,22 +136,36 @@ catkin_package(
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+# Library for handling material types and the database
+add_library(Materials
+  SHARED
+  src/MaterialDatabase.cpp
+  src/material_mixing.cpp
+  src/material_utils.cpp
+)
+add_dependencies(Materials
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
+target_include_directories(Materials
+  PUBLIC include/${PROJECT_NAME}
+)
+
 # Gazebo plugin that gives a terrain a material distribution
 add_library(MaterialDistributionPlugin
   SHARED
   src/MaterialDistributionPlugin.cpp
-  src/MaterialDatabase.cpp
-  src/Materials.cpp
-  src/populate_materials.cpp
   src/MaterialIntegrator.cpp
   src/point_cloud_util.cpp
 )
 add_dependencies(MaterialDistributionPlugin
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
+  Materials
 )
 target_link_libraries(MaterialDistributionPlugin
   ${GAZEBO_LIBRARIES}
+  Materials
 )
 
 #############
@@ -161,3 +192,14 @@ target_link_libraries(MaterialDistributionPlugin
 #   models
 #   DESTINATION share/${PROJECT_NAME}/
 # )
+
+install(TARGETS Materials
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)

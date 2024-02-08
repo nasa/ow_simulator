@@ -22,13 +22,17 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   
+  <build_depend>message_generation</build_depend>
+
   <depend>roscpp</depend>
+  <depend>std_msgs</depend>
   <depend>gazebo</depend>
   <depend>pcl_ros</depend>
   <depend>geometry_msgs</depend>
   <depend>ow_dynamic_terrain</depend>
   <depend>sensor_msgs</depend>
 
+  <exec_depend>message_runtime</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
 
 </package>

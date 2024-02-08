@@ -6,7 +6,7 @@
 #include <limits>
 #include <algorithm>
 
-#include <gazebo/common/Assert.hh>
+#include "gazebo/common/Assert.hh"
 
 using std::min, std::max, std::ceil, std::size_t, std::clamp;
 
@@ -96,7 +96,7 @@ const GridPositionType &AxisAlignedGrid<T>::getDiagonal() const {
   static const GridPositionType diagonal(m_domain->XLength(),
                                          m_domain->YLength(),
                                          m_domain->ZLength());
-  return diagonal;
+   return diagonal;
 };
 
 template <typename T>
@@ -115,6 +115,12 @@ template <typename T>
 const GridPositionType &AxisAlignedGrid<T>::getCenter() const {
   static const GridPositionType center = m_domain->Center();
   return center;
+};
+
+template <typename T>
+const double &AxisAlignedGrid<T>::getCellVolume() const {
+  static const double volume = m_cell_length * m_cell_length * m_cell_length;
+  return volume;
 };
 
 template <typename T>

@@ -5,8 +5,8 @@
 #ifndef POINT_CLOUD_UTIL_H
 #define POINT_CLOUD_UTIL_H
 
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
+#include "pcl_ros/point_cloud.h"
+#include "pcl/point_types.h"
 
 void publishPointCloud(ros::Publisher *pub,
                        pcl::PointCloud<pcl::PointXYZRGB> &cloud);
