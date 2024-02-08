@@ -32,16 +32,10 @@ struct Material
   constexpr static MaterialID id_max = std::numeric_limits<MaterialID>::max();
 
   std::string name;
-  float occurrence;
-  float science_value;
 
   double density;
 
   Color visualize_color;
-
-  // TODO:
-  // double cohesion;
-  // double friction_angle;
 
 };
 

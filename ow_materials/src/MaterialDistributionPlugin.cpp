@@ -12,7 +12,6 @@
 #include "gazebo/rendering/rendering.hh"
 
 #include "ow_materials/BulkExcavation.h"
-#include "ow_materials/MaterialConcentration.h"
 
 #include "point_cloud_util.h"
 #include "MaterialDistributionPlugin.h"
@@ -88,7 +87,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   try {
     m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
-    gzerr << e.what() << endl;
+    gzerr << e.what() << "\n";
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
@@ -114,6 +113,11 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
       );
     } catch (MaterialRangeError const &e) {
       gzerr << e.what() << endl;
+      gzerr << "Verify that the material names in the reference_color values "
+               "defined in your world's model.sdf file match the names defined "
+               "in your materials YAML file. See the Material Distribution "
+               "section of the Environment Simulation page of the Wiki for "
+               "assistance." << endl;
       return;
     }
     // interpret value as a vector since it's the same shape as a color
@@ -304,15 +308,6 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         last_insert = albedo_blends.emplace_hint(last_insert,
           make_pair(tex_coord, BlendAndColor{blend, interpolateColor(blend)})
         );
-        // DEBUG CODE: will be removed before OW-812 is merged
-        // gzlog << "Reading pixel = (" << tex_coord.first << ", "
-        //                              << tex_coord.second << ")" << endl;
-        // float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
-        // std::stringstream ss;
-        // ss << "Concentrations = ";
-        // for (auto d : inverse_dist)
-        //   ss << d / sum << "  ";
-        // gzlog << ss.str() << endl;
       }
 
       grid_points.emplace_back(

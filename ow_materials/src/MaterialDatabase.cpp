@@ -122,8 +122,6 @@ void MaterialDatabase::populate_from_rosparams(const string &ns)
     const bool added = addMaterial(
       {
         mat,
-        get_param<float>(join({ns, mat, "occurrence"})),
-        get_param<float>(join({ns, mat, "science_value"})),
         get_param<double>(join({ns, mat, "density"})),
         Color{
           get_param<float>(join({ns, mat, "visualize_color", "r"})),
