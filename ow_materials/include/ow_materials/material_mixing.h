@@ -95,9 +95,6 @@ public:
   // Returns the actual volume deducted from the bulk (always positive).
   double reduce(double volume_deducted);
 
-  // Generate a BulkExcavation message type out of this instance's data.
-  BulkExcavation generateExcavationBulkMessage() const;
-
   inline CompositionType const &getComposition() const {
     return m_blend.getComposition();
   }

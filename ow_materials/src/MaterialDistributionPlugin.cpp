@@ -13,6 +13,7 @@
 
 #include "ow_materials/BulkExcavation.h"
 
+#include "material_utils.h"
 #include "point_cloud_util.h"
 #include "MaterialDistributionPlugin.h"
 
@@ -354,7 +355,13 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
   // gzlog << s.str() << endl;
 
   Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
-  auto msg = excavated_bulk.generateExcavationBulkMessage();
+  BulkExcavation msg;
+  try {
+    msg = bulkToBulkExcavationMsg(excavated_bulk, m_material_db);
+  } catch (MaterialRangeError const &e) {
+    gzerr << e.what() << endl;
+    return;
+  }
   msg.header.stamp = ros::Time::now();
   m_pub_bulk_excavation_visual.publish(msg);
 }

@@ -1,2 +1,3 @@
 uint8   id          # ID in the material database
-float32 proportion  # concentration of material, sums to unity
+string  name        # name of the material
+float32 proportion  # concentration of material, within the range (0, 1]

@@ -112,19 +112,6 @@ double Bulk::reduce(double volume_deducted)
   return prev_volume - m_volume;
 }
 
-BulkExcavation Bulk::generateExcavationBulkMessage() const
-{
-  BulkExcavation msg;
-  msg.volume = m_volume;
-  for (auto const &x : getComposition()) {
-    MaterialConcentration c;
-    c.id = x.first;
-    c.proportion = x.second;
-    msg.composition.push_back(c);
-  }
-  return msg;
-}
-
 void Bulk::initialize()
 {
   // volume is never below zero
