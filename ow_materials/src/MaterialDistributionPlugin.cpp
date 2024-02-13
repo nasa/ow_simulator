@@ -88,7 +88,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   try {
     m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
-    gzerr << e.what() << "\n";
+    gzerr << e.what() << endl;
     return;
   }
   gzlog << PLUGIN_NAME << ": Materials database populated with "
