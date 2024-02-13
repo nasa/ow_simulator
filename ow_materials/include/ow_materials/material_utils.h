@@ -8,6 +8,8 @@
 #include "MaterialDatabase.h"
 #include "material_mixing.h"
 
+#include "ow_materials/BulkExcavation.h"
+
 // Utility functions for working with Blends and Bulks that require access to
 // a material database.
 
@@ -15,6 +17,10 @@ namespace ow_materials {
 
 // may throw MaterialRangeError
 double computeBulkMass(Bulk const &bulk, MaterialDatabase const &db);
+
+// may throw MaterialRangeError
+BulkExcavation bulkToBulkExcavationMsg(Bulk const &bulk,
+                                       MaterialDatabase const &db);
 
 }
 

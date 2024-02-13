@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <vector>
 
-#include <ow_regolith/Contacts.h>
+#include "ow_regolith/Contacts.h"
 
-#include <ContactSensorPlugin.h>
+#include "ContactSensorPlugin.h"
 
 using namespace ow_regolith;
 

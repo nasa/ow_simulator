@@ -12,8 +12,8 @@
 #include "gazebo/rendering/rendering.hh"
 
 #include "ow_materials/BulkExcavation.h"
-#include "ow_materials/MaterialConcentration.h"
 
+#include "material_utils.h"
 #include "point_cloud_util.h"
 #include "MaterialDistributionPlugin.h"
 
@@ -113,7 +113,12 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
     } catch (MaterialRangeError const &e) {
-      gzerr << e.what() << endl;
+      gzerr << e.what()
+            << " Verify that the material names in the reference_color entries "
+               "defined in your world's model.sdf file match the names defined "
+               "in your material's YAML file. See the Material Distribution "
+               "section of the Environment Simulation page of the Wiki for "
+               "a more in depth explanation." << endl;
       return;
     }
     // interpret value as a vector since it's the same shape as a color
@@ -140,15 +145,17 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
-  m_collision_integrator = make_unique<MaterialIntegrator>(
-    m_node_handle.get(), m_grid.get(),
-    "/ow_dynamic_terrain/modification_differential/collision",
-    "/ow_materials/dug_points2",
-    std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
-      std::placeholders::_1, std::placeholders::_2),
-    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
-      std::placeholders::_1)
-  );
+
+  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  // m_collision_integrator = make_unique<MaterialIntegrator>(
+  //   m_node_handle.get(), m_grid.get(),
+  //   "/ow_dynamic_terrain/modification_differential/collision",
+  //   "/ow_materials/dug_points2",
+  //   std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
+  //     std::placeholders::_1, std::placeholders::_2),
+  //   std::bind(&MaterialDistributionPlugin::interpolateColor, this,
+  //     std::placeholders::_1)
+  // );
 
   // publish latched, because points will never change
   // message is published later on after the pointcloud has been generated
@@ -304,15 +311,6 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         last_insert = albedo_blends.emplace_hint(last_insert,
           make_pair(tex_coord, BlendAndColor{blend, interpolateColor(blend)})
         );
-        // DEBUG CODE: will be removed before OW-812 is merged
-        // gzlog << "Reading pixel = (" << tex_coord.first << ", "
-        //                              << tex_coord.second << ")" << endl;
-        // float sum = std::reduce(inverse_dist.begin(), inverse_dist.end());
-        // std::stringstream ss;
-        // ss << "Concentrations = ";
-        // for (auto d : inverse_dist)
-        //   ss << d / sum << "  ";
-        // gzlog << ss.str() << endl;
       }
 
       grid_points.emplace_back(
@@ -359,14 +357,21 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
   // gzlog << s.str() << endl;
 
   Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
-  auto msg = excavated_bulk.generateExcavationBulkMessage();
+  BulkExcavation msg;
+  try {
+    msg = bulkToBulkExcavationMsg(excavated_bulk, m_material_db);
+  } catch (MaterialRangeError const &e) {
+    gzerr << e.what() << endl;
+    return;
+  }
   msg.header.stamp = ros::Time::now();
   m_pub_bulk_excavation_visual.publish(msg);
 }
 
-void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
-                                                     std::uint32_t count)
-{
+//// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+// void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
+//                                                      std::uint32_t count)
+// {
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a collision modification, like grinder force and torque.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
@@ -378,7 +383,7 @@ void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
   // for (auto const &x : blend.getComposition())
   //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   // gzlog << s.str() << endl;
-}
+// }
 
 Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const
 {

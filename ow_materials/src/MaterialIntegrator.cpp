@@ -123,11 +123,11 @@ void MaterialIntegrator::integrate(
   // The following code makes these assumptions:
   //   a) Each intersected voxel contributes the entirety of its blend to the
   //      final bulk blend. In other words, partial voxel intersections along
-  //      the boundary are not accounted for.
+  //      the boundary acquire the entire voxel volume.
   //   b) Each blend in the material grid is already normalized.
   //   c) All voxels are of the same volume.
 
-  // TODO: make float-double usage uniform
+  // TODO: make float-double usage uniform where it makes sense to
 
   // iterate over entire the differential image and blend voxel grid values that
   // lie within the volume between old heightmap values and new heightmap values

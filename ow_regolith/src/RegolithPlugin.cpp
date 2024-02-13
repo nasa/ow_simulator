@@ -311,8 +311,15 @@ void RegolithPlugin::onDigPhaseMsg(
 
 void RegolithPlugin::onConsolidateIngestedTimeout(const ros::TimerEvent&)
 {
-  m_pub_material_ingested.publish(
-    m_bulk_ingested.generateExcavationBulkMessage());
+  ow_materials::BulkExcavation msg;
+  try {
+    msg = ow_materials::bulkToBulkExcavationMsg(m_bulk_ingested, m_material_db);
+  } catch (ow_materials::MaterialRangeError const &e) {
+    gzerr << e.what() << endl;
+    return;
+  }
+  msg.header.stamp = ros::Time::now();
+  m_pub_material_ingested.publish(msg);
   m_bulk_ingested.clear();
 }
 

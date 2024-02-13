@@ -10,11 +10,11 @@
 #include <memory>
 #include <regex>
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/common/common.hh>
-#include <gazebo/sensors/sensors.hh>
+#include "gazebo/gazebo.hh"
+#include "gazebo/common/common.hh"
+#include "gazebo/sensors/sensors.hh"
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 
 namespace ow_regolith {
 

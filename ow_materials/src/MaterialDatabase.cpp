@@ -23,7 +23,7 @@ using std::begin, std::string, std::end, std::initializer_list, std::set,
 bool MaterialDatabase::addMaterial(const Material &mat)
 {
   if (m_last_id_added == Material::id_max) {
-    gzerr << "Database already contains maximum number of materials" << endl;
+    gzerr << "Database already contains maximum number of materials." << endl;
     return false;
   }
   if (!m_names.insert({mat.name, m_last_id_added}).second) {
@@ -48,7 +48,7 @@ const Material &MaterialDatabase::getMaterial(MaterialID id) const
   } catch (out_of_range &) {
     stringstream ss;
     ss << "Database does not contain material with ID "
-       << static_cast<std::uint32_t>(id);
+       << static_cast<std::uint32_t>(id) << ".";
     throw MaterialRangeError(ss.str());
   }
 };
@@ -59,14 +59,15 @@ MaterialID MaterialDatabase::getMaterialIdFromName(const string &name) const
     return m_names.at(name);
   } catch (out_of_range &) {
     stringstream ss;
-    ss << "Database does not contain material with name " << name;
+    ss << "Database does not contain material with name " << name << ".";
     throw MaterialRangeError(ss.str());
   }
 };
 
 // The following functions help generate a database from ROS params
 
-static string join(const initializer_list<string> &args) {
+static string join(const initializer_list<string> &args)
+{
   stringstream joined;
 
   for (auto x = begin(args); x != end(args) - 1; ++x) {
@@ -84,20 +85,6 @@ static T get_param(const string &param_name) {
   T value;
   ros::param::get(param_name, value);
   return value;
-}
-
-// specialize for unsupported rosparam data types
-// DEPRECATED: Color r, g, and b are no longer uint8_t, but will keep this
-//             specialization in case it's needed for another material parameter
-template <>
-uint8_t get_param<uint8_t>(const string &param_name)
-{
-  auto value = get_param<int>(param_name);
-  if (   value < numeric_limits<uint8_t>::min()
-      || value > numeric_limits<uint8_t>::max()) {
-    throw MaterialConfigError("Material parameter is out of acceptable range!");
-  }
-  return static_cast<uint8_t>(value);
 }
 
 void MaterialDatabase::populate_from_rosparams(const string &ns)
@@ -122,8 +109,6 @@ void MaterialDatabase::populate_from_rosparams(const string &ns)
     const bool added = addMaterial(
       {
         mat,
-        get_param<float>(join({ns, mat, "occurrence"})),
-        get_param<float>(join({ns, mat, "science_value"})),
         get_param<double>(join({ns, mat, "density"})),
         Color{
           get_param<float>(join({ns, mat, "visualize_color", "r"})),

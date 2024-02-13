@@ -95,7 +95,7 @@ private:
 
   gazebo::physics::LinkPtr m_scoop_link;
 
-  // If ture, the scoop is performing a dig motion. Based on the value of
+  // If true, the scoop is performing a dig motion. Based on the value of
   // the dig phase message.
   bool m_scoop_is_digging = false;
 

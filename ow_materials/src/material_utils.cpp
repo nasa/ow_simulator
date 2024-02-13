@@ -17,3 +17,18 @@ double ow_materials::computeBulkMass(Bulk const &bulk,
   }
   return mass;
 }
+
+BulkExcavation ow_materials::bulkToBulkExcavationMsg(
+  Bulk const &bulk, MaterialDatabase const &db)
+{
+  BulkExcavation msg;
+  msg.volume = bulk.getVolume();
+  for (auto const &x : bulk.getComposition()) {
+    MaterialConcentration c;
+    c.id = x.first;
+    c.name = db.getMaterial(x.first).name;
+    c.proportion = x.second;
+    msg.composition.push_back(c);
+  }
+  return msg;
+}

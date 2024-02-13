@@ -165,7 +165,13 @@ ow_materials::Bulk ParticlePool::removeAndConsolidate(
 
 void ParticlePool::removeParticle(const PoolType::iterator it)
 {
-  m_world->RemoveModel(it->first);
+  auto model = m_world->ModelByName(it->first);
+  if (model) {
+    m_world->RemoveModel(model);
+  } else {
+    gzerr << "Model " << it->first << ", staged for removal, could not be "
+             "found in the world." << std::endl;
+  }
   m_active_models.erase(it);
 }
 

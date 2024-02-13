@@ -20,7 +20,7 @@ class Blend {
 
   // A blend of different materials at concentrations that add up to unity.
 
-  // Possible improvements to Blend:
+  // Possible performance improvements to Blend:
   //   1. Shared contiguous memory for all instances (locality of reference)
   //   2. Cache commonly reference values, like blend hardness (computation)
 
@@ -94,9 +94,6 @@ public:
   // the Bulk after this operation will be zero.
   // Returns the actual volume deducted from the bulk (always positive).
   double reduce(double volume_deducted);
-
-  // Generate a BulkExcavation message type out of this instance's data.
-  BulkExcavation generateExcavationBulkMessage() const;
 
   inline CompositionType const &getComposition() const {
     return m_blend.getComposition();
