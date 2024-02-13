@@ -113,12 +113,12 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
     } catch (MaterialRangeError const &e) {
-      gzerr << e.what() << endl;
-      gzerr << "Verify that the material names in the reference_color values "
+      gzerr << e.what()
+            << " Verify that the material names in the reference_color entries "
                "defined in your world's model.sdf file match the names defined "
-               "in your materials YAML file. See the Material Distribution "
+               "in your material's YAML file. See the Material Distribution "
                "section of the Environment Simulation page of the Wiki for "
-               "assistance." << endl;
+               "a more in depth explanation." << endl;
       return;
     }
     // interpret value as a vector since it's the same shape as a color

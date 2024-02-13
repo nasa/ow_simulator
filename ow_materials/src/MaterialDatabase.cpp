@@ -23,7 +23,7 @@ using std::begin, std::string, std::end, std::initializer_list, std::set,
 bool MaterialDatabase::addMaterial(const Material &mat)
 {
   if (m_last_id_added == Material::id_max) {
-    gzerr << "Database already contains maximum number of materials" << endl;
+    gzerr << "Database already contains maximum number of materials." << endl;
     return false;
   }
   if (!m_names.insert({mat.name, m_last_id_added}).second) {
@@ -48,7 +48,7 @@ const Material &MaterialDatabase::getMaterial(MaterialID id) const
   } catch (out_of_range &) {
     stringstream ss;
     ss << "Database does not contain material with ID "
-       << static_cast<std::uint32_t>(id);
+       << static_cast<std::uint32_t>(id) << ".";
     throw MaterialRangeError(ss.str());
   }
 };
@@ -59,7 +59,7 @@ MaterialID MaterialDatabase::getMaterialIdFromName(const string &name) const
     return m_names.at(name);
   } catch (out_of_range &) {
     stringstream ss;
-    ss << "Database does not contain material with name " << name;
+    ss << "Database does not contain material with name " << name << ".";
     throw MaterialRangeError(ss.str());
   }
 };
