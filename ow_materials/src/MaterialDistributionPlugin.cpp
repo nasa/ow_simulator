@@ -145,15 +145,17 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     std::bind(&MaterialDistributionPlugin::interpolateColor, this,
       std::placeholders::_1)
   );
-  m_collision_integrator = make_unique<MaterialIntegrator>(
-    m_node_handle.get(), m_grid.get(),
-    "/ow_dynamic_terrain/modification_differential/collision",
-    "/ow_materials/dug_points2",
-    std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
-      std::placeholders::_1, std::placeholders::_2),
-    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
-      std::placeholders::_1)
-  );
+
+  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  // m_collision_integrator = make_unique<MaterialIntegrator>(
+  //   m_node_handle.get(), m_grid.get(),
+  //   "/ow_dynamic_terrain/modification_differential/collision",
+  //   "/ow_materials/dug_points2",
+  //   std::bind(&MaterialDistributionPlugin::handleCollisionBulk, this,
+  //     std::placeholders::_1, std::placeholders::_2),
+  //   std::bind(&MaterialDistributionPlugin::interpolateColor, this,
+  //     std::placeholders::_1)
+  // );
 
   // publish latched, because points will never change
   // message is published later on after the pointcloud has been generated
@@ -366,9 +368,10 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
   m_pub_bulk_excavation_visual.publish(msg);
 }
 
-void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
-                                                     std::uint32_t count)
-{
+//// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+// void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
+//                                                      std::uint32_t count)
+// {
   // STUBBED: The complete version of this method will handle downstream effects
   //  of a collision modification, like grinder force and torque.
   // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
@@ -380,7 +383,7 @@ void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
   // for (auto const &x : blend.getComposition())
   //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
   // gzlog << s.str() << endl;
-}
+// }
 
 Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const
 {

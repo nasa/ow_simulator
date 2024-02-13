@@ -45,7 +45,8 @@ public:
 
   void handleVisualBulk(Blend const &blend, std::uint32_t count);
 
-  void handleCollisionBulk(Blend const &blend, std::uint32_t count);
+  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  // void handleCollisionBulk(Blend const &blend, std::uint32_t count);
 
   Color interpolateColor(Blend const &blend) const;
 
@@ -65,7 +66,9 @@ private:
   std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
-  std::unique_ptr<MaterialIntegrator> m_collision_integrator;
+
+  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  // std::unique_ptr<MaterialIntegrator> m_collision_integrator;
 
   std::vector<std::pair<MaterialID, Color>> m_reference_colors;
 
