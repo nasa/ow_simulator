@@ -228,7 +228,7 @@ void ParticlePool::onUpdate() const
       auto link = model->GetChildLink("link");
       if (!link) {
         gzwarn << "Regolith model " << particle.first
-               << " is has no link." << endl;
+               << " has no link." << endl;
         continue;
       }
       link->AddLinkForce(particle.second.force);

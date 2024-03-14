@@ -78,7 +78,7 @@ private:
   sdf::ParamPtr  m_sdf_name;
   sdf::ElementPtr m_sdf_pose;
   sdf::ElementPtr m_sdf_mass;
-
+  
   struct Particle {
     Particle(ow_materials::Bulk bulk_)
       : bulk(bulk_), force_applied(false), force(ignition::math::Vector3d::Zero)

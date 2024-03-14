@@ -20,7 +20,7 @@ using namespace ow_dynamic_terrain;
 
 using namespace std::literals;
 
-using std::string, std::string_view, std::endl, std::runtime_error;
+using std::string, std::string_view, std::endl, std::runtime_error, std::sqrt;
 
 using ignition::math::Vector3d, ignition::math::Quaterniond;
 
@@ -48,11 +48,11 @@ constexpr string_view SCOOP_LINK_NAME{"lander::l_scoop_tip"};
 //  DockIngestSample.
 const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
 
-// set the maximum scoop inclination that the psuedo force can counteract
+// set the maximum scoop inclination that the push back force can counteract
 constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0; // degrees
 constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI
                                            / 180.0; // radians
-constexpr auto PSUEDO_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
+constexpr auto PUSHBACK_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
 
 #define GZERR(msg) gzerr << PLUGIN_NAME << ": " << msg
 #define GZWARN(msg) gzwarn << PLUGIN_NAME << ": " << msg
@@ -104,13 +104,19 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
   }
 
   // if the optional spawn_spacing parameter is present, generate spawn points
+  double spawn_spacing;
   if (sdf->HasElement("spawn_spacing")) {
-    double spacing = sdf->Get<double>("spawn_spacing");
-    const auto additional_spawns = static_cast<int>((SCOOP_WIDTH - spacing)
-                                                    / (2 * spacing));
+    spawn_spacing = sdf->Get<double>("spawn_spacing");
+    if (spawn_spacing < 0.0) {
+      GZERR("Spawn spacing must be positive." << endl);
+      return;
+    }
+    const auto additional_spawns = static_cast<int>(
+      (SCOOP_WIDTH - spawn_spacing) / (2 * spawn_spacing)
+    );
     for (int i = 0; i < additional_spawns; ++i) {
       // populate both sides of the central spawn point with additional points
-      Vector3d dy(0.0f, (i + 1) * static_cast<float>(spacing), 0.0f);
+      Vector3d dy(0.0f, (i + 1) * static_cast<float>(spawn_spacing), 0.0f);
       m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET + dy);
       m_spawn_offsets.push_back(SCOOP_SPAWN_OFFSET - dy);
     }
@@ -131,8 +137,21 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
     return;
   }
   
-  // acquire gravity constant from gazebo
-  m_world_gravity_mag = model->GetWorld()->Gravity().Length();
+  // compute acceleration to keep particle of any mass in scoop
+  m_pushback_accel_mag = model->GetWorld()->Gravity().Length()
+                         * PUSHBACK_FORCE_WEIGHT_FACTOR;
+
+  // Compute the time it takes for a regolith particle to exit the spawn volume
+  // under a constant pushback acceleration using the second degree kinematic
+  // polynomial 2x=at^2; where x is the distance traveled, a is the pushback
+  // acceleration, and t is the time interval we solve for. This interval is an
+  // overestimate since the spawn volume will typically move along with the
+  // scoop and in the opposite direction of the pushback acceleration.
+  m_spawn_overlap_interval = ros::Duration(
+    sqrt((2 * spawn_spacing) / m_pushback_accel_mag)
+  );
+
+  m_time_of_last_central_spawn = ros::Time::now();
 
   //// setup ROS facilities
   // advertise services served by this class
@@ -164,7 +183,7 @@ void RegolithPlugin::resetDisplacedBulk()
   m_bulk_displaced.clear();
 }
 
-void RegolithPlugin::clearAllPsuedoForces()
+void RegolithPlugin::clearAllPushbackForces()
 {
   m_model_pool.clearAllForces();
 }
@@ -224,6 +243,18 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
 {
   const Vector3d SCOOP_FORWARD(1.0, 0.0, 0.0);
 
+  // auto scoop_pose = m_scoop_link->WorldPose();
+
+  // Vector3d scoop_heading{scoop_pose.Rot().RotateVector(SCOOP_FORWARD)};
+  // Vector3d scoop_displacement{scoop_pose.Pos() - m_prior_scoop_dig_position};
+  // if (scoop_heading.Dot(scoop_displacement.Normalized()) < 0.0) {
+  //   // scoop is not moving fast enough to collect more regolith, do not spawn more
+  //   GZWARN("Scoop is stalling!" << endl);
+  //   return;
+  // }
+
+  // m_prior_scoop_dig_position = scoop_pose.Pos();
+
   m_bulk_displaced.mix(ow_materials::Bulk(*bulk));
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
@@ -232,11 +263,6 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
     // Once volume is less than threshold, this function has done its job,
     if (m_bulk_displaced.getVolume() < m_spawn_threshold) {
       return;
-    }
-    // select spawn offset and wrap from end to beginning
-    auto offset = *(m_spawn_offset_selector++);
-    if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
-      m_spawn_offset_selector = m_spawn_offsets.begin();
     }
     // reduce tracked bulk by the threshold
     double particle_volume = m_bulk_displaced.reduce(m_spawn_threshold);
@@ -253,6 +279,26 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
             " MaterialRangeError: " << e.what() << endl);
       return;
     }
+
+    if (ros::Time::now() - m_time_of_last_central_spawn
+          <= m_spawn_overlap_interval) {
+      // Regolith is being spawned too rapidly and spawning more now may cause a
+      // a particle to spawn inside of another particle. This check serves the
+      // additional benefit of throttling API calls, which may cause a Gazebo
+      // crash if called too rapidly.
+      GZWARN(
+        "Regolith particle spawn skipped to avoid particle overlap." << endl);
+      return;
+    }
+
+    // select spawn offset and wrap from end to beginning
+    auto offset = *(m_spawn_offset_selector++);
+    if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
+      m_spawn_offset_selector = m_spawn_offsets.begin();
+      // reset time of central spawn to track how fast regolith spawns are
+      // using up space in the spawning region
+      m_time_of_last_central_spawn = ros::Time::now();
+    }
     // spawn in particle pool
     auto model_name = m_model_pool.spawn(offset, SCOOP_LINK_NAME.data(),
                                          particle_bulk, mass);
@@ -260,15 +306,14 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
       GZERR("Failed to spawn regolith particle!" << endl);
       continue;
     }
-    // if scoop is retracting, psuedo forces are not need
-    if (m_psuedo_force_required) {
-      // compute psuedo force direction from scoop orientation
+    // if scoop is retracting, push back forces is not need
+    if (m_pushback_force_required) {
+      // compute push back force direction from scoop orientation
       const Quaterniond scoop_orientation = m_scoop_link->WorldPose().Rot();
       Vector3d scooping_direction = scoop_orientation * SCOOP_FORWARD;
       scooping_direction.Z() = 0.0; // flatten against X-Y plane
-      double psuedo_force_mag = mass * m_world_gravity_mag
-                                * PSUEDO_FORCE_WEIGHT_FACTOR;
-      Vector3d pushback = -psuedo_force_mag * scooping_direction.Normalized();
+      double pushback_force_mag = mass * m_pushback_accel_mag;
+      Vector3d pushback = -pushback_force_mag * scooping_direction.Normalized();
       if (!m_model_pool.applyMaintainedForce(model_name, pushback)) {
         GZERR("Failed to apply force to regolith " << model_name << endl);
       }
@@ -290,19 +335,19 @@ void RegolithPlugin::onDigPhaseMsg(
 {
   using ow_dynamic_terrain::scoop_dig_phase;
   m_scoop_is_digging = msg->phase != scoop_dig_phase::NOT_DIGGING;
-  m_psuedo_force_required = msg->phase == scoop_dig_phase::SINKING ||
-                            msg->phase == scoop_dig_phase::PLOWING;
+  m_pushback_force_required = msg->phase == scoop_dig_phase::SINKING ||
+                              msg->phase == scoop_dig_phase::PLOWING;
   switch (msg->phase) {
     // do nothing phases
     case scoop_dig_phase::SINKING:
     case scoop_dig_phase::PLOWING:
       break;
     case scoop_dig_phase::RETRACTING:
-      clearAllPsuedoForces();
+      clearAllPushbackForces();
       break;
     case scoop_dig_phase::NOT_DIGGING:
       resetDisplacedBulk();
-      clearAllPsuedoForces();
+      clearAllPushbackForces();
       break;
     default:
       GZERR("Unhandled dig state received. This should never happen!" << endl);

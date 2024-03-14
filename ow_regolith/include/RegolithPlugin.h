@@ -49,8 +49,8 @@ public:
   // reset displaced bulk so that it is empty
   void resetDisplacedBulk();
 
-  // clear any psuedo forces acting on regolith
-  void clearAllPsuedoForces();
+  // clear any push back forces acting on regolith
+  void clearAllPushbackForces();
 
   // service callback for spawnRegolithInScoop
   bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
@@ -98,26 +98,31 @@ private:
   // If true, the scoop is performing a dig motion. Based on the value of
   // the dig phase message.
   bool m_scoop_is_digging = false;
-
-  // If true, a pseudo force will be applied to spawned particles to keep them
-  // in the scoop. Determined based on the dig phase.
-  bool m_psuedo_force_required = false;
-
+  // If true, a push back force will be applied to spawned particles to keep
+  // them in the scoop. Determined based on the dig phase.
+  bool m_pushback_force_required = false;
   // sequence number of mod diff visual message
   std::uint32_t m_next_expected_seq = 0u;
-
   // spawns, removes, and applies forces to spawned models
   ParticlePool m_model_pool;
-
   // allows for look up of material properties
   ow_materials::MaterialDatabase m_material_db;
-
-  // Forces processBulkExcavation to occur synchronously even if message arrivals
-  // overlap.
+  // Forces processBulkExcavation to occur synchronously even if message
+  // arrivals overlap.
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
+  // Acceleration applied to newly spawned particles during scooping to keep
+  // them in the scoop.
+  double m_pushback_accel_mag;
+  // Tracks the rate at which spawn occur so spawns don't overlap
+  ros::Time m_time_of_last_central_spawn;
+  // The time it takes for a particle to exit the spawn volume under the
+  // pushback acceleration.
+  ros::Duration m_spawn_overlap_interval;
 
-  // magnitude of the world's acceleration due to gravity vector
-  double m_world_gravity_mag;
+
+  // ignition::math::Vector3d m_prior_scoop_dig_position;
+
+
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;
   // list of spawn positions relative to scoop link
