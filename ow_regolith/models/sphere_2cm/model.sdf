@@ -29,6 +29,7 @@
         </geometry>
         <surface>
           <contact>
+            <collide_bitmask>0x0002</collide_bitmask>
             <poissons_ratio>0.36</poissons_ratio>
           </contact>
           <friction>
