@@ -49,9 +49,6 @@ public:
   // reset displaced bulk so that it is empty
   void resetDisplacedBulk();
 
-  // clear any push back forces acting on regolith
-  void clearAllPushbackForces();
-
   // service callback for spawnRegolithInScoop
   bool spawnRegolithSrv(ow_regolith::SpawnRegolithRequest &request,
                         ow_regolith::SpawnRegolithResponse &response);
@@ -110,18 +107,15 @@ private:
   // Forces processBulkExcavation to occur synchronously even if message
   // arrivals overlap.
   SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
-  // Acceleration applied to newly spawned particles during scooping to keep
-  // them in the scoop.
-  double m_pushback_accel_mag;
+
+  // Speed that will be given to regolith spawned by terrain interaction in the
+  // opposite direction of scoop movement in the x-y plane.
+  double m_regolith_spawn_velocity;
   // Tracks the rate at which spawn occur so spawns don't overlap
   ros::Time m_time_of_last_central_spawn;
   // The time it takes for a particle to exit the spawn volume under the
-  // pushback acceleration.
+  // the spawn velocity.
   ros::Duration m_spawn_overlap_interval;
-
-
-  // ignition::math::Vector3d m_prior_scoop_dig_position;
-
 
   // regolith will spawn once this amount of volume is displaced
   double m_spawn_threshold;

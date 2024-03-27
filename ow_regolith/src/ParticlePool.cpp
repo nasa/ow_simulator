@@ -93,7 +93,7 @@ string ParticlePool::spawn(const Vector3d &position,
   // ensure each created particle has a unique name
   static unsigned int spawn_count = 0u;
   stringstream ss;
-  ss << "regolith_" << spawn_count++;
+  ss << m_name << "_" << spawn_count++;
   const auto name = ss.str();
   // set model name
   m_sdf_name->Set(name);
@@ -157,7 +157,7 @@ ow_materials::Bulk ParticlePool::removeAndConsolidate(
       gzwarn << "Particle " << name << " not present. Nothing removed." << endl;
       continue;
     }
-    consolidated.mix(particle_it->second.bulk);
+    consolidated.mix(particle_it->second);
     removeParticle(particle_it);
   }
   return consolidated;
@@ -186,52 +186,38 @@ void ParticlePool::clear() {
   m_active_models.clear();
 }
 
-bool ParticlePool::applyMaintainedForce(const string &model_name,
-                                        const Vector3d &force) {
+bool ParticlePool::setParticleVelocity(const string &model_name,
+                                       const Vector3d &velocity) {
   if (!isInitialized()) {
     gzerr << NOT_INITIALIZED_ERR << endl;
     return false;
   }
-  try {
-    auto &particle = m_active_models.at(model_name);
-    particle.force_applied = true;
-    particle.force = force;
-  } catch (std::out_of_range err) {
-    gzerr << "Attempted to apply force to link that does not exist." << endl;
+  auto particle = m_active_models.find(model_name);
+  if (particle == m_active_models.end()) {
+    gzerr << "Attempted to set the velocity of a particle that does not exist."
+          << endl;
     return false;
   }
+  m_set_velocity_queue.emplace(std::make_pair(model_name, velocity));
   return true;
 }
 
-void ParticlePool::clearAllForces()
+void ParticlePool::onUpdate()
 {
-  if (!isInitialized()) {
-    gzerr << NOT_INITIALIZED_ERR << endl;
-    return;
-  }
-  for (auto &particle : m_active_models) {
-    particle.second.force_applied = false;
-  }
-}
-
-void ParticlePool::onUpdate() const
-{
-  for (auto const &particle : m_active_models) {
-    if (particle.second.force_applied) {
-      auto model = m_world->ModelByName(particle.first);
-      if (!model) {
-        // NOTE: Models take several updates before they appear in the world's
-        // model list. As a result, not finding the model should not result in a
-        // warning/error.
-        continue;
-      }
-      auto link = model->GetChildLink("link");
-      if (!link) {
-        gzwarn << "Regolith model " << particle.first
-               << " has no link." << endl;
-        continue;
-      }
-      link->AddLinkForce(particle.second.force);
+  while (!m_set_velocity_queue.empty()) {
+    const auto &model_name = m_set_velocity_queue.front().first;
+    const auto &velocity = m_set_velocity_queue.front().second;
+    auto model = m_world->ModelByName(model_name);
+    if (!model) {
+      // NOTE: Models take several updates before they appear in the world's
+      // model list. As a result, not finding the model should not result in a
+      // warning/error.
+      // If the first-in of the queue is not yet appearing in the model list
+      // there is no reason to think the others would be appearing. Break out
+      // of the queue and reattempt in the next loop.
+      break;
     }
+    model->SetLinearVel(velocity);
+    m_set_velocity_queue.pop();
   }
 }

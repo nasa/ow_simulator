@@ -20,7 +20,8 @@ using namespace ow_dynamic_terrain;
 
 using namespace std::literals;
 
-using std::string, std::string_view, std::endl, std::runtime_error, std::sqrt;
+using std::string, std::string_view, std::endl, std::runtime_error, std::sqrt,
+      std::abs;
 
 using ignition::math::Vector3d, ignition::math::Quaterniond;
 
@@ -48,12 +49,6 @@ constexpr string_view SCOOP_LINK_NAME{"lander::l_scoop_tip"};
 //  DockIngestSample.
 const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
 
-// set the maximum scoop inclination that the push back force can counteract
-constexpr auto MAX_SCOOP_INCLINATION_DEG = 80.0; // degrees
-constexpr auto MAX_SCOOP_INCLINATION_RAD = MAX_SCOOP_INCLINATION_DEG * M_PI
-                                           / 180.0; // radians
-constexpr auto PUSHBACK_FORCE_WEIGHT_FACTOR = sin(MAX_SCOOP_INCLINATION_RAD);
-
 #define GZERR(msg) gzerr << PLUGIN_NAME << ": " << msg
 #define GZWARN(msg) gzwarn << PLUGIN_NAME << ": " << msg
 #define GZMSG(msg) gzmsg << PLUGIN_NAME << ": " << msg
@@ -80,7 +75,6 @@ static T get_required_parameter(sdf::ElementPtr sdf, string_view name)
 void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
 {
   constexpr string_view LANDER_MODEL_NAME{"lander"};
-  constexpr string_view REGOLITH_TAG{"regolith"};
   constexpr double SCOOP_WIDTH{0.08}; // meters
 
   m_node_handle = std::make_unique<ros::NodeHandle>(PLUGIN_NAME.data());
@@ -137,19 +131,23 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
     return;
   }
   
-  // compute acceleration to keep particle of any mass in scoop
-  m_pushback_accel_mag = model->GetWorld()->Gravity().Length()
-                         * PUSHBACK_FORCE_WEIGHT_FACTOR;
-
-  // Compute the time it takes for a regolith particle to exit the spawn volume
-  // under a constant pushback acceleration using the second degree kinematic
-  // polynomial 2x=at^2; where x is the distance traveled, a is the pushback
-  // acceleration, and t is the time interval we solve for. This interval is an
-  // overestimate since the spawn volume will typically move along with the
-  // scoop and in the opposite direction of the pushback acceleration.
-  m_spawn_overlap_interval = ros::Duration(
-    sqrt((2 * spawn_spacing) / m_pushback_accel_mag)
+  // Compute the initial velocity a regolith particle will need to reach the
+  // rear of the scoop around the same time it falls to the floor of the scoop.
+  const double LENGTH_OF_SCOOP_FLOOR = 0.116; // meters
+  const double SPAWN_HEIGHT_ABOVE_SCOOP_FLOOR = 0.05;
+  m_regolith_spawn_velocity = LENGTH_OF_SCOOP_FLOOR * sqrt(
+    abs(model->GetWorld()->Gravity().Length())
+    / (2 * SPAWN_HEIGHT_ABOVE_SCOOP_FLOOR)
   );
+
+  // Compute the time it takes for a particle moving under the above velocity
+  // to exit the spawn volume. This tells us how frequently we can spawn a
+  // particle at a given spawn location without causing overlap.
+  m_spawn_overlap_interval = m_regolith_spawn_velocity > 0.0 ?
+    ros::Duration(
+      spawn_spacing / m_regolith_spawn_velocity
+    )
+    : ros::Duration(0.0);
 
   m_time_of_last_central_spawn = ros::Time::now();
 
@@ -181,11 +179,6 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
 void RegolithPlugin::resetDisplacedBulk()
 {
   m_bulk_displaced.clear();
-}
-
-void RegolithPlugin::clearAllPushbackForces()
-{
-  m_model_pool.clearAllForces();
 }
 
 bool RegolithPlugin::spawnRegolithSrv(SpawnRegolithRequest &request,
@@ -243,18 +236,6 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
 {
   const Vector3d SCOOP_FORWARD(1.0, 0.0, 0.0);
 
-  // auto scoop_pose = m_scoop_link->WorldPose();
-
-  // Vector3d scoop_heading{scoop_pose.Rot().RotateVector(SCOOP_FORWARD)};
-  // Vector3d scoop_displacement{scoop_pose.Pos() - m_prior_scoop_dig_position};
-  // if (scoop_heading.Dot(scoop_displacement.Normalized()) < 0.0) {
-  //   // scoop is not moving fast enough to collect more regolith, do not spawn more
-  //   GZWARN("Scoop is stalling!" << endl);
-  //   return;
-  // }
-
-  // m_prior_scoop_dig_position = scoop_pose.Pos();
-
   m_bulk_displaced.mix(ow_materials::Bulk(*bulk));
   // Use a for-loop so a maximum number of iterations can be enforced. The
   // maximum iteration is the number of unique spawns, so that more than one
@@ -290,7 +271,6 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
         "Regolith particle spawn skipped to avoid particle overlap." << endl);
       return;
     }
-
     // select spawn offset and wrap from end to beginning
     auto offset = *(m_spawn_offset_selector++);
     if (m_spawn_offset_selector ==  m_spawn_offsets.end()) {
@@ -306,17 +286,15 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
       GZERR("Failed to spawn regolith particle!" << endl);
       continue;
     }
-    // if scoop is retracting, push back forces is not need
-    if (m_pushback_force_required) {
-      // compute push back force direction from scoop orientation
-      const Quaterniond scoop_orientation = m_scoop_link->WorldPose().Rot();
-      Vector3d scooping_direction = scoop_orientation * SCOOP_FORWARD;
-      scooping_direction.Z() = 0.0; // flatten against X-Y plane
-      double pushback_force_mag = mass * m_pushback_accel_mag;
-      Vector3d pushback = -pushback_force_mag * scooping_direction.Normalized();
-      if (!m_model_pool.applyMaintainedForce(model_name, pushback)) {
-        GZERR("Failed to apply force to regolith " << model_name << endl);
-      }
+
+    const Quaterniond scoop_orientation = m_scoop_link->WorldPose().Rot();
+    Vector3d scooping_direction = scoop_orientation * SCOOP_FORWARD;
+    scooping_direction.Z() = 0.0; // flatten against X-Y plane
+    const Vector3d velocity = -m_regolith_spawn_velocity
+                               * scooping_direction.Normalized();
+
+    if (!m_model_pool.setParticleVelocity(model_name, velocity)) {
+      GZERR("Failed to set velocity for regolith " << model_name << endl);
     }
   }
   // The nominal behavior of the previous loop is to return from inside.
@@ -335,19 +313,14 @@ void RegolithPlugin::onDigPhaseMsg(
 {
   using ow_dynamic_terrain::scoop_dig_phase;
   m_scoop_is_digging = msg->phase != scoop_dig_phase::NOT_DIGGING;
-  m_pushback_force_required = msg->phase == scoop_dig_phase::SINKING ||
-                              msg->phase == scoop_dig_phase::PLOWING;
   switch (msg->phase) {
     // do nothing phases
     case scoop_dig_phase::SINKING:
     case scoop_dig_phase::PLOWING:
-      break;
     case scoop_dig_phase::RETRACTING:
-      clearAllPushbackForces();
       break;
     case scoop_dig_phase::NOT_DIGGING:
       resetDisplacedBulk();
-      clearAllPushbackForces();
       break;
     default:
       GZERR("Unhandled dig state received. This should never happen!" << endl);

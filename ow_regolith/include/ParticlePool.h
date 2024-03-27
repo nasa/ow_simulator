@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <queue>
+#include <utility>
 
 #include "ignition/math/Vector3.hh"
 #include "gazebo/physics/physics.hh"
@@ -49,19 +51,16 @@ public:
   // remove all models in pool
   void clear();
 
-  // applies of force to the specified link
-  bool applyMaintainedForce(const std::string &link_name,
-                            const ignition::math::Vector3d &force);
-
-  // clears all forces acting on all active models
-  void clearAllForces();
+  // sets the velocity of a particle by its model name
+  bool setParticleVelocity(const std::string &model_name,
+                           const ignition::math::Vector3d &velocity);
 
 private:
   inline bool isInitialized() {
     return m_initialized;
   }
 
-  void onUpdate() const;
+  void onUpdate();
 
   bool m_initialized = false;
 
@@ -78,27 +77,15 @@ private:
   sdf::ParamPtr  m_sdf_name;
   sdf::ElementPtr m_sdf_pose;
   sdf::ElementPtr m_sdf_mass;
-  
-  struct Particle {
-    Particle(ow_materials::Bulk bulk_)
-      : bulk(bulk_), force_applied(false), force(ignition::math::Vector3d::Zero)
-    {
-      // do nothing
-    }
-    Particle() = delete;
-    Particle(const Particle&) = delete;
-    Particle& operator=(const Particle&) = delete;
 
-    const ow_materials::Bulk bulk;
-    bool force_applied;
-    ignition::math::Vector3d force;
-  };
-
-  using PoolType = std::unordered_map<std::string, Particle>;
+  using PoolType = std::unordered_map<std::string, ow_materials::Bulk>;
 
   void removeParticle(const PoolType::iterator it);
 
-   PoolType m_active_models;
+  PoolType m_active_models;
+
+  std::queue<std::pair<std::string, ignition::math::Vector3d>>
+    m_set_velocity_queue;
 };
 
 } // namespace ow_regolith
