@@ -10,11 +10,11 @@
 #include <memory>
 #include <regex>
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/common/common.hh>
-#include <gazebo/sensors/sensors.hh>
+#include "gazebo/gazebo.hh"
+#include "gazebo/common/common.hh"
+#include "gazebo/sensors/sensors.hh"
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 
 namespace ow_regolith {
 
@@ -25,7 +25,7 @@ class ContactSensorPlugin : public gazebo::SensorPlugin
 {
 public:
   ContactSensorPlugin()
-    : SensorPlugin(), m_links_in_contact(), m_report_only_set(false) { };
+    : SensorPlugin(), m_models_in_contact(), m_report_only_set(false) { };
   ~ContactSensorPlugin() = default;
 
   ContactSensorPlugin(const ContactSensorPlugin&) = delete;
@@ -36,7 +36,7 @@ public:
 private:
   void onUpdate();
 
-  std::set<std::string> m_links_in_contact;
+  std::set<std::string> m_models_in_contact;
 
   bool m_report_only_set;
   std::regex m_report_only;

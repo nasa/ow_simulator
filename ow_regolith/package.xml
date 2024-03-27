@@ -1,10 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>ow_regolith</name>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <description>
-    <p>A node that listens for an image that indicates deformation of the terrain has occured and
-  spawns regolith simulating rigidbodies into the world to simulate the collection of material with a scoop.</p>
+    <p>
+      A node that spawns regolith simulated as rigid-bodies into the world in
+      response to BulkExcavation messages.
+    </p>
   </description>
 
   <!-- One maintainer tag required, multiple allowed, one person per --> 
@@ -20,11 +22,13 @@
   <!-- <depend>gazebo_ros</depend> -->
 
   <buildtool_depend>catkin</buildtool_depend>
-  
+
+
   <depend>roscpp</depend>
   <depend>gazebo</depend>
   <depend>gazebo_ros</depend>
   <depend>ow_dynamic_terrain</depend>
+  <depend>ow_materials</depend>
   <depend>cv_bridge</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>

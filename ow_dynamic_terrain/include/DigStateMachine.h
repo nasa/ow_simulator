@@ -11,18 +11,27 @@
 #include <string>
 #include <memory>
 #include <optional>
+#include <functional>
 
-namespace ow_regolith {
+namespace ow_dynamic_terrain {
 
-class RegolithSpawner;
+enum DigStateId {
+  NOT_DIGGING,
+  SINKING,
+  PLOWING,
+  RETRACTING
+};
 
-// Defines a finite state machine and associated states that estimate the phase
-// of a digging operation performed with the lander scoop.
+using StateTransitionCallback = std::function<void(DigStateId)>;
+
 class DigStateMachine
 {
+
+// Defines a finite state machine, associated states, and allowed transitions
+// for the purpose of identifying dig operations performed by the lander scoop.
+
 public:
-  DigStateMachine(std::shared_ptr<ros::NodeHandle> node_handle,
-                  RegolithSpawner *const spawner);
+  DigStateMachine(ros::NodeHandle *node_handle, StateTransitionCallback cb);
   ~DigStateMachine() = default;
 
   DigStateMachine() = delete;
@@ -30,38 +39,51 @@ public:
   DigStateMachine& operator=(const DigStateMachine&) = delete;
 
   // external events propogate to states via these functions
-  void handleTerrainModified();
-  void handleScoopPoseUpdate(const tf::Quaternion &new_orientation);
-
-  bool isDigging() const {
-    return m_current != m_not_digging.get();
-  };
-
-  bool isRetracting() const {
-    return m_current == m_retracting.get();
-  }
+  void handleScoopPoseUpdate(const tf::Pose &new_pose);
 
 private:
+
   // external interface pointers
-  std::shared_ptr<ros::NodeHandle> m_node_handle;
-  RegolithSpawner *const m_spawner;
+  ros::NodeHandle *m_node_handle;
 
-  // stores the dot product between the world's downward unit vector and the
-  // scoop's downward unit vector
-  tfScalar m_downward_projection;
+  // call whenever a state transition occurs
+  StateTransitionCallback m_transition_cb;
 
-  // points along the downward projection curve where state changes occur
+  // historic state variables to compute scoop velocity
+  tf::Vector3 m_prev_scoop_position;
+  ros::Time m_prev_position_update_time;
+
+  // collections of variables DigStates reference for state transition logic
+  struct {
+    // Dot product between scoop bottom's normal and the world's downward
+    // unit vector
+    tfScalar bottom_projection;
+    // The scoop's forward facing normal in world coordinates
+    tf::Vector3 forward;
+    // True if scoop's velocity is nearly in the same direction as forward
+    bool moving_forward;
+  } m_scoop_state;
+
+  // A collection of dot product thresholds that define transition points along
+  // the downward projection curve where start transitions occur
   static const tfScalar THRESHOLD_SINK;
   static const tfScalar THRESHOLD_PLOW;
   static const tfScalar THRESHOLD_RETRACT;
 
-  // maximum time a state can exist before it transitions to NOT_DIGGING
+  // Maximum allowed dot product between normalized movement and the scoop
+  // forward vector that can be considered a forward movement
+  static const tfScalar THRESHOLD_FORWARD_MOVE;
+  // scoop speed threshold; below is consider stationary and above is moving
+  static const tfScalar THRESHOLD_SPEED;
+
+  // maximum time a state can be inhabited before it transitions to NOT_DIGGING
   static const ros::Duration TIMEOUT_SINK;
   static const ros::Duration TIMEOUT_PLOW;
   static const ros::Duration TIMEOUT_RETRACT;
 
   // unit vectors describing scoop and world orientation
   static const tf::Vector3 SCOOP_DOWNWARD;
+  static const tf::Vector3 SCOOP_FORWARD;
   static const tf::Vector3 WORLD_DOWNWARD;
 
   // Defines an abstract base class for DigStates. Supports (state) enter and
@@ -69,13 +91,13 @@ private:
   class DigState
   {
   public:
-    DigState(const std::string &name, DigStateMachine *const c)
-      : m_name(name), m_context(c),
+    DigState(DigStateId id, DigStateMachine *const c)
+      : m_id(id), m_context(c),
         m_timeout(std::nullopt) // timeout will not be used
     { };
-    DigState(const std::string &name, DigStateMachine *const c,
+    DigState(DigStateId id, DigStateMachine *const c,
              const ros::Duration &interval)
-      : m_name(name), m_context(c),
+      : m_id(id), m_context(c),
         m_timeout(
           c->m_node_handle->createTimer(
             interval, &DigState::onTimeout, this, true, false
@@ -88,11 +110,10 @@ private:
     DigState(const DigState&) = delete;
     DigState& operator=(const DigState&) = delete;
 
-    const std::string& getName() const {return m_name;}
+    const DigStateId m_id;
 
     // external events derived DigStates will handle or ignore
-    virtual void terrainModified() { };
-    virtual void scoopPoseUpdate() { };
+    virtual void scoopStateUpdated() { };
 
     // called when a start becomes active
     virtual void enter() {
@@ -107,8 +128,8 @@ private:
 
   protected:
     DigStateMachine *const m_context;
+
   private:
-    const std::string m_name;
     std::optional<ros::Timer> m_timeout;
   };
 
@@ -119,9 +140,8 @@ private:
   {
   public:
     NotDiggingState(DigStateMachine *c)
-      : DigState("NotDigging", c) { };
-    void terrainModified() override;
-    void enter() override;
+      : DigState(DigStateId::NOT_DIGGING, c) { };
+    void scoopStateUpdated() override;
   };
 
   // The Sinking state indicates the scoop is digging downward into terrain.
@@ -131,33 +151,32 @@ private:
   {
   public:
     SinkingState(DigStateMachine *c)
-      : DigState("Sinking", c, TIMEOUT_SINK) { };
-    void scoopPoseUpdate() override;
+      : DigState(DigStateId::SINKING, c, TIMEOUT_SINK) { };
+    void scoopStateUpdated() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 
-  // The Plowing state indicates the scoop is plowing the terrian along the
+  // The Plowing state indicates the scoop is plowing the terrain along the
   // the horizontal. Transitions to the Retracting state when the scoop tip
   // pitches upward, or transitions into NotDigging when it times out.
   class PlowingState : public DigState
   {
   public:
     PlowingState(DigStateMachine *c)
-      : DigState("Plowing", c, TIMEOUT_PLOW) { };
-    void scoopPoseUpdate() override;
+      : DigState(DigStateId::PLOWING, c, TIMEOUT_PLOW) { };
+    void scoopStateUpdated() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 
-  // The Retracting state indicates the scoop is pitching upward and exitting
+  // The Retracting state indicates the scoop is pitching upward and exiting
   // the terrain. Transitions to the NotDigging state when the scoop rotates
   // into a non-digging orientation, or when it times out.
   class RetractingState : public DigState
   {
   public:
     RetractingState(DigStateMachine *c)
-      : DigState("Retracting", c, TIMEOUT_RETRACT) { };
-    void scoopPoseUpdate() override;
-    void enter() override;
+      : DigState(DigStateId::RETRACTING, c, TIMEOUT_RETRACT) { };
+    void scoopStateUpdated() override;
     void onTimeout(const ros::TimerEvent&) override;
   };
 

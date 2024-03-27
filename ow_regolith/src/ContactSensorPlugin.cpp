@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <vector>
 
-#include <ow_regolith/Contacts.h>
+#include "ow_regolith/Contacts.h"
 
-#include <ContactSensorPlugin.h>
+#include "ContactSensorPlugin.h"
 
 using namespace ow_regolith;
 
@@ -35,7 +35,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
   m_parent_sensor =
     dynamic_pointer_cast<sensors::ContactSensor>(sensor);
   if (!m_parent_sensor)
-    gzthrow(PLUGIN_NAME << ": requires a sensor of type conatact as a parent");
+    gzthrow("A sensor of type contact is required as the parent.");
   m_update_connection = m_parent_sensor->ConnectUpdated(
     bind(&ContactSensorPlugin::onUpdate, this)
   );
@@ -44,7 +44,7 @@ void ContactSensorPlugin::Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf)
 
   // get plugin parameters
   if (!sdf->HasElement(PARAMETER_TOPIC)) // required
-    gzthrow(PLUGIN_NAME << ": Contacts report topic must be defined");
+    gzthrow("Contacts report topic is required.");
   auto topic = sdf->Get<string>(PARAMETER_TOPIC);
   if (sdf->HasElement(PARAMETER_REPORT_ONLY)) { // optional
     m_report_only_set = true;
@@ -76,18 +76,20 @@ void ContactSensorPlugin::onUpdate()
       continue;
     const auto link = contact.second.collision1->GetLink();
     const auto model = contact.second.collision1->GetModel();
-    const auto link_name = model->GetName() + "::" + link->GetName();
-    if (m_report_only_set && !regex_match(link_name, m_report_only))
+    const auto model_name = model->GetName();
+    if (m_report_only_set && !regex_match(model_name, m_report_only))
       continue;
-    current_contacts.emplace(link_name);
+    current_contacts.emplace(model_name);
   }
 
   // publish only if the list of links in contact with sensor has changed
-  if (m_links_in_contact != current_contacts) {
-    m_links_in_contact = current_contacts;
+  if (m_models_in_contact != current_contacts) {
+    m_models_in_contact = current_contacts;
     // publish list of all contacts
     Contacts msg;
-    msg.link_names = vector(begin(m_links_in_contact), end(m_links_in_contact));
+    msg.model_names = vector(
+      begin(m_models_in_contact), end(m_models_in_contact)
+    );
     m_pub_contacts.publish(msg);
   }
 }

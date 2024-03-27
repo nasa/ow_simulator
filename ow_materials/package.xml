@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ow_materials</name>
+  <version>0.1.0</version>
+  <description>
+    <p>A Gazebo plugin that distributes a multitude of materials throughout a
+    terrain that alter the terrain visually and terramechanically when operated
+    on by an end-effector.</p>
+  </description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per --> 
+  <maintainer email="thomas.stucky@nasa.gov">Thomas Stucky</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>NASA OPEN SOURCE AGREEMENT VERSION 1.3</license>
+
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <author email="thomas.stucky@nasa.gov">Thomas Stucky</author>
+
+  <!-- The *depend tags are used to specify dependencies -->
+  <!-- <depend>gazebo_ros</depend> -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>message_generation</build_depend>
+
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>gazebo</depend>
+  <depend>pcl_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>ow_dynamic_terrain</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+</package>
