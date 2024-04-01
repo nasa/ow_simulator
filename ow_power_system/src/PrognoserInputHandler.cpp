@@ -136,11 +136,12 @@ void PrognoserInputHandler::applyValueMods(double& power,
 
 double PrognoserInputHandler::electricalPower () const
 {
-  return
-    // Power consumption of joints (arm, antenna)
-    m_mechanical_power_to_be_processed / m_efficiency +
-    // Power consumption of other systems (more to be added)
-    electricalPowerLights();
+ return (
+   // Power consumption of joints (arm, antenna)
+   m_mechanical_power_to_be_processed / m_efficiency +
+   // Power consumption of other systems (more to be added)
+   electricalPowerLights()
+ );
 }
 
 double PrognoserInputHandler::electricalPowerLights () const
