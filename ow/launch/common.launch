@@ -28,7 +28,7 @@
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="$(arg gzclient)"/>
     <arg name="headless" value="false"/>
-    <arg name="debug" value="true"/>
+    <arg name="debug" value="false"/>
     <arg name="verbose" value="true"/>
     <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
   </include>
