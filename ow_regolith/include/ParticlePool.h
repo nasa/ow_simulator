@@ -56,15 +56,16 @@ public:
                            const ignition::math::Vector3d &velocity);
 
 private:
+
+  bool m_initialized = false;
   inline bool isInitialized() {
     return m_initialized;
   }
 
-  void onUpdate();
-
-  bool m_initialized = false;
-
-  gazebo::event::ConnectionPtr m_update_event;
+  void onBeforePhysicsUpdate();
+  void onWorldUpdateBegin();
+  gazebo::event::ConnectionPtr m_before_physics_update_connection;
+  gazebo::event::ConnectionPtr m_world_update_begin_connection;
 
   gazebo::physics::WorldPtr m_world;
 
@@ -80,12 +81,14 @@ private:
 
   using PoolType = std::unordered_map<std::string, ow_materials::Bulk>;
 
-  void removeParticle(const PoolType::iterator it);
+  void queueParticleForRemoval(PoolType::iterator it);
 
   PoolType m_active_models;
 
   std::queue<std::pair<std::string, ignition::math::Vector3d>>
     m_set_velocity_queue;
+
+  std::queue<std::string> m_remove_queue;
 };
 
 } // namespace ow_regolith

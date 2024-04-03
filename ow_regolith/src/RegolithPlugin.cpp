@@ -54,7 +54,7 @@ const ros::Duration CONSOLIDATE_INGESTED_TIMEOUT = ros::Duration(3.0);
 #define GZMSG(msg) gzmsg << PLUGIN_NAME << ": " << msg
 
 RegolithPlugin::RegolithPlugin() : m_spawn_offsets(1, SCOOP_SPAWN_OFFSET),
-    m_queue(std::bind(&RegolithPlugin::processBulkExcavation, this,
+    m_task_queue(std::bind(&RegolithPlugin::processBulkExcavation, this,
                       std::placeholders::_1))
 {
   // do nothing
@@ -118,7 +118,7 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
   // initialize offset selector
   m_spawn_offset_selector = m_spawn_offsets.begin();
 
-  if (!m_model_pool.initialize("regolith", model->GetWorld(), model_uri)) {
+  if (!m_pool.initialize("regolith", model->GetWorld(), model_uri)) {
     GZERR("ParticlePool failed to connect to gazebo_ros services" << endl);
     return;
   }
@@ -185,27 +185,25 @@ bool RegolithPlugin::spawnRegolithSrv(SpawnRegolithRequest &request,
                                        SpawnRegolithResponse &response)
 {
   Vector3d position(request.position.x, request.position.y, request.position.z);
-  auto ret = m_model_pool.spawn(position, request.reference_frame,
-                                 ow_materials::Bulk());
+  auto ret = m_pool.spawn(position, request.reference_frame,
+                          ow_materials::Bulk());
   response.success = !ret.empty();
   return true;
 }
 
 bool RegolithPlugin::removeRegolithSrv(RemoveRegolithRequest &request,
-                                        RemoveRegolithResponse &)
+                                       RemoveRegolithResponse &)
 {
   if (request.link_names.empty()) {
     // remove all regolith models
-    m_model_pool.clear();
+    m_pool.clear();
   } else {
     // remove specific regolith models
     if (request.ingested) {
-      m_bulk_ingested.mix(
-        m_model_pool.removeAndConsolidate(request.link_names)
-      );
+      m_bulk_ingested.mix(m_pool.removeAndConsolidate(request.link_names));
       resetConsolidatedIngestedTimeout();
     } else {
-      m_model_pool.remove(request.link_names);
+      m_pool.remove(request.link_names);
     }
   }
   return true;
@@ -213,7 +211,10 @@ bool RegolithPlugin::removeRegolithSrv(RemoveRegolithRequest &request,
 
 void RegolithPlugin::onTerrainContact(const Contacts::ConstPtr &msg)
 {
-  m_model_pool.remove(msg->model_names);
+  if (msg->model_names.empty()) {
+    return;
+  }
+  m_pool.remove(msg->model_names);
 }
 
 void RegolithPlugin::onBulkExcavationVisualMsg(
@@ -229,7 +230,7 @@ void RegolithPlugin::onBulkExcavationVisualMsg(
     // do not spawn regolith when the motion does not look like a dig
     return;
   }
-  m_queue.addTask(*msg);
+  m_task_queue.addTask(*msg);
 }
 
 void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
@@ -280,8 +281,8 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
       m_time_of_last_central_spawn = ros::Time::now();
     }
     // spawn in particle pool
-    auto model_name = m_model_pool.spawn(offset, SCOOP_LINK_NAME.data(),
-                                         particle_bulk, mass);
+    auto model_name = m_pool.spawn(offset, SCOOP_LINK_NAME.data(),
+                                   particle_bulk, mass);
     if (model_name.empty()) {
       GZERR("Failed to spawn regolith particle!" << endl);
       continue;
@@ -293,7 +294,7 @@ void RegolithPlugin::processBulkExcavation(ow_materials::BulkExcavation *bulk)
     const Vector3d velocity = -m_regolith_spawn_velocity
                                * scooping_direction.Normalized();
 
-    if (!m_model_pool.setParticleVelocity(model_name, velocity)) {
+    if (!m_pool.setParticleVelocity(model_name, velocity)) {
       GZERR("Failed to set velocity for regolith " << model_name << endl);
     }
   }

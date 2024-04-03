@@ -101,12 +101,12 @@ private:
   // sequence number of mod diff visual message
   std::uint32_t m_next_expected_seq = 0u;
   // spawns, removes, and applies forces to spawned models
-  ParticlePool m_model_pool;
+  ParticlePool m_pool;
   // allows for look up of material properties
   ow_materials::MaterialDatabase m_material_db;
   // Forces processBulkExcavation to occur synchronously even if message
   // arrivals overlap.
-  SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_queue;
+  SingleThreadedTaskQueue<ow_materials::BulkExcavation> m_task_queue;
 
   // Speed that will be given to regolith spawned by terrain interaction in the
   // opposite direction of scoop movement in the x-y plane.

@@ -10,7 +10,7 @@
 using namespace ow_regolith;
 using namespace sdf_utility;
 
-using std::string, std::vector, std::stringstream, std::endl;
+using std::string, std::vector, std::stringstream, std::endl, std::make_pair;
 
 using ignition::math::Vector3d, ignition::math::Quaterniond,
       ignition::math::Pose3d;
@@ -39,9 +39,15 @@ bool ParticlePool::initialize(const string name,
   }
   parseSdf(sdf_string, m_sdf);
 
-  m_update_event = gazebo::event::Events::ConnectBeforePhysicsUpdate(
-    std::bind(&ParticlePool::onUpdate, this)
-  );
+  m_before_physics_update_connection =
+    gazebo::event::Events::ConnectBeforePhysicsUpdate(
+      std::bind(&ParticlePool::onBeforePhysicsUpdate, this)
+    );
+
+  m_world_update_begin_connection =
+    gazebo::event::Events::ConnectWorldUpdateBegin(
+      std::bind(&ParticlePool::onWorldUpdateBegin, this)
+    );
 
   // get sdf attribute pointer for name setting
   auto model_element = m_sdf.Root()->GetElement("model");
@@ -139,7 +145,7 @@ void ParticlePool::remove(const vector<string> &model_names)
       gzwarn << "Particle " << name << " not present. Nothing removed." << endl;
       continue;
     }
-    removeParticle(particle_it);
+    queueParticleForRemoval(particle_it);
   }
 }
 
@@ -158,21 +164,9 @@ ow_materials::Bulk ParticlePool::removeAndConsolidate(
       continue;
     }
     consolidated.mix(particle_it->second);
-    removeParticle(particle_it);
+    queueParticleForRemoval(particle_it);
   }
   return consolidated;
-}
-
-void ParticlePool::removeParticle(const PoolType::iterator it)
-{
-  auto model = m_world->ModelByName(it->first);
-  if (model) {
-    m_world->RemoveModel(model);
-  } else {
-    gzerr << "Model " << it->first << ", staged for removal, could not be "
-             "found in the world." << std::endl;
-  }
-  m_active_models.erase(it);
 }
 
 void ParticlePool::clear() {
@@ -180,10 +174,17 @@ void ParticlePool::clear() {
     gzerr << NOT_INITIALIZED_ERR << endl;
     return;
   }
-  for (auto const &particle : m_active_models) {
-    m_world->RemoveModel(particle.first);
+  for (auto particle_it = m_active_models.begin();
+       particle_it != m_active_models.end(); ++particle_it) {
+    queueParticleForRemoval(particle_it);
   }
   m_active_models.clear();
+}
+
+void ParticlePool::queueParticleForRemoval(PoolType::iterator it)
+{
+  m_remove_queue.emplace(it->first);
+  m_active_models.erase(it);
 }
 
 bool ParticlePool::setParticleVelocity(const string &model_name,
@@ -198,16 +199,22 @@ bool ParticlePool::setParticleVelocity(const string &model_name,
           << endl;
     return false;
   }
-  m_set_velocity_queue.emplace(std::make_pair(model_name, velocity));
+  m_set_velocity_queue.emplace(make_pair(model_name, velocity));
   return true;
 }
 
-void ParticlePool::onUpdate()
+void ParticlePool::onBeforePhysicsUpdate()
 {
   while (!m_set_velocity_queue.empty()) {
     const auto &model_name = m_set_velocity_queue.front().first;
+
+    // TODO 2: try checking if model_name is still contained in the pool map first
+
     const auto &velocity = m_set_velocity_queue.front().second;
     auto model = m_world->ModelByName(model_name);
+
+    // TODO: try connecting this function to the entity created event
+
     if (!model) {
       // NOTE: Models take several updates before they appear in the world's
       // model list. As a result, not finding the model should not result in a
@@ -219,5 +226,13 @@ void ParticlePool::onUpdate()
     }
     model->SetLinearVel(velocity);
     m_set_velocity_queue.pop();
+  }
+}
+
+void ParticlePool::onWorldUpdateBegin()
+{
+  while (!m_remove_queue.empty()) {
+    m_world->RemoveModel(m_remove_queue.front());
+    m_remove_queue.pop();
   }
 }
