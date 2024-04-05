@@ -48,8 +48,6 @@ private:
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
-  double electricalPower() const;
-  double electricalPowerLights() const;
 
   double m_init_time = 0;
 
@@ -63,7 +61,6 @@ private:
   double m_voltage_range;       // [V]
   double m_efficiency;          // default 90% efficiency
   double m_baseline_wattage;    // Base power drawn by continuously-running systems.
-  double m_wattage_coefficient_lights;
   double m_current_timestamp = 0.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when

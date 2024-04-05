@@ -72,6 +72,7 @@ private:
   void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
   void electricalPowerCb(const std_msgs::Float64& msg);
+  double electricalPowerLights() const;
   PrognoserVector loadPowerProfile(const std::string& filename,
                                    std::string custom_file);
   void publishPredictions();
@@ -141,6 +142,8 @@ private:
   double m_initial_voltage;
   double m_initial_soc;
   
+  double m_wattage_coefficient_lights;
+
   // End system.cfg variables.
 
   // The number of models deactivated via faults. Used separately from
