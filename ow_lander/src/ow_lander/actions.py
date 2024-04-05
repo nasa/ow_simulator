@@ -1388,7 +1388,7 @@ class ActivateCommsServer(ActionServerBase):
     # uplinking and downlinking, for the purpose of this action, are treated the
     # same and draw the same amount of power.
 
-    POWER_LOAD_WHILE_ACTIVE = 3.0 # Watts
+    POWER_LOAD_WHILE_ACTIVE = 28.0 # Watts
     DURATION_OF_ACTIVATION = 10.0 # seconds
 
     ## TODO draw power
