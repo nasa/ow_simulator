@@ -264,15 +264,14 @@ void PowerSystemNode::initAndRun()
     // corresponding prognoser via its message bus.
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
-    double mech_power = m_mean_mechanical_power;
+    double shared_power_load = (m_mean_mechanical_power + m_electrical_power)
+                                / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      m_power_models[i].model.applyMechanicalPower(
-                                      mech_power
-                                      / (NUM_MODELS - m_deactivated_models));
+      m_power_models[i].model.setPowerLoad(shared_power_load);
       if (m_power_models[i].model.cyclePrognoserInputs())
       {
         // Current implementation means if one ModelHandler exceeds the draw
@@ -515,10 +514,12 @@ void PowerSystemNode::initTopics()
                                   "/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe(
-                        "/joint_states",
-                        1,
-                        &PowerSystemNode::jointStatesCb,
-                        this);
+    "/joint_states", 1, &PowerSystemNode::jointStatesCb, this
+  );
+  // Subscribe to electrical power to capture power used by non-arm actions
+  m_electrical_power_sub = m_nh.subscribe(
+    "/electrical_power", 1, &PowerSystemNode::electricalPowerCb, this
+  );
 }
 
 /*
@@ -906,6 +907,14 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   mechanical_power_avg_msg.data = m_mean_mechanical_power;
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
+}
+
+/*
+* Receives electrical power topic and saves locally.
+*/
+void PowerSystemNode::electricalPowerCb(const std_msgs::Float64 &msg)
+{
+  m_electrical_power = msg.data;
 }
 
 /*

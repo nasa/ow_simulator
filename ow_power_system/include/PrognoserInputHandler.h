@@ -40,7 +40,7 @@ public:
   bool initialize();
   bool cyclePrognoserInputs();
   void getPowerStats(InputInfo &inputs);
-  void applyMechanicalPower(double mechanical_power);
+  void setPowerLoad(double power_load);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
 private:
@@ -97,7 +97,7 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  double m_mechanical_power_to_be_processed = 0.0;
+  double m_power_load = 0.0;
 };
 
 #endif

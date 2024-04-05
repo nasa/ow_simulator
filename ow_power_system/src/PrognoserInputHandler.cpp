@@ -75,10 +75,10 @@ bool PrognoserInputHandler::loadSystemConfig()
   return true;
 }
 
-void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
+void PrognoserInputHandler::setPowerLoad(double power_load)
 {
   // Set the current unprocessed mechanical power.
-  m_mechanical_power_to_be_processed = mechanical_power;
+  m_power_load = power_load;
 }
 
 /*
@@ -138,7 +138,7 @@ double PrognoserInputHandler::electricalPower () const
 {
  return (
    // Power consumption of joints (arm, antenna)
-   m_mechanical_power_to_be_processed / m_efficiency +
+   m_power_load / m_efficiency +
    // Power consumption of other systems (more to be added)
    electricalPowerLights()
  );

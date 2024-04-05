@@ -16,6 +16,7 @@
 #include <chrono>
 #include <random>
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 #include <sensor_msgs/JointState.h>
 #include <owl_msgs/BatteryRemainingUsefulLife.h>
 #include <owl_msgs/BatteryStateOfCharge.h>
@@ -70,6 +71,7 @@ private:
   void injectFault(const std::string& power_fault_name);
   void injectFaults();
   void jointStatesCb(const sensor_msgs::JointStateConstPtr& msg);
+  void electricalPowerCb(const std_msgs::Float64& msg);
   PrognoserVector loadPowerProfile(const std::string& filename,
                                    std::string custom_file);
   void publishPredictions();
@@ -81,6 +83,7 @@ private:
   ros::Publisher m_remaining_useful_life_pub;  // Remaining Useful Life Publisher
   ros::Publisher m_battery_temperature_pub;    // Battery Temperature Publisher
   ros::Subscriber m_joint_states_sub;          // Mechanical Power Subscriber
+  ros::Subscriber m_electrical_power_sub;
 
   // Flags that determine if debug output is printed regarding battery status
   // during runtime.
@@ -182,10 +185,12 @@ private:
   bool m_icl_activated = false;
   bool m_thermal_failure_activated = false;
 
+  double m_mean_mechanical_power = 0.0;
+  double m_electrical_power = 0.0;
+
   // Used for mechanical power debug printouts.
   double m_power_watts;
-  double m_mean_mechanical_power;
-  double m_sum_mechanical_power = 0;
+  double m_sum_mechanical_power = 0.0;
   int m_queue_size = 0;
   std::deque<double> m_power_values;
 };
