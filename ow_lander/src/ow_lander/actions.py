@@ -28,6 +28,7 @@ from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError,
                                  ActionError)
 from ow_lander.subscribers import wait_for_message
+from ow_lander.power_interface import PowerInterface
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
@@ -1214,7 +1215,6 @@ class DockIngestSampleServer(ActionServerBase):
                           sample_ingested=False)
 
 
-
 class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveJoints'
@@ -1367,3 +1367,34 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
         self._set_succeeded("Reached commanded pan/tilt values")
       else:
         self._set_preempted("Action was preempted")
+
+
+class ActivateCommsServer(ActionServerBase):
+
+  name          = 'ActivateComms'
+  action_type   = ow_lander.msg.ActivateCommsAction
+  goal_type     = ow_lander.msg.ActivateCommsGoal
+  feedback_type = ow_lander.msg.ActivateCommsFeedback
+  result_type   = ow_lander.msg.ActivateCommsResult
+
+  def __init__(self):
+    super(ActivateCommsServer, self).__init__()
+    self._start_server()
+
+  def execute_action(self, goal):
+
+    # This action only draws a large amount of power from the battery for some
+    # period of time. There is no simulation of mission to Earth comms and
+    # uplinking and downlinking, for the purpose of this action, are treated the
+    # same and draw the same amount of power.
+
+    POWER_LOAD_WHILE_ACTIVE = 3.0 # Watts
+    DURATION_OF_ACTIVATION = 10.0 # seconds
+
+    ## TODO draw power
+    PowerInterface().set_power_load('comms', POWER_LOAD_WHILE_ACTIVE)
+    # wait in simulation time
+    rospy.sleep(DURATION_OF_ACTIVATION)
+    PowerInterface().reset_power_load('comms')
+
+    self._set_succeeded("Communication uplink/downlink succeeded.")
