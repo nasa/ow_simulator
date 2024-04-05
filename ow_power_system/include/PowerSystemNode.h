@@ -142,7 +142,8 @@ private:
   double m_initial_voltage;
   double m_initial_soc;
   
-  double m_wattage_coefficient_lights;
+  double m_power_lights_coefficient;
+  double m_power_camera_controller;
 
   // End system.cfg variables.
 

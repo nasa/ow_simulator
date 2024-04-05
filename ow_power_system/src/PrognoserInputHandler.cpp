@@ -50,13 +50,13 @@ bool PrognoserInputHandler::loadSystemConfig()
     m_efficiency = system_config.getDouble("efficiency");
     m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
                                                           m_max_temperature);
-    m_baseline_wattage = (system_config.getDouble("baseline_power_camera") +
-			  system_config.getDouble("baseline_power_communications") +
-			  system_config.getDouble("baseline_power_computing") +
-			  system_config.getDouble("baseline_power_heating") +
-			  system_config.getDouble("baseline_power_science_instr") +
-			  system_config.getDouble("baseline_power_sample_handling") +
-			  system_config.getDouble("baseline_power_other"));
+    m_baseline_wattage = (
+		  system_config.getDouble("baseline_power_computing") +
+		  system_config.getDouble("baseline_power_heating") +
+		  system_config.getDouble("baseline_power_science_instr") +
+		  system_config.getDouble("baseline_power_sample_handling") +
+		  system_config.getDouble("baseline_power_other")
+    );
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_time_interval = 1 / (system_config.getDouble("loop_rate"));
   }

@@ -91,8 +91,18 @@ void PowerSystemNode::initAndRun()
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_loop_rate_hz = system_config.getDouble("loop_rate");
     m_spinner_threads = system_config.getInt32("spinner_threads");
-    m_wattage_coefficient_lights
-      = system_config.getDouble("wattage_coefficient_lights");
+    m_power_lights_coefficient
+      = system_config.getDouble("power_lights_coefficient");
+    m_power_camera_controller
+      = system_config.getDouble("power_camera_controller");
+
+    // use ROS Param to make other nodes, such as the lander action servers,
+    // aware of power parameters
+    m_nh.setParam(
+      "/ow_power_system/camera_exposed_coefficient",
+      system_config.getDouble("power_camera_exposed_coefficient")
+    );
+
     m_prev_soc = m_initial_soc;
   }
   catch(const std::exception& err)
@@ -267,8 +277,9 @@ void PowerSystemNode::initAndRun()
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
     double shared_power_load
-      = (m_mean_mechanical_power + m_electrical_power + electricalPowerLights())
-        / (NUM_MODELS - m_deactivated_models);
+      = (m_mean_mechanical_power + m_electrical_power
+          + m_power_camera_controller + electricalPowerLights())
+            / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
@@ -928,7 +939,7 @@ double PowerSystemNode::electricalPowerLights () const
   double left_intensity, right_intensity;
   ros::param::getCached("/OWLightControlPlugin/left_light", left_intensity);
   ros::param::getCached("/OWLightControlPlugin/right_light", right_intensity);
-  return m_wattage_coefficient_lights * (left_intensity + right_intensity);
+  return m_power_lights_coefficient * (left_intensity + right_intensity);
 }
 
 
