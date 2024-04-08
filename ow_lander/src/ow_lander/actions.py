@@ -1398,11 +1398,13 @@ class ActivateCommsServer(ActionServerBase):
     # uplinking and downlinking, for the purpose of this action, are treated the
     # same and draw the same amount of power.
 
-    POWER_LOAD_WHILE_ACTIVE = 28.0 # Watts
     DURATION_OF_ACTIVATION = 10.0 # seconds
 
-    ## TODO draw power
-    PowerInterface().set_power_load('comms', POWER_LOAD_WHILE_ACTIVE)
+    power_load_while_active = rospy.get_param(
+      '/ow_power_system/comms_active'
+    )
+
+    PowerInterface().set_power_load('comms', power_load_while_active)
     # wait in simulation time
     rospy.sleep(DURATION_OF_ACTIVATION)
     PowerInterface().reset_power_load('comms')

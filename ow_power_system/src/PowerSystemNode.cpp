@@ -95,14 +95,16 @@ void PowerSystemNode::initAndRun()
       = system_config.getDouble("power_lights_coefficient");
     m_power_camera_controller
       = system_config.getDouble("power_camera_controller");
-
     // use ROS Param to make other nodes, such as the lander action servers,
     // aware of power parameters
     m_nh.setParam(
       "/ow_power_system/camera_exposed_coefficient",
       system_config.getDouble("power_camera_exposed_coefficient")
     );
-
+    m_nh.setParam(
+      "/ow_power_system/comms_active",
+      system_config.getDouble("power_comms_active")
+    );
     m_prev_soc = m_initial_soc;
   }
   catch(const std::exception& err)
