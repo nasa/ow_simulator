@@ -93,6 +93,10 @@ void PowerSystemNode::initAndRun()
     m_spinner_threads = system_config.getInt32("spinner_threads");
     m_wattage_coefficient_lights
       = system_config.getDouble("wattage_coefficient_lights");
+    m_nh.setParam(
+      "/ow_power_system/comms_active",
+      system_config.getDouble("power_comms_active")
+    );
     m_prev_soc = m_initial_soc;
   }
   catch(const std::exception& err)
