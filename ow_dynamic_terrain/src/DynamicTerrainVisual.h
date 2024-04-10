@@ -23,6 +23,15 @@ private:
   template <typename T, typename M>
   void onModifyTerrainMsg(T msg, M modify_method)
   {
+    // NOTE: the first modification message starts at seq=1, not sure why
+    static std::uint32_t next_expected_seq = 1;
+    if (msg->header.seq != next_expected_seq) {
+      ROS_WARN_STREAM("Visual modification message was dropped! At least "
+                      << (msg->header.seq - next_expected_seq)
+                      << " message(s) may have been missed.");
+    }
+    next_expected_seq = msg->header.seq + 1;
+
     auto heightmap = getHeightmap(gazebo::rendering::get_scene());
     if (heightmap == nullptr)
     {

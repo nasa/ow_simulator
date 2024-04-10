@@ -15,6 +15,7 @@ from gazebo_msgs.msg import LinkStates
 from tf.transformations import euler_from_quaternion
 from ow_dynamic_terrain.msg import modify_terrain_circle
 
+from ow_lander.common import create_header
 
 class ModifyTerrainGrinder:
 
@@ -38,7 +39,8 @@ class ModifyTerrainGrinder:
       scale: A value that uniformaly scales the generated modify_terrain_circle
         message
     """
-    return modify_terrain_circle(position=Point(position.x, position.y, position.z),
+    return modify_terrain_circle(header=create_header("world", rospy.Time.now()),
+                                 position=Point(position.x, position.y, position.z),
                                  outer_radius=0.08*scale, inner_radius=0.04*scale,
                                  weight=depth*scale, merge_method="min")
 

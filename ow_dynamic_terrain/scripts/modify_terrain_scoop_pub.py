@@ -15,6 +15,8 @@ from gazebo_msgs.msg import LinkStates
 from tf.transformations import euler_from_quaternion
 from ow_dynamic_terrain.msg import modify_terrain_ellipse
 
+from ow_lander.common import create_header
+
 class ModifyTerrainScoop:
 
   def __init__(self, *args):
@@ -37,7 +39,8 @@ class ModifyTerrainScoop:
       orientation: The angle of scoop in world frame
       scale: A value that uniformaly scales the generated modify_terrain_ellipse message
     """
-    return modify_terrain_ellipse(position=Point(position.x, position.y, position.z),
+    return modify_terrain_ellipse(header=create_header("world", rospy.Time.now()),
+                                  position=Point(position.x, position.y, position.z),
                                   orientation=orientation,
                                   outer_radius_a=0.02*scale, outer_radius_b=0.05*scale,
                                   inner_radius_a=0.01*scale, inner_radius_b=0.01*scale,
