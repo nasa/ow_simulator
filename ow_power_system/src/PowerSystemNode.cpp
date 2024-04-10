@@ -91,11 +91,16 @@ void PowerSystemNode::initAndRun()
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_loop_rate_hz = system_config.getDouble("loop_rate");
     m_spinner_threads = system_config.getInt32("spinner_threads");
+    m_mechanical_efficiency = system_config.getDouble("motor_efficiency");
     m_wattage_coefficient_lights
       = system_config.getDouble("wattage_coefficient_lights");
     m_nh.setParam(
       "/ow_power_system/comms_active",
       system_config.getDouble("power_comms_active")
+    );
+    m_nh.setParam(
+      "/ow_power_system/comms_duration",
+      system_config.getDouble("communication_duration")
     );
     m_prev_soc = m_initial_soc;
   }
@@ -270,8 +275,10 @@ void PowerSystemNode::initAndRun()
     // corresponding prognoser via its message bus.
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
-    double shared_power_load
-      = (m_mean_mechanical_power + m_electrical_power + electricalPowerLights())
+    const double actual_mech_power
+      = m_mean_mechanical_power / m_mechanical_efficiency;
+    const double shared_power_load
+      = (actual_mech_power + m_electrical_power + electricalPowerLights())
         / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)
     {

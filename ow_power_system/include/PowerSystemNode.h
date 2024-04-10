@@ -142,6 +142,8 @@ private:
   double m_initial_voltage;
   double m_initial_soc;
   
+  double m_mechanical_efficiency;
+
   double m_wattage_coefficient_lights;
 
   // End system.cfg variables.

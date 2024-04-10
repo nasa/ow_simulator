@@ -47,7 +47,6 @@ bool PrognoserInputHandler::loadSystemConfig()
     m_min_temperature = system_config.getDouble("min_temperature");
     m_max_temperature = system_config.getDouble("max_temperature");
     m_battery_lifetime = system_config.getDouble("battery_lifetime");
-    m_efficiency = system_config.getDouble("efficiency");
     m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
                                                           m_max_temperature);
     m_baseline_wattage = (system_config.getDouble("baseline_power_camera") +
@@ -149,7 +148,7 @@ bool PrognoserInputHandler::cyclePrognoserInputs()
   m_current_timestamp += m_time_interval;
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
-  m_wattage_estimate = m_power_load / m_efficiency + m_baseline_wattage;
+  m_wattage_estimate = m_power_load + m_baseline_wattage;
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
