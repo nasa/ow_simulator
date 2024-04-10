@@ -1043,6 +1043,14 @@ class CameraCaptureServer(ActionServerBase):
 
     self._pub_trigger.publish()
 
+    # apply power usage for 2 cameras
+    ### FIXME: Exposure does not appear to be simulated in time (e.g. a 10
+    ###   second exposure will not take 10 seconds to complete), so this model
+    ###   per camera power consumption does not actually work the way it should.
+    per_camera_power_usage = rospy.get_param(
+      '/ow_power_system/camera_exposed_coefficient')
+    PowerInterface().set_power_load('camera', 2*per_camera_power_usage)
+
     # await point cloud or action preempt
     FREQUENCY = 10 # Hz
     TIMEOUT = 5   # seconds
@@ -1051,13 +1059,15 @@ class CameraCaptureServer(ActionServerBase):
       # TODO: investigate what preempt's function is here and in other actions
       if self._is_preempt_requested():
         self._set_preempted("Action was preempted")
+        PowerInterface().reset_power_load('camera')
         return
       if self.point_cloud_created:
         self._set_succeeded("Point cloud received")
+        PowerInterface().reset_power_load('camera')
         return
       rate.sleep()
     self._set_aborted("Timed out waiting for point cloud")
-
+    PowerInterface().reset_power_load('camera')
 
 class CameraSetExposureServer(ActionServerBase):
 
