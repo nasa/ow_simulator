@@ -14,6 +14,10 @@ parser = argparse.ArgumentParser(
   description="Simulate the power load of the antenna uplinking/downlinking "
               "data. Communications are not modeled beyond their power usage."
 )
+parser.add_argument('--duration', '-d', type=float, default=10.0,
+  help="The duration in seconds the uplink/downlink will take.")
 args = parser.parse_args()
 
-node_helper.call_single_use_action_client(actions.ActivateCommsServer)
+node_helper.call_single_use_action_client(
+  actions.ActivateCommsServer, duration=args.duration
+)

@@ -144,8 +144,8 @@ private:
   
   double m_mechanical_efficiency;
 
-  double m_power_lights_coefficient;
-  double m_power_camera_controller;
+  double m_power_active_lights;
+  double m_power_baseline_camera_controller;
 
   // End system.cfg variables.
 

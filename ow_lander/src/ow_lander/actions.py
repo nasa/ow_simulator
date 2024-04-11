@@ -1048,8 +1048,8 @@ class CameraCaptureServer(ActionServerBase):
     ###   second exposure will not take 10 seconds to complete), so this model
     ###   per camera power consumption does not actually work the way it should.
     per_camera_power_usage = rospy.get_param(
-      '/ow_power_system/camera_exposed_coefficient')
-    PowerInterface().set_power_load('camera', 2*per_camera_power_usage)
+      '/ow_power_system/power_active_camera')
+    PowerInterface().set_power_load('camera', per_camera_power_usage)
 
     # await point cloud or action preempt
     FREQUENCY = 10 # Hz
@@ -1393,17 +1393,17 @@ class ActivateCommsServer(ActionServerBase):
 
   def execute_action(self, goal):
 
-    # This action only draws a large amount of power from the battery for some
-    # period of time. There is no simulation of mission to Earth comms and
-    # uplinking and downlinking, for the purpose of this action, are treated the
-    # same and draw the same amount of power.
+    # This action only draws a some amount of power from the battery for some
+    # period of time. There is no simulation of mission to Earth communications,
+    # and, for the purpose of this action, uplinking and downlinking are treated
+    # the same and draw the same amount of power.
 
-    power_load_while_active = rospy.get_param('/ow_power_system/comms_active')
-    duration_of_activation = rospy.get_param('/ow_power_system/comms_duration')
+    power_load_while_active = rospy.get_param(
+      '/ow_power_system/power_active_comms')
 
     PowerInterface().set_power_load('comms', power_load_while_active)
     # wait in simulation time
-    rospy.sleep(duration_of_activation)
+    rospy.sleep(goal.duration)
     PowerInterface().reset_power_load('comms')
 
     self._set_succeeded("Communication uplink/downlink succeeded.")
