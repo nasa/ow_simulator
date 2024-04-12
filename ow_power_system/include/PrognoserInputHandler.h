@@ -40,7 +40,7 @@ public:
   bool initialize();
   bool cyclePrognoserInputs();
   void getPowerStats(InputInfo &inputs);
-  void applyMechanicalPower(double mechanical_power);
+  void setPowerLoad(double power_load);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
 private:
@@ -48,8 +48,6 @@ private:
   double generateTemperatureEstimate();
   double generateVoltageEstimate();
   void applyValueMods(double& power, double& voltage, double& temperature);
-  double electricalPower() const;
-  double electricalPowerLights() const;
 
   double m_init_time = 0;
 
@@ -61,9 +59,7 @@ private:
   double m_battery_lifetime;    // Estimate of battery lifetime (seconds)
   double m_base_voltage;        // [V] estimate
   double m_voltage_range;       // [V]
-  double m_efficiency;          // default 90% efficiency
   double m_baseline_wattage;    // Base power drawn by continuously-running systems.
-  double m_wattage_coefficient_lights;
   double m_current_timestamp = 0.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
@@ -97,7 +93,7 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  double m_mechanical_power_to_be_processed = 0.0;
+  double m_power_load = 0.0;
 };
 
 #endif

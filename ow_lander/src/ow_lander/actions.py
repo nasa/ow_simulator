@@ -28,6 +28,7 @@ from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
                                  AntennaPlanningError, AntennaExecutionError,
                                  ActionError)
 from ow_lander.subscribers import wait_for_message
+from ow_lander.power_interface import PowerInterface
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
@@ -1042,6 +1043,14 @@ class CameraCaptureServer(ActionServerBase):
 
     self._pub_trigger.publish()
 
+    # apply power usage for 2 cameras
+    ### FIXME: Exposure does not appear to be simulated in time (e.g. a 10
+    ###   second exposure will not take 10 seconds to complete), so this model
+    ###   per camera power consumption does not actually work the way it should.
+    per_camera_power_usage = rospy.get_param(
+      '/ow_power_system/power_active_camera')
+    PowerInterface().set_power_load('camera', per_camera_power_usage)
+
     # await point cloud or action preempt
     FREQUENCY = 10 # Hz
     TIMEOUT = 5   # seconds
@@ -1050,13 +1059,15 @@ class CameraCaptureServer(ActionServerBase):
       # TODO: investigate what preempt's function is here and in other actions
       if self._is_preempt_requested():
         self._set_preempted("Action was preempted")
+        PowerInterface().reset_power_load('camera')
         return
       if self.point_cloud_created:
         self._set_succeeded("Point cloud received")
+        PowerInterface().reset_power_load('camera')
         return
       rate.sleep()
     self._set_aborted("Timed out waiting for point cloud")
-
+    PowerInterface().reset_power_load('camera')
 
 class CameraSetExposureServer(ActionServerBase):
 
@@ -1214,7 +1225,6 @@ class DockIngestSampleServer(ActionServerBase):
                           sample_ingested=False)
 
 
-
 class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveJoints'
@@ -1367,3 +1377,33 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
         self._set_succeeded("Reached commanded pan/tilt values")
       else:
         self._set_preempted("Action was preempted")
+
+
+class ActivateCommsServer(ActionServerBase):
+
+  name          = 'ActivateComms'
+  action_type   = ow_lander.msg.ActivateCommsAction
+  goal_type     = ow_lander.msg.ActivateCommsGoal
+  feedback_type = ow_lander.msg.ActivateCommsFeedback
+  result_type   = ow_lander.msg.ActivateCommsResult
+
+  def __init__(self):
+    super(ActivateCommsServer, self).__init__()
+    self._start_server()
+
+  def execute_action(self, goal):
+
+    # This action only draws a some amount of power from the battery for some
+    # period of time. There is no simulation of mission to Earth communications,
+    # and, for the purpose of this action, uplinking and downlinking are treated
+    # the same and draw the same amount of power.
+
+    power_load_while_active = rospy.get_param(
+      '/ow_power_system/power_active_comms')
+
+    PowerInterface().set_power_load('comms', power_load_while_active)
+    # wait in simulation time
+    rospy.sleep(goal.duration)
+    PowerInterface().reset_power_load('comms')
+
+    self._set_succeeded("Communication uplink/downlink succeeded.")
