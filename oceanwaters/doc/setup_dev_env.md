@@ -260,6 +260,7 @@ sudo apt install git \
                  ros-noetic-stereo-msgs \
                  ros-noetic-stereo-image-proc \
                  ros-noetic-kdl-parser-py \
+                 ros-noetic-pcl-ros \
                  libgtk2.0-dev \
                  libglew-dev
 ```

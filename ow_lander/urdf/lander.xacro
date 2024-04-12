@@ -614,7 +614,7 @@
     <collision>
       <surface>
         <contact>
-          <collide_bitmask>0x0001</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
+          <collide_bitmask>0x0003</collide_bitmask> <!-- Enable collision with the terrain by matching the bitmask -->
           <ode>
             <kd>1e12</kd>
           </ode>
@@ -964,6 +964,17 @@
     <plugin name="BalovnevModelPlugin" filename="libBalovnevModelPlugin.so">
       <robotNamespace>/</robotNamespace>
     </plugin>
+
+    <plugin name="RegolithPlugin" filename="libRegolithPlugin.so">
+      <!-- model that gets spawned into scoop -->
+      <regolith_model_uri>model://sphere_2cm</regolith_model_uri>
+      <!-- cubed meters that must be removed from terrain before a regolith
+           particle is spawned -->
+      <spawn_volume_threshold>1e-4</spawn_volume_threshold>
+      <!-- horizontal spacing between each consecutive regolith spawned -->
+      <spawn_spacing>0.021</spawn_spacing>
+    </plugin>
+
     <!-- Publish joint states so rviz can visualize them. -->
     <!--plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
       <jointName>j_shou_yaw, j_shou_pitch, j_prox_pitch, j_dist_pitch,

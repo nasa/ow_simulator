@@ -4,7 +4,10 @@
 
 #include "DynamicTerrainVisual.h"
 #include "TerrainModifier.h"
+
 #include <gazebo/rendering/RenderingIface.hh>
+
+#include <gazebo/gui/GuiIface.hh>
 
 using namespace std;
 using namespace gazebo;
@@ -23,6 +26,9 @@ DynamicTerrainVisual::DynamicTerrainVisual() :
 
 void DynamicTerrainVisual::Load(VisualPtr /*visual*/, sdf::ElementPtr /*sdf*/)
 {
+  // a way to determine if this plugin is the gzserver/gzclient version
+  m_running_on_gzserver = gui::get_main_window() == nullptr;
+
   Initialize("visual");
 
   m_on_prerender_connection = gazebo::event::Events::ConnectPreRender([this]() {
