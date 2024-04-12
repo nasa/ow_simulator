@@ -1199,7 +1199,7 @@ class DockIngestSampleServer(ActionServerBase):
       if ("regolith_" in name
           and
           self._is_position_in_sample_dock(position, dock_pose)):
-        regolith.append(name)
+        regolith.append(name[:-6]) # strip "::link" from end of name
     return regolith
 
   def _remove_regolith_in_dock(self):
@@ -1209,8 +1209,8 @@ class DockIngestSampleServer(ActionServerBase):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
     service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
-    result = service(regolith_to_remove)
-    return result.success
+    _ = service(regolith_to_remove, True)
+    return True
 
   def execute_action(self, _goal):
     if not wait_for_message(self._link_states, 10):
