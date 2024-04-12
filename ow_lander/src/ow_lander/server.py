@@ -17,7 +17,8 @@ class ActionServerBase(ABC):
   ACTION_GOAL_STATUS_TOPIC = "/action_goal_status"
   # allocate and initialize the container for goal status msgs
   _goal_status_array = [
-    actionlib_msgs.msg.GoalStatus() for _ in range(ow_lander.msg.ActionGoalStatus.NUM_GOAL_TYPES) 
+    actionlib_msgs.msg.GoalStatus()
+      for _ in range(ow_lander.msg.ActionGoalStatus.NUM_GOAL_TYPES)
   ]
 
   
@@ -62,8 +63,9 @@ class ActionServerBase(ABC):
   def result_type(self):
     pass
   
-  """Component group (arm, camera, etc) for categorically reporting action goal status 
-  (Refer to `ow_lander/msg/ActionGoalStatus.msg` for supported group definitions/ids)
+  """Component group (arm, camera, etc) for categorically reporting action goal
+  status (Refer to `ow_lander/msg/ActionGoalStatus.msg` for supported group
+  definitions/ids).
   """
   @property
   def goal_group_id(self):
