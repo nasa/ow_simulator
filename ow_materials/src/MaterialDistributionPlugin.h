@@ -43,10 +43,10 @@ public:
 
   void getHeightmapAlbedo();
 
-  void handleVisualBulk(Blend const &blend, std::uint32_t count);
+  void handleVisualBulk(Blend const &blend, double volume);
 
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
-  // void handleCollisionBulk(Blend const &blend, std::uint32_t count);
+  // void handleCollisionBulk(Blend const &blend, double volume);
 
   Color interpolateColor(Blend const &blend) const;
 

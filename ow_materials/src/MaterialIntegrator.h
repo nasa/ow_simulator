@@ -22,7 +22,7 @@
 namespace ow_materials
 {
 
-using HandleBulkCallback = std::function<void(Blend const&, std::uint32_t)>;
+using HandleBulkCallback = std::function<void(Blend const&, double)>;
 
 using ColorizerCallback = std::function<Color(Blend const&)>;
 

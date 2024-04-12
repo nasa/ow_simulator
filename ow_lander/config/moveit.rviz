@@ -123,6 +123,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -279,6 +283,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          l_grinder_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           l_hand:
             Alpha: 1
             Show Axes: false
@@ -380,7 +388,7 @@ Visualization Manager:
       Color: 255; 0; 255
       Color Transformer: RGB8
       Decay Time: 60
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 0; 255
       Min Color: 0; 0; 0
@@ -389,13 +397,13 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.007000000216066837
+      Size (m): 0.007499999832361937
       Style: Boxes
       Topic: /ow_materials/dug_points2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
-      Value: false
+      Value: true
     - Alpha: 0.20000000298023224
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -408,7 +416,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -417,13 +425,13 @@ Visualization Manager:
       Queue Size: 1
       Selectable: false
       Size (Pixels): 3
-      Size (m): 0.007000000216066837
+      Size (m): 0.007499999832361937
       Style: Boxes
       Topic: /ow_materials/grid_points2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -440,7 +448,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.609889507293701
+      Distance: 0.7727686166763306
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -448,9 +456,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 2.1457571983337402
-        Y: -0.3955997824668884
-        Z: 4.317696493671974e-07
+        X: 2.1393232345581055
+        Y: -0.42295145988464355
+        Z: 4.243190687702736e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -477,4 +485,4 @@ Window Geometry:
     collapsed: false
   Width: 1211
   X: 1334
-  Y: 67
+  Y: 38

@@ -970,7 +970,7 @@
       <regolith_model_uri>model://sphere_2cm</regolith_model_uri>
       <!-- cubed meters that must be removed from terrain before a regolith
            particle is spawned -->
-      <spawn_volume_threshold>4e-4</spawn_volume_threshold>
+      <spawn_volume_threshold>1e-4</spawn_volume_threshold>
       <!-- horizontal spacing between each consecutive regolith spawned -->
       <spawn_spacing>0.021</spawn_spacing>
     </plugin>

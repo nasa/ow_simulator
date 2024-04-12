@@ -340,23 +340,12 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 }
 
 void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
-                                                  std::uint32_t count)
+                                                  double volume)
 {
   // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
   //  scoop digging is not occurring
 
-  // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  // std::stringstream s;
-  // s << "handleVisualBulk: STUBBED\n"
-  //   << count << " voxels int`rsected.\n"
-  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
-  //   "The bulk material contains\n";
-  // for (auto const &x : blend.getComposition()) {
-  //   s << "\t" << x.second << "%% of " << static_cast<int>(x.first) << "\n";
-  // }
-  // gzlog << s.str() << endl;
-
-  Bulk excavated_bulk(blend, count * m_grid->getCellVolume());
+  Bulk excavated_bulk(blend, volume);
   BulkExcavation msg;
   try {
     msg = bulkToBulkExcavationMsg(excavated_bulk, m_material_db);
@@ -370,19 +359,9 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
 
 //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
 // void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
-//                                                      std::uint32_t count)
+//                                                      double volume)
 // {
-  // STUBBED: The complete version of this method will handle downstream effects
-  //  of a collision modification, like grinder force and torque.
-  // DEBUG: Prints blend contents; clutters gazebo log, but may need later.
-  // std::stringstream s;
-  // s << "handleVisualBulk: STUBBED\n"
-  //   << count << " voxels intersected.\n"
-  //   << count * m_grid->getCellVolume() << " cubed meters excavated.\n"
-  //   "The bulk material contains\n";
-  // for (auto const &x : blend.getComposition())
-  //   s << "\t" << x.second * 100 << "% of " << static_cast<int>(x.first) << "\n";
-  // gzlog << s.str() << endl;
+
 // }
 
 Color MaterialDistributionPlugin::interpolateColor(Blend const &blend) const

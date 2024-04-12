@@ -116,14 +116,21 @@ void MaterialIntegrator::integrate(
 
   const auto pixel_height = msg->height / rows;
   const auto pixel_width = msg->width / cols;
+  const float pixel_area = static_cast<float>(pixel_height * pixel_width);
 
   Blend bulk_blend;
   pcl::PointCloud<pcl::PointXYZRGB> points;
 
+  // The total volume displaced by this terrain modification
+  // NOTE: Computed based on the image discretization of the terrain instead of
+  //  the voxel discrtization of the terrain. The image discretization should
+  //  always be finer or equal to the voxel discretization.
+  float volume_displaced = 0.0;
+
   // The following code makes these assumptions:
   //   a) Each intersected voxel contributes the entirety of its blend to the
-  //      final bulk blend. In other words, partial voxel intersections along
-  //      the boundary acquire the entire voxel volume.
+  //      final bulk blend. In other words, the intersection between the scoop
+  //      and a voxel on the edge are not computed.
   //   b) Each blend in the material grid is already normalized.
   //   c) All voxels are of the same volume.
 
@@ -138,6 +145,8 @@ void MaterialIntegrator::integrate(
       if (dz >= 0.0) { // ignore non-modified or raised terrain
         continue;
       }
+      // dz is always negative here, so subtract to get a positive volume
+      volume_displaced -= dz * pixel_area;
       // compute world-space coordinates of this pixel's center
       const float x = (msg->position.x - msg->width / 2)
                         + static_cast<float>(j) / rows * msg->width;
@@ -188,6 +197,6 @@ void MaterialIntegrator::integrate(
 
   publishPointCloud(&m_dug_points_pub, points);
 
-  m_handle_bulk_cb(bulk_blend, static_cast<uint32_t>(points.size()));
+  m_handle_bulk_cb(bulk_blend, static_cast<double>(volume_displaced));
 }
 
