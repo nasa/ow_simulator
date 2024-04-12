@@ -47,17 +47,15 @@ bool PrognoserInputHandler::loadSystemConfig()
     m_min_temperature = system_config.getDouble("min_temperature");
     m_max_temperature = system_config.getDouble("max_temperature");
     m_battery_lifetime = system_config.getDouble("battery_lifetime");
-    m_efficiency = system_config.getDouble("efficiency");
     m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
                                                           m_max_temperature);
-    m_baseline_wattage = (system_config.getDouble("baseline_power_camera") +
-			  system_config.getDouble("baseline_power_lights") +
-			  system_config.getDouble("baseline_power_communications") +
-			  system_config.getDouble("baseline_power_computing") +
-			  system_config.getDouble("baseline_power_heating") +
-			  system_config.getDouble("baseline_power_science_instr") +
-			  system_config.getDouble("baseline_power_sample_handling") +
-			  system_config.getDouble("baseline_power_other"));
+    m_baseline_wattage = (
+		  system_config.getDouble("baseline_power_computing") +
+		  system_config.getDouble("baseline_power_heating") +
+		  system_config.getDouble("baseline_power_science_instr") +
+		  system_config.getDouble("baseline_power_sample_handling") +
+		  system_config.getDouble("baseline_power_other")
+    );
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_time_interval = 1 / (system_config.getDouble("loop_rate"));
   }
@@ -74,10 +72,10 @@ bool PrognoserInputHandler::loadSystemConfig()
   return true;
 }
 
-void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
+void PrognoserInputHandler::setPowerLoad(double power_load)
 {
   // Set the current unprocessed mechanical power.
-  m_mechanical_power_to_be_processed = mechanical_power;
+  m_power_load = power_load;
 }
 
 /*
@@ -145,14 +143,12 @@ bool PrognoserInputHandler::cyclePrognoserInputs()
   {
     m_init_time = ros::Time::now().toSec();
   }
-  // Calculate actual power applied to the system.
-  double electrical_power = m_mechanical_power_to_be_processed / m_efficiency;
 
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
-  m_wattage_estimate = electrical_power + m_baseline_wattage;
+  m_wattage_estimate = m_power_load + m_baseline_wattage;
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {
