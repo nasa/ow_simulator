@@ -93,15 +93,16 @@ double PrognoserInputHandler::generateTemperatureEstimate()
  */
 double PrognoserInputHandler::generateVoltageEstimate()
 {
-  // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-  double timelapse = ros::Time::now().toSec() - m_init_time;            // s
+  // Create voltage estimate with pseudorandom noise generator - needs
+  // to decrease over time.
+  double timelapse = ros::Time::now().toSec() - m_init_time; // seconds
   // If min_V dips below baseline, set to baseline values.
   double min_V = std::max(m_base_voltage + (m_battery_lifetime - timelapse)
                           / m_battery_lifetime * 0.8,
-                          m_base_voltage);                              // [V]
-  double max_V = min_V + m_voltage_range;                               // [V]
+                          m_base_voltage);
+  double max_V = min_V + m_voltage_range;
 
-  // Voltage estimate based on pseudorandom noise and moving range
+  // Voltage estimate based on pseudorandom noise and moving range.
   uniform_real_distribution<double> voltage_dist(min_V, max_V);
   return voltage_dist(m_random_generator);
 }
@@ -112,8 +113,8 @@ double PrognoserInputHandler::generateVoltageEstimate()
  * expanded in the future.
  */
 void PrognoserInputHandler::applyValueMods(double& power,
-                                       double& voltage,
-                                       double& temperature)
+                                           double& voltage,
+                                           double& temperature)
 {
   power += m_added_hpd;
   power += m_added_cpd;
