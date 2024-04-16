@@ -32,6 +32,7 @@ server_dig_linear              = actions.TaskScoopLinearServer()
 server_discard                 = actions.TaskDiscardSampleServer()
 
 # other non-arm lander actions
+server_fault_clear             = actions.FaultClearServer()
 server_light_set_intensity     = actions.LightSetIntensityServer()
 server_camera_capture          = actions.CameraCaptureServer()
 server_camera_set_exposure     = actions.CameraSetExposureServer()

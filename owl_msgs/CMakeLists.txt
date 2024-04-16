@@ -81,6 +81,7 @@ add_action_files(
   ArmUnstow.action
   CameraCapture.action
   CameraSetExposure.action
+  FaultClear.action
   LightSetIntensity.action
   PanTiltMoveCartesian.action
   PanTiltMoveJoints.action
