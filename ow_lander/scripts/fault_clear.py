@@ -14,8 +14,13 @@ parser = argparse.ArgumentParser(
   description="Clear a group goal fault to make the group operable again."
 )
 parser.add_argument('fault', type=int,
-  help="Group goal fault to clear. Accepted values are based on the GOAL_ERROR "
-       "values defined in SystemFaultsStatus.msg.")
+  help="Bitset values of the goal error that will be cleared. Accepted values "
+       "are based on the values ending in \"GOAL_ERROR\" as defined in "
+       "SystemFaultsStatus.msg. Allowed values are { "
+       "2 : ARM_GOAL_ERROR, "
+       "8 : TASK_GOAL_ERROR, "
+       "16 : CAMERA_GOAL_ERROR, "
+       "64 : PAN_TILT_GOAL_ERROR }.")
 args = parser.parse_args()
 
 node_helper.call_single_use_action_client(actions.FaultClearServer,
