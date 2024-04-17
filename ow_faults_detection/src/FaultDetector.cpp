@@ -237,7 +237,6 @@ void FaultDetector::cameraTriggerCb(const std_msgs::Empty& msg)
   if (m_camera_data_pending) {
     m_camera_faults_flags |= CameraFaultsStatus::NO_IMAGE;
     m_system_faults_flags |= SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
-    m_system_faults_flags |= SystemFaultsStatus::CAMERA_GOAL_ERROR;
 
     // publish updated faults messages (exonerated faults published in cameraRawCb)
     publishFaultsMessage(m_camera_faults_msg_pub, CameraFaultsStatus(), m_camera_faults_flags);
@@ -251,7 +250,6 @@ void FaultDetector::cameraRawCb(const sensor_msgs::Image& msg)
   // exonerate fault when camera_raw data is received
   m_camera_faults_flags &= ~CameraFaultsStatus::NO_IMAGE;
   m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_EXECUTION_ERROR;
-  m_system_faults_flags &= ~SystemFaultsStatus::CAMERA_GOAL_ERROR;
   m_camera_data_pending = false;
 
   // publish updated faults messages
