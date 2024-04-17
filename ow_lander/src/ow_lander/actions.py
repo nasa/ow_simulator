@@ -542,6 +542,8 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
     discard_surface_pos = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
     self._arm.move_group_scoop.set_planner_id("RRTstar")
+    PLANNING_TIMEOUT = 0.1
+    self._arm.move_group_scoop.set_planning_time(PLANNING_TIMEOUT)
     try:
       sequence = TrajectorySequence(
         self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
