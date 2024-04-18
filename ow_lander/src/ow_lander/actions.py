@@ -225,7 +225,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
     finally:
-      self._arm.move_group_scoop.set_planner_id('RRTstar')
+      self._arm.move_group_scoop.set_planner_id('RRTConnect')
 
 
 class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
