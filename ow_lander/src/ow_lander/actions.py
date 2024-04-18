@@ -225,7 +225,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
     finally:
-      self._arm.move_group_scoop.set_planner_id('RRTstar')
+      self._arm.move_group_scoop.set_planner_id('RRTConnect')
 
 
 class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
@@ -537,11 +537,15 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
+    self._default_planning_time = None
 
   def plan_trajectory(self, goal):
     discard_surface_pos = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
     self._arm.move_group_scoop.set_planner_id("RRTstar")
+    self._default_planning_time = self._arm.move_group_scoop.get_planning_time()
+    # override planning time otherwise this action may fail on slower machines
+    self._arm.move_group_scoop.set_planning_time(10.0)
     try:
       sequence = TrajectorySequence(
         self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
@@ -588,6 +592,7 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       # TrajectorySequence calls may throw ArmPlanningError, which is handled
       # by ArmTrajectoryMixin, but they must be caught and passed on here so the
       # planner ID may be set back to RRTConnect before this method ends
+      self._arm.move_group_scoop.set_planning_time(self._default_planning_time)
       self._arm.move_group_scoop.set_planner_id("RRTConnect")
 
 
