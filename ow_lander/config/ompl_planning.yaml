@@ -33,7 +33,7 @@ planner_configs:
     range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
   RRTstar:
     type: geometric::RRTstar
-    termination_condition: Iteration[1000]
+    termination_condition: Iteration[3000]
     range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
     goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
     optimization_objective: MechanicalWorkOptimizationObjective # Optimizer minimizes the mechanical effort
