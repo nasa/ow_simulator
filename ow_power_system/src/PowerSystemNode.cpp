@@ -93,8 +93,14 @@ void PowerSystemNode::initAndRun()
     m_spinner_threads = system_config.getInt32("spinner_threads");
     m_mechanical_efficiency = system_config.getDouble("motor_efficiency");
     m_power_active_lights = system_config.getDouble("power_active_lights");
-    m_power_baseline_camera_controller
-      = system_config.getDouble("power_baseline_camera_controller");
+    m_power_baseline = (
+        system_config.getDouble("power_baseline_camera_controller")
+      + system_config.getDouble("power_baseline_computing")
+      + system_config.getDouble("power_baseline_heating")
+      + system_config.getDouble("power_baseline_science_instr")
+      + system_config.getDouble("power_baseline_sample_handling")
+      + system_config.getDouble("power_baseline_other")
+    );
     // use ROS Param to make other nodes, such as the lander action servers,
     // aware of power parameters
     m_nh.setParam(
@@ -284,7 +290,7 @@ void PowerSystemNode::initAndRun()
       = (
           actual_mech_power
           + m_electrical_power
-          + m_power_baseline_camera_controller
+          + m_power_baseline
           + electricalPowerLights()
         ) / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)

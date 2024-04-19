@@ -144,8 +144,12 @@ private:
   
   double m_mechanical_efficiency;
 
+  // Watts drawn by a single light at maximum intensity
   double m_power_active_lights;
-  double m_power_baseline_camera_controller;
+
+  // Watts drawn by the system in idle. These cannot be turned off and are a
+  // sum of several values in the system.cfg prefixed with power_baseline_
+  double m_power_baseline;
 
   // End system.cfg variables.
 

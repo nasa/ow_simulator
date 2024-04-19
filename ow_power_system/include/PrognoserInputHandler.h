@@ -59,7 +59,6 @@ private:
   double m_battery_lifetime;    // Estimate of battery lifetime (seconds)
   double m_base_voltage;        // [V] estimate
   double m_voltage_range;       // [V]
-  double m_baseline_wattage;    // Base power drawn by continuously-running systems.
   double m_current_timestamp = 0.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
