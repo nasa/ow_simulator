@@ -144,7 +144,7 @@ private:
   
   double m_mechanical_efficiency;
 
-  // Watts drawn by the system in idle. These cannot be turned off and are a
+  // Watts drawn by the system in idle. These cannot be turned off and is a
   // sum of several values in the system.cfg prefixed with power_baseline_
   double m_power_baseline;
 
