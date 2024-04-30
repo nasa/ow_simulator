@@ -61,8 +61,8 @@ git clone -b releases/plexil-6 https://github.com/plexil-group/plexil.git
 ```
 
 Note that at the time of this writing, we used the head of the branch
-listed above; it had a git commit hash beginning with `ad913472`.
-This commit has also been tagged `OceanWATERS-v11.1`.  Newer versions
+listed above; it had a git commit hash beginning with `8e990be7`.
+This commit has also been tagged `OceanWATERS-v13.0`.  Newer versions
 of this branch should continue to work with OceanWATERS, but you can
 revert to this version if you run into problems.
 
