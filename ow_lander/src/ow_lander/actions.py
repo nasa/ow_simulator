@@ -21,13 +21,14 @@ from gazebo_msgs.msg import LinkStates
 import ow_lander.msg
 from ow_lander import mixins
 from ow_lander import math3d
+from ow_lander import faults
 from ow_lander import constants
 from ow_lander.server import ActionServerBase
 from ow_lander.common import normalize_radians, wait_for_subscribers
-from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
-                                 AntennaPlanningError, AntennaExecutionError,
-                                 ActionError)
+from ow_lander.exception import (ActionError, ArmError, AntennaError,
+                                 ArmPlanningError, ArmExecutionError)
 from ow_lander.subscribers import wait_for_message
+from ow_lander.power_interface import PowerInterface
 from ow_lander.ground_detector import GroundDetector, FTSensorThresholdMonitor
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
@@ -84,6 +85,35 @@ def _compute_workspace_shoulder_yaw(x, y):
 ## ARM ACTIONS
 #####################
 
+class FaultClearServer(ActionServerBase):
+
+  name            = 'FaultClear'
+  action_type     = owl_msgs.msg.FaultClearAction
+  goal_type       = owl_msgs.msg.FaultClearGoal
+  feedback_type   = owl_msgs.msg.FaultClearFeedback
+  result_type     = owl_msgs.msg.FaultClearResult
+
+  def __init__(self):
+    super().__init__()
+    self._start_server()
+
+  def execute_action(self, goal):
+    MSG_FORMAT = "%s goal faults have been cleared."
+    if goal.fault == owl_msgs.msg.SystemFaultsStatus.ARM_GOAL_ERROR:
+      faults.ArmFaultHandler().reset_system_faults()
+      self._set_succeeded(MSG_FORMAT % "ARM")
+    elif goal.fault == owl_msgs.msg.SystemFaultsStatus.TASK_GOAL_ERROR:
+      faults.TaskFaultHandler().reset_system_faults()
+      self._set_succeeded(MSG_FORMAT % "TASK")
+    elif goal.fault == owl_msgs.msg.SystemFaultsStatus.CAMERA_GOAL_ERROR:
+      faults.CameraFaultHandler().reset_system_faults()
+      self._set_succeeded(MSG_FORMAT % "CAMERA")
+    elif goal.fault == owl_msgs.msg.SystemFaultsStatus.PAN_TILT_GOAL_ERROR:
+      faults.PanTiltFaultHandler().reset_system_faults()
+      self._set_succeeded(MSG_FORMAT % "PAN_TILT")
+    else:
+      self._set_aborted(f"Fault index, {goal.fault}, is not valid.")
+
 class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
 
   name          = 'ArmStop'
@@ -93,8 +123,6 @@ class ArmStopServer(mixins.ArmActionMixin, ActionServerBase):
   result_type   = owl_msgs.msg.ArmStopResult
 
   def execute_action(self, _goal):
-    # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
     if self._arm.stop_arm():
       self._set_succeeded("Arm trajectory stopped")
     else:
@@ -113,6 +141,8 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
   goal_type     = ow_lander.msg.GuardedMoveGoal
   feedback_type = ow_lander.msg.GuardedMoveFeedback
   result_type   = ow_lander.msg.GuardedMoveResult
+
+  fault_handler = faults.TaskFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -171,7 +201,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
 
     self._arm.move_group_scoop.set_planner_id('RRTstar')
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       self._arm.checkout_arm(self.name)
       # TODO: split guarded_move trajectory into 2 parts so that ground
@@ -180,13 +210,11 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
       trajectory = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=ground_detect_cb)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err), final=Point())
-    except ArmPlanningError as err:
-      self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err), final=Point())
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
     else:
       self._arm.checkin_arm(self.name)
       if detector.was_ground_detected():
@@ -197,7 +225,7 @@ class GuardedMoveServer(mixins.ArmActionMixin, ActionServerBase):
         self._pub_result.publish(False, '', Point())
         self._set_succeeded("No ground detected", final=Point(), success=False)
     finally:
-      self._arm.move_group_scoop.set_planner_id('RRTstar')
+      self._arm.move_group_scoop.set_planner_id('RRTConnect')
 
 
 class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
@@ -207,8 +235,8 @@ class ArmUnstowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmUnstowGoal
   feedback_type = owl_msgs.msg.ArmUnstowFeedback
   result_type   = owl_msgs.msg.ArmUnstowResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
 
+  fault_handler = faults.ArmFaultHandler()
 
   def plan_trajectory(self, _goal):
     sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
@@ -223,7 +251,8 @@ class ArmStowServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmStowGoal
   feedback_type = owl_msgs.msg.ArmStowFeedback
   result_type   = owl_msgs.msg.ArmStowResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def plan_trajectory(self, _goal):
     sequence = TrajectorySequence(self._arm.robot, self._arm.move_group_scoop)
@@ -238,7 +267,8 @@ class TaskGrindServer(mixins.GrinderTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.TaskGrindGoal
   feedback_type = owl_msgs.msg.TaskGrindFeedback
   result_type   = owl_msgs.msg.TaskGrindResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
+
+  fault_handler = faults.TaskFaultHandler()
 
   def publish_feedback_cb(self):
     self._publish_feedback(current=self._arm_tip_monitor.get_link_position())
@@ -320,7 +350,8 @@ class TaskScoopCircularServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   goal_type     = owl_msgs.msg.TaskScoopCircularGoal
   feedback_type = owl_msgs.msg.TaskScoopCircularFeedback
   result_type   = owl_msgs.msg.TaskScoopCircularResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
+
+  fault_handler = faults.TaskFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -399,7 +430,8 @@ class TaskScoopLinearServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   goal_type     = owl_msgs.msg.TaskScoopLinearGoal
   feedback_type = owl_msgs.msg.TaskScoopLinearFeedback
   result_type   = owl_msgs.msg.TaskScoopLinearResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
+
+  fault_handler = faults.TaskFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -501,13 +533,19 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
   result_type   = owl_msgs.msg.TaskDiscardSampleResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
 
+  fault_handler = faults.TaskFaultHandler()
+
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
+    self._default_planning_time = None
 
   def plan_trajectory(self, goal):
     discard_surface_pos = self.transform_to_planning_frame(
       self.get_intended_position(goal.frame, goal.relative, goal.point)).point
     self._arm.move_group_scoop.set_planner_id("RRTstar")
+    self._default_planning_time = self._arm.move_group_scoop.get_planning_time()
+    # override planning time otherwise this action may fail on slower machines
+    self._arm.move_group_scoop.set_planning_time(10.0)
     try:
       sequence = TrajectorySequence(
         self._arm.robot, self._arm.move_group_scoop, 'l_scoop')
@@ -554,6 +592,7 @@ class TaskDiscardSampleServer(mixins.FrameMixin, mixins.ArmTrajectoryMixin,
       # TrajectorySequence calls may throw ArmPlanningError, which is handled
       # by ArmTrajectoryMixin, but they must be caught and passed on here so the
       # planner ID may be set back to RRTConnect before this method ends
+      self._arm.move_group_scoop.set_planning_time(self._default_planning_time)
       self._arm.move_group_scoop.set_planner_id("RRTConnect")
 
 
@@ -564,7 +603,8 @@ class TaskDeliverSampleServer(mixins.ArmTrajectoryMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.TaskDeliverSampleGoal
   feedback_type = owl_msgs.msg.TaskDeliverSampleFeedback
   result_type   = owl_msgs.msg.TaskDeliverSampleResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.TASK_GOAL
+
+  fault_handler = faults.TaskFaultHandler()
 
   def plan_trajectory(self, _goal):
     self._arm.move_group_scoop.set_planner_id("RRTstar")
@@ -591,7 +631,8 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmMoveCartesianGoal
   feedback_type = owl_msgs.msg.ArmMoveCartesianFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -601,7 +642,7 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
 
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -615,16 +656,12 @@ class ArmMoveCartesianServer(mixins.FrameMixin, mixins.ArmActionMixin,
       trajectory = self.plan_end_effector_to_pose(intended_pose_stamped)
       self._arm.execute_arm_trajectory(trajectory,
         action_feedback_cb=self.publish_feedback_cb)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose())
-      return
-    except ArmPlanningError as err:
-      self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err),
-        final_pose=self._arm_tip_monitor.get_link_pose())
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -644,14 +681,15 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmMoveCartesianGuardedGoal
   feedback_type = owl_msgs.msg.ArmMoveCartesianGuardedFeedback
   result_type   = owl_msgs.msg.ArmMoveCartesianGuardedResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
 
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       intended_pose_stamped = self.get_intended_pose(goal.frame, goal.relative,
                                                      goal.pose)
@@ -676,21 +714,14 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       comparison_transform = self.get_comparison_transform(
         intended_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(plan, action_feedback_cb=guarded_cb)
-    except ArmExecutionError as err:
-      rospy.loginfo("ArmExecutionError occur")
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_pose=self._arm_tip_monitor.get_link_pose(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque())
-      return
-    except ArmPlanningError as err:
-      self._arm.checkin_arm(self.name)
-      self._set_aborted(str(err),
-        final_pose=self._arm_tip_monitor.get_link_pose(),
-        final_force=monitor.get_force(),
-        final_torque=monitor.get_torque())
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -711,7 +742,6 @@ class ArmMoveCartesianGuardedServer(mixins.FrameMixin, mixins.ArmActionMixin,
       )
 
 
-
 class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
                            ActionServerBase):
 
@@ -720,7 +750,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
   goal_type     = owl_msgs.msg.ArmFindSurfaceGoal
   feedback_type = owl_msgs.msg.ArmFindSurfaceFeedback
   result_type   = owl_msgs.msg.ArmFindSurfaceResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def __init__(self, *args, **kwargs):
     super().__init__('l_scoop_tip', *args, **kwargs)
@@ -734,6 +765,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     )
 
   def execute_action(self, goal):
+    # Reset faults messages before the arm start moving
+    self.fault_handler.reset_arm_faults()
     # the normal vector direction the scoop's bottom faces in its frame
     SCOOP_DOWNWARD = Vector3(0, 0, 1)
     try:
@@ -774,8 +807,6 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       )
     )
     # move to setup pose prior to surface approach
-    # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
     try:
       self._arm.checkout_arm(self.name)
       trajectory_setup = self.plan_end_effector_to_pose(
@@ -784,18 +815,13 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_setup,
         action_feedback_cb=self.publish_feedback_cb)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
         final_distance=0, final_force=0, final_torque=0)
-      return
-    except ArmPlanningError as err:
-      self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err) + " - Setup trajectory failed",
-        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
-        final_distance=0, final_force=0, final_torque=0)
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
     else:
       self._arm.checkin_arm(self.name)
@@ -827,7 +853,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         intended_start_pose_stamped.header.frame_id)
       self._arm.execute_arm_trajectory(trajectory_approach,
         action_feedback_cb=guarded_cb)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
         final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
@@ -835,6 +861,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
       )
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
     else:
       self._arm.checkin_arm(self.name)
       results = {
@@ -866,7 +894,8 @@ class ArmMoveJointServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmMoveJointGoal
   feedback_type = owl_msgs.msg.ArmMoveJointFeedback
   result_type   = owl_msgs.msg.ArmMoveJointResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -886,7 +915,8 @@ class ArmMoveJointsServer(mixins.ModifyJointValuesMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.ArmMoveJointsGoal
   feedback_type = owl_msgs.msg.ArmMoveJointsFeedback
   result_type   = owl_msgs.msg.ArmMoveJointsResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   def modify_joint_positions(self, goal):
     pos = self._arm_joints_monitor.get_joint_positions()
@@ -909,12 +939,13 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
   goal_type     = owl_msgs.msg.ArmMoveJointsGuardedGoal
   feedback_type = owl_msgs.msg.ArmMoveJointsGuardedFeedback
   result_type   = owl_msgs.msg.ArmMoveJointsGuardedResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.ARM_GOAL
+
+  fault_handler = faults.ArmFaultHandler()
 
   # redefine execute_action to enable FT monitor
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     monitor = FTSensorThresholdMonitor(force_threshold=goal.force_threshold,
                                        torque_threshold=goal.torque_threshold)
     def guarded_cb():
@@ -940,7 +971,7 @@ class ArmMoveJointsGuardedServer(ArmMoveJointsServer):
         final_torque=monitor.get_torque())
     except ArmPlanningError as err:
       self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
+      self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions(),
         final_force=monitor.get_force(),
@@ -1009,7 +1040,8 @@ class CameraCaptureServer(ActionServerBase):
   goal_type     = owl_msgs.msg.CameraCaptureGoal
   feedback_type = owl_msgs.msg.CameraCaptureFeedback
   result_type   = owl_msgs.msg.CameraCaptureResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.CAMERA_GOAL
+
+  fault_handler = faults.CameraFaultHandler()
 
   def __init__(self):
     super(CameraCaptureServer, self).__init__()
@@ -1042,6 +1074,14 @@ class CameraCaptureServer(ActionServerBase):
 
     self._pub_trigger.publish()
 
+    # apply power usage for 2 cameras
+    ### FIXME: Exposure does not appear to be simulated in time (e.g. a 10
+    ###   second exposure will not take 10 seconds to complete), so this model
+    ###   per camera power consumption does not actually work the way it should.
+    per_camera_power_usage = rospy.get_param(
+      '/ow_power_system/power_active_camera')
+    PowerInterface().set_power_load('camera', per_camera_power_usage)
+
     # await point cloud or action preempt
     FREQUENCY = 10 # Hz
     TIMEOUT = 5   # seconds
@@ -1050,13 +1090,15 @@ class CameraCaptureServer(ActionServerBase):
       # TODO: investigate what preempt's function is here and in other actions
       if self._is_preempt_requested():
         self._set_preempted("Action was preempted")
+        PowerInterface().reset_power_load('camera')
         return
       if self.point_cloud_created:
         self._set_succeeded("Point cloud received")
+        PowerInterface().reset_power_load('camera')
         return
       rate.sleep()
     self._set_aborted("Timed out waiting for point cloud")
-
+    PowerInterface().reset_power_load('camera')
 
 class CameraSetExposureServer(ActionServerBase):
 
@@ -1066,6 +1108,8 @@ class CameraSetExposureServer(ActionServerBase):
   feedback_type = owl_msgs.msg.CameraSetExposureFeedback
   result_type   = owl_msgs.msg.CameraSetExposureResult
   goal_group_id = ow_lander.msg.ActionGoalStatus.CAMERA_GOAL
+
+  fault_handler = faults.CameraFaultHandler()
 
   def __init__(self):
     super(CameraSetExposureServer, self).__init__()
@@ -1160,7 +1204,7 @@ class DockIngestSampleServer(ActionServerBase):
       if ("regolith_" in name
           and
           self._is_position_in_sample_dock(position, dock_pose)):
-        regolith.append(name)
+        regolith.append(name[:-6]) # strip "::link" from end of name
     return regolith
 
   def _remove_regolith_in_dock(self):
@@ -1170,8 +1214,8 @@ class DockIngestSampleServer(ActionServerBase):
     REMOVE_REGOLITH_SERVICE = '/ow_regolith/remove_regolith'
     rospy.wait_for_service(REMOVE_REGOLITH_SERVICE, timeout=10)
     service = rospy.ServiceProxy(REMOVE_REGOLITH_SERVICE, RemoveRegolith)
-    result = service(regolith_to_remove)
-    return result.success
+    _ = service(regolith_to_remove, True)
+    return True
 
   def execute_action(self, _goal):
     if not wait_for_message(self._link_states, 10):
@@ -1214,7 +1258,6 @@ class DockIngestSampleServer(ActionServerBase):
                           sample_ingested=False)
 
 
-
 class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
 
   name          = 'PanTiltMoveJoints'
@@ -1222,12 +1265,13 @@ class PanTiltMoveJointsServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.PanTiltMoveJointsGoal
   feedback_type = owl_msgs.msg.PanTiltMoveJointsFeedback
   result_type   = owl_msgs.msg.PanTiltMoveJointsResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
+
+  fault_handler = faults.PanTiltFaultHandler()
 
   def execute_action(self, goal):
     try:
       not_preempted = self.move(pan = goal.pan, tilt = goal.tilt)
-    except (AntennaPlanningError, AntennaExecutionError) as err:
+    except AntennaError as err:
       pan, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan, tilt_position=tilt)
     else:
@@ -1252,12 +1296,13 @@ class PanServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = ow_lander.msg.PanGoal
   feedback_type = ow_lander.msg.PanFeedback
   result_type   = ow_lander.msg.PanResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
+
+  fault_handler = faults.PanTiltFaultHandler()
 
   def execute_action(self, goal):
     try:
       not_preempted = self.move(pan = goal.pan)
-    except (AntennaPlanningError, AntennaExecutionError) as err:
+    except AntennaError as err:
       pan, _ = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), pan_position=pan)
     else:
@@ -1279,12 +1324,13 @@ class TiltServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = ow_lander.msg.TiltGoal
   feedback_type = ow_lander.msg.TiltFeedback
   result_type   = ow_lander.msg.TiltResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
+
+  fault_handler = faults.PanTiltFaultHandler()
 
   def execute_action(self, goal):
     try:
       not_preempted = self.move(tilt = goal.tilt)
-    except (AntennaPlanningError, AntennaExecutionError) as err:
+    except AntennaError as err:
       _, tilt = self._ant_joints_monitor.get_joint_positions()
       self._set_aborted(str(err), tilt_position=tilt)
     else:
@@ -1306,7 +1352,8 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   goal_type     = owl_msgs.msg.PanTiltMoveCartesianGoal
   feedback_type = owl_msgs.msg.PanTiltMoveCartesianFeedback
   result_type   = owl_msgs.msg.PanTiltMoveCartesianResult
-  goal_group_id = ow_lander.msg.ActionGoalStatus.PAN_TILT_GOAL
+
+  fault_handler = faults.PanTiltFaultHandler()
 
   def execute_action(self, goal):
     LOOKAT_FRAME = constants.FRAME_ID_BASE
@@ -1360,10 +1407,40 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
     tilt = normalize_radians(tilt_raw)
     try:
       not_preempted = self.move(pan = pan, tilt = tilt)
-    except (AntennaPlanningError, AntennaExecutionError) as err:
+    except AntennaError as err:
       self._set_aborted(str(err))
     else:
       if not_preempted:
         self._set_succeeded("Reached commanded pan/tilt values")
       else:
         self._set_preempted("Action was preempted")
+
+
+class ActivateCommsServer(ActionServerBase):
+
+  name          = 'ActivateComms'
+  action_type   = ow_lander.msg.ActivateCommsAction
+  goal_type     = ow_lander.msg.ActivateCommsGoal
+  feedback_type = ow_lander.msg.ActivateCommsFeedback
+  result_type   = ow_lander.msg.ActivateCommsResult
+
+  def __init__(self):
+    super(ActivateCommsServer, self).__init__()
+    self._start_server()
+
+  def execute_action(self, goal):
+
+    # This action only draws a some amount of power from the battery for some
+    # period of time. There is no simulation of mission to Earth communications,
+    # and, for the purpose of this action, uplinking and downlinking are treated
+    # the same and draw the same amount of power.
+
+    power_load_while_active = rospy.get_param(
+      '/ow_power_system/power_active_comms')
+
+    PowerInterface().set_power_load('comms', power_load_while_active)
+    # wait in simulation time
+    rospy.sleep(goal.duration)
+    PowerInterface().reset_power_load('comms')
+
+    self._set_succeeded("Communication uplink/downlink succeeded.")

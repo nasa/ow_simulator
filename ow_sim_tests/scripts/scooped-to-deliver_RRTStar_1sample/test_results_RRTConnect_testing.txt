@@ -1,0 +1,4 @@
+Total number of runs: 10
+Outliers found at runs: [2, 5, 6, 9]
+Total number of outliers: 4
+Threshold: 2

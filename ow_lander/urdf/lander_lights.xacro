@@ -77,8 +77,8 @@
         <attenuation>
           <range>100</range>
           <!-- Our shader uses a quadratic term for attenuation, but no constant or linear terms.
-            Attenuation = 1.0 / (q * d^2) So q = 0.001 gives us 1000 lux at 1 meter.-->
-          <quadratic>0.001</quadratic>
+            Attenuation = 1.0 / (q * d^2) So q = 0.04 gives us 25 W/m^2 at 1 meter.-->
+          <quadratic>0.04</quadratic>
         </attenuation>
         <direction>0 0 -1</direction>
         <spot>

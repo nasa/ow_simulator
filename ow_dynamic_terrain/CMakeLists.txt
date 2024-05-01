@@ -90,6 +90,7 @@ add_message_files(
   modify_terrain_ellipse.msg
   modify_terrain_patch.msg
   modified_terrain_diff.msg
+  scoop_dig_phase.msg
 )
 
 generate_messages(
@@ -128,6 +129,7 @@ generate_messages(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ow_dynamic_terrain
@@ -141,7 +143,8 @@ catkin_package(
 
 catkin_add_env_hooks(
   80.ow_dynamic_terrain
-  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+  SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks
+)
 
 ###########
 ## Build ##
@@ -212,6 +215,23 @@ add_dependencies(${PROJECT_NAME}_visual
 
 target_link_libraries(${PROJECT_NAME}_visual
   ${PROJECT_NAME}_shared
+)
+
+## dig_detection_node (dig phase estimation)
+
+add_executable(dig_detection_node
+  src/dig_detection_node.cpp
+  src/DigDetector.cpp
+  src/DigStateMachine.cpp
+)
+
+add_dependencies(dig_detection_node
+  ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(dig_detection_node
+  ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
 )
 
 #############

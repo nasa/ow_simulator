@@ -21,6 +21,7 @@ add_action_files(
   FILES GuardedMove.action
   FILES Pan.action
   FILES Tilt.action
+  FILES ActivateComms.action
 )
 
 add_message_files(

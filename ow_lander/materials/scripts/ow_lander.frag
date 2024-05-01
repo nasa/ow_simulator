@@ -13,9 +13,7 @@ in vec3 wsNormal;
 in vec3 wsVecToEye;
 in vec2 wsHeightmapUV;
 in vec3 vsPos;
-//in vec3 vsNormal;
 in mat3 normalMatrix;
-//in vec3 vsVecToSun;
 
 uniform vec4 materialDiffuse;
 uniform vec4 materialSpecular;
@@ -37,8 +35,8 @@ uniform sampler2DShadow shadowMap2;
 float inverseShadowMapSize = 1.0 / float(textureSize(shadowMap0, 0).x);
 in vec4 lsPos[3];
 
-uniform vec4 vsLightPos[3];
-uniform vec4 vsLightDir[3];
+uniform vec4 wsLightPos[3];
+uniform vec4 wsLightDir[3];
 uniform vec4 lightDiffuseColor[3];
 uniform vec4 lightAtten[3];
 uniform vec4 spotlightParams[3];
@@ -49,6 +47,8 @@ uniform sampler2D spotlightMap;
 
 // output
 out vec4 outputCol;
+
+const float PI = 3.14159265358979;
 
 // Blend normals using Reoriented Normal Mapping.
 // Using RNM method from http://blog.selfshadow.com/publications/blending-in-detail
@@ -133,56 +133,85 @@ float calcPSSMDepthShadowDebug(
   return shadow;
 }
 
-// vsVecToLight must not be normalized.
-// vsNegLightDir and vsDirToEye must be normalized.
-void spotlight(in vec3 vsVecToLight,
-               in vec3 vsNegLightDir,  // Light is pointed in this direction
+// wsVecToLight must not be normalized.
+// wsLightDir must be normalized.
+vec3 spotlight(in vec3 wsVecToLight,
+               in vec3 wsLightDir,
                in vec4 attenParams,
                in vec4 spotParams,
                in vec3 color,
                in vec4 texCoord,
-               in vec3 vsDirToEye,
-               in vec3 vsNormal,
-               in float specularPower,
-               inout vec3 diffuse,
-               inout vec3 specular)
+               in int index)
 {
   // If this is not a spotlight or a spotlight isn't applied to this object
   // because it is too far away, spotParams will be set to 1,0,0,1
   if (spotParams == vec4(1, 0, 0, 1))
   {
-    return;
+    return vec3(0, 0, 0);
   }
+  else
+  {
+    float lightD = length(wsVecToLight);
+    vec3 wsDirToLight = wsVecToLight / lightD;
 
-  float lightD = length(vsVecToLight);
-  vec3 vsDirToLight = vsVecToLight / lightD;
-  vec3 vsNegLightDirNorm = normalize(vsNegLightDir);
+    // For realism, we are only using squared component in attenuation. A spotlight
+    // is really an area light, but it behaves almost exactly like a point light
+    // at about 3*diameter away from the light.
+    float atten = 1.0 / (/*attenParams.y + attenParams.z * lightD +*/ attenParams.w * lightD * lightD);
 
-  // For realism, we are only using squared component in attenuation. A spotlight
-  // is really an area light, but it behaves almost exactly like a point light
-  // at about 3*diameter away from the light.
-  float atten = 1.0 / (/*attenParams.y + attenParams.z * lightD +*/ attenParams.w * lightD * lightD);
+    // In a typical spotlight implementation, spotT would ordinarily zero-out
+    // all light outside a circle based on the spotlight cone angles:
+    // float rho = dot(-wsLightDir, wsDirToLight);
+    // float spotT = clamp((rho - spotParams.y) / (spotParams.x - spotParams.y), 0.0, 1.0);
+    // spotT = pow(spotT, spotParams.z);
+    // But we are projecting a square texture and instead cut off light outside
+    // valid texcoords {0.0, 1.0}. This avoids cutting off the texture corners.
+    // The math is a bit complicated, but it results in a spotT value of 1.0
+    // where the texture is projected and 0.0 outside the texture. A simpler
+    // implementation would use conditionals but it would likely be slower.
+    vec2 normalizedTexCoord = texCoord.xy / texCoord.w;
+    // Arbitrarily large multiplier for saturating values at 0 or 1
+    const float saturator = 1000000.0;
+    // 0 where texcoord < 0 and 1 where texcoord > 0
+    vec2 spotT0 = clamp(normalizedTexCoord * saturator, 0.0, 1.0);
+    // 0 where texcoord > 1 and 1 where texcoord < 1
+    vec2 spotT1 = clamp((vec2(1.0) - normalizedTexCoord) * saturator, 0.0, 1.0);
+    // 0 behind light and 1 in front of light
+    float spotTZ = clamp(dot(-wsLightDir, wsDirToLight) * saturator, 0.0, 1.0);
+    float spotT = spotT0.x * spotT0.y * spotT1.x * spotT1.y * spotTZ;
 
-  // Even though we are projecting textures, we use this spot cone calculation
-  // to avoid artifacts to the side of the light
-  float rho = dot(vsNegLightDirNorm, vsDirToLight);
-  float spotT = clamp((rho - spotParams.y) / (spotParams.x - spotParams.y), 0.0, 1.0);
-  // We don't need a falloff exponent to soften the spot edge because we are projecting a texture
-  //spotT = pow(spotT, spotParams.z);
+    vec3 texColor = textureProj(spotlightMap, texCoord).rgb;
 
-  vec3 texColor = textureProj(spotlightMap, texCoord).rgb;
+    // Attenuation and spot cone get baked into final light color. This is how
+    // spotlights get generalized so they can be stored in lights array.
+    return max(texColor * color * (atten * spotT), vec3(0.0));
+  }
+}
 
-  vec3 finalColor = max(texColor * color * (atten * spotT), vec3(0.0));
-  diffuse += max(dot(vsDirToLight, vsNormal), 0.0) * finalColor;
-  vec3 reflectvec = reflect(-vsDirToEye, vsNormal);
-  float spotspec = pow(max(dot(vsDirToLight, reflectvec), 0.0), specularPower);
-  specular += finalColor * spotspec;
+// Incoming vectors L, V, and N, must be normalized
+vec3 brdf_oren_nayar(vec3 L, vec3 V, vec3 N, float roughness, vec3 albedo) {
+  // Adapted from https://mimosa-pudica.net/improved-oren-nayar.html
+  float r2 = roughness * roughness;
+  float LdotV = dot(L, V);
+  float NdotL = dot(N, L);
+  float NdotV = dot(N, V);
+  float s = LdotV - NdotL * NdotV;
+  float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
+  vec3  A = vec3(1.0) - vec3(0.5 * r2 / (r2 + 0.33)) + albedo * vec3(0.17 * r2 / (r2 + 0.13));
+  float B = (0.45 * r2 / (r2 + 0.09));
+  return albedo * max(0.0, NdotL) * (A + vec3(B * s / t)) / PI;
 }
 
 // wsDirToSun, wsDirToEye, wsNormal, and wsDetailNormalHeight.xyz must be normalized
-void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNormalHeight, out vec3 diffuse, out vec3 specular)
+void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNormalHeight,
+              vec3 albedo, out vec3 diffuse, out vec3 specular)
 {
-  const float specular_power = 100.0;
+  const int NUM_LIGHTS = 3;
+  struct LightData {
+    vec3 wsVecToLight;
+    vec3 color;
+  };
+  LightData lights[NUM_LIGHTS];
 
   // shadows
   // Compute shadow lookup bias using formula from
@@ -202,16 +231,35 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   float surfaceDot = dot(wsNormal, wsDirToSun);
   float heightMultiplier = clamp((wsDetailNormalHeight.w * 5.0 + 5.0) - (10.0 - surfaceDot * 50.0), 0.0, 1.0);
 
-  float visibility = sunVisibility * heightMultiplier * shadow;
+  // sunlight
+  lights[0].wsVecToLight = wsDirToSun;
+  lights[0].color = sunIntensity * (sunVisibility * heightMultiplier * shadow);
 
-  // directional light diffuse
-  float sundiffuse = max(dot(wsDetailNormalHeight.xyz, wsDirToSun), 0.0);
-  diffuse += sunIntensity * (sundiffuse * visibility);
+  // lander lights
+  for (int i=0; i<2; i++) {
+    vec3 wsVecToLight = wsLightPos[i+1].xyz - wsPos;
+    lights[i+1].wsVecToLight = wsVecToLight;
+    lights[i+1].color = spotlight(wsVecToLight, wsLightDir[i+1].xyz, lightAtten[i+1],
+                                  spotlightParams[1+1], lightDiffuseColor[i+1].rgb,
+                                  spotlightTexCoord[i], i+1);
+  }
 
-  // directional light specular
-  vec3 reflectvec = reflect(-wsDirToEye, wsDetailNormalHeight.xyz);
-  float sunspec = pow(max(dot(wsDirToSun, reflectvec), 0.0), specular_power);
-  specular += sunIntensity * (sunspec * visibility);
+  const float roughness = 0.3;
+  const float specPower = 60.0;
+  for (int i = 0; i < NUM_LIGHTS; i++)
+  {
+    vec3 wsDirToLight = normalize(lights[i].wsVecToLight);
+    float nDotL = dot(wsNormal, wsDirToLight);
+    if (nDotL > 0.0)
+    {
+      diffuse += lights[i].color * brdf_oren_nayar(wsDirToLight, normalize(wsDirToEye),
+                                                   wsDetailNormalHeight.xyz, roughness, albedo);
+
+      vec3 reflectVec = reflect(-wsDirToLight, wsDetailNormalHeight.xyz);
+      float specShape = pow( max(dot(reflectVec, normalize(wsDirToEye)), 0.0), specPower);
+      specular += lights[i].color * clamp(specShape, 0.0, 1.0);
+    }
+  }
 
   // irradiance diffuse (area light source simulation)
   // Gazebo is z-up but Ogre is y-up. Must rotate before cube texture lookup.
@@ -225,21 +273,6 @@ void lighting(vec3 wsDirToSun, vec3 wsDirToEye, vec3 wsNormal, vec4 wsDetailNorm
   //vec3 reflectvec_gazebo2ogre_and_mirrored = vec3(reflectvec.x, reflectvec.z, reflectvec.y);
   // TODO: Use a specular map and use textureLod() to correlate roughness with a specific mipmap level
   //specular += texture(irradianceMap, reflectvec_gazebo2ogre_and_mirrored).rgb;
-
-  // lander lights
-  // These lander lights are computed in view space due to legacy code while
-  // sunlight is computed in world space. This is awkward and a bit confusing,
-  // but it seems premature to make this consistent before implementing multiple
-  // materials and lighting that is more advanced than the Lambertian diffuse +
-  // Phong specular model we are currently using.
-  vec3 vsDirToEye = normalize(normalMatrix * wsDirToEye);
-  vec3 vsDetailNormal = normalize(normalMatrix * wsDetailNormalHeight.xyz);
-  for (int i=0; i<2; i++) {
-    spotlight(vsLightPos[i+1].xyz - vsPos, -vsLightDir[i+1].xyz, lightAtten[i+1],
-              spotlightParams[i+1], lightDiffuseColor[i+1].rgb,
-              spotlightTexCoord[i], vsDirToEye, vsDetailNormal, specular_power,
-              diffuse, specular);
-  }
 }
 
 void main()
@@ -247,10 +280,7 @@ void main()
   vec3 wsNormalNormalized = normalize(wsNormal);
   vec3 diffuse = vec3(0);
   vec3 specular = vec3(0);
-  lighting(normalize(wsSunPosition.xyz), normalize(wsVecToEye), wsNormalNormalized, vec4(wsNormalNormalized, 1.0), diffuse, specular);
-
-  // material color
-  diffuse *= materialDiffuse.rgb;
+  lighting(normalize(wsSunPosition.xyz), normalize(wsVecToEye), wsNormalNormalized, vec4(wsNormalNormalized, 1.0), materialDiffuse.rgb, diffuse, specular);
   specular *= materialSpecular.rgb;
 
   outputCol = vec4(diffuse + specular, 1.0);

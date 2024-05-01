@@ -1,0 +1,3 @@
+uint64 fault  # a value of a GOAL_ERROR as defined in SystemFaultStatus.msg
+---
+---
