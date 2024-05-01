@@ -1,7 +1,7 @@
 # Ocean Worlds Autonomy Testbed for Exploration Research & Simulation (OceanWATERS)
 
 [Overview](#overview) |
-[Code Organization](#code-Organization) |
+[Release Notes](https://github.com/nasa/ow_simulator/wiki/Release-Notes) |
 [Getting Started](#getting-started) |
 [Contributing](#contributing) |
 [License](#license)
@@ -14,7 +14,11 @@ producing software that could help enable autonomous lander operations
 on ocean worlds of the Solar System, such as Europa and Enceladus.
 
 See the [project wiki](https://github.com/nasa/ow_simulator/wiki) for
-full documentation.
+full documentation. 
+
+See the 
+[Release Notes](https://github.com/nasa/ow_simulator/wiki/Release-Notes) 
+for a list of feature enhancements in the latest software release.
 
 <p align="center"><img width="80%" src="oceanwaters/doc/lander_europa.jpg" /></p>
 
