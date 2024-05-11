@@ -21,6 +21,7 @@
 using namespace PCOE;
 
 // Fault names
+
 const std::string FAULT_NAME_HPD              = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE     = "activate_high_power_draw";
 const std::string FAULT_NAME_DBN              = "battery_nodes_to_disconnect";
@@ -286,13 +287,12 @@ void PowerSystemNode::initAndRun()
     // while processing which would update m_mean_mechanical_power mid-loop.
     const double actual_mech_power
       = m_mean_mechanical_power / m_mechanical_efficiency;
-    const double shared_power_load
-      = (
-          actual_mech_power
-          + m_electrical_power
-          + m_power_baseline
-          + electricalPowerLights()
-        ) / (NUM_MODELS - m_deactivated_models);
+    const double shared_power_load = (
+      actual_mech_power
+      + m_electrical_power
+      + m_power_baseline
+      + electricalPowerLights()
+    ) / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
@@ -805,21 +805,14 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       // Warn the user about the invalid behavior associated with power faults.
       printPowerFaultWarning();
 
-      // Extra logic if the ICL fault was already activated, to immediately
-      // bring SoC down to the threshold.
-      if (m_icl_activated && m_prev_soc > POWER_SOC_MIN)
-      {
-        m_prev_soc = POWER_SOC_MIN;
-      }
+      // Set the previous SOC value too so low SOC and ICL can work in concert.
+      m_prev_soc = POWER_SOC_MIN;
     }
     else if (m_low_soc_activated && !fault_enabled)
     {
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_low_soc_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 
   // Instantaneous capacity loss case
@@ -846,9 +839,6 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_icl_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 
   // Thermal failure case
@@ -875,9 +865,6 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_thermal_failure_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 }
 
