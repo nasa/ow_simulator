@@ -45,7 +45,6 @@ class ArmActionMixin:
     self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()
 
-
 class ArmTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):

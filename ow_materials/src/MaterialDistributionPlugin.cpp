@@ -319,9 +319,6 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         static_cast<uint8_t>(last_insert->second.color.g),
         static_cast<uint8_t>(last_insert->second.color.b)
       );
-      // WORKAROUND for OW-1194, TF has an incorrect transform for
-      //            base_link (specific for atacama_y1a)
-      center -= GridPositionType(-1.0, 0.0, 0.37);
       grid_points.back().x = static_cast<float>(center.X());
       grid_points.back().y = static_cast<float>(center.Y());
       grid_points.back().z = static_cast<float>(center.Z());
