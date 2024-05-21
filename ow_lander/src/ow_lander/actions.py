@@ -758,7 +758,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
 
   def publish_feedback_cb(self, distance=0, force=0, torque=0):
     self._publish_feedback(
-      pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
+      pose=self.get_end_effector_pose(constants.DEFAULT_PLANNING_FRAME).pose,
       distance=distance,
       force=force,
       torque=torque
@@ -818,8 +818,12 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Setup trajectory failed",
-        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
-        final_distance=0, final_force=0, final_torque=0)
+        final_pose=self.get_end_effector_pose(
+          constants.DEFAULT_PLANNING_FRAME).pose,
+        final_distance=0,
+        final_force=0,
+        final_torque=0
+      )
       if isinstance(err, ArmPlanningError):
         self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
       return
@@ -828,12 +832,16 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       if not self.verify_pose_reached(intended_start_pose_stamped,
                                       comparison_transform):
        self._set_aborted("Failed to reach setup pose.",
-          final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
-          final_distance=0, final_force=0, final_torque=0)
+        final_pose=self.get_end_effector_pose(
+          constants.DEFAULT_PLANNING_FRAME).pose,
+        final_distance=0,
+        final_force=0,
+        final_torque=0
+      )
        return
     # local function to compute progress of the action during surface approach
     def compute_distance():
-      pose = self.get_end_effector_pose(constants.FRAME_ID_BASE).pose
+      pose = self.get_end_effector_pose(constants.DEFAULT_PLANNING_FRAME).pose
       d = math3d.subtract(pose.position, estimated_surface_stamped.point)
       return math3d.norm(d)
     # setup F/T monitor and its callback
@@ -856,7 +864,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err) + " - Surface approach trajectory failed",
-        final_pose=self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
+        final_pose=self.get_end_effector_pose(
+          constants.DEFAULT_PLANNING_FRAME).pose,
         final_distance=compute_distance(),
         final_force=monitor.get_force(),
         final_torque=monitor.get_torque()
@@ -866,7 +875,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
     else:
       self._arm.checkin_arm(self.name)
       results = {
-        'final_pose' : self.get_end_effector_pose(constants.FRAME_ID_BASE).pose,
+        'final_pose' : self.get_end_effector_pose(
+          constants.DEFAULT_PLANNING_FRAME).pose,
         'final_distance' : compute_distance(),
         'final_force'    : monitor.get_force(),
         'final_torque'   : monitor.get_torque(),
@@ -1356,7 +1366,7 @@ class PanTiltMoveCartesianServer(mixins.PanTiltMoveMixin, ActionServerBase):
   fault_handler = faults.PanTiltFaultHandler()
 
   def execute_action(self, goal):
-    LOOKAT_FRAME = constants.FRAME_ID_BASE
+    LOOKAT_FRAME = constants.DEFAULT_PLANNING_FRAME
     cam_center = FrameTransformer().lookup_transform(LOOKAT_FRAME,
                                                      'StereoCameraCenter_link')
     tilt_joint = FrameTransformer().lookup_transform(LOOKAT_FRAME,

@@ -164,9 +164,7 @@ void MaterialIntegrator::integrate(
         (Blend const &b, GridPositionType center) {
           if (b.isEmpty()) return;
           bulk_blend.merge(b);
-          // WORKAROUND for OW-1194, TF has an incorrect transform for
-          //            base_link (specific for atacama_y1a)
-          center -= GridPositionType(-1.0, 0.0, 0.37);
+          // color must be set after the entire bulk blend is calculated
           points.emplace_back();
           points.back().x = static_cast<float>(center.X());
           points.back().y = static_cast<float>(center.Y());

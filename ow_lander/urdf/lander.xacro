@@ -31,6 +31,9 @@
       "world" special behavior: http://sdformat.org/tutorials?tut=pose_frame_semantics&cat=specification&#specifying-parent-and-child-link-names-for-joints-in-sdf-1-4 -->
     <link name="world"/>
     <joint name="fixed" type="fixed">
+      <origin
+        xyz="$(arg x) $(arg y) $(arg z)"
+        rpy="$(arg R) $(arg P) $(arg Y)"/>
       <parent link="world"/>
       <child link="base_link"/>
     </joint>
