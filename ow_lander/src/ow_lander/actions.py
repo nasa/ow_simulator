@@ -780,7 +780,8 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
       self._set_aborted(str(err))
       return
     # orient scoop so that the bottom points opposite to the normal
-    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, normal)
+    antinormal = math3d.scalar_multiply(-1.0, normal)
+    orientation = math3d.quaternion_rotation_between(SCOOP_DOWNWARD, antinormal)
     # pose before end-effector is driven towards surface
     intended_start_pose_stamped = PoseStamped(
       header=estimated_surface_stamped.header,
@@ -788,7 +789,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         # begin a distance along the anti-normal direction from surface position
         position=math3d.add(
           estimated_surface_stamped.point,
-          math3d.scalar_multiply(-goal.distance, normal)
+          math3d.scalar_multiply(goal.distance, normal)
         ),
         orientation=orientation
       )
@@ -801,7 +802,7 @@ class ArmFindSurfaceServer(mixins.FrameMixin, mixins.ArmActionMixin,
         # end an overdrive along the normal direction from the surface position
         position=math3d.add(
           estimated_surface_stamped.point,
-          math3d.scalar_multiply(goal.overdrive, normal)
+          math3d.scalar_multiply(goal.overdrive, antinormal)
         ),
         orientation=orientation
       )

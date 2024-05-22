@@ -30,10 +30,12 @@ parser.add_argument('-y', type=float, default=0,
 parser.add_argument('-z', type=float, default=0,
   help="Z-coordinate or the change in the Z-coordinate")
 parser.add_argument('--normal', '-n', type=float, nargs=3,
-  default=[0, 0, -1], metavar=('Nx', 'Ny', 'Nz'),
-  help="Normal vector in which arm will move a distance + overdrive in until "
-       "either the force or torque thresholds are breached. This will always "
-       "be interpreted in the base_link frame.")
+  default=[0, 0, 1], metavar=('Nx', 'Ny', 'Nz'),
+  help="Estimated surface normal at the provided surface position that will be "
+       "probed. The scoop will be driven anti-parallel to this direction by an "
+       "amount equal to distance + overdrive until either the force or torque "
+       "thresholds are breached. The surface normal should always be provided "
+       "in the base_link frame.")
 parser.add_argument('--distance', '-d', type=float, default=0.2,
   help="Distance away from the estimated surface position that the "
        "end-effector starts its trajectory.")
