@@ -38,7 +38,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.2,
         overdrive = 0.05,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_01_arm_find_surface',
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
@@ -70,7 +70,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.5,
         overdrive = 0.2,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_03_arm_find_surface'
     )
@@ -100,7 +100,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_05_arm_find_surface'
     )
@@ -130,7 +130,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_07_arm_find_surface'
     )
@@ -160,7 +160,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_09_arm_find_surface'
     )
@@ -191,7 +191,7 @@ class TestArmFindSurface(unittest.TestCase):
         distance = 0.1,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_11_arm_find_surface'
     )
