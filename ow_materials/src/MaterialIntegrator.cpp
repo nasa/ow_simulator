@@ -193,7 +193,7 @@ void MaterialIntegrator::integrate(
     += (ros::WallTime::now() - start_time).toNSec();
   m_batch_accumulated_merges += points.size();
 
-  publishPointCloud(&m_dug_points_pub, points);
+  publishPointCloud(&m_dug_points_pub, points, "world");
 
   m_handle_bulk_cb(bulk_blend, static_cast<double>(volume_displaced));
 }

@@ -66,6 +66,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   const auto corner_b = sdf->Get<GridPositionType>(PARAMETER_CORNER_B);
   const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
 
+
+
   try {
     m_grid = make_unique<AxisAlignedGrid<Blend>>(corner_a, corner_b,
                                                  cell_side_length);
@@ -330,7 +332,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
-  publishPointCloud(&m_pub_grid, grid_points);
+  publishPointCloud(&m_pub_grid, grid_points, "world");
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << endl;
