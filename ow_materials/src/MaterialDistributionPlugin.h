@@ -14,6 +14,7 @@
 #include "gazebo/gazebo.hh"
 #include "gazebo/common/common.hh"
 #include "gazebo/common/Event.hh"
+#include "gazebo/physics/Model.hh"
 
 #include "AxisAlignedGrid.h"
 #include "MaterialDatabase.h"
@@ -64,6 +65,13 @@ private:
   MaterialDatabase m_material_db;
 
   std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
+
+  gazebo::physics::ModelPtr m_heightmap;
+
+  ignition::math::Vector3d m_corner_a;
+  ignition::math::Vector3d m_corner_b;
+  double m_cell_side_length;
+  std::string m_grid_frame;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
 

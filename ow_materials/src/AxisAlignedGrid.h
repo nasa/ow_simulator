@@ -7,9 +7,11 @@
 
 #include <vector>
 #include <memory>
+#include <cmath>
 #include <functional>
 
 #include "ignition/math/AxisAlignedBox.hh"
+#include "ignition/math/Pose3.hh"
 
 namespace ow_materials {
 
@@ -21,9 +23,11 @@ public:
     : std::runtime_error(what_arg) { };
 };
 
+using GridTransformType = ignition::math::Pose3d;
 using GridPositionType = ignition::math::Vector3d;
 using GridPositionType2D = ignition::math::Vector2d;
 
+// TODO: rename class to something not axis aligned specific
 template <typename T>
 class AxisAlignedGrid {
 
@@ -34,7 +38,7 @@ class AxisAlignedGrid {
 
 public:
   AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
-                  double cell_side_length);
+                  double cell_side_length, GridTransformType frame_transform);
   ~AxisAlignedGrid() = default;
 
   AxisAlignedGrid() = delete;
@@ -50,10 +54,11 @@ public:
   inline double getCellLength() const { return m_cell_length; }
 
   // WARNING: execution will may take a long time depending on grid resolution
-  void runForEach(std::function<void(const T&, GridPositionType)> f) const;
-  void runForEach(std::function<void(T&, GridPositionType)> f);
+  // void runForEach(std::function<void(const T&, GridPositionType)> f) const;
+  void runForEach(
+    std::function<void(T&, GridPositionType, GridPositionType)> f);
   
-  void runForEachInColumn(GridPositionType2D xy, double z1, double z2,
+  void runForEachInColumn(GridPositionType bottom, double height,
     std::function<void(const T&, GridPositionType)> f) const;
 
 private:
@@ -68,9 +73,30 @@ private:
     return m_cells[index(i)];
   };
 
+  GridPositionType transformIntoFrame(const GridPositionType &p) const {
+    auto m = p - m_frame_offset;
+    return GridPositionType{
+       m.X() * std::cos(m_frame_yaw) + m.Y() * std::sin(m_frame_yaw),
+      -m.X() * std::sin(m_frame_yaw) + m.Y() * std::cos(m_frame_yaw),
+       m.Z()
+    };
+  };
+
+  GridPositionType transformIntoWorld(const GridPositionType &p) const{
+    auto m = GridPositionType{
+      p.X() * std::cos(m_frame_yaw) - p.Y() * std::sin(m_frame_yaw),
+      p.X() * std::sin(m_frame_yaw) + p.Y() * std::cos(m_frame_yaw),
+      p.Z()
+    };
+    return m + m_frame_offset;
+  };
+
   std::size_t index(GridIndexType i) const;
 
   double m_cell_length;
+
+  GridPositionType m_frame_offset;
+  double m_frame_yaw;
 
   std::unique_ptr<ignition::math::AxisAlignedBox> m_domain;
 

@@ -10,6 +10,7 @@
 #include "boost/functional/hash.hpp"
 
 #include "gazebo/rendering/rendering.hh"
+#include "gazebo/physics/World.hh"
 
 #include "ow_materials/BulkExcavation.h"
 
@@ -31,6 +32,7 @@ const string NODE_NAME = "/ow_materials/material_distribution_plugin";
 
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
+const string PARAMETER_RELATIVE_TO      = "relative_to";
 const string PARAMETER_CELL_SIDE_LENGTH = "cell_side_length";
 
 const string PARAMETER_MATERIALS                  = "materials";
@@ -51,6 +53,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
 
+  m_heightmap = model;
+
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
     gzerr << "Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B
@@ -62,29 +66,10 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     return;
   }
 
-  const auto corner_a = sdf->Get<GridPositionType>(PARAMETER_CORNER_A);
-  const auto corner_b = sdf->Get<GridPositionType>(PARAMETER_CORNER_B);
-  const auto cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
-
-
-
-  try {
-    m_grid = make_unique<AxisAlignedGrid<Blend>>(corner_a, corner_b,
-                                                 cell_side_length);
-  } catch (const GridConfigError &e) {
-    gzerr << e.what() << endl;
-    return;
-  }
-
-  const auto center = m_grid->getCenter();
-  const auto diagonal = m_grid->getDiagonal();
-  gzlog << PLUGIN_NAME
-        << ": Material grid centered at (" << center.X() << ", "
-                                           << center.Y() << ", "
-                                           << center.Z() << ") "
-        << "with dimensions " << diagonal.X() << " x "
-                              << diagonal.Y() << " x "
-                              << diagonal.Z() << " meters.\n";
+  m_corner_a = sdf->Get<GridPositionType>(PARAMETER_CORNER_A);
+  m_corner_b = sdf->Get<GridPositionType>(PARAMETER_CORNER_B);
+  m_cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
+  sdf->Get<string>(PARAMETER_RELATIVE_TO, m_grid_frame, "world");
 
   // populate materials database
   try {
@@ -138,16 +123,6 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     child = child->GetNextElement(PARAMETER_MATERIALS_CHILD);
   }
 
-  m_visual_integrator = make_unique<MaterialIntegrator>(
-    m_node_handle.get(), m_grid.get(),
-    "/ow_dynamic_terrain/modification_differential/visual",
-    "/ow_materials/dug_points2",
-    std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
-      std::placeholders::_1, std::placeholders::_2),
-    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
-      std::placeholders::_1)
-  );
-
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
   // m_collision_integrator = make_unique<MaterialIntegrator>(
   //   m_node_handle.get(), m_grid.get(),
@@ -182,6 +157,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   gzlog << PLUGIN_NAME << ": awaiting scene heightmap..." << endl;
 }
 
+
+/// TODO: rename function. Clean-up error handling and ordering.
 void MaterialDistributionPlugin::getHeightmapAlbedo() {
   // try to get scene and heightmap
   // if either are unavailable, try again next render signal
@@ -217,6 +194,61 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
     delete m_temp_render_connection.release();
     return;
   }
+
+  auto grid_transform = ignition::math::Pose3d::Zero;
+  if (m_grid_frame != "world") {
+    auto world = m_heightmap->GetWorld();
+    if (world == nullptr) {
+      gzerr << PLUGIN_NAME << ": Failed to acquire world." << endl;
+      delete m_temp_render_connection.release();
+      return;
+    }
+    auto reference_model = world->EntityByName(m_grid_frame);
+    if (reference_model == nullptr) {
+      gzerr << PLUGIN_NAME << ": Failed to find static frame reference model "
+            << m_grid_frame << "." << endl;
+      delete m_temp_render_connection.release();
+      return;
+    }
+    grid_transform = reference_model->WorldPose();
+    // corner_a += m_grid_transform.Pos();
+    // corner_b += m_grid_transform.Pos();
+
+    gzlog << "grid_transform = " << grid_transform << "\n";
+    // gzlog << "corner_a = " << corner_a << "\n";
+    // gzlog << "corner_b = " << corner_b << "\n";
+
+  }
+
+  try {
+    m_grid = make_unique<AxisAlignedGrid<Blend>>(
+      m_corner_a, m_corner_b, m_cell_side_length, grid_transform
+    );
+  } catch (const GridConfigError &e) {
+    gzerr << PLUGIN_NAME << ": " << e.what() << endl;
+    return;
+  }
+
+  const auto center = m_grid->getCenter();
+  const auto diagonal = m_grid->getDiagonal();
+  gzlog << PLUGIN_NAME
+        << ": Material grid centered at (" << center.X() << ", "
+                                           << center.Y() << ", "
+                                           << center.Z() << ") "
+        << "with dimensions " << diagonal.X() << " x "
+                              << diagonal.Y() << " x "
+                              << diagonal.Z() << " meters.\n";
+
+  m_visual_integrator = make_unique<MaterialIntegrator>(
+    m_node_handle.get(), m_grid.get(),
+    "/ow_dynamic_terrain/modification_differential/visual",
+    "/ow_materials/dug_points2",
+    std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
+      std::placeholders::_1, std::placeholders::_2),
+    std::bind(&MaterialDistributionPlugin::interpolateColor, this,
+      std::placeholders::_1)
+  );
+
   Ogre::Image albedo;
   texture->convertToImage(albedo);
   gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
@@ -266,16 +298,17 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
   pcl::PointCloud<pcl::PointXYZRGB> grid_points;
   m_grid->runForEach(
     [&]
-    (Blend &blend, GridPositionType center) {
+    (Blend &blend, GridPositionType center, GridPositionType world_center) {
       // acquire x and y in terrain space (between 0 and 1)
       auto tpos = terrain->convertPosition(
         Ogre::Terrain::Space::WORLD_SPACE,
-        Ogre::Vector3(center.X(), center.Y(), center.Z()),
+        Ogre::Vector3(world_center.X(), world_center.Y(), world_center.Z()),
         Ogre::Terrain::Space::TERRAIN_SPACE
       );
 
       // skip grid as it is not within the terrain
-      if (terrain->getHeightAtTerrainPosition(tpos.x, tpos.y) <= center.Z()) {
+      if (terrain->getHeightAtTerrainPosition(tpos.x, tpos.y)
+            <= world_center.Z()) {
         return;
       }
 
@@ -294,6 +327,14 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
         Color tex_color(ogre_color.r * 255.0f,
                         ogre_color.g * 255.0f,
                         ogre_color.b * 255.0f);
+
+        //// DEBUG - show true albedo color in visualization
+        // blend.add(0, 1.0f);
+        // last_insert = albedo_blends.emplace_hint(last_insert,
+        //   make_pair(tex_coord, BlendAndColor{blend, tex_color})
+        // );
+
+        //// DEBUG UNCOMMENT
         std::vector<float> inverse_dist;
         for (auto rc : m_reference_colors) {
           if (rc.second == tex_color) {
@@ -332,7 +373,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
-  publishPointCloud(&m_pub_grid, grid_points, "world");
+  publishPointCloud(&m_pub_grid, grid_points, m_grid_frame);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << endl;

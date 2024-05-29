@@ -34,10 +34,12 @@ static GridPositionType maxPosition(GridPositionType const &a,
 }
 
 template <typename T>
-AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
-                                    GridPositionType const corner_2,
-                                    double const cell_side_length)
-  : m_cell_length(cell_side_length)
+AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType corner_1,
+                                    GridPositionType corner_2,
+                                    double const cell_side_length,
+                                    GridTransformType const frame_transform)
+  : m_cell_length(cell_side_length), m_frame_offset(frame_transform.Pos()),
+    m_frame_yaw(frame_transform.Rot().Euler().Z())
 {
 
   // cannot have a negative/zero length
@@ -124,7 +126,8 @@ const double &AxisAlignedGrid<T>::getCellVolume() const {
 };
 
 template <typename T>
-GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
+GridPositionType AxisAlignedGrid<T>::getCellCenter(
+  GridIndexType idx) const
 {
   GridPositionType grid_coord = GridPositionType(
     static_cast<double>(idx.X()) + 0.5,
@@ -134,46 +137,53 @@ GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
   return grid_coord + getMinCorner();
 };
 
+// template <typename T>
+// void AxisAlignedGrid<T>::runForEach(
+//   std::function<void(const T&, GridPositionType)> f) const
+// {
+//   for (size_t i = 0; i != m_dimensions.X(); ++i) {
+//     for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+//       for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+//         auto idx = GridIndexType(i, j, k);
+//         f(getCellValue(idx), getCellCenter(idx));
+//       }
+//     }
+//   }
+// };
+
 template <typename T>
 void AxisAlignedGrid<T>::runForEach(
+  std::function<void(T&, GridPositionType, GridPositionType)> f)
+{
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
+        const auto center = getCellCenter(idx);
+        f(getCellValue(idx), center, transformIntoWorld(center));
+      }
+    }
+  }
+};
+
+template <typename T>
+void AxisAlignedGrid<T>::runForEachInColumn(
+  GridPositionType bottom, double height,
   std::function<void(const T&, GridPositionType)> f) const
 {
-  for (size_t i = 0; i != m_dimensions.X(); ++i) {
-    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-        auto idx = GridIndexType(i, j, k);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
-  }
-};
+  const auto bot = transformIntoFrame(bottom);
 
-template <typename T>
-void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
-{
-  for (size_t i = 0; i != m_dimensions.X(); ++i) {
-    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-        auto idx = GridIndexType(i, j, k);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
-  }
-};
-
-template <typename T>
-void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
-  double z1, double z2, std::function<void(const T&, GridPositionType)> f) const
-{
-  if ( xy.X() < getMinCorner().X() || xy.X() > getMaxCorner().X() ||
-       xy.Y() < getMinCorner().Y() || xy.Y() > getMaxCorner().Y() ) {
+  if ( bot.X() < getMinCorner().X() || bot.X() > getMaxCorner().X() ||
+       bot.Y() < getMinCorner().Y() || bot.Y() > getMaxCorner().Y() ) {
     // grid does not contain the XY position
     return;
   }
 
   // order z positions and constrain to within the grid
-  auto zmin = clamp(min(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
-  auto zmax = clamp(max(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
+  auto zmin = clamp(min(bot.Z(), bot.Z() + height),
+                    getMinCorner().Z(), getMaxCorner().Z());
+  auto zmax = clamp(max(bot.Z(), bot.Z() + height),
+                    getMinCorner().Z(), getMaxCorner().Z());
 
   if (zmin == zmax) {
     // column is entirely above/below the grid domain, but not within
@@ -181,8 +191,8 @@ void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
   }
 
   auto idx = GridIndexType{
-    static_cast<size_t>((xy.X() - getMinCorner().X()) / m_cell_length),
-    static_cast<size_t>((xy.Y() - getMinCorner().Y()) / m_cell_length),
+    static_cast<size_t>((bot.X() - getMinCorner().X()) / m_cell_length),
+    static_cast<size_t>((bot.Y() - getMinCorner().Y()) / m_cell_length),
     0u
   };
 

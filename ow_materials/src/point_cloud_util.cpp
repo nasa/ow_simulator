@@ -8,7 +8,7 @@
 
 void publishPointCloud(ros::Publisher *pub,
                        pcl::PointCloud<pcl::PointXYZRGB> &cloud,
-                       const std::string frame_id)
+                       const std::string &frame_id)
 {
   cloud.header.frame_id = frame_id;
   pcl_conversions::toPCL(ros::Time::now(), cloud.header.stamp);
