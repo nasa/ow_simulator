@@ -9,6 +9,7 @@
   <arg name="rqt_gui" default="true"/>
   <arg name="use_rviz" default="true"/>
   <arg name="sim_regolith" default="true" />
+  <arg name="auto_clear_goal_errors" default="true" />
 
   <include file="$(find ow)/launch/common.launch">
     <arg name="gazebo_launch_file" default="$(arg gazebo_launch_file)" />
@@ -27,6 +28,7 @@
     <arg name="rqt_gui" value="$(arg rqt_gui)"/>
     <arg name="use_rviz" default="$(arg use_rviz)"/>
     <arg name="sim_regolith" default="$(arg sim_regolith)"/>
+    <arg name="auto_clear_goal_errors" value="$(arg auto_clear_goal_errors)" />
   </include>
 
 </launch>
