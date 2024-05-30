@@ -122,6 +122,9 @@ class ActionServerBase(ABC):
     if self.fault_handler:
       self.fault_handler.notify_aborted()
 
+  def __should_auto_clear_goal_errors(self):
+    return rospy.get_param("/lander_action_servers/auto_clear_goal_errors", True)
+
   def __should_reject_due_to_fault(self):
     """Return true if the current state of faults and simulation settings permit
     an action to run.
@@ -129,7 +132,7 @@ class ActionServerBase(ABC):
     return (
       # Actions may proceed if the simulation is configured such that goal
       # errors are automatically cleared by a subsequent successful run.
-      not rospy.get_param("/lander_action_servers/auto_clear_goal_errors", True)
+      not self.__should_auto_clear_goal_errors()
       # Assuming this action has a fault_handler, do not permit the action to
       # proceed if it's handler is faulted.
       and (self.fault_handler and self.fault_handler.is_faulted())
@@ -155,6 +158,8 @@ class ActionServerBase(ABC):
     if self.__should_reject_due_to_fault():
       self.__set_rejected(self.fault_handler.get_rejected_message())
     else:
+      if self.fault_handler and self.__should_auto_clear_goal_errors():
+        self.fault_handler.reset_system_faults()
       self.execute_action(goal)
     rospy.loginfo(f"{self.name} action complete")
 
