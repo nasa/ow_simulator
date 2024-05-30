@@ -91,7 +91,6 @@ void MaterialIntegrator::onModificationMsg(
     boost::bind(&MaterialIntegrator::integrate, this, msg));
 }
 
-
 void MaterialIntegrator::integrate(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
 {
@@ -114,8 +113,8 @@ void MaterialIntegrator::integrate(
   const auto rows = diff_handle->image.rows;
   const auto cols = diff_handle->image.cols;
 
-  const auto pixel_height = msg->height / rows;
-  const auto pixel_width = msg->width / cols;
+  auto pixel_height = msg->height / rows;
+  auto pixel_width = msg->width / cols;
   const float pixel_area = static_cast<float>(pixel_height * pixel_width);
 
   Blend bulk_blend;

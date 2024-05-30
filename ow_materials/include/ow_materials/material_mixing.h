@@ -31,6 +31,7 @@ public:
   ~Blend()                       = default;
 
   Blend(std::vector<MaterialConcentration> const &composition);
+  Blend(CompositionType const &composition);
 
   inline CompositionType const &getComposition() const {
     return m_composition;

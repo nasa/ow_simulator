@@ -10,6 +10,7 @@
 #include "boost/functional/hash.hpp"
 
 #include "gazebo/rendering/rendering.hh"
+#include "cv_bridge/cv_bridge.h"
 
 #include "ow_materials/BulkExcavation.h"
 
@@ -25,9 +26,11 @@ using namespace gazebo;
 
 const string PLUGIN_NAME = "MaterialDistributionPlugin";
 
-const string NAMESPACE_MATERIALS = "/ow_materials";
+const string NAMESPACE_MATERIALS = "/ow_materials/materials";
 
 const string NODE_NAME = "/ow_materials/material_distribution_plugin";
+const string TOPIC_MOD_DIFF_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
+const string ROSPARAM_SIM_MAT_DIST = "/ow_materials/sim_material_distribution";
 
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
@@ -44,12 +47,79 @@ static float colorSpaceDistance(const Color &c1, const Color &c2)
   return std::sqrt(d.r * d.r + d.g * d.g + d.b * d.b);
 }
 
+void MaterialDistributionPlugin::computeDiffVolume(
+  const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
+{
+  auto diff_handle = cv_bridge::CvImageConstPtr();
+  try {
+    diff_handle = cv_bridge::toCvShare(msg->diff, msg);
+  } catch (cv_bridge::Exception& e) {
+    gzlog << "cv_bridge exception occurred while reading modification "
+             "differential message: " << e.what() << std::endl;
+    return;
+  }
+  const auto rows = diff_handle->image.rows;
+  const auto cols = diff_handle->image.cols;
+  const auto pixel_height = msg->height / rows;
+  const auto pixel_width = msg->width / cols;
+  const float pixel_area = static_cast<float>(pixel_height * pixel_width);
+  float volume_displaced = 0.0;
+  for (size_t i = 0; i != cols; ++i) {
+    for (size_t j = 0; j != rows; ++j) {
+      // change in height at pixel (x, y)
+      auto dz = diff_handle->image.at<float>(i, j);
+      if (dz >= 0.0) { // ignore unmodified or raised terrain
+        continue;
+      }
+      // dz is always negative here, so subtract to get a positive volume
+      volume_displaced -= dz * pixel_area;
+    }
+  }
+  // create a uniform material of the first defined
+  static const Blend UNIFORM_BLEND({{Material::id_min, 1.0}});
+  handleVisualBulk(UNIFORM_BLEND, volume_displaced);
+}
+
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
   gzlog << PLUGIN_NAME << ": loading..." << endl;
 
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
+
+  // populate materials database
+  try {
+    m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
+  } catch (const MaterialConfigError &e) {
+    gzerr << e.what() << endl;
+    return;
+  }
+  gzlog << PLUGIN_NAME << ": Materials database populated with "
+        << m_material_db.size() << " materials.\n";
+
+  m_pub_bulk_excavation_visual = m_node_handle->advertise<BulkExcavation>(
+    "/ow_materials/bulk_excavation/visual", 10, false);
+  //// STUBBED FEATURE: reactivate to implement grinder terramechanics (OW-998)
+  // m_pub_bulk_excavation_collision = m_node_handle->advertise<BulkExcavation>(
+  //   "/ow_materials/bulk_excavation/collision", 10, false);
+
+  // disable material distribution grid, and only compute volume displaced
+  ros::param::param(ROSPARAM_SIM_MAT_DIST, m_grid_in_use, true);
+  if (!m_grid_in_use) {
+    gzlog << PLUGIN_NAME << ": Material distribution will not be simulated. "
+          "To enable, launch a supported world with sim_material_distribution "
+          "set to true." << endl;
+    m_sub_modification_diff = m_node_handle->subscribe(TOPIC_MOD_DIFF_VISUAL,
+      1, &MaterialDistributionPlugin::computeDiffVolume, this);
+    gzlog << PLUGIN_NAME << ": Plugin successfully loaded." << endl;
+    return;
+  }
+
+  // publish latched, because points will never change
+  // message is published later on after the pointcloud has been generated
+  m_pub_grid = m_node_handle->advertise<sensor_msgs::PointCloud2>(
+    "/ow_materials/grid_points2", 1, true);
+
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
@@ -83,16 +153,6 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
         << "with dimensions " << diagonal.X() << " x "
                               << diagonal.Y() << " x "
                               << diagonal.Z() << " meters.\n";
-
-  // populate materials database
-  try {
-    m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
-  } catch (const MaterialConfigError &e) {
-    gzerr << e.what() << endl;
-    return;
-  }
-  gzlog << PLUGIN_NAME << ": Materials database populated with "
-        << m_material_db.size() << " materials.\n";
 
   // get reference colors for mapping terrain texture to material compositions
   if (!sdf->HasElement(PARAMETER_MATERIALS)) {
@@ -137,8 +197,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   }
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
-    m_node_handle.get(), m_grid.get(),
-    "/ow_dynamic_terrain/modification_differential/visual",
+    m_node_handle.get(), m_grid.get(), TOPIC_MOD_DIFF_VISUAL,
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
       std::placeholders::_1, std::placeholders::_2),
@@ -156,16 +215,6 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   //   std::bind(&MaterialDistributionPlugin::interpolateColor, this,
   //     std::placeholders::_1)
   // );
-
-  // publish latched, because points will never change
-  // message is published later on after the pointcloud has been generated
-  m_pub_grid = m_node_handle->advertise<sensor_msgs::PointCloud2>(
-    "/ow_materials/grid_points2", 1, true);
-
-  m_pub_bulk_excavation_visual = m_node_handle->advertise<BulkExcavation>(
-    "/ow_materials/bulk_excavation/visual", 10, false);
-  m_pub_bulk_excavation_collision = m_node_handle->advertise<BulkExcavation>(
-    "/ow_materials/bulk_excavation/collision", 10, false);
 
   // defer acquiring heightmap albedo texture until the gazebo scene exists
   // NOTE: this event callback will only be called as many times as it needs to
@@ -217,7 +266,8 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
   }
   Ogre::Image albedo;
   texture->convertToImage(albedo);
-  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired." << endl;
+  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired.\n";
+  gzlog << PLUGIN_NAME << ": Plugin successfully loaded." << endl;
   // the process can take as long as 10 seconds, so we spin it off in its own
   // thread to not hold up loading the rest of Gazebo
   std::thread t(
@@ -339,9 +389,6 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
                                                   double volume)
 {
-  // TODO: Subscribe to /ow_dynamic_terrain/scoop_dig_phase and do nothing if
-  //  scoop digging is not occurring
-
   Bulk excavated_bulk(blend, volume);
   BulkExcavation msg;
   try {

@@ -11,6 +11,7 @@
   <arg name="rqt_gui" default="true" />
   <arg name="use_rviz" default="true" />
   <arg name="sim_regolith" default="true" />
+  <arg name="sim_material_distribution" default="true" />
 
   <!-- Initial pose arguments -->
   <arg name="init_x" default="0" />
@@ -90,8 +91,10 @@
   <node name="modify_terrain_grinder" pkg="ow_dynamic_terrain" type="modify_terrain_grinder_pub.py" output="screen"/>
 
   <!-- load materials file into ROS parameters -->
-  <rosparam command="load" ns="ow_materials"
-    file="$(find ow_materials)/config/materials.yaml"/>
+  <rosparam command="load" ns="ow_materials/materials"
+            file="$(find ow_materials)/config/materials.yaml" />
+  <param name="ow_materials/sim_material_distribution" type="bool"
+         value="$(arg sim_material_distribution)" />
 
   <!-- == Start rqt with a short delay so most topics will be visible and we won't need to refresh widgets ====== -->
   <!-- Starting without a .perspective file will reload the last used configuration. -->

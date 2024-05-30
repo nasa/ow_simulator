@@ -43,6 +43,11 @@ public:
 
   void getHeightmapAlbedo();
 
+  // NOTE: Only used if m_grid_in_use is false
+  // Alternative message diff callback for computing dug volume.
+  void computeDiffVolume(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+
   void handleVisualBulk(Blend const &blend, double volume);
 
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
@@ -55,11 +60,17 @@ private:
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
 
+  // when false a grid is not generated and only dug volume is computed
+  bool m_grid_in_use;
+
   std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_render_connection;
 
   ros::Publisher m_pub_grid;
   ros::Publisher m_pub_bulk_excavation_visual;
   ros::Publisher m_pub_bulk_excavation_collision;
+
+  // NOTE: Only used if m_grid_in_use is false
+  ros::Subscriber m_sub_modification_diff;
 
   MaterialDatabase m_material_db;
 
