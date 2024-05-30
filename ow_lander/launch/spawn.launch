@@ -3,7 +3,6 @@
 
   <arg name="debug" default="false" />
   <arg name="use_rviz" default="true" />
-  <arg name="auto_clear_goal_errors" default="true" />
 
   <!-- Initial lander pose arguments -->
   <arg name="init_x" default="0" />
@@ -92,11 +91,12 @@
 
   <!-- == launch the action servers ============== -->
   <arg name="node_start_delay" default="10.0" />
-  <node pkg="ow_lander" name="lander_action_servers" type="lander_action_servers.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " output="screen" >
-    <param name="auto_clear_goal_errors" value="$(arg auto_clear_goal_errors)"/>
-  </node>
+  <node pkg="ow_lander" name="lander_action_servers"
+    type="lander_action_servers.py"
+    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
+    output="screen" />
 
   <!-- == launch the state repackaging node ============== -->
   <node pkg="ow_lander" name="state_publisher" type="state_publisher.py" output="screen"/>
+
 </launch>

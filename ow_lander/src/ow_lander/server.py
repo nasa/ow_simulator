@@ -123,7 +123,8 @@ class ActionServerBase(ABC):
       self.fault_handler.notify_aborted()
 
   def __should_auto_clear_goal_errors(self):
-    return rospy.get_param("/lander_action_servers/auto_clear_goal_errors", True)
+    """Return value of auto clear goal errors rosparam"""
+    return rospy.get_param("/faults/auto_clear_goal_errors")
 
   def __should_reject_due_to_fault(self):
     """Return true if the current state of faults and simulation settings permit
