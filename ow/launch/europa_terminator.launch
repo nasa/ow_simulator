@@ -27,7 +27,7 @@
     <arg name="use_rviz" value="$(arg use_rviz)"/>
     <!-- regolith and material distribution not supported on this world -->
     <arg name="sim_regolith" value="false"/>
-    <arg name="sim_material_distribution" value="false" />
+    <arg name="sim_multimaterial" value="false" />
   </include>
 
 </launch>

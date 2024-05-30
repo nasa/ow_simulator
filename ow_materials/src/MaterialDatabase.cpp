@@ -106,7 +106,7 @@ void MaterialDatabase::populate_from_rosparams(const string &ns)
   }
   if (mat_names.size() == 0) {
     throw MaterialConfigError("A minimum of 1 material is required even if "
-                              "the sim_material_distribution flag is false.");
+                              "the sim_multimaterial flag is false.");
   }
   // build and add all materials to database
   for (const auto &mat : mat_names) {

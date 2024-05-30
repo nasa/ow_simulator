@@ -30,7 +30,7 @@ const string NAMESPACE_MATERIALS = "/ow_materials/materials";
 
 const string NODE_NAME = "/ow_materials/material_distribution_plugin";
 const string TOPIC_MOD_DIFF_VISUAL = "/ow_dynamic_terrain/modification_differential/visual";
-const string ROSPARAM_SIM_MAT_DIST = "/ow_materials/sim_material_distribution";
+const string ROSPARAM_SIM_MAT_DIST = "/ow_materials/sim_multimaterial";
 
 const string PARAMETER_CORNER_A         = "corner_a";
 const string PARAMETER_CORNER_B         = "corner_b";
@@ -107,7 +107,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   ros::param::param(ROSPARAM_SIM_MAT_DIST, m_grid_in_use, true);
   if (!m_grid_in_use) {
     gzlog << PLUGIN_NAME << ": Material distribution will not be simulated. "
-          "To enable, launch a supported world with sim_material_distribution "
+          "To enable, launch a supported world with sim_multimaterial "
           "set to true." << endl;
     m_sub_modification_diff = m_node_handle->subscribe(TOPIC_MOD_DIFF_VISUAL,
       1, &MaterialDistributionPlugin::computeDiffVolume, this);
