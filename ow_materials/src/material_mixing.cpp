@@ -20,6 +20,11 @@ Blend::Blend(vector<MaterialConcentration> const &composition)
   }
 }
 
+Blend::Blend(CompositionType const &composition)
+{
+  m_composition = composition;
+}
+
 bool Blend::isNormalized() const
 {
   return std::fabs(1.0 - sumConcentrations())
