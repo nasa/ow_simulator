@@ -46,12 +46,12 @@ public:
   // NOTE: Only used if m_grid_in_use is false
   // Alternative message diff callback for computing dug volume.
   void computeDiffVolume(
-    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg) const;
 
-  void handleVisualBulk(Blend const &blend, double volume);
+  void handleVisualBulk(Blend const &blend, double volume) const;
 
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
-  // void handleCollisionBulk(Blend const &blend, double volume);
+  // void handleCollisionBulk(Blend const &blend, double volume) const;
 
   Color interpolateColor(Blend const &blend) const;
 

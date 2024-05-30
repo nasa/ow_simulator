@@ -48,7 +48,7 @@ static float colorSpaceDistance(const Color &c1, const Color &c2)
 }
 
 void MaterialDistributionPlugin::computeDiffVolume(
-  const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg)
+  const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg) const
 {
   auto diff_handle = cv_bridge::CvImageConstPtr();
   try {
@@ -387,7 +387,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 }
 
 void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
-                                                  double volume)
+                                                  double volume) const
 {
   Bulk excavated_bulk(blend, volume);
   BulkExcavation msg;
@@ -403,7 +403,7 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
 
 //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
 // void MaterialDistributionPlugin::handleCollisionBulk(Blend const &blend,
-//                                                      double volume)
+//                                                      double volume) const
 // {
 
 // }
