@@ -6,13 +6,12 @@
 
 #include <ros/ros.h>
 
-#include <ignition/math/Quaternion.hh>
-
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
 
 #include <ow_dynamic_terrain/modified_terrain_diff.h>
+#include <ow_dynamic_terrain/scoop_dig_phase.h>
 
 #include <MovingMaxFilter.h>
 
@@ -46,22 +45,22 @@ private:
 
   void resetDepth();
 
-  bool isScoopDigging() const;
-
   void onModDiffVisualMsg(
     const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg);
 
-  void onDigTimeout(const ros::TimerEvent &);
+  void onDigPhaseMsg(const ow_dynamic_terrain::scoop_dig_phase::ConstPtr &msg);
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
 
   ros::Subscriber m_sub_mod_diff_visual;
+  ros::Subscriber m_sub_dig_phase;
+
+  // true if scoop is performing a dig motion
+  bool m_digging;
 
   ros::Publisher m_pub_horizontal_force;
   ros::Publisher m_pub_vertical_force;
   
-  ros::Timer m_dig_timeout;
-
   physics::LinkPtr m_link;
 
   event::ConnectionPtr m_updateConnection;  

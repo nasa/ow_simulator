@@ -20,14 +20,11 @@ J_SCOOP_YAW = 5
 J_GRINDER = 5
 
 # these constants will eventually exist in a Frame message type in owl_msgs
-FRAME_BASE = 0
-FRAME_TOOL = 1
-FRAME_ID_BASE = 'base_link'
-FRAME_ID_TOOL = 'l_scoop_tip'
+DEFAULT_PLANNING_FRAME = 'base_link'
 # maps frame enumerate to the corresponding gazebo frame ID
 FRAME_ID_MAP = {
-  FRAME_BASE: FRAME_ID_BASE,
-  FRAME_TOOL: FRAME_ID_TOOL
+  0: DEFAULT_PLANNING_FRAME,
+  1: 'l_scoop_tip'
 }
 
 # allowed deviation from commanded joint values

@@ -14,5 +14,5 @@ OceanWATERS:
  - A config file for `irg_planetary_ephemeris` that sets up a mission site on
    Europa.
  - A script that converts sunlight distance from `irg_planetary_ephemeris` into 
-   lux values for our shaders.
+   irradiance values for our shaders.
 

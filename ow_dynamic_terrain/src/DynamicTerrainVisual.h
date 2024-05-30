@@ -43,8 +43,13 @@ private:
     {
       terrain->updateGeometry();
       terrain->updateDerivedData(false, Ogre::Terrain::DERIVED_DATA_NORMALS | Ogre::Terrain::DERIVED_DATA_LIGHTMAP);
-
-      m_differential_pub.publish(diff_msg);
+      // publish differential
+      if (m_running_on_gzserver) {
+        // only publish from gzserver to avoid gzclient echoing this messages
+        diff_msg.header.stamp = ros::Time::now();
+        diff_msg.header.frame_id = "world";
+        m_differential_pub.publish(diff_msg);
+      }
     }
   }
 
@@ -61,6 +66,8 @@ private:
   gazebo::event::ConnectionPtr m_on_prerender_connection;
 
   Ogre::TexturePtr mMaterialMaskTexture;
+
+  bool m_running_on_gzserver;
 };
 
 }  // namespace ow_dynamic_terrain

@@ -5,7 +5,7 @@
 #include "ow_faults_detection/FaultDetector.h"
 #include <algorithm>
 #include <iomanip>
-#include <iostream> 
+#include <iostream>
 #include <actionlib_msgs/GoalStatus.h>
 
 using namespace ow_lander;
@@ -18,8 +18,8 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
 {
   srand (static_cast <unsigned> (time(0)));
   // arm and antenna
-  m_arm_faults_internal_sub = nh.subscribe("/arm_faults_internal", 
-                                          10, 
+  m_arm_faults_internal_sub = nh.subscribe("/arm_faults_internal",
+                                          10,
                                           &FaultDetector::armFaultsInternalCb,
                                           this);
   m_joint_states_sub = nh.subscribe( "/flags/joint_states",
@@ -29,14 +29,14 @@ FaultDetector::FaultDetector(ros::NodeHandle& nh)
   // camera
   const char* image_str = "/StereoCamera/left/image_";
   m_camera_original_trigger_sub = nh.subscribe( image_str + string("trigger"),
-                                                10, 
-                                                &FaultDetector::cameraTriggerCb, 
+                                                10,
+                                                &FaultDetector::cameraTriggerCb,
                                                 this);
   m_camera_raw_sub = nh.subscribe( image_str + string("raw"),
-                                   10, 
-                                   &FaultDetector::cameraRawCb, 
+                                   10,
+                                   &FaultDetector::cameraRawCb,
                                    this);
-  
+
   //  power fault publishers and subs
   m_power_soc_sub = nh.subscribe( "/battery_state_of_charge",
                                   10,
@@ -106,7 +106,7 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
         default:
           break;
       }
-    } else if ( actionlib_msgs::GoalStatus::SUCCEEDED == goal_status ){
+    } else {
       switch (goal_index) {
         case msg.ARM_GOAL:
           m_system_faults_flags &= ~SystemFaultsStatus::ARM_GOAL_ERROR;
@@ -131,7 +131,7 @@ void FaultDetector::actionGoalStatusCb(const ActionGoalStatus& msg)
 }
 
 // Arm and Antenna listeners
-bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags) 
+bool FaultDetector::isFlagSet(uint joint, const std::vector<uint8_t>& flags)
 {
   unsigned int index;
   auto found = findJointIndex(joint, index);
@@ -167,7 +167,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
 
   // check for arm faults
   bool isFault = false;
-  auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH, 
+  auto armList = {J_SHOU_YAW, J_SHOU_PITCH, J_PROX_PITCH,
                   J_DIST_PITCH, J_HAND_YAW, J_SCOOP_YAW};
   for (auto& name : armList) {
     isFault = isFault || isFlagSet( name, msg->flags);
@@ -179,7 +179,7 @@ void FaultDetector::jointStatesFlagCb(const ow_faults_detection::JointStatesFlag
     m_system_faults_flags &= ~SystemFaultsStatus::ARM_EXECUTION_ERROR;
     m_arm_faults_flags &= ~ArmFaultsStatus::HARDWARE;
   }
-  
+
   // check for antenna faults
   isFault = isFlagSet( J_ANT_PAN, msg->flags);
   if (isFault) {
@@ -278,7 +278,7 @@ void FaultDetector::powerTemperatureListener(const BatteryTemperature& msg)
   publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
   publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
- 
+
 void FaultDetector::powerSOCListener(const BatteryStateOfCharge& msg)
 {
   // set initial state of charge
@@ -313,6 +313,3 @@ void FaultDetector::powerSOCListener(const BatteryStateOfCharge& msg)
   publishFaultsMessage(m_power_faults_msg_pub, PowerFaultsStatus(), m_power_faults_flags);
   publishFaultsMessage(m_system_faults_msg_pub, SystemFaultsStatus(), m_system_faults_flags);
 }
-
-
-

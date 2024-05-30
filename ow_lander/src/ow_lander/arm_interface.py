@@ -18,6 +18,7 @@ from actionlib_msgs.msg import GoalStatus
 from controller_manager_msgs.srv import SwitchController
 
 from ow_lander.common import Singleton
+from ow_lander.constants import DEFAULT_PLANNING_FRAME
 from ow_lander.exception import ArmExecutionError
 from ow_lander.frame_transformer import FrameTransformer
 
@@ -59,8 +60,8 @@ class OWArmInterface(metaclass = Singleton):
   @classmethod
   def _assert_arm_is_checked_out(cls):
     if cls._in_use_by is None:
-      raise ArmExecutionError("Arm action did not check-out the arm before " \
-                         "attempting to execute a trajectory.")
+      raise ArmExecutionError("Arm action did not check-out the arm before "
+                              "attempting to execute a trajectory.")
 
   def __init__(self):
     # initialize/reference trajectory execution singleton
@@ -71,6 +72,8 @@ class OWArmInterface(metaclass = Singleton):
     self.robot = moveit_commander.RobotCommander()
     self.move_group_scoop = moveit_commander.MoveGroupCommander('arm')
     self.move_group_grinder = moveit_commander.MoveGroupCommander('grinder')
+    self.move_group_scoop.set_pose_reference_frame(DEFAULT_PLANNING_FRAME)
+    self.move_group_grinder.set_pose_reference_frame(DEFAULT_PLANNING_FRAME)
 
   def _stop_arm_if_fault(self, _feedback=None):
     """Ticks the stop flag when arm should stop due to a fault."""

@@ -34,11 +34,11 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(1.7, 0.5, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.2,
         overdrive = 0.05,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_01_arm_find_surface',
       server_timeout = 50.0 # (seconds) first action call needs longer timeout
@@ -66,11 +66,11 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(1.86, 0.1, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.5,
         overdrive = 0.2,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_03_arm_find_surface'
     )
@@ -96,11 +96,11 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(1.5, -0.01, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_05_arm_find_surface'
     )
@@ -126,11 +126,11 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(1.8, -0.3, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_07_arm_find_surface'
     )
@@ -156,11 +156,11 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(2, 0.17, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_09_arm_find_surface'
     )
@@ -187,11 +187,11 @@ class TestArmFindSurface(unittest.TestCase):
         relative = False,
         position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT + 0.5),
         # The +0.5 here simulates a situation the arm can not find a surface
-        normal = Vector3(0, 0, -1),
+        normal = Vector3(0, 0, 1),
         distance = 0.1,
         overdrive = 0.1,
         force_threshold = 200,
-        torque_threshold = 200
+        torque_threshold = 100
       ),
       TEST_NAME, 'test_11_arm_find_surface'
     )
@@ -203,7 +203,7 @@ class TestArmFindSurface(unittest.TestCase):
         frame = 0,
         relative = False,
         position = Point(1.86, -0.63, constants.DEFAULT_GROUND_HEIGHT),
-        normal = Vector3(-0.1, -0.3, -0.8124),
+        normal = Vector3(0.1, 0.3, 0.8124),
         distance = 0.2,
         overdrive = 0.1,
         force_threshold = 200,

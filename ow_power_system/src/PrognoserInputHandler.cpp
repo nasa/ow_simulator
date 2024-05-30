@@ -47,16 +47,14 @@ bool PrognoserInputHandler::loadSystemConfig()
     m_min_temperature = system_config.getDouble("min_temperature");
     m_max_temperature = system_config.getDouble("max_temperature");
     m_battery_lifetime = system_config.getDouble("battery_lifetime");
-    m_efficiency = system_config.getDouble("efficiency");
     m_temperature_dist = uniform_real_distribution<double>(m_min_temperature,
                                                           m_max_temperature);
-    m_baseline_wattage = system_config.getDouble("baseline_power");
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_time_interval = 1 / (system_config.getDouble("loop_rate"));
   }
   catch(const std::exception& err)
   {
-    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what() 
+    ROS_ERROR_STREAM("OW_POWER_SYSTEM ERROR: " << err.what()
                      << " while attempting to read system.cfg"
                      << " in an input handler!\n"
                      << "Ensure system.cfg is formatted properly before "
@@ -67,10 +65,10 @@ bool PrognoserInputHandler::loadSystemConfig()
   return true;
 }
 
-void PrognoserInputHandler::applyMechanicalPower(double mechanical_power)
+void PrognoserInputHandler::setPowerLoad(double power_load)
 {
   // Set the current unprocessed mechanical power.
-  m_mechanical_power_to_be_processed = mechanical_power;
+  m_power_load = power_load;
 }
 
 /*
@@ -88,15 +86,16 @@ double PrognoserInputHandler::generateTemperatureEstimate()
  */
 double PrognoserInputHandler::generateVoltageEstimate()
 {
-  // Create voltage estimate with pseudorandom noise generator - needs to decrease over time
-  double timelapse = ros::Time::now().toSec() - m_init_time;            // s
+  // Create voltage estimate with pseudorandom noise generator - needs
+  // to decrease over time.
+  double timelapse = ros::Time::now().toSec() - m_init_time; // seconds
   // If min_V dips below baseline, set to baseline values.
   double min_V = std::max(m_base_voltage + (m_battery_lifetime - timelapse)
                           / m_battery_lifetime * 0.8,
-                          m_base_voltage);                              // [V]
-  double max_V = min_V + m_voltage_range;                               // [V]
+                          m_base_voltage);
+  double max_V = min_V + m_voltage_range;
 
-  // Voltage estimate based on pseudorandom noise and moving range
+  // Voltage estimate based on pseudorandom noise and moving range.
   uniform_real_distribution<double> voltage_dist(min_V, max_V);
   return voltage_dist(m_random_generator);
 }
@@ -107,8 +106,8 @@ double PrognoserInputHandler::generateVoltageEstimate()
  * expanded in the future.
  */
 void PrognoserInputHandler::applyValueMods(double& power,
-                                       double& voltage,
-                                       double& temperature)
+                                           double& voltage,
+                                           double& temperature)
 {
   power += m_added_hpd;
   power += m_added_cpd;
@@ -138,14 +137,12 @@ bool PrognoserInputHandler::cyclePrognoserInputs()
   {
     m_init_time = ros::Time::now().toSec();
   }
-  // Calculate actual power applied to the system.
-  double electrical_power = m_mechanical_power_to_be_processed / m_efficiency;
 
   // Temperature estimate based on pseudorandom noise and fixed range
   m_current_timestamp += m_time_interval;
   m_temperature_estimate = generateTemperatureEstimate();
   m_voltage_estimate = generateVoltageEstimate();
-  m_wattage_estimate = electrical_power + m_baseline_wattage;
+  m_wattage_estimate = m_power_load;
   applyValueMods(m_wattage_estimate, m_voltage_estimate, m_temperature_estimate);
 
   if (m_wattage_estimate > m_max_gsap_input_watts) {

@@ -5,7 +5,7 @@
 // This is the header file for the PrognoserInputHandler class, which controls
 // the inputs to a single prognoser within a PowerSystemNode. It stores the
 // data used as inputs to a GSAP asynchronous prognoser and generates the next
-// input set (including any value modifications from faults or other functions) 
+// input set (including any value modifications from faults or other functions)
 // to be sent to GSAP.
 
 #ifndef __PROGNOSER_INPUT_HANDLER_H__
@@ -40,7 +40,7 @@ public:
   bool initialize();
   bool cyclePrognoserInputs();
   void getPowerStats(InputInfo &inputs);
-  void applyMechanicalPower(double mechanical_power);
+  void setPowerLoad(double power_load);
   void setHighPowerDraw(double draw);
   void setCustomPowerDraw(double draw);
 private:
@@ -59,9 +59,6 @@ private:
   double m_battery_lifetime;    // Estimate of battery lifetime (seconds)
   double m_base_voltage;        // [V] estimate
   double m_voltage_range;       // [V]
-  double m_efficiency;          // default 90% efficiency
-  double m_baseline_wattage;    // Base power drawn by continuously-running systems.
-
   double m_current_timestamp = 0.0;
 
   // HACK ALERT.  The prognoser produced erratic/erroneous output when
@@ -95,7 +92,7 @@ private:
 
   std::uniform_real_distribution<double> m_temperature_dist;
 
-  double m_mechanical_power_to_be_processed = 0.0;
+  double m_power_load = 0.0;
 };
 
 #endif

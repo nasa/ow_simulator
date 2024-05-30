@@ -17,15 +17,14 @@ from geometry_msgs.msg import Pose, PoseStamped, PointStamped
 from tf2_geometry_msgs import do_transform_pose
 from owl_msgs.msg import ArmFaultsStatus
 
-from ow_lander import constants
 from ow_lander import math3d
+from ow_lander import constants
 from ow_lander.common import (radians_equivalent, in_closed_range,
                               create_header, wait_for_subscribers)
-from ow_lander.exception import (ArmPlanningError, ArmExecutionError,
+from ow_lander.exception import (ArmError, ArmPlanningError,
                                  AntennaPlanningError, AntennaExecutionError)
 from ow_lander.subscribers import LinkStateSubscriber, JointAnglesSubscriber
 from ow_lander.arm_interface import OWArmInterface
-from ow_lander.faults_interface import FaultsInterface
 from ow_lander.frame_transformer import FrameTransformer
 from ow_lander.trajectory_sequence import TrajectorySequence
 
@@ -42,32 +41,29 @@ class ArmActionMixin:
     moveit_commander.roscpp_initialize(sys.argv)
     # initialize/reference
     self._arm = OWArmInterface()
-    self._arm_faults = FaultsInterface()
     # initialize interface for querying scoop tip position
     self._arm_tip_monitor = LinkStateSubscriber('lander::l_scoop_tip')
     self._start_server()
-
 
 class ArmTrajectoryMixin(ArmActionMixin, ABC):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       self._arm.checkout_arm(self.name)
       self._arm.execute_arm_trajectory(
         self.plan_trajectory(goal),
         action_feedback_cb = self.publish_feedback_cb
       )
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
-    except ArmPlanningError as err:
-      self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err))
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
     else:
       self._arm.checkin_arm(self.name)
       self._set_succeeded(f"{self.name} trajectory succeeded")
@@ -98,20 +94,18 @@ class GrinderTrajectoryMixin(ArmTrajectoryMixin):
 
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       self._arm.checkout_arm(self.name)
       self._arm.switch_to_grinder_controller()
       plan = self.plan_trajectory(goal)
       self._arm.execute_arm_trajectory(plan)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._cleanup()
+      self._arm.checkin_arm(self.name)
       self._set_aborted(str(err))
-    except ArmPlanningError as err:
-      self._cleanup()
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err))
-      
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
     else:
       self._cleanup()
       self._set_succeeded(f"{self.name} trajectory succeeded")
@@ -138,7 +132,7 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
 
   def execute_action(self, goal):
     # Reset faults messages before the arm start moving
-    self._arm_faults.reset_arm_faults_flags()
+    self.fault_handler.reset_arm_faults()
     try:
       self._arm.checkout_arm(self.name)
       new_positions = self.modify_joint_positions(goal)
@@ -146,15 +140,12 @@ class ModifyJointValuesMixin(ArmActionMixin, ABC):
       sequence.plan_to_joint_positions(new_positions)
       self._arm.execute_arm_trajectory(sequence.merge(),
         action_feedback_cb=self.publish_feedback_cb)
-    except ArmExecutionError as err:
+    except ArmError as err:
       self._arm.checkin_arm(self.name)
       self._set_aborted(str(err),
         final_angles=self._arm_joints_monitor.get_joint_positions())
-    except ArmPlanningError  as err:
-      self._arm.checkin_arm(self.name)
-      self._arm_faults.set_arm_faults_flag(ArmFaultsStatus.TRAJECTORY_GENERATION)
-      self._set_aborted(str(err),
-        final_angles=self._arm_joints_monitor.get_joint_positions())
+      if isinstance(err, ArmPlanningError):
+        self.fault_handler.set_arm_faults(ArmFaultsStatus.TRAJECTORY_GENERATION)
     else:
       self._arm.checkin_arm(self.name)
       if self.angles_reached(new_positions):
@@ -348,101 +339,74 @@ class PanTiltMoveMixin:
       rospy.logwarn(NO_SUBS_MSG % self._tilt_pub.name)
     self._start_server()
 
-  def move_pan_and_tilt(self, pan, tilt):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
+  def move(self, pan=None, tilt=None):
+    if pan is None and tilt is None:
+      raise AntennaPlanningError(
+        "PanTiltMoveMixin.move must always be called with either both or one "
+        "the pan or tilt keyword arguments."
+      )
+
+    if pan is not None and \
+       not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
       raise AntennaPlanningError(
         f"Requested pan {pan} is not within allowed limits.")
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
+    if tilt is not None and \
+       not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
       raise AntennaPlanningError(
         f"Requested tilt {tilt} is not within allowed limits.")
 
     # publish requested values to start pan/tilt trajectory
-    self._pan_pub.publish(pan)
-    self._tilt_pub.publish(tilt)
+    if pan is not None:
+      self._pan_pub.publish(pan)
+    if tilt is not None:
+      self._tilt_pub.publish(tilt)
 
-    # FIXME: The outcome of ReferenceMission1 happens to be closely tied to
-    #        the value of FREQUENCY. When a fast frequency was selected (10 Hz),
-    #        the image used to identify a sample location would be slightly to
-    #        the right than the image would have been if the frequency is set to
-    #        1 Hz, which would result in a sample location being selected that
-    #        is about half a meter closer to the lander than otherwise.
-    #        Such a dependency on FREQUENCY should not occur and implies that
-    #        the loop terminates before the antenna mast has completed its
-    #        movement. This breaks the synchronicity of actions, and therefore
-    #        of PLEXIL commands.
-    #        The loop break should instead trigger when both antenna joint
-    #        velocities are near enough to zero.
-    #         This issue is captured by OW-1105
     # loop until pan/tilt reach their goal values
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
+    FREQUENCY = 5 # Hz
+    TIMEOUT = 30 # seconds
     rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
+    # sleep first to give the joint a chance to start moving
+    rate.sleep()
+    for _i in range(0, int(TIMEOUT * FREQUENCY)):
       if self._is_preempt_requested():
         return False
       # publish feedback message
       self.publish_feedback_cb()
       # check if joints have arrived at their goal values
-      current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE) and \
-          radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
-        return True
+      try:
+        pan_vel, tilt_vel = self._ant_joints_monitor.get_joint_velocities()
+      except ValueError as err:
+        rospy.logwarn(f"Failed to acquire joint velocities: {err}")
+        continue
+      STALL_LIMIT = 1e-4
+      if abs(pan_vel)  < STALL_LIMIT and abs(tilt_vel) < STALL_LIMIT:
+        break
       rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for pan/tilt values to reach goal.")
 
-  # NOTE: the following move_pan and move_tilt functions have been
-  # dumbly factored out of the previous function.  The FIXME comments
-  # above have been omitted but apply.  A more refined refactoring is
-  # left to a future iteration.
+    current_pan, current_tilt = self._ant_joints_monitor.get_joint_positions()
 
-  def move_pan(self, pan):
-    if not in_closed_range(pan, constants.PAN_MIN, constants.PAN_MAX):
-      raise AntennaPlanningError(
-        f"Requested pan {pan} is not within allowed limits.")
+    pan_target_reached = pan is None or \
+      radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE)
+    tilt_target_reached = tilt is None or \
+      radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE)
 
-    # publish requested values to start pan trajectory
-    self._pan_pub.publish(pan)
+    if not pan_target_reached and not tilt_target_reached:
+      # command their current positions to ensure a locked joint will
+      # not reattempt to acquire its goal after being unlocked
+      self._pan_pub.publish(current_pan)
+      self._tilt_pub.publish(current_tilt)
+      raise AntennaExecutionError(
+        "Both pan and tilt joints failed to reach their goal position.")
+    elif not pan_target_reached:
+      self._pan_pub.publish(current_pan)
+      raise AntennaExecutionError(
+        "Pan joint failed to reach its goal position.")
+    elif not tilt_target_reached:
+      self._tilt_pub.publish(current_tilt)
+      raise AntennaExecutionError(
+        "Tilt joint failed to reach its goal position.")
 
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
-    rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
-      if self._is_preempt_requested():
-        return False
-      # publish feedback message
-      self.publish_feedback_cb()
-      # check if joints have arrived at their goal values
-      current_pan, _ = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(pan, current_pan, constants.PAN_TOLERANCE):
-        return True
-      rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for pan value to reach goal.")
-
-  def move_tilt(self, tilt):
-    if not in_closed_range(tilt, constants.TILT_MIN, constants.TILT_MAX):
-      raise AntennaPlanningError(
-        f"Requested tilt {tilt} is not within allowed limits.")
-
-    # publish requested values to start tilt trajectory
-    self._tilt_pub.publish(tilt)
-
-    FREQUENCY = 1 # Hz
-    TIMEOUT = 60 # seconds
-    rate = rospy.Rate(FREQUENCY)
-    for i in range(0, int(TIMEOUT * FREQUENCY)):
-      if self._is_preempt_requested():
-        return False
-      # publish feedback message
-      self.publish_feedback_cb()
-      # check if joints have arrived at their goal values
-      _, current_tilt = self._ant_joints_monitor.get_joint_positions()
-      if radians_equivalent(tilt, current_tilt, constants.TILT_TOLERANCE):
-        return True
-      rate.sleep()
-    raise AntennaExecutionError(
-      "Timed out waiting for tilt value to reach goal.")
+    return True
 
   def publish_feedback_cb(self):
     """overrideable"""

@@ -3,6 +3,7 @@
 // this repository.
 
 #include <gazebo/physics/physics.hh>
+
 #include "TerrainModifier.h"
 #include "DynamicTerrainBase.h"
 
@@ -127,6 +128,8 @@ private:
       // Re-enable physics updates for models that may have entered a standstill state
       m_model->GetWorld()->EnableAllModels();
       // publish differential
+      diff_msg.header.stamp = ros::Time::now();
+      diff_msg.header.frame_id = "world";
       m_differential_pub.publish(diff_msg);
     }
   }

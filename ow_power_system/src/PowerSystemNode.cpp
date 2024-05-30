@@ -21,6 +21,7 @@
 using namespace PCOE;
 
 // Fault names
+
 const std::string FAULT_NAME_HPD              = "high_power_draw";
 const std::string FAULT_NAME_HPD_ACTIVATE     = "activate_high_power_draw";
 const std::string FAULT_NAME_DBN              = "battery_nodes_to_disconnect";
@@ -91,6 +92,26 @@ void PowerSystemNode::initAndRun()
     m_max_gsap_input_watts = system_config.getDouble("max_gsap_power_input");
     m_loop_rate_hz = system_config.getDouble("loop_rate");
     m_spinner_threads = system_config.getInt32("spinner_threads");
+    m_mechanical_efficiency = system_config.getDouble("motor_efficiency");
+    m_power_active_lights = system_config.getDouble("power_active_lights");
+    m_power_baseline = (
+        system_config.getDouble("power_baseline_camera_controller")
+      + system_config.getDouble("power_baseline_computing")
+      + system_config.getDouble("power_baseline_heating")
+      + system_config.getDouble("power_baseline_science_instr")
+      + system_config.getDouble("power_baseline_sample_handling")
+      + system_config.getDouble("power_baseline_other")
+    );
+    // use ROS Param to make other nodes, such as the lander action servers,
+    // aware of power parameters
+    m_nh.setParam(
+      "/ow_power_system/power_active_camera",
+      system_config.getDouble("power_active_camera")
+    );
+    m_nh.setParam(
+      "/ow_power_system/power_active_comms",
+      system_config.getDouble("power_active_comms")
+    );
     m_prev_soc = m_initial_soc;
   }
   catch(const std::exception& err)
@@ -264,15 +285,20 @@ void PowerSystemNode::initAndRun()
     // corresponding prognoser via its message bus.
     // Save the current average mechanical power, in case jointStatesCb runs
     // while processing which would update m_mean_mechanical_power mid-loop.
-    double mech_power = m_mean_mechanical_power;
+    const double actual_mech_power
+      = m_mean_mechanical_power / m_mechanical_efficiency;
+    const double shared_power_load = (
+      actual_mech_power
+      + m_electrical_power
+      + m_power_baseline
+      + electricalPowerLights()
+    ) / (NUM_MODELS - m_deactivated_models);
     for (int i = 0; i < m_active_models; i++)
     {
       // Apply mechanical power, then cycle the inputs in each model.
       // If excessive power draw was detected/corrected, display the warning
       // if it hasn't already displayed once this cycle.
-      m_power_models[i].model.applyMechanicalPower(
-                                      mech_power
-                                      / (NUM_MODELS - m_deactivated_models));
+      m_power_models[i].model.setPowerLoad(shared_power_load);
       if (m_power_models[i].model.cyclePrognoserInputs())
       {
         // Current implementation means if one ModelHandler exceeds the draw
@@ -515,10 +541,12 @@ void PowerSystemNode::initTopics()
                                   "/battery_temperature", 1);
   // Finally subscribe to the joint_states to estimate the mechanical power
   m_joint_states_sub = m_nh.subscribe(
-                        "/joint_states",
-                        1,
-                        &PowerSystemNode::jointStatesCb,
-                        this);
+    "/joint_states", 1, &PowerSystemNode::jointStatesCb, this
+  );
+  // Subscribe to electrical power to capture power used by non-arm actions
+  m_electrical_power_sub = m_nh.subscribe(
+    "/electrical_power", 1, &PowerSystemNode::electricalPowerCb, this
+  );
 }
 
 /*
@@ -777,21 +805,14 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       // Warn the user about the invalid behavior associated with power faults.
       printPowerFaultWarning();
 
-      // Extra logic if the ICL fault was already activated, to immediately
-      // bring SoC down to the threshold.
-      if (m_icl_activated && m_prev_soc > POWER_SOC_MIN)
-      {
-        m_prev_soc = POWER_SOC_MIN;
-      }
+      // Set the previous SOC value too so low SOC and ICL can work in concert.
+      m_prev_soc = POWER_SOC_MIN;
     }
     else if (m_low_soc_activated && !fault_enabled)
     {
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_low_soc_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 
   // Instantaneous capacity loss case
@@ -818,9 +839,6 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_icl_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 
   // Thermal failure case
@@ -847,9 +865,6 @@ void PowerSystemNode::injectFault(const std::string& fault_name)
       ROS_INFO_STREAM(fault_name << " deactivated!");
       m_thermal_failure_activated = false;
     }
-    
-    // There is no continual behavior with this fault. Its effect is applied in
-    // publishPredictions().
   }
 }
 
@@ -907,6 +922,26 @@ void PowerSystemNode::jointStatesCb(const sensor_msgs::JointStateConstPtr& msg)
   m_mechanical_power_raw_pub.publish(mechanical_power_raw_msg);
   m_mechanical_power_avg_pub.publish(mechanical_power_avg_msg);
 }
+
+/*
+* Receives electrical power topic and saves locally.
+*/
+void PowerSystemNode::electricalPowerCb(const std_msgs::Float64 &msg)
+{
+  m_electrical_power = msg.data;
+}
+
+/*
+* Computes power consumption by lights based on each of their intensities.
+*/
+double PowerSystemNode::electricalPowerLights () const
+{
+  double left_intensity, right_intensity;
+  ros::param::getCached("/OWLightControlPlugin/left_light", left_intensity);
+  ros::param::getCached("/OWLightControlPlugin/right_light", right_intensity);
+  return m_power_active_lights * (left_intensity + right_intensity);
+}
+
 
 /*
  * Function called during custom fault injection that attempts to
