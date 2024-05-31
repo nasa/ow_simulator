@@ -24,7 +24,7 @@ const auto STAT_LOG_TIMEOUT = ros::Duration(1.0); // second
 const uint MINIMUM_INTEGRATE_THREADS = 4u;
 
 MaterialIntegrator::MaterialIntegrator(
-  ros::NodeHandle *node_handle, AxisAlignedGrid<Blend> const *grid,
+  ros::NodeHandle *node_handle, VoxelGrid<Blend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid),

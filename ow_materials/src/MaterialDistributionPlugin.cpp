@@ -43,6 +43,8 @@ const string PARAMETER_MATERIALS_FILE             = "file";
 const string PARAMETER_MATERIALS_CHILD            = "reference_color";
 const string PARAMETER_MATERIALS_CHILD_ATTRIBUTE  = "material";
 
+const string DEFAULT_GRID_FRAME = "world";
+
 static float colorSpaceDistance(const Color &c1, const Color &c2)
 {
   Color d{c2.r - c1.r, c2.g - c1.g, c2.b - c1.b};
@@ -52,6 +54,7 @@ static float colorSpaceDistance(const Color &c1, const Color &c2)
 void MaterialDistributionPlugin::computeDiffVolume(
   const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg) const
 {
+  // compute the area displaced by this modification by the differential image
   auto diff_handle = cv_bridge::CvImageConstPtr();
   try {
     diff_handle = cv_bridge::toCvShare(msg->diff, msg);
@@ -68,9 +71,9 @@ void MaterialDistributionPlugin::computeDiffVolume(
   float volume_displaced = 0.0;
   for (size_t i = 0; i != cols; ++i) {
     for (size_t j = 0; j != rows; ++j) {
-      // change in height at pixel (x, y)
       auto dz = diff_handle->image.at<float>(i, j);
-      if (dz >= 0.0) { // ignore unmodified or raised terrain
+      if (dz >= 0.0) {
+        // ignore unmodified or raised terrain
         continue;
       }
       // dz is always negative here, so subtract to get a positive volume
@@ -87,7 +90,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 {
   gzlog << PLUGIN_NAME << ": loading..." << endl;
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
-  m_heightmap = model;
+  m_heightmap_model = model;
 
   // populate materials database
   try {
@@ -105,14 +108,16 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   // m_pub_bulk_excavation_collision = m_node_handle->advertise<BulkExcavation>(
   //   "/ow_materials/bulk_excavation/collision", 10, false);
   // disable material distribution grid, and only compute volume displaced
-  ros::param::param(ROSPARAM_SIM_MAT_DIST, m_grid_in_use, true);
-  if (!m_grid_in_use) {
+  bool grid_in_use;
+  ros::param::param(ROSPARAM_SIM_MAT_DIST, grid_in_use, true);
+  if (!grid_in_use) {
     gzlog << PLUGIN_NAME << ": Material distribution will not be simulated. "
           "To enable, launch a supported world with sim_multimaterial "
           "set to true." << endl;
     m_sub_modification_diff = m_node_handle->subscribe(TOPIC_MOD_DIFF_VISUAL,
       1, &MaterialDistributionPlugin::computeDiffVolume, this);
     gzlog << PLUGIN_NAME << ": Plugin successfully loaded." << endl;
+    // everything following this statement is unnecessary in gridless mode
     return;
   }
   // publish latched, because points will never change
@@ -134,7 +139,8 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   m_corner_a = sdf->Get<GridPositionType>(PARAMETER_CORNER_A);
   m_corner_b = sdf->Get<GridPositionType>(PARAMETER_CORNER_B);
   m_cell_side_length = sdf->Get<double>(PARAMETER_CELL_SIDE_LENGTH);
-  sdf->Get<string>(PARAMETER_RELATIVE_TO, m_grid_frame, "world");
+  // optional, defaults to world
+  sdf->Get<string>(PARAMETER_RELATIVE_TO, m_relative_to, DEFAULT_GRID_FRAME);
 
   // get reference colors for mapping terrain texture to material compositions
   if (!sdf->HasElement(PARAMETER_MATERIALS)) {
@@ -178,7 +184,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     child = child->GetNextElement(PARAMETER_MATERIALS_CHILD);
   }
 
-  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  //// STUBBED FEATURE: reactivate to implement grinder terramechanics (OW-998)
   // m_collision_integrator = make_unique<MaterialIntegrator>(
   //   m_node_handle.get(), m_grid.get(),
   //   "/ow_dynamic_terrain/modification_differential/collision",
@@ -189,104 +195,107 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   //     std::placeholders::_1)
   // );
 
-  // defer acquiring heightmap albedo texture until the gazebo scene exists
+  // defer further initialization tasks until gazebo resources are available
   // NOTE: this event callback will only be called as many times as it needs to
   //  before it acquires the texture, then it will delete its own event handle
   //  to prevent future calls
   m_temp_render_connection = make_unique<event::ConnectionPtr>(
     event::Events::ConnectRender(
-      std::bind(&MaterialDistributionPlugin::getHeightmapAlbedo, this)
+      std::bind(&MaterialDistributionPlugin::attemptToAcquireWorldData, this)
     )
   );
 
   gzlog << PLUGIN_NAME << ": awaiting scene heightmap..." << endl;
 }
 
+void MaterialDistributionPlugin::attemptToAcquireWorldData() {
 
-/// TODO: rename function. Clean-up error handling and ordering.
-void MaterialDistributionPlugin::getHeightmapAlbedo() {
-  // try to get scene and heightmap
-  // if either are unavailable, try again next render signal
+  // This function will continue being called until the following have become
+  // available in Gazebo:
+  //  1. The scene
+  //  2. A heightmap
+  //  3. The world
+
+  // timeout if after 10 seconds of waiting for Gazebo resources
+  const auto ATTEMPT_TIMEOUT = ros::WallDuration(10.0);
+  static const auto first_call = ros::WallTime::now();
+  if (ros::WallTime::now() - first_call > ATTEMPT_TIMEOUT) {
+    gzerr << PLUGIN_NAME << ": Timed out waiting for Gazebo to make necessary "
+                            "resources available. " << endl;
+    // disable callback by deleting its handle
+    delete m_temp_render_connection.release();
+    return;
+  }
+
+  // Attempt to get scene, heightmap, and world references,
+  // If any of these are unavailable, try again at the next render signal.
   auto scene = rendering::get_scene();
   if (scene == nullptr) return;
   rendering::Heightmap *heightmap = scene->GetHeightmap();
   if (heightmap == nullptr) return;
-  gzlog << PLUGIN_NAME << ": Gazebo heightmap acquired." << endl;
+  auto world = m_heightmap_model->GetWorld();
+  if (world == nullptr) return;
+
+  gzlog << PLUGIN_NAME << ": Gazebo resources fully loaded. Initializing "
+                          "voxel grid from terrain albedo." << endl;
 
   // a long string of Gazebo and Ogre API calls to get heightmap albedo texture
   Ogre::TexturePtr texture;
   Ogre::Terrain *terrain;
+  auto grid_transform = ignition::math::Pose3d::Zero;
   try {
     Ogre::TerrainGroup *terrain_group = heightmap->OgreTerrain();
-    if (terrain_group == nullptr) throw runtime_error("terrain group");
+    if (terrain_group == nullptr) {throw runtime_error("terrain group");}
     terrain = terrain_group->getTerrain(0, 0);
-    if (terrain == nullptr) throw runtime_error("terrain");
+    if (terrain == nullptr) {throw runtime_error("terrain");}
     Ogre::MaterialPtr material = terrain->getMaterial();
-    if (material.isNull()) throw runtime_error("material");
+    if (material.isNull()) {throw runtime_error("material");}
     Ogre::Technique *tech = material->getTechnique(0u);
-    if (tech == nullptr) throw runtime_error("technique");
+    if (tech == nullptr) {throw runtime_error("technique");}
     Ogre::Pass *pass = tech->getPass(0u);
-    if (pass == nullptr) throw runtime_error("pass");
+    if (pass == nullptr) {throw runtime_error("pass");}
     const string UNIT_NAME = "albedoMap";
     Ogre::TextureUnitState *unit = pass->getTextureUnitState(UNIT_NAME);
-    if (unit == nullptr) throw runtime_error(UNIT_NAME + " texture unit");
+    if (unit == nullptr) {throw runtime_error(UNIT_NAME + " texture unit");}
     texture = unit->_getTexturePtr();
-    if (texture.isNull()) throw runtime_error("texture");
+    if (texture.isNull()) {throw runtime_error("texture");}
+    if (m_relative_to != DEFAULT_GRID_FRAME) {
+      auto relative_to_model = world->EntityByName(m_relative_to);
+      if (relative_to_model ==  nullptr) {
+        throw runtime_error("relative_to model");
+      }
+      grid_transform = relative_to_model->WorldPose();
+    }
   } catch (runtime_error e) {
-    gzerr << "Failed to acquire heightmap albedo texture: "
+    gzerr << "Failed to acquire gazebo resource: "
           << e.what() << " is missing." << endl;
     // disable callback by deleting its handle
     delete m_temp_render_connection.release();
     return;
   }
 
-  auto grid_transform = ignition::math::Pose3d::Zero;
-  if (m_grid_frame != "world") {
-    auto world = m_heightmap->GetWorld();
-    if (world == nullptr) {
-      gzerr << PLUGIN_NAME << ": Failed to acquire world." << endl;
-      delete m_temp_render_connection.release();
-      return;
-    }
-    auto reference_model = world->EntityByName(m_grid_frame);
-    if (reference_model == nullptr) {
-      gzerr << PLUGIN_NAME << ": Failed to find static frame reference model "
-            << m_grid_frame << "." << endl;
-      delete m_temp_render_connection.release();
-      return;
-    }
-    grid_transform = reference_model->WorldPose();
-    // corner_a += m_grid_transform.Pos();
-    // corner_b += m_grid_transform.Pos();
-
-    gzlog << "grid_transform = " << grid_transform << "\n";
-    // gzlog << "corner_a = " << corner_a << "\n";
-    // gzlog << "corner_b = " << corner_b << "\n";
-
-  }
-
   try {
-    m_grid = make_unique<AxisAlignedGrid<Blend>>(
+    m_grid = make_unique<VoxelGrid<Blend>>(
       m_corner_a, m_corner_b, m_cell_side_length, grid_transform
     );
   } catch (const GridConfigError &e) {
     gzerr << PLUGIN_NAME << ": " << e.what() << endl;
+    // disable callback by deleting its handle
+    delete m_temp_render_connection.release();
     return;
   }
-
-  const auto center = m_grid->getCenter();
-  const auto diagonal = m_grid->getDiagonal();
+  auto center = m_grid->getWorldCenter();
+  auto dimensions = m_grid->getDimensions();
   gzlog << PLUGIN_NAME
         << ": Material grid centered at (" << center.X() << ", "
                                            << center.Y() << ", "
                                            << center.Z() << ") "
-        << "with dimensions " << diagonal.X() << " x "
-                              << diagonal.Y() << " x "
-                              << diagonal.Z() << " meters.\n";
+        << "with dimensions " << dimensions.X() << " x "
+                              << dimensions.Y() << " x "
+                              << dimensions.Z() << " meters.\n";
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
-    m_node_handle.get(), m_grid.get(),
-    "/ow_dynamic_terrain/modification_differential/visual",
+    m_node_handle.get(), m_grid.get(), TOPIC_MOD_DIFF_VISUAL,
     "/ow_materials/dug_points2",
     std::bind(&MaterialDistributionPlugin::handleVisualBulk, this,
       std::placeholders::_1, std::placeholders::_2),
@@ -305,6 +314,7 @@ void MaterialDistributionPlugin::getHeightmapAlbedo() {
     std::move(albedo), terrain
   );
   t.detach();
+
   // the callback's sole purpose has been fulfilled, so we can disable it by
   // deleting its event handle
   delete m_temp_render_connection.release();
@@ -401,7 +411,9 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
           make_pair(tex_coord, BlendAndColor{blend, interpolateColor(blend)})
         );
       }
-
+      // By making the point cloud relative to the grid's relative_to model
+      // frame the cube's of the Rviz visualization can be aligned to the
+      // model's frame.
       grid_points.emplace_back(
         // truncates double to int (<256)
         static_cast<uint8_t>(last_insert->second.color.r),
@@ -419,7 +431,7 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
-  publishPointCloud(&m_pub_grid, grid_points, m_grid_frame);
+  publishPointCloud(&m_pub_grid, grid_points, m_relative_to);
 
   gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
         << endl;

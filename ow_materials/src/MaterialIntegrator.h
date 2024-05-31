@@ -15,7 +15,7 @@
 
 #include "ow_dynamic_terrain/modified_terrain_diff.h"
 
-#include "AxisAlignedGrid.h"
+#include "VoxelGrid.h"
 #include "Material.h"
 #include "material_mixing.h"
 
@@ -35,7 +35,7 @@ class MaterialIntegrator
 
 public:
   MaterialIntegrator(ros::NodeHandle *node_handle,
-                     AxisAlignedGrid<Blend> const *grid,
+                     VoxelGrid<Blend> const *grid,
                      const std::string &modification_topic,
                      const std::string &dug_points_topic,
                      HandleBulkCallback handle_bulk_cb,
@@ -61,7 +61,7 @@ private:
 
   ColorizerCallback m_colorizer_cb;
 
-  AxisAlignedGrid<Blend> const *m_grid;
+  VoxelGrid<Blend> const *m_grid;
 
   std::uint32_t m_next_expected_seq = 0u;
 

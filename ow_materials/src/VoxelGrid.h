@@ -2,8 +2,8 @@
 // Research and Simulation can be found in README.md in the root directory of
 // this repository.
 
-#ifndef AXIS_ALIGNED_GRID_H
-#define AXIS_ALIGNED_GRID_H
+#ifndef VOXEL_GRID_H
+#define VOXEL_GRID_H
 
 #include <vector>
 #include <memory>
@@ -27,28 +27,25 @@ using GridTransformType = ignition::math::Pose3d;
 using GridPositionType = ignition::math::Vector3d;
 using GridPositionType2D = ignition::math::Vector2d;
 
-// TODO: rename class to something not axis aligned specific
 template <typename T>
-class AxisAlignedGrid {
+class VoxelGrid {
 
-  // An axis-aligned box which is partitioned into cubes of a given side length.
-  // Each cube, or cell, or voxel, is linked to a value of type T.
+  // A box which is partitioned into cubes of a constant side length.
+  // Each cube/cell/voxel is given a value of type T.
 
   using GridIndexType = ignition::math::Vector3<std::size_t>;
 
 public:
-  AxisAlignedGrid(GridPositionType corner_1, GridPositionType corner_2,
+  VoxelGrid(GridPositionType corner_1, GridPositionType corner_2,
                   double cell_side_length, GridTransformType frame_transform);
-  ~AxisAlignedGrid() = default;
+  ~VoxelGrid() = default;
 
-  AxisAlignedGrid() = delete;
-  AxisAlignedGrid(const AxisAlignedGrid&) = delete;
-  AxisAlignedGrid& operator=(const AxisAlignedGrid&) = delete;
+  VoxelGrid() = delete;
+  VoxelGrid(const VoxelGrid&) = delete;
+  VoxelGrid& operator=(const VoxelGrid&) = delete;
 
-  const GridPositionType &getDiagonal() const;
-  const GridPositionType &getMaxCorner() const;
-  const GridPositionType &getMinCorner() const;
-  const GridPositionType &getCenter() const;
+  const GridPositionType &getDimensions() const;
+  const GridPositionType &getWorldCenter() const;
 
   const double &getCellVolume() const;
   inline double getCellLength() const { return m_cell_length; }
@@ -63,6 +60,13 @@ public:
 
 private:
 
+  inline const GridPositionType &getMaxCorner() const {
+    return m_domain->Max();
+  };
+  inline const GridPositionType &getMinCorner() const {
+    return m_domain->Min();
+  };
+
   GridPositionType getCellCenter(GridIndexType i) const;
 
   inline const T &getCellValue(GridIndexType i) const {
@@ -73,23 +77,8 @@ private:
     return m_cells[index(i)];
   };
 
-  GridPositionType transformIntoFrame(const GridPositionType &p) const {
-    auto m = p - m_frame_offset;
-    return GridPositionType{
-       m.X() * std::cos(m_frame_yaw) + m.Y() * std::sin(m_frame_yaw),
-      -m.X() * std::sin(m_frame_yaw) + m.Y() * std::cos(m_frame_yaw),
-       m.Z()
-    };
-  };
-
-  GridPositionType transformIntoWorld(const GridPositionType &p) const{
-    auto m = GridPositionType{
-      p.X() * std::cos(m_frame_yaw) - p.Y() * std::sin(m_frame_yaw),
-      p.X() * std::sin(m_frame_yaw) + p.Y() * std::cos(m_frame_yaw),
-      p.Z()
-    };
-    return m + m_frame_offset;
-  };
+  GridPositionType transformIntoFrame(const GridPositionType &p) const;
+  GridPositionType transformIntoWorld(const GridPositionType &p) const;
 
   std::size_t index(GridIndexType i) const;
 
@@ -107,6 +96,6 @@ private:
 
 }
 
-#include <AxisAlignedGrid.tpp>
+#include <VoxelGrid.tpp>
 
-#endif // AXIS_ALIGNED_GRID_H
+#endif // VOXEL_GRID_H
