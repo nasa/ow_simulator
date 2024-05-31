@@ -27,6 +27,9 @@ using namespace gazebo;
 
 const string PLUGIN_NAME = "MaterialDistributionPlugin";
 
+#define GZERR(msg) gzerr << PLUGIN_NAME << ": " << msg
+#define GZLOG(msg) gzmsg << PLUGIN_NAME << ": " << msg
+
 const string NAMESPACE_MATERIALS = "/ow_materials/materials";
 
 const string NODE_NAME = "/ow_materials/material_distribution_plugin";
@@ -59,8 +62,8 @@ void MaterialDistributionPlugin::computeDiffVolume(
   try {
     diff_handle = cv_bridge::toCvShare(msg->diff, msg);
   } catch (cv_bridge::Exception& e) {
-    gzlog << "cv_bridge exception occurred while reading modification "
-             "differential message: " << e.what() << std::endl;
+    GZLOG("cv_bridge exception occurred while reading modification " <<
+          "differential message: " << e.what() << std::endl);
     return;
   }
   const auto rows = diff_handle->image.rows;
@@ -88,7 +91,7 @@ void MaterialDistributionPlugin::computeDiffVolume(
 void MaterialDistributionPlugin::Load(physics::ModelPtr model,
                                       sdf::ElementPtr sdf)
 {
-  gzlog << PLUGIN_NAME << ": loading..." << endl;
+  GZLOG("loading..." << endl);
   m_node_handle = make_unique<ros::NodeHandle>(NODE_NAME);
   m_heightmap_model = model;
 
@@ -96,11 +99,11 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   try {
     m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const MaterialConfigError &e) {
-    gzerr << e.what() << endl;
+    GZERR(e.what() << endl);
     return;
   }
-  gzlog << PLUGIN_NAME << ": Materials database populated with "
-        << m_material_db.size() << " materials.\n";
+  GZLOG("Materials database populated with " << m_material_db.size() <<
+        " materials." << endl);
 
   m_pub_bulk_excavation_visual = m_node_handle->advertise<BulkExcavation>(
     "/ow_materials/bulk_excavation/visual", 10, false);
@@ -111,12 +114,12 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
   bool grid_in_use;
   ros::param::param(ROSPARAM_SIM_MAT_DIST, grid_in_use, true);
   if (!grid_in_use) {
-    gzlog << PLUGIN_NAME << ": Material distribution will not be simulated. "
+    GZLOG("Material distribution will not be simulated. "
           "To enable, launch a supported world with sim_multimaterial "
-          "set to true." << endl;
+          "set to true." << endl);
     m_sub_modification_diff = m_node_handle->subscribe(TOPIC_MOD_DIFF_VISUAL,
       1, &MaterialDistributionPlugin::computeDiffVolume, this);
-    gzlog << PLUGIN_NAME << ": Plugin successfully loaded." << endl;
+    GZLOG("Plugin successfully loaded." << endl);
     // everything following this statement is unnecessary in gridless mode
     return;
   }
@@ -127,12 +130,12 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 
   if (!sdf->HasElement(PARAMETER_CORNER_A)
       || !sdf->HasElement(PARAMETER_CORNER_B)) {
-    gzerr << "Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B
-          << " parameters are required." << endl;
+    GZERR("Both " << PARAMETER_CORNER_A << " and " << PARAMETER_CORNER_B <<
+          " parameters are required." << endl);
     return;
   }
   if (!sdf->HasElement(PARAMETER_CELL_SIDE_LENGTH)) {
-    gzerr << PARAMETER_CELL_SIDE_LENGTH << " is required." << endl;
+    GZERR(PARAMETER_CELL_SIDE_LENGTH << " is required." << endl);
     return;
   }
 
@@ -144,15 +147,15 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
 
   // get reference colors for mapping terrain texture to material compositions
   if (!sdf->HasElement(PARAMETER_MATERIALS)) {
-    gzerr << PARAMETER_MATERIALS << " is required." << endl;
+    GZERR(PARAMETER_MATERIALS << " is required." << endl);
     return;
   }
   auto sdf_materials = sdf->GetElement(PARAMETER_MATERIALS);
   auto child = sdf_materials->GetFirstElement();
   while (child) {
     if (!child->HasAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)) {
-      gzerr << PARAMETER_MATERIALS_CHILD_ATTRIBUTE << " attribute is required "
-            << "for each reference_color specified" << endl;
+      GZERR(PARAMETER_MATERIALS_CHILD_ATTRIBUTE << " attribute is required " <<
+            "for each reference_color specified" << endl);
       return;
     }
     MaterialID id;
@@ -161,12 +164,12 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
         child->GetAttribute(PARAMETER_MATERIALS_CHILD_ATTRIBUTE)->GetAsString()
       );
     } catch (MaterialRangeError const &e) {
-      gzerr << e.what()
-            << " Verify that the material names in the reference_color entries "
-               "defined in your world's model.sdf file match the names defined "
-               "in your material's YAML file. See the Material Distribution "
-               "section of the Environment Simulation page of the Wiki for "
-               "a more in depth explanation." << endl;
+      GZERR(e.what() <<
+            " Verify that the material names in the reference_color entries "
+            "defined in your world's model.sdf file match the names defined "
+            "in your material's YAML file. See the Material Distribution "
+            "section of the Environment Simulation page of the Wiki for "
+            "a more in depth explanation." << endl);
       return;
     }
     // interpret value as a vector since it's the same shape as a color
@@ -205,7 +208,7 @@ void MaterialDistributionPlugin::Load(physics::ModelPtr model,
     )
   );
 
-  gzlog << PLUGIN_NAME << ": awaiting scene heightmap..." << endl;
+  GZLOG("awaiting Gazebo resources to be loaded..." << endl);
 }
 
 void MaterialDistributionPlugin::attemptToAcquireWorldData() {
@@ -216,12 +219,12 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
   //  2. A heightmap
   //  3. The world
 
-  // timeout if after 10 seconds of waiting for Gazebo resources
-  const auto ATTEMPT_TIMEOUT = ros::WallDuration(10.0);
+  // timeout if after 5 seconds of waiting for Gazebo resources
+  const auto ATTEMPT_TIMEOUT = ros::WallDuration(5.0);
   static const auto first_call = ros::WallTime::now();
   if (ros::WallTime::now() - first_call > ATTEMPT_TIMEOUT) {
-    gzerr << PLUGIN_NAME << ": Timed out waiting for Gazebo to make necessary "
-                            "resources available. " << endl;
+    GZERR("Timed out waiting for Gazebo to make necessary "
+          "resources available. " << endl);
     // disable callback by deleting its handle
     delete m_temp_render_connection.release();
     return;
@@ -236,8 +239,8 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
   auto world = m_heightmap_model->GetWorld();
   if (world == nullptr) return;
 
-  gzlog << PLUGIN_NAME << ": Gazebo resources fully loaded. Initializing "
-                          "voxel grid from terrain albedo." << endl;
+  GZLOG("Gazebo resources fully loaded. Initializing voxel grid from "
+        "terrain albedo." << endl);
 
   // a long string of Gazebo and Ogre API calls to get heightmap albedo texture
   Ogre::TexturePtr texture;
@@ -267,8 +270,8 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
       grid_transform = relative_to_model->WorldPose();
     }
   } catch (runtime_error e) {
-    gzerr << "Failed to acquire gazebo resource: "
-          << e.what() << " is missing." << endl;
+    GZERR("Failed to acquire gazebo resource: " << e.what() <<
+          " is missing." << endl);
     // disable callback by deleting its handle
     delete m_temp_render_connection.release();
     return;
@@ -279,20 +282,19 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
       m_corner_a, m_corner_b, m_cell_side_length, grid_transform
     );
   } catch (const GridConfigError &e) {
-    gzerr << PLUGIN_NAME << ": " << e.what() << endl;
+    GZERR(e.what() << endl);
     // disable callback by deleting its handle
     delete m_temp_render_connection.release();
     return;
   }
   auto center = m_grid->getWorldCenter();
   auto dimensions = m_grid->getDimensions();
-  gzlog << PLUGIN_NAME
-        << ": Material grid centered at (" << center.X() << ", "
-                                           << center.Y() << ", "
-                                           << center.Z() << ") "
+  GZLOG("Material grid centered at (" << center.X() << ", "
+                                         << center.Y() << ", "
+                                         << center.Z() << ") "
         << "with dimensions " << dimensions.X() << " x "
                               << dimensions.Y() << " x "
-                              << dimensions.Z() << " meters.\n";
+                              << dimensions.Z() << " meters.\n");
 
   m_visual_integrator = make_unique<MaterialIntegrator>(
     m_node_handle.get(), m_grid.get(), TOPIC_MOD_DIFF_VISUAL,
@@ -305,8 +307,8 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
 
   Ogre::Image albedo;
   texture->convertToImage(albedo);
-  gzlog << PLUGIN_NAME << ": Heightmap albedo texture acquired.\n";
-  gzlog << PLUGIN_NAME << ": Plugin successfully loaded." << endl;
+  GZLOG("Heightmap albedo texture acquired.\n");
+  GZLOG("Plugin successfully loaded." << endl);
   // the process can take as long as 10 seconds, so we spin it off in its own
   // thread to not hold up loading the rest of Gazebo
   std::thread t(
@@ -323,7 +325,7 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
 void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
                                               Ogre::Terrain *terrain)
 {
-  gzlog << PLUGIN_NAME << ": Populating grid from heightmap albedo..." << endl;
+  GZLOG("Populating grid from heightmap albedo..." << endl);
   // time the following operation
   auto start_time = ros::WallTime::now();
 
@@ -426,15 +428,14 @@ void MaterialDistributionPlugin::populateGrid(Ogre::Image albedo,
     }
   );
 
-  gzlog << PLUGIN_NAME << ": Grid generation took "
-        << (ros::WallTime::now() - start_time).toSec() << " seconds." << endl;
+  GZLOG("Grid generation took "
+        << (ros::WallTime::now() - start_time).toSec() << " seconds." << endl);
 
   // publish and latch grid data as a point cloud for visualization
   // only need to do this once because the grid is never modified
   publishPointCloud(&m_pub_grid, grid_points, m_relative_to);
 
-  gzlog << PLUGIN_NAME << ": Grid visualization now ready for viewing in Rviz."
-        << endl;
+  GZLOG("Grid visualization now ready for viewing in Rviz." << endl);
 }
 
 void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
@@ -445,7 +446,7 @@ void MaterialDistributionPlugin::handleVisualBulk(Blend const &blend,
   try {
     msg = bulkToBulkExcavationMsg(excavated_bulk, m_material_db);
   } catch (MaterialRangeError const &e) {
-    gzerr << e.what() << endl;
+    GZERR(e.what() << endl);
     return;
   }
   msg.header.stamp = ros::Time::now();

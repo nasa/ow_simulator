@@ -50,8 +50,7 @@ public:
   const double &getCellVolume() const;
   inline double getCellLength() const { return m_cell_length; }
 
-  // WARNING: execution will may take a long time depending on grid resolution
-  // void runForEach(std::function<void(const T&, GridPositionType)> f) const;
+  // WARNING: Execution will may take a long time depending on grid resolution.
   void runForEach(
     std::function<void(T&, GridPositionType, GridPositionType)> f);
   
