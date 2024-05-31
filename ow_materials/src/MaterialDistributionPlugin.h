@@ -78,8 +78,8 @@ private:
 
   gazebo::physics::ModelPtr m_heightmap_model;
 
-  ignition::math::Vector3d m_corner_a;
-  ignition::math::Vector3d m_corner_b;
+  GridPositionType m_corner_a;
+  GridPositionType m_corner_b;
   double m_cell_side_length;
   // Either world or the name of a static model the grid will be relative to.
   std::string m_relative_to;

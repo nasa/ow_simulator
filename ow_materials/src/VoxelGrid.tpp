@@ -36,10 +36,10 @@ static GridPositionType maxPosition(GridPositionType const &a,
 
 template <typename T>
 VoxelGrid<T>::VoxelGrid(GridPositionType corner_1, GridPositionType corner_2,
-                        double const cell_side_length,
-                        GridTransformType const frame_transform)
-  : m_cell_length(cell_side_length), m_frame_offset(frame_transform.Pos()),
-    m_frame_yaw(frame_transform.Rot().Euler().Z())
+                        double cell_side_length,
+                        GridPositionType position_offset, double yaw)
+  : m_cell_length(cell_side_length), m_frame_offset(position_offset),
+    m_frame_yaw(yaw)
 {
 
   // cannot have a negative/zero length

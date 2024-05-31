@@ -37,7 +37,8 @@ class VoxelGrid {
 
 public:
   VoxelGrid(GridPositionType corner_1, GridPositionType corner_2,
-                  double cell_side_length, GridTransformType frame_transform);
+                  double cell_side_length,
+                  GridPositionType position_offset, double yaw);
   ~VoxelGrid() = default;
 
   VoxelGrid() = delete;

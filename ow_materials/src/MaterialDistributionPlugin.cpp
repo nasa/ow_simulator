@@ -279,7 +279,8 @@ void MaterialDistributionPlugin::attemptToAcquireWorldData() {
 
   try {
     m_grid = make_unique<VoxelGrid<Blend>>(
-      m_corner_a, m_corner_b, m_cell_side_length, grid_transform
+      m_corner_a, m_corner_b, m_cell_side_length,
+      grid_transform.Pos(), grid_transform.Rot().Euler().Z()
     );
   } catch (const GridConfigError &e) {
     GZERR(e.what() << endl);
