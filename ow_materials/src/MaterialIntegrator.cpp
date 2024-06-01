@@ -24,7 +24,7 @@ const auto STAT_LOG_TIMEOUT = ros::Duration(1.0); // second
 const uint MINIMUM_INTEGRATE_THREADS = 4u;
 
 MaterialIntegrator::MaterialIntegrator(
-  ros::NodeHandle *node_handle, AxisAlignedGrid<Blend> const *grid,
+  ros::NodeHandle *node_handle, VoxelGrid<Blend> const *grid,
   const std::string &modification_topic, const std::string &dug_points_topic,
   HandleBulkCallback handle_bulk_cb, ColorizerCallback colorizer_cb)
   : m_node_handle(node_handle), m_grid(grid),
@@ -146,19 +146,18 @@ void MaterialIntegrator::integrate(
       }
       // dz is always negative here, so subtract to get a positive volume
       volume_displaced -= dz * pixel_area;
+      // determine world-space z values at the bottom of the z-column
+      const auto z_bottom = result_handle->image.at<float>(i, j);
       // compute world-space coordinates of this pixel's center
       const float x = (msg->position.x - msg->width / 2)
                         + static_cast<float>(j) / rows * msg->width;
       // +i and +y are in opposite directions, so flip the signs
       const float y = (msg->position.y + msg->height / 2)
                         - static_cast<float>(i) / cols * msg->height;
-      const auto pixel_center = GridPositionType2D{x + pixel_width / 2,
-                                                   y + pixel_height / 2};
-      // determine world-space z values at the top and bottom of the z-column
-      const auto z_bottom = result_handle->image.at<float>(i, j);
-      const auto z_top = z_bottom - dz; // dz is negative
-      m_grid->runForEachInColumn(
-        pixel_center, z_bottom, z_top,
+      const auto column_bottom = GridPositionType{x + pixel_width / 2,
+                                                  y + pixel_height / 2,
+                                                  z_bottom};
+      m_grid->runForEachInColumn(column_bottom, dz,
         [&bulk_blend, &points]
         (Blend const &b, GridPositionType center) {
           if (b.isEmpty()) return;
@@ -192,7 +191,7 @@ void MaterialIntegrator::integrate(
     += (ros::WallTime::now() - start_time).toNSec();
   m_batch_accumulated_merges += points.size();
 
-  publishPointCloud(&m_dug_points_pub, points);
+  publishPointCloud(&m_dug_points_pub, points, "base_link");
 
   m_handle_bulk_cb(bulk_blend, static_cast<double>(volume_displaced));
 }

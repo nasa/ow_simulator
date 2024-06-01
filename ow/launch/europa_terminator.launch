@@ -8,16 +8,22 @@
   <arg name="record_bag" default="false"/>
   <arg name="rqt_gui" default="true"/>
   <arg name="use_rviz" default="true"/>
+  <arg name="init_x" default="0"/>
+  <arg name="init_y" default="0"/>
+  <arg name="init_z" default="-7.291"/>
+  <arg name="init_R" default="-0.105"/>
+  <arg name="init_P" default="0.008"/>
+  <arg name="init_Y" default="0"/>
 
   <include file="$(find ow)/launch/common.launch" >
     <arg name="gazebo_launch_file" value="$(arg gazebo_launch_file)" />
     <arg name="world_name" value="$(find ow_europa)/worlds/terminator.world"/>
-    <arg name="init_x" value="0"/>
-    <arg name="init_y" value="0"/>
-    <arg name="init_z" value="-7.291"/>
-    <arg name="init_R" value="-0.105"/>
-    <arg name="init_P" value="0.008"/>
-    <arg name="init_Y" value="0"/>
+    <arg name="init_x" value="$(arg init_x)"/>
+    <arg name="init_y" value="$(arg init_y)"/>
+    <arg name="init_z" value="$(arg init_z)"/>
+    <arg name="init_R" value="$(arg init_R)"/>
+    <arg name="init_P" value="$(arg init_P)"/>
+    <arg name="init_Y" value="$(arg init_Y)"/>
     <arg name="freeze_base_link" value="true"/>
     <arg name="arm_sim_enable" value="$(arg arm_sim_enable)"/>
     <arg name="gazebo" value="$(arg gazebo)"/>

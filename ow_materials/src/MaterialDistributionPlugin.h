@@ -14,8 +14,9 @@
 #include "gazebo/gazebo.hh"
 #include "gazebo/common/common.hh"
 #include "gazebo/common/Event.hh"
+#include "gazebo/physics/Model.hh"
 
-#include "AxisAlignedGrid.h"
+#include "VoxelGrid.h"
 #include "MaterialDatabase.h"
 #include "MaterialIntegrator.h"
 #include "material_mixing.h"
@@ -41,8 +42,6 @@ public:
 
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
-  void getHeightmapAlbedo();
-
   // NOTE: Only used if m_grid_in_use is false
   // Alternative message diff callback for computing dug volume.
   void computeDiffVolume(
@@ -53,15 +52,16 @@ public:
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
   // void handleCollisionBulk(Blend const &blend, double volume) const;
 
+  // A delayed initialization function that waits for certain Gazebo resources
+  // to have been loaded and become accessible.
+  void attemptToAcquireWorldData();
+
   Color interpolateColor(Blend const &blend) const;
 
 private:
   void populateGrid(Ogre::Image albedo, Ogre::Terrain *terrain);
 
   std::unique_ptr<ros::NodeHandle> m_node_handle;
-
-  // when false a grid is not generated and only dug volume is computed
-  bool m_grid_in_use;
 
   std::unique_ptr<gazebo::event::ConnectionPtr> m_temp_render_connection;
 
@@ -74,11 +74,18 @@ private:
 
   MaterialDatabase m_material_db;
 
-  std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
+  std::unique_ptr<VoxelGrid<Blend>> m_grid;
+
+  gazebo::physics::ModelPtr m_heightmap_model;
+
+  GridPositionType m_corner_a;
+  GridPositionType m_corner_b;
+  double m_cell_side_length;
+  // Either world or the name of a static model the grid will be relative to.
+  std::string m_relative_to;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
-
-  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  //// STUBBED FEATURE: reactivate to implement grinder terramechanics (OW-998)
   // std::unique_ptr<MaterialIntegrator> m_collision_integrator;
 
   std::vector<std::pair<MaterialID, Color>> m_reference_colors;

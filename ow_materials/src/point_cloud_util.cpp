@@ -7,9 +7,10 @@
 #include "ros/ros.h"
 
 void publishPointCloud(ros::Publisher *pub,
-                       pcl::PointCloud<pcl::PointXYZRGB> &cloud)
+                       pcl::PointCloud<pcl::PointXYZRGB> &cloud,
+                       const std::string &frame_id)
 {
-  cloud.header.frame_id = "world";
+  cloud.header.frame_id = frame_id;
   pcl_conversions::toPCL(ros::Time::now(), cloud.header.stamp);
   sensor_msgs::PointCloud2 msg;
   pcl::toROSMsg(cloud, msg);
