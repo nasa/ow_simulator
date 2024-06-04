@@ -35,6 +35,8 @@ const string TOPIC_BULK_EXCAVATION   = "/ow_materials/bulk_excavation/visual";
 const string TOPIC_DIG_PHASE         = "/ow_dynamic_terrain/scoop_dig_phase";
 const string TOPIC_MATERIAL_INGESTED = "/ground_truth/material_ingested";
 
+const string NAMESPACE_MATERIALS = "/ow_materials/materials";
+
 // constants specific to the scoop end-effector
 const Vector3d SCOOP_SPAWN_OFFSET(0.0, 0.0, -0.05);
 
@@ -125,7 +127,7 @@ void RegolithPlugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
 
   // populate materials database
   try {
-    m_material_db.populate_from_rosparams("/ow_materials");
+    m_material_db.populate_from_rosparams(NAMESPACE_MATERIALS);
   } catch (const ow_materials::MaterialConfigError &e) {
     GZERR("Failed initialize material database: " << e.what() << endl);
     return;

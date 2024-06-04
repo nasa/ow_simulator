@@ -35,7 +35,9 @@
   <!-- Load lander urdf -->
   <param name="robot_description"
     command="$(find xacro)/xacro '$(find ow_lander)/urdf/lander.xacro'
-    freeze_base_link:=$(arg freeze_base_link)"/>
+    freeze_base_link:=$(arg freeze_base_link)
+    x:=$(arg init_x) y:=$(arg init_y) z:=$(arg init_z)
+    R:=$(arg init_R) P:=$(arg init_P) Y:=$(arg init_Y)"/>
 
   <!-- Spawn lander in gazebo with the arm in a stowed pose -->
   <!-- -J (initial joint position) must affect joints *and* controllers. Due to
@@ -45,8 +47,6 @@
        https://answers.ros.org/question/216420/initial-joint-angles -->
   <node name="lander_model" pkg="gazebo_ros" type="spawn_model" output="screen"
     args="-urdf -param robot_description -model lander
-    -x $(arg init_x) -y $(arg init_y) -z $(arg init_z)
-    -R $(arg init_R) -P $(arg init_P) -Y $(arg init_Y)
     -J j_shou_yaw $(arg stowed_shou_yaw)
     -J j_shou_pitch $(arg stowed_shou_pitch)
     -J j_prox_pitch $(arg stowed_prox_pitch)
@@ -90,10 +90,13 @@
   </include>
 
   <!-- == launch the action servers ============== -->
-  <arg name="node_start_delay" default="10.0" />  
-  <node pkg="ow_lander" name="lander_action_servers" type="lander_action_servers.py"
-    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " output="screen"/>
+  <arg name="node_start_delay" default="10.0" />
+  <node pkg="ow_lander" name="lander_action_servers"
+    type="lander_action_servers.py"
+    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
+    output="screen" />
 
   <!-- == launch the state repackaging node ============== -->
   <node pkg="ow_lander" name="state_publisher" type="state_publisher.py" output="screen"/>
+
 </launch>

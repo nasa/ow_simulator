@@ -8,7 +8,8 @@
 
 #include "gazebo/common/Assert.hh"
 
-using std::min, std::max, std::ceil, std::size_t, std::clamp;
+using std::min, std::max, std::ceil, std::size_t, std::clamp, std::sin,
+      std::cos;
 
 namespace ow_materials {
 
@@ -34,10 +35,11 @@ static GridPositionType maxPosition(GridPositionType const &a,
 }
 
 template <typename T>
-AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
-                                    GridPositionType const corner_2,
-                                    double const cell_side_length)
-  : m_cell_length(cell_side_length)
+VoxelGrid<T>::VoxelGrid(GridPositionType corner_1, GridPositionType corner_2,
+                        double cell_side_length,
+                        GridPositionType position_offset, double yaw)
+  : m_cell_length(cell_side_length), m_frame_offset(position_offset),
+    m_frame_yaw(yaw)
 {
 
   // cannot have a negative/zero length
@@ -92,39 +94,28 @@ AxisAlignedGrid<T>::AxisAlignedGrid(GridPositionType const corner_1,
 };
 
 template <typename T>
-const GridPositionType &AxisAlignedGrid<T>::getDiagonal() const {
-  static const GridPositionType diagonal(m_domain->XLength(),
-                                         m_domain->YLength(),
-                                         m_domain->ZLength());
-   return diagonal;
+const GridPositionType &VoxelGrid<T>::getDimensions() const {
+  static GridPositionType dimensions(
+    m_domain->XLength(), m_domain->YLength(), m_domain->ZLength()
+  );
+  return dimensions;
 };
 
 template <typename T>
-const GridPositionType &AxisAlignedGrid<T>::getMaxCorner() const {
-  static const GridPositionType max = m_domain->Max();
-  return max;
-};
-
-template <typename T>
-const GridPositionType &AxisAlignedGrid<T>::getMinCorner() const {
-  static const GridPositionType min = m_domain->Min();
-  return min;
-};
-
-template <typename T>
-const GridPositionType &AxisAlignedGrid<T>::getCenter() const {
-  static const GridPositionType center = m_domain->Center();
+const GridPositionType &VoxelGrid<T>::getWorldCenter() const {
+  static GridPositionType center = transformIntoWorld(m_domain->Center());
   return center;
 };
 
 template <typename T>
-const double &AxisAlignedGrid<T>::getCellVolume() const {
+const double &VoxelGrid<T>::getCellVolume() const {
   static const double volume = m_cell_length * m_cell_length * m_cell_length;
   return volume;
 };
 
 template <typename T>
-GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
+GridPositionType VoxelGrid<T>::getCellCenter(
+  GridIndexType idx) const
 {
   GridPositionType grid_coord = GridPositionType(
     static_cast<double>(idx.X()) + 0.5,
@@ -135,45 +126,62 @@ GridPositionType AxisAlignedGrid<T>::getCellCenter(GridIndexType idx) const
 };
 
 template <typename T>
-void AxisAlignedGrid<T>::runForEach(
+GridPositionType VoxelGrid<T>::transformIntoFrame(
+  const GridPositionType &p) const
+{
+  auto m = p - m_frame_offset;
+  return GridPositionType{
+     m.X() * std::cos(m_frame_yaw) + m.Y() * std::sin(m_frame_yaw),
+    -m.X() * std::sin(m_frame_yaw) + m.Y() * std::cos(m_frame_yaw),
+     m.Z()
+  };
+};
+
+template <typename T>
+GridPositionType VoxelGrid<T>::transformIntoWorld(
+  const GridPositionType &p) const
+{
+  auto m = GridPositionType{
+    p.X() * std::cos(m_frame_yaw) - p.Y() * std::sin(m_frame_yaw),
+    p.X() * std::sin(m_frame_yaw) + p.Y() * std::cos(m_frame_yaw),
+    p.Z()
+  };
+  return m + m_frame_offset;
+};
+
+template <typename T>
+void VoxelGrid<T>::runForEach(
+  std::function<void(T&, GridPositionType, GridPositionType)> f)
+{
+  for (size_t i = 0; i != m_dimensions.X(); ++i) {
+    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
+      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
+        auto idx = GridIndexType(i, j, k);
+        const auto center = getCellCenter(idx);
+        f(getCellValue(idx), center, transformIntoWorld(center));
+      }
+    }
+  }
+};
+
+template <typename T>
+void VoxelGrid<T>::runForEachInColumn(
+  GridPositionType bottom, double height,
   std::function<void(const T&, GridPositionType)> f) const
 {
-  for (size_t i = 0; i != m_dimensions.X(); ++i) {
-    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-        auto idx = GridIndexType(i, j, k);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
-  }
-};
+  const auto bot = transformIntoFrame(bottom);
 
-template <typename T>
-void AxisAlignedGrid<T>::runForEach(std::function<void(T&, GridPositionType)> f)
-{
-  for (size_t i = 0; i != m_dimensions.X(); ++i) {
-    for (size_t j = 0; j != m_dimensions.Y(); ++j) {
-      for (size_t k = 0; k != m_dimensions.Z(); ++k) {
-        auto idx = GridIndexType(i, j, k);
-        f(getCellValue(idx), getCellCenter(idx));
-      }
-    }
-  }
-};
-
-template <typename T>
-void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
-  double z1, double z2, std::function<void(const T&, GridPositionType)> f) const
-{
-  if ( xy.X() < getMinCorner().X() || xy.X() > getMaxCorner().X() ||
-       xy.Y() < getMinCorner().Y() || xy.Y() > getMaxCorner().Y() ) {
+  if ( bot.X() < getMinCorner().X() || bot.X() > getMaxCorner().X() ||
+       bot.Y() < getMinCorner().Y() || bot.Y() > getMaxCorner().Y() ) {
     // grid does not contain the XY position
     return;
   }
 
   // order z positions and constrain to within the grid
-  auto zmin = clamp(min(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
-  auto zmax = clamp(max(z1, z2), getMinCorner().Z(), getMaxCorner().Z());
+  auto zmin = clamp(min(bot.Z(), bot.Z() + height),
+                    getMinCorner().Z(), getMaxCorner().Z());
+  auto zmax = clamp(max(bot.Z(), bot.Z() + height),
+                    getMinCorner().Z(), getMaxCorner().Z());
 
   if (zmin == zmax) {
     // column is entirely above/below the grid domain, but not within
@@ -181,8 +189,8 @@ void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
   }
 
   auto idx = GridIndexType{
-    static_cast<size_t>((xy.X() - getMinCorner().X()) / m_cell_length),
-    static_cast<size_t>((xy.Y() - getMinCorner().Y()) / m_cell_length),
+    static_cast<size_t>((bot.X() - getMinCorner().X()) / m_cell_length),
+    static_cast<size_t>((bot.Y() - getMinCorner().Y()) / m_cell_length),
     0u
   };
 
@@ -196,7 +204,7 @@ void AxisAlignedGrid<T>::runForEachInColumn(GridPositionType2D xy,
 };
 
 template <typename T>
-size_t AxisAlignedGrid<T>::index(GridIndexType idx) const
+size_t VoxelGrid<T>::index(GridIndexType idx) const
 {
   GZ_ASSERT(idx.X() < m_dimensions.X(), "x is out of bounds");
   GZ_ASSERT(idx.Y() < m_dimensions.Y(), "y is out of bounds");

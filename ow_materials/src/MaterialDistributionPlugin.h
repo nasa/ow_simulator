@@ -14,8 +14,9 @@
 #include "gazebo/gazebo.hh"
 #include "gazebo/common/common.hh"
 #include "gazebo/common/Event.hh"
+#include "gazebo/physics/Model.hh"
 
-#include "AxisAlignedGrid.h"
+#include "VoxelGrid.h"
 #include "MaterialDatabase.h"
 #include "MaterialIntegrator.h"
 #include "material_mixing.h"
@@ -41,12 +42,19 @@ public:
 
   void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
 
-  void getHeightmapAlbedo();
+  // NOTE: Only used if m_grid_in_use is false
+  // Alternative message diff callback for computing dug volume.
+  void computeDiffVolume(
+    const ow_dynamic_terrain::modified_terrain_diff::ConstPtr &msg) const;
 
-  void handleVisualBulk(Blend const &blend, double volume);
+  void handleVisualBulk(Blend const &blend, double volume) const;
 
   //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
-  // void handleCollisionBulk(Blend const &blend, double volume);
+  // void handleCollisionBulk(Blend const &blend, double volume) const;
+
+  // A delayed initialization function that waits for certain Gazebo resources
+  // to have been loaded and become accessible.
+  void attemptToAcquireWorldData();
 
   Color interpolateColor(Blend const &blend) const;
 
@@ -61,13 +69,23 @@ private:
   ros::Publisher m_pub_bulk_excavation_visual;
   ros::Publisher m_pub_bulk_excavation_collision;
 
+  // NOTE: Only used if m_grid_in_use is false
+  ros::Subscriber m_sub_modification_diff;
+
   MaterialDatabase m_material_db;
 
-  std::unique_ptr<AxisAlignedGrid<Blend>> m_grid;
+  std::unique_ptr<VoxelGrid<Blend>> m_grid;
+
+  gazebo::physics::ModelPtr m_heightmap_model;
+
+  GridPositionType m_corner_a;
+  GridPositionType m_corner_b;
+  double m_cell_side_length;
+  // Either world or the name of a static model the grid will be relative to.
+  std::string m_relative_to;
 
   std::unique_ptr<MaterialIntegrator> m_visual_integrator;
-
-  //// STUBBED FEATURE: reactivate for grinder terramechanics (OW-998)
+  //// STUBBED FEATURE: reactivate to implement grinder terramechanics (OW-998)
   // std::unique_ptr<MaterialIntegrator> m_collision_integrator;
 
   std::vector<std::pair<MaterialID, Color>> m_reference_colors;

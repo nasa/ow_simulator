@@ -122,6 +122,23 @@ class ActionServerBase(ABC):
     if self.fault_handler:
       self.fault_handler.notify_aborted()
 
+  def __should_auto_clear_goal_errors(self):
+    """Return value of auto clear goal errors rosparam"""
+    return rospy.get_param("/faults/auto_clear_goal_errors")
+
+  def __should_reject_due_to_fault(self):
+    """Return true if the current state of faults and simulation settings permit
+    an action to run.
+    """
+    return (
+      # Actions may proceed if the simulation is configured such that goal
+      # errors are automatically cleared by a subsequent successful run.
+      not self.__should_auto_clear_goal_errors()
+      # Assuming this action has a fault_handler, do not permit the action to
+      # proceed if it's handler is faulted.
+      and (self.fault_handler and self.fault_handler.is_faulted())
+    )
+
   def __set_rejected(self, msg):
     """Declare action aborted, but use the language of rejected. Only intended
     for use internally to this class. It always results in an empty result_type
@@ -139,9 +156,11 @@ class ActionServerBase(ABC):
                    "This should never happen!")
       return
     rospy.loginfo(f"{self.name} action started")
-    if self.fault_handler and self.fault_handler.is_faulted():
+    if self.__should_reject_due_to_fault():
       self.__set_rejected(self.fault_handler.get_rejected_message())
     else:
+      if self.fault_handler and self.__should_auto_clear_goal_errors():
+        self.fault_handler.reset_system_faults()
       self.execute_action(goal)
     rospy.loginfo(f"{self.name} action complete")
 
